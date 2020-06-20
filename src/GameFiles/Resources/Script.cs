@@ -21,10 +21,10 @@
         public uint CodeLength { get; set; }
         public uint ArgsCount { get; set; }
         public uint LocalsCount { get; set; }
-        public uint GlobalsCount { get; set; }
+        public uint GlobalsLengthAndBlock { get; set; }
         public uint NativesCount { get; set; }
-        public ulong LocalsInitialValuesPointer { get; set; }
-        public ulong GlobalsInitialValuesPointer { get; set; }
+        public ulong LocalsPointer { get; set; }
+        public ulong GlobalsPagesPointer { get; set; }
         public ulong NativesPointer { get; set; }
         public long Unknown_48h { get; set; }
         public long Unknown_50h { get; set; }
@@ -38,14 +38,21 @@
 
         // reference data
         public byte[][] CodePages { get; set; }
-        public ScriptValue[] LocalsInitialValues { get; set; }
+        public ScriptValue[] Locals { get; set; }
+        public ScriptValue[][] GlobalsPages { get; set; }
         public ulong[] Natives { get; set; }
         public string Name { get; set; }
         public byte[][] StringsPages { get; set; }
 
-        private ResourceSystemStructBlock<ScriptValue> localsInitialValuesBlock;
+        private ResourceSystemStructBlock<byte>[] codePagesBlocks;
+        private ResourceSystemStructBlock<ulong> codePagesPointersBlock;
+        private ResourceSystemStructBlock<ScriptValue> localsBlock;
+        private ResourceSystemStructBlock<ScriptValue>[] globalsPagesBlocks;
+        private ResourceSystemStructBlock<ulong> globalsPagesPointersBlock;
         private ResourceSystemStructBlock<ulong> nativesBlock;
         private string_r nameBlock;
+        private ResourceSystemStructBlock<byte>[] stringsPagesBlocks;
+        private ResourceSystemStructBlock<ulong> stringsPagesPointersBlock;
 
         public override void Read(ResourceDataReader reader, params object[] parameters)
         {
@@ -57,10 +64,10 @@
             CodeLength = reader.ReadUInt32();
             ArgsCount = reader.ReadUInt32();
             LocalsCount = reader.ReadUInt32();
-            GlobalsCount = reader.ReadUInt32();
+            GlobalsLengthAndBlock = reader.ReadUInt32();
             NativesCount = reader.ReadUInt32();
-            LocalsInitialValuesPointer = reader.ReadUInt64();
-            GlobalsInitialValuesPointer = reader.ReadUInt64();
+            LocalsPointer = reader.ReadUInt64();
+            GlobalsPagesPointer = reader.ReadUInt64();
             NativesPointer = reader.ReadUInt64();
             Unknown_48h = reader.ReadInt64();
             Unknown_50h = reader.ReadInt64();
@@ -75,7 +82,6 @@
             // read reference data
             uint codePagesCount = (CodeLength + 0x3FFF) >> 14;
             ulong[] codePagesPtrs = reader.ReadUlongsAt(CodePagesPointer, codePagesCount, false);
-
             CodePages = new byte[codePagesCount][];
             for (int i = 0; i < codePagesCount; i++)
             {
@@ -84,14 +90,23 @@
                 CodePages[i] = reader.ReadBytesAt(codePagesPtrs[i], pageSize, false);
             }
 
-            LocalsInitialValues = reader.ReadStructsAt<ScriptValue>(LocalsInitialValuesPointer, LocalsCount);
-            // TODO: GlobalsInitialValuesPointer
+            Locals = reader.ReadStructsAt<ScriptValue>(LocalsPointer, LocalsCount);
+
+            uint globalsPagesCount = ((GlobalsLengthAndBlock & 0x3FFFF) + 0x3FFF) >> 14;
+            ulong[] globalsPagesPtrs = reader.ReadUlongsAt(GlobalsPagesPointer, globalsPagesCount, false);
+            GlobalsPages = new ScriptValue[globalsPagesCount][];
+            for (int i = 0; i < globalsPagesCount; i++)
+            {
+                uint pageSize = i == globalsPagesCount - 1 ? (uint)((GlobalsLengthAndBlock & 0x3FFFF) - (i << 14)) : MaxPageLength;
+
+                GlobalsPages[i] = reader.ReadStructsAt<ScriptValue>(globalsPagesPtrs[i], pageSize, false);
+            }
+
             Natives = reader.ReadUlongsAt(NativesPointer, NativesCount);
             Name = reader.ReadStringAt(NamePointer);
             
             uint stringPagesCount = (StringsLength + 0x3FFF) >> 14;
             ulong[] stringPagesPtrs = reader.ReadUlongsAt(StringsPagesPointer, stringPagesCount, false);
-
             StringsPages = new byte[stringPagesCount][];
             for (int i = 0; i < stringPagesCount; i++)
             {
@@ -103,26 +118,108 @@
 
         public override void Write(ResourceDataWriter writer, params object[] parameters)
         {
-            throw new NotImplementedException();
+            base.Write(writer, parameters);
 
             // update structure data
-            LocalsInitialValuesPointer = (ulong)(localsInitialValuesBlock?.FilePosition ?? 0);
+            CodePagesPointer = (ulong)(codePagesPointersBlock?.FilePosition ?? 0);
+            CodeLength = 0;
+            for (int i = 0; i < codePagesPointersBlock.Items.Length; i++)
+            {
+                codePagesPointersBlock.Items[i] = (ulong)codePagesBlocks[i].FilePosition;
+                CodeLength += (uint)codePagesBlocks[i].ItemCount;
+            }
+            LocalsPointer = (ulong)(localsBlock?.FilePosition ?? 0);
+            LocalsCount = (uint)(localsBlock?.ItemCount ?? 0);
+            GlobalsPagesPointer = (ulong)(globalsPagesPointersBlock?.FilePosition ?? 0);
+            Console.WriteLine("bef GlobalsLengthAndBlock = {0}", GlobalsLengthAndBlock);
+            GlobalsLengthAndBlock &= 0xFFFC0000; // keep the global block index
+            for (int i = 0; i < globalsPagesPointersBlock.Items.Length; i++)
+            {
+                globalsPagesPointersBlock.Items[i] = (ulong)globalsPagesBlocks[i].FilePosition;
+                GlobalsLengthAndBlock += (uint)globalsPagesBlocks[i].ItemCount;
+            }
+            Console.WriteLine("aft GlobalsLengthAndBlock = {0}", GlobalsLengthAndBlock);
             NativesPointer = (ulong)(nativesBlock?.FilePosition ?? 0);
+            NativesCount = (uint)(nativesBlock?.ItemCount ?? 0);
             NamePointer = (ulong)(nameBlock?.FilePosition ?? 0);
+            StringsPagesPointer = (ulong)(stringsPagesPointersBlock?.FilePosition ?? 0);
+            StringsLength = 0;
+            for (int i = 0; i < stringsPagesPointersBlock.Items.Length; i++)
+            {
+                stringsPagesPointersBlock.Items[i] = (ulong)stringsPagesBlocks[i].FilePosition;
+                StringsLength += (uint)stringsPagesBlocks[i].ItemCount;
+            }
 
             // write structure data
+            writer.Write(CodePagesPointer);
+            writer.Write(Hash);
+            writer.Write(CodeLength);
+            writer.Write(ArgsCount);
+            writer.Write(LocalsCount);
+            writer.Write(GlobalsLengthAndBlock);
+            writer.Write(NativesCount);
+            writer.Write(LocalsPointer);
+            writer.Write(GlobalsPagesPointer);
+            writer.Write(NativesPointer);
+            writer.Write(Unknown_48h);
+            writer.Write(Unknown_50h);
+            writer.Write(NameHash);
+            writer.Write(NumRefs);
+            writer.Write(NamePointer);
+            writer.Write(StringsPagesPointer);
+            writer.Write(StringsLength);
+            writer.Write(Unknown_74h);
+            writer.Write(Unknown_78h);
         }
 
         public override IResourceBlock[] GetReferences()
         {
-            throw new NotImplementedException();
-
             var list = new List<IResourceBlock>(base.GetReferences());
 
-            if (LocalsInitialValues != null)
+            if (CodePages != null)
             {
-                localsInitialValuesBlock = new ResourceSystemStructBlock<ScriptValue>(LocalsInitialValues);
-                list.Add(nativesBlock);
+                codePagesBlocks = new ResourceSystemStructBlock<byte>[CodePages.Length];
+                for (int i = 0; i < CodePages.Length; i++)
+                {
+                    codePagesBlocks[i] = new ResourceSystemStructBlock<byte>(CodePages[i]);
+                    list.Add(codePagesBlocks[i]);
+                }
+
+                codePagesPointersBlock = new ResourceSystemStructBlock<ulong>(new ulong[CodePages.Length]);
+                list.Add(codePagesPointersBlock);
+            }
+            else
+            {
+                codePagesBlocks = null;
+                codePagesPointersBlock = null;
+            }
+
+            if (Locals != null)
+            {
+                localsBlock = new ResourceSystemStructBlock<ScriptValue>(Locals);
+                list.Add(localsBlock);
+            }
+            else
+            {
+                localsBlock = null;
+            }
+
+            if (GlobalsPages != null)
+            {
+                globalsPagesBlocks = new ResourceSystemStructBlock<ScriptValue>[GlobalsPages.Length];
+                for (int i = 0; i < GlobalsPages.Length; i++)
+                {
+                    globalsPagesBlocks[i] = new ResourceSystemStructBlock<ScriptValue>(GlobalsPages[i]);
+                    list.Add(globalsPagesBlocks[i]);
+                }
+
+                globalsPagesPointersBlock = new ResourceSystemStructBlock<ulong>(new ulong[GlobalsPages.Length]);
+                list.Add(globalsPagesPointersBlock);
+            }
+            else
+            {
+                globalsPagesBlocks = null;
+                globalsPagesPointersBlock = null;
             }
 
             if (Natives != null)
@@ -130,17 +227,41 @@
                 nativesBlock = new ResourceSystemStructBlock<ulong>(Natives);
                 list.Add(nativesBlock);
             }
+            else
+            {
+                nativesBlock = null;
+            }
 
             if (Name != null)
             {
                 nameBlock = (string_r)Name;
                 list.Add(nameBlock);
             }
+            else
+            {
+                nameBlock = null;
+            }
+
+            if (StringsPages != null)
+            {
+                stringsPagesBlocks = new ResourceSystemStructBlock<byte>[StringsPages.Length];
+                for (int i = 0; i < StringsPages.Length; i++)
+                {
+                    stringsPagesBlocks[i] = new ResourceSystemStructBlock<byte>(StringsPages[i]);
+                    list.Add(stringsPagesBlocks[i]);
+                }
+
+                stringsPagesPointersBlock = new ResourceSystemStructBlock<ulong>(new ulong[StringsPages.Length]);
+                list.Add(stringsPagesPointersBlock);
+            }
+            else
+            {
+                stringsPagesBlocks = null;
+                stringsPagesPointersBlock = null;
+            }
 
             return list.ToArray();
         }
-
-
 
         public ref byte IP(uint ip) => ref CodePages[ip >> 14][ip & 0x3FFF];
         public ref T IP<T>(uint ip) where T : unmanaged => ref Unsafe.As<byte, T>(ref IP(ip));
@@ -193,6 +314,14 @@
             }
         }
     }
+
+    //public class ScriptStringPagesBlock : ResourceSystemBlock
+    //{
+    //    public override void Read(ResourceDataReader reader, params object[] parameters)
+    //    {
+    //        throw new NotImplementedException();
+    //    }
+    //}
 
     public struct ScriptValue
     {

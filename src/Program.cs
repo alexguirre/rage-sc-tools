@@ -46,7 +46,6 @@
             rootCmd.AddCommand(disassemble);
 
             return rootCmd.InvokeAsync(args).Result;
-            //return rootCmd.InvokeAsync("dump -o startup.dump.txt .\\startup.ysc").Result;
         }
 
         private static void Disassemble(FileInfo input, FileInfo output)
@@ -86,11 +85,30 @@
         {
             w.WriteLine("Name = {0} (0x{1:X8})", sc.Name, sc.NameHash);
             w.WriteLine("Locals Count = {0}", sc.LocalsCount);
-            foreach (ScriptValue v in sc.LocalsInitialValues)
+            foreach (ScriptValue v in sc.Locals)
             {
                 w.WriteLine("\t{0:X16} ({1}) ({2})", v.AsInt64, v.AsInt32, v.AsFloat);
             }
-            w.WriteLine("Globals Count = {0}", sc.GlobalsCount);
+            w.WriteLine("Globals Length = {0}", sc.GlobalsLengthAndBlock);
+            {
+                uint globalBlock = sc.GlobalsLengthAndBlock >> 18;
+                w.WriteLine("Globals Block = {0}", globalBlock);
+
+                uint pageIndex = 0;
+                foreach (ScriptValue[] page in sc.GlobalsPages)
+                {
+                    uint i = 0;
+                    foreach (ScriptValue g in page)
+                    {
+                        uint globalId = (globalBlock << 18) | (pageIndex << 14) | i;
+
+                        w.WriteLine("\t[{0}] = {1:X16} ({2}) ({3})", globalId, g.AsInt64, g.AsInt32, g.AsFloat);
+
+                        i++;
+                    }
+                    pageIndex++;
+                }
+            }
             w.WriteLine("Natives Count = {0}", sc.NativesCount);
             foreach (ulong hash in sc.Natives)
             {
@@ -98,10 +116,10 @@
             }
             w.WriteLine("Code Length = {0}", sc.CodeLength);
             w.WriteLine("Num Refs = {0}", sc.NumRefs);
-            w.WriteLine("Strings Count = {0}", sc.StringsLength);
+            w.WriteLine("Strings Length = {0}", sc.StringsLength);
             foreach (uint sid in sc.StringIds())
             {
-                w.WriteLine("\t[{0}] {1}", sid, sc.String(sid));
+                w.WriteLine("\t[{0}] = {1}", sid, sc.String(sid));
             }
             w.WriteLine("Disassembly:");
             new Disassembler(sc).Disassemble(w);
