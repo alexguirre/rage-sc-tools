@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <RootNamespace>ScTools</RootNamespace>
+    <LangVersion>8.0</LangVersion>
+    <Platforms>x64</Platforms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="CodeWalker.Core">
+      <HintPath>..\dependencies\CodeWalker.Core.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>
