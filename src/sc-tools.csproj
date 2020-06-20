@@ -9,6 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.20303.1" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="CodeWalker.Core">
       <HintPath>..\dependencies\CodeWalker.Core.dll</HintPath>
     </Reference>

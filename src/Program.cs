@@ -1,37 +1,74 @@
 ﻿namespace ScTools
 {
     using System;
+    using System.CommandLine;
+    using System.CommandLine.Invocation;
     using System.Globalization;
     using System.IO;
     using System.Threading;
     using ScTools.GameFiles;
 
-    class Program
+    internal static class Program
     {
-        static void Main(string[] args)
+        private static int Main(string[] args)
         {
             Thread.CurrentThread.CurrentCulture = CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 
-            string path = Path.GetFullPath("startup.ysc");
+            var rootCmd = new RootCommand("Tool for working with Grand Theft Auto V script files (.ysc).");
 
-            byte[] fileData = File.ReadAllBytes(path);
+            Command dump = new Command("dump")
+            {
+                new Argument<FileInfo>(
+                    "input",
+                    "The input file.")
+                    .ExistingOnly(),
+                new Option<FileInfo>(
+                    new[] { "--output", "-o" },
+                    "The output file. If not specified, the dump is printed to the console.")
+                    .LegalFilePathsOnly(),
+            };
+            dump.Handler = CommandHandler.Create<FileInfo, FileInfo>(Dump);
+
+            rootCmd.AddCommand(dump);
+
+            return rootCmd.InvokeAsync(args).Result;
+        }
+
+        private static void Dump(FileInfo input, FileInfo output)
+        {
+            byte[] fileData = File.ReadAllBytes(input.FullName);
 
             YscFile ysc = new YscFile();
             ysc.Load(fileData);
 
             Script sc = ysc.Script;
-            
-            Console.WriteLine("Name = {0} (0x{1:X8})", sc.Name, sc.NameHash);
-            Console.WriteLine("Locals Count = {0}", sc.LocalsCount);
-            Console.WriteLine("Globals Count = {0}", sc.GlobalsCount);
-            Console.WriteLine("Natives Count = {0}", sc.NativesCount);
-            Console.WriteLine("Code Length = {0}", sc.CodeLength);
-            Console.WriteLine("Num Refs = {0}", sc.NumRefs);
-            Console.WriteLine("Strings Count = {0}", sc.StringsCount);
+
+            using TextWriter w = output switch
+            {
+                null => Console.Out,
+                _ => new StreamWriter(output.OpenWrite())
+            };
+
+            Dump(sc, w);
+        }
+
+        private static void Dump(Script sc, TextWriter w)
+        {
+            w.WriteLine("Name = {0} (0x{1:X8})", sc.Name, sc.NameHash);
+            w.WriteLine("Locals Count = {0}", sc.LocalsCount);
             foreach (ScriptValue v in sc.LocalsInitialValues)
             {
-                Console.WriteLine("{0:X16} ({1}) ({2})", v.AsInt64, v.AsInt32, v.AsFloat);
+                w.WriteLine("\t{0:X16} ({1}) ({2})", v.AsInt64, v.AsInt32, v.AsFloat);
             }
+            w.WriteLine("Globals Count = {0}", sc.GlobalsCount);
+            w.WriteLine("Natives Count = {0}", sc.NativesCount);
+            foreach (ulong hash in sc.Natives)
+            {
+                w.WriteLine("\t{0:X16}", hash);
+            }
+            w.WriteLine("Code Length = {0}", sc.CodeLength);
+            w.WriteLine("Num Refs = {0}", sc.NumRefs);
+            w.WriteLine("Strings Count = {0}", sc.StringsCount);
         }
     }
 }
