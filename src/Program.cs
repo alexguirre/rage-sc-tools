@@ -20,7 +20,7 @@
             {
                 new Argument<FileInfo>(
                     "input",
-                    "The input file.")
+                    "The input YSC file.")
                     .ExistingOnly(),
                 new Option<FileInfo>(
                     new[] { "--output", "-o" },
@@ -69,6 +69,8 @@
             w.WriteLine("Code Length = {0}", sc.CodeLength);
             w.WriteLine("Num Refs = {0}", sc.NumRefs);
             w.WriteLine("Strings Count = {0}", sc.StringsCount);
+            w.WriteLine("Disassembly:");
+            new Disassembler(sc).Disassemble(w);
         }
     }
 }
