@@ -168,10 +168,10 @@
 
             for (int i = 0; i < Instructions.Length; i++)
             {
-                ref Instruction inst = ref Instructions[i];
+                ref Inst inst = ref Instructions[i];
                 if (Equals(mnemonic, inst.Mnemonic))
                 {
-                    inst.Builder(tokens, lastLabel, code);
+                    inst.Builder(inst, tokens, lastLabel, code);
                     lastLabel = null;
                     return true;
                 }
@@ -203,7 +203,7 @@
             private readonly List<(string TargetLabel, uint IP)> targetLabels = new List<(string, uint)>();
             private uint length = 0;
             private readonly List<byte> buffer = new List<byte>();
-            
+
             private bool inInstruction = false;
 
             public void BeginInstruction(string label)
@@ -211,7 +211,7 @@
                 Debug.Assert(!inInstruction);
 
                 buffer.Clear();
-                if (label != null)
+                if (!string.IsNullOrWhiteSpace(label))
                 {
                     labels.Add((label, length));
                 }
@@ -237,6 +237,16 @@
                 Debug.Assert(buffer.Count < Script.MaxPageLength / 2, "instruction too long");
             }
 
+            public void Add(short v)
+            {
+                Debug.Assert(inInstruction);
+
+                buffer.Add((byte)(v & 0xFF));
+                buffer.Add((byte)(v >> 8));
+
+                Debug.Assert(buffer.Count < Script.MaxPageLength / 2, "instruction too long");
+            }
+
             public void Add(uint v)
             {
                 Debug.Assert(inInstruction);
@@ -248,6 +258,19 @@
 
                 Debug.Assert(buffer.Count < Script.MaxPageLength / 2, "instruction too long");
             }
+
+            public void AddU24(uint v)
+            {
+                Debug.Assert(inInstruction);
+
+                buffer.Add((byte)(v & 0xFF));
+                buffer.Add((byte)((v >> 8) & 0xFF));
+                buffer.Add((byte)((v >> 16) & 0xFF));
+
+                Debug.Assert(buffer.Count < Script.MaxPageLength / 2, "instruction too long");
+            }
+
+            public unsafe void Add(float v) => Add(*(uint*)&v);
 
             public void AddTarget(string label)
             {
