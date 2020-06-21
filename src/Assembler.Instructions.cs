@@ -1,6 +1,7 @@
 ﻿namespace ScTools
 {
     using System;
+    using CodeWalker.GameFiles;
 
     internal partial class Assembler
     {
@@ -9,11 +10,13 @@
         private readonly struct Inst
         {
             public string Mnemonic { get; }
+            public uint MnemonicHash { get; }
             public InstructionBuilder Builder { get; }
 
             public Inst(string mnemonic, InstructionBuilder builder)
             {
                 Mnemonic = mnemonic;
+                MnemonicHash = JenkHash.GenHash(mnemonic);
                 Builder = builder;
             }
 
@@ -239,9 +242,16 @@
                 b.EndInstruction();
                 NoMoreTokens(i, t);
             };
+
+            public static Inst[] Sort(Inst[] instructions)
+            {
+                // sort the instructions based on MnemonicHash so we can do binary search later
+                Array.Sort(instructions, (a, b) => a.MnemonicHash.CompareTo(b.MnemonicHash));
+                return instructions;
+            }
         }
 
-        private static readonly Inst[] Instructions = new[]
+        private static readonly Inst[] Instructions = Inst.Sort(new[]
         {
             new Inst("NOP", Inst.I(0x00)),
             new Inst("IADD", Inst.I(0x01)),
@@ -427,6 +437,6 @@
             new Inst("PUSH_CONST_F5", Inst.I(0x7C)),
             new Inst("PUSH_CONST_F6", Inst.I(0x7D)),
             new Inst("PUSH_CONST_F7", Inst.I(0x7E)),
-        };
+        });
     }
 }

@@ -162,19 +162,58 @@
 
         private bool ParseInstruction(TokenEnumerator tokens)
         {
-            static bool Equals(ReadOnlySpan<char> s, string str) => s.Equals(str, StringComparison.OrdinalIgnoreCase);
-
-            var mnemonic = tokens.Current;
-
-            for (int i = 0; i < Instructions.Length; i++)
+            // same as JenkHash.GenHash but for spans
+            static uint GenHash(ReadOnlySpan<char> s)
             {
-                ref Inst inst = ref Instructions[i];
-                if (Equals(mnemonic, inst.Mnemonic))
+                uint h = 0;
+                for (int i = 0; i < s.Length; i++)
                 {
-                    inst.Builder(inst, tokens, lastLabel, code);
-                    lastLabel = null;
-                    return true;
+                    h += (byte)s[i];
+                    h += (h << 10);
+                    h ^= (h >> 6);
                 }
+                h += (h << 3);
+                h ^= (h >> 11);
+                h += (h << 15);
+
+                return h;
+            }
+
+            // perform binary search on Instructions array
+            static int BinarySearchInstruction(uint mnemonicHash)
+            {
+                int left = 0;
+                int right = Instructions.Length - 1;
+
+                while (left <= right)
+                {
+                    int middle = (left + right) / 2;
+                    uint middleKey = Instructions[middle].MnemonicHash;
+                    int cmp = middleKey.CompareTo(mnemonicHash);
+                    if (cmp == 0)
+                    {
+                        return middle;
+                    }
+                    else if (cmp < 0)
+                    {
+                        left = middle + 1;
+                    }
+                    else
+                    {
+                        right = middle - 1;
+                    }
+                }
+                return -1;
+            }
+
+            uint mnemonic = GenHash(tokens.Current);
+            int instIndex = BinarySearchInstruction(mnemonic);
+            if (instIndex != -1)
+            {
+                ref Inst inst = ref Instructions[instIndex];
+                inst.Builder(inst, tokens, lastLabel, code);
+                lastLabel = null;
+                return true;
             }
 
             return false;
