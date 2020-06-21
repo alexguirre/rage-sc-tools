@@ -325,6 +325,72 @@
                 NoMoreTokens(i, t);
             };
 
+            public static InstructionBuilder I_switch(byte v)
+            => (i, t, l, b) =>
+            {
+                static bool ParseCase(ReadOnlySpan<char> token, out uint value, out string targetLabel)
+                {
+                    const string Separator = ":@";
+
+                    int sepIndex = token.IndexOf(Separator.AsSpan());
+                    if (sepIndex != -1)
+                    {
+                        var valueStr = token.Slice(0, sepIndex);
+                        value = 0;
+                        try
+                        {
+                            value = uint.Parse(valueStr);
+                        }
+                        catch (Exception e) when (e is FormatException || e is OverflowException)
+                        {
+                            throw new AssemblerSyntaxException($"Switch case value '{valueStr.ToString()}' is not a valid uint32 value", e);
+                        }
+
+                        var labelStr = token.Slice(sepIndex + 2);
+                        targetLabel = labelStr.ToString();
+                        return true;
+                    }
+
+                    value = default;
+                    targetLabel = default;
+                    return false;
+                }
+
+
+                const int MaxCases = byte.MaxValue;
+
+                int numCases = 0;
+                Span<uint> casesValues = stackalloc uint[MaxCases];
+                string[] casesLabels = new string[MaxCases];
+                while (t.MoveNext())
+                {
+                    if (!ParseCase(t.Current, out var value, out var targetLabel))
+                    {
+                        throw new AssemblerSyntaxException($"Invalid switch case syntax '{t.Current.ToString()}'");
+                    }
+
+                    if (numCases >= MaxCases)
+                    {
+                        throw new AssemblerSyntaxException("Too many switch cases");
+                    }
+
+                    casesValues[numCases] = value;
+                    casesLabels[numCases] = targetLabel;
+                    numCases++;
+                }
+
+                b.BeginInstruction(l);
+                b.Add(v);
+                b.Add((byte)numCases);
+                for (int k = 0; k < numCases; k++)
+                {
+                    b.Add(casesValues[k]);
+                    b.AddRelativeTarget(casesLabels[k]);
+                }
+                b.EndInstruction();
+                NoMoreTokens(i, t);
+            };
+
             public static Inst[] Sort(Inst[] instructions)
             {
                 // sort the instructions based on MnemonicHash so we can do binary search later
@@ -433,7 +499,7 @@
             new Inst("GLOBAL_U24_LOAD", Inst.I_u24(0x5F)),
             new Inst("GLOBAL_U24_STORE", Inst.I_u24(0x60)),
             new Inst("PUSH_CONST_U24", Inst.I_u24(0x61)),
-            //new Inst("SWITCH", ), // TODO: SWITCH instruction
+            new Inst("SWITCH", Inst.I_switch(0x62)),
             new Inst("STRING", Inst.I(0x63)),
             new Inst("STRINGHASH", Inst.I(0x64)),
             new Inst("TEXT_LABEL_ASSIGN_STRING", Inst.I_b(0x65)),

@@ -316,6 +316,11 @@
             {
                 Debug.Assert(inInstruction);
 
+                if (string.IsNullOrWhiteSpace(label))
+                {
+                    throw new ArgumentException("null or empty label", nameof(label));
+                }
+
                 // TODO: what happens if this is done in the page boundary where the instruction doesn't fit?
                 // the IP value may no longer match the instruction position and FixupTargetLabels will write the address in the wrong position
                 targetLabels.Add((label, length + (uint)buffer.Count));
@@ -329,6 +334,11 @@
             public void AddRelativeTarget(string label)
             {
                 Debug.Assert(inInstruction);
+
+                if (string.IsNullOrWhiteSpace(label))
+                {
+                    throw new ArgumentException("null or empty label", nameof(label));
+                }
 
                 // TODO: what happens if this is done in the page boundary where the instruction doesn't fit?
                 // the IP value may no longer match the instruction position and FixupRelativeTargetLabels will write the address in the wrong position

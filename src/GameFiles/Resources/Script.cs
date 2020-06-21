@@ -78,14 +78,10 @@
 
             // read reference data
             CodePages = reader.ReadBlockAt<ScriptPageArray<byte>>(CodePagesPointer, CodeLength);
-
             Statics = reader.ReadStructsAt<ScriptValue>(StaticsPointer, StaticsCount);
-
             GlobalsPages = reader.ReadBlockAt<ScriptPageArray<ScriptValue>>(GlobalsPagesPointer, GlobalsLength);
-
             Natives = reader.ReadUlongsAt(NativesPointer, NativesCount);
             Name = reader.ReadStringAt(NamePointer);
-
             StringsPages = reader.ReadBlockAt<ScriptPageArray<byte>>(StringsPagesPointer, StringsLength);
         }
 
