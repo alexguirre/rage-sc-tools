@@ -1,0 +1,35 @@
+$NAME test_script
+$STATICS 5
+
+main:
+    ENTER 0 2
+    CALL @func_changeGlobals
+    PUSH_CONST_U8 1
+    CALL @func_isLessThan3
+    GLOBAL_U16_STORE 5   ; global 5 = 1 < 3 
+    LEAVE 0 0
+
+func_changeGlobals:
+    ENTER 0 2
+    PUSH_CONST_U32 33333
+    PUSH_CONST_U32 11111
+    IADD                    ; 33333+11111
+    PUSH_CONST_U24 2222
+    ISUB                    ; 33333+11111-2222
+    GLOBAL_U16_STORE 3      ; store 42222 to global 3
+    PUSH_CONST_U32 22222
+    GLOBAL_U16_STORE 2      ; store 22222 to global 2
+    LEAVE 0 0
+
+func_isLessThan3:
+    ENTER 1 3               ; arg1: int
+    LOCAL_U8_LOAD 0
+    PUSH_CONST_3
+    ILT
+    LEAVE 1 1
+
+
+; ENTER argCount 2+localsCount
+; LEAVE argCount returnAddressStackNumber
+
+; usually returnAddressStackNumber = 0 or 1 if it returns a value
