@@ -42,10 +42,58 @@
             };
             disassemble.Handler = CommandHandler.Create<FileInfo, FileInfo>(Disassemble);
 
+            Command assemble = new Command("assemble")
+            {
+                new Argument<FileInfo>(
+                    "input",
+                    "The input SCASM file.")
+                    .ExistingOnly(),
+            };
+            assemble.Handler = CommandHandler.Create<FileInfo>(Assemble);
+
+            Command loadandsave = new Command("loadandsave")
+            {
+                new Argument<FileInfo>(
+                    "input",
+                    "The input YSC file.")
+                    .ExistingOnly(),
+            };
+            loadandsave.Handler = CommandHandler.Create<FileInfo>(LoadAndSave);
+
             rootCmd.AddCommand(dump);
             rootCmd.AddCommand(disassemble);
+            rootCmd.AddCommand(assemble);
+            rootCmd.AddCommand(loadandsave);
 
             return rootCmd.InvokeAsync(args).Result;
+            //return rootCmd.InvokeAsync("loadandsave .\\standard_global_init.ysc").Result;
+        }
+
+        private static void LoadAndSave(FileInfo input)
+        {
+            // CRASH in sub_11FE114
+
+            YscFile ysc = new YscFile();
+            ysc.Load(File.ReadAllBytes(input.FullName));
+            //Dump(ysc.Script, Console.Out);
+            Console.WriteLine("===========================");
+            byte[] copy = ysc.Save();
+            YscFile copyYsc = new YscFile();
+            copyYsc.Load(copy);
+            //Dump(ysc.Script, Console.Out);
+
+            File.WriteAllBytes(Path.ChangeExtension(input.FullName, "dup.ysc"), copy);
+        }
+
+        private static void Assemble(FileInfo input)
+        {
+            YscFile ysc = new YscFile();
+
+            Script sc = new Assembler().Assemble(input);
+            ysc.Script = sc;
+
+            byte[] data = ysc.Save();
+            File.WriteAllBytes(Path.ChangeExtension(input.FullName, "ysc"), data);
         }
 
         private static void Disassemble(FileInfo input, FileInfo output)
@@ -84,35 +132,46 @@
         private static void Dump(Script sc, TextWriter w)
         {
             w.WriteLine("Name = {0} (0x{1:X8})", sc.Name, sc.NameHash);
-            w.WriteLine("Locals Count = {0}", sc.LocalsCount);
-            foreach (ScriptValue v in sc.Locals)
+            w.WriteLine("Hash = 0x{0:X8}", sc.Hash);
+            w.WriteLine("Statics Count = {0}", sc.StaticsCount);
+            if (sc.Statics != null)
             {
-                w.WriteLine("\t{0:X16} ({1}) ({2})", v.AsInt64, v.AsInt32, v.AsFloat);
+                int i = 0;
+                foreach (ScriptValue v in sc.Statics)
+                {
+                    w.WriteLine("\t[{0}] = {1:X16} ({2}) ({3})", i++, v.AsInt64, v.AsInt32, v.AsFloat);
+                }
             }
             w.WriteLine("Globals Length = {0}", sc.GlobalsLengthAndBlock);
             {
                 uint globalBlock = sc.GlobalsLengthAndBlock >> 18;
                 w.WriteLine("Globals Block = {0}", globalBlock);
 
-                uint pageIndex = 0;
-                foreach (ScriptValue[] page in sc.GlobalsPages)
+                if (sc.GlobalsPages != null)
                 {
-                    uint i = 0;
-                    foreach (ScriptValue g in page)
+                    uint pageIndex = 0;
+                    foreach (ScriptValue[] page in sc.GlobalsPages)
                     {
-                        uint globalId = (globalBlock << 18) | (pageIndex << 14) | i;
+                        uint i = 0;
+                        foreach (ScriptValue g in page)
+                        {
+                            uint globalId = (globalBlock << 18) | (pageIndex << 14) | i;
 
-                        w.WriteLine("\t[{0}] = {1:X16} ({2}) ({3})", globalId, g.AsInt64, g.AsInt32, g.AsFloat);
+                            w.WriteLine("\t[{0}] = {1:X16} ({2}) ({3})", globalId, g.AsInt64, g.AsInt32, g.AsFloat);
 
-                        i++;
+                            i++;
+                        }
+                        pageIndex++;
                     }
-                    pageIndex++;
                 }
             }
             w.WriteLine("Natives Count = {0}", sc.NativesCount);
-            foreach (ulong hash in sc.Natives)
+            if (sc.Natives != null)
             {
-                w.WriteLine("\t{0:X16}", hash);
+                foreach (ulong hash in sc.Natives)
+                {
+                    w.WriteLine("\t{0:X16}", hash);
+                }
             }
             w.WriteLine("Code Length = {0}", sc.CodeLength);
             w.WriteLine("Num Refs = {0}", sc.NumRefs);

@@ -1,17 +1,15 @@
 ﻿namespace ScTools.GameFiles
 {
     using System;
-    using System.Linq;
     using System.Collections.Generic;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using CodeWalker.GameFiles;
     using System.Text;
-    using System.Collections;
 
     internal class Script : ResourceFileBase
     {
-        private const uint MaxPageLength = 0x4000;
+        public const uint MaxPageLength = 0x4000;
 
         public override long BlockLength => 128;
 
@@ -20,16 +18,16 @@
         public uint Hash { get; set; }
         public uint CodeLength { get; set; }
         public uint ArgsCount { get; set; }
-        public uint LocalsCount { get; set; }
+        public uint StaticsCount { get; set; }
         public uint GlobalsLengthAndBlock { get; set; }
         public uint NativesCount { get; set; }
-        public ulong LocalsPointer { get; set; }
+        public ulong StaticsPointer { get; set; }
         public ulong GlobalsPagesPointer { get; set; }
         public ulong NativesPointer { get; set; }
         public long Unknown_48h { get; set; }
         public long Unknown_50h { get; set; }
         public uint NameHash { get; set; }
-        public uint NumRefs { get; set; } // always 1
+        public uint NumRefs { get; set; } = 1; // always 1
         public ulong NamePointer { get; set; }
         public ulong StringsPagesPointer { get; set; }
         public uint StringsLength { get; set; }
@@ -38,7 +36,7 @@
 
         // reference data
         public byte[][] CodePages { get; set; }
-        public ScriptValue[] Locals { get; set; }
+        public ScriptValue[] Statics { get; set; }
         public ScriptValue[][] GlobalsPages { get; set; }
         public ulong[] Natives { get; set; }
         public string Name { get; set; }
@@ -46,7 +44,7 @@
 
         private ResourceSystemStructBlock<byte>[] codePagesBlocks;
         private ResourceSystemStructBlock<ulong> codePagesPointersBlock;
-        private ResourceSystemStructBlock<ScriptValue> localsBlock;
+        private ResourceSystemStructBlock<ScriptValue> staticsBlock;
         private ResourceSystemStructBlock<ScriptValue>[] globalsPagesBlocks;
         private ResourceSystemStructBlock<ulong> globalsPagesPointersBlock;
         private ResourceSystemStructBlock<ulong> nativesBlock;
@@ -63,10 +61,10 @@
             Hash = reader.ReadUInt32();
             CodeLength = reader.ReadUInt32();
             ArgsCount = reader.ReadUInt32();
-            LocalsCount = reader.ReadUInt32();
+            StaticsCount = reader.ReadUInt32();
             GlobalsLengthAndBlock = reader.ReadUInt32();
             NativesCount = reader.ReadUInt32();
-            LocalsPointer = reader.ReadUInt64();
+            StaticsPointer = reader.ReadUInt64();
             GlobalsPagesPointer = reader.ReadUInt64();
             NativesPointer = reader.ReadUInt64();
             Unknown_48h = reader.ReadInt64();
@@ -90,7 +88,7 @@
                 CodePages[i] = reader.ReadBytesAt(codePagesPtrs[i], pageSize, false);
             }
 
-            Locals = reader.ReadStructsAt<ScriptValue>(LocalsPointer, LocalsCount);
+            Statics = reader.ReadStructsAt<ScriptValue>(StaticsPointer, StaticsCount);
 
             uint globalsPagesCount = ((GlobalsLengthAndBlock & 0x3FFFF) + 0x3FFF) >> 14;
             ulong[] globalsPagesPtrs = reader.ReadUlongsAt(GlobalsPagesPointer, globalsPagesCount, false);
@@ -123,31 +121,38 @@
             // update structure data
             CodePagesPointer = (ulong)(codePagesPointersBlock?.FilePosition ?? 0);
             CodeLength = 0;
-            for (int i = 0; i < codePagesPointersBlock.Items.Length; i++)
+            if (codePagesPointersBlock != null && codePagesBlocks != null)
             {
-                codePagesPointersBlock.Items[i] = (ulong)codePagesBlocks[i].FilePosition;
-                CodeLength += (uint)codePagesBlocks[i].ItemCount;
+                for (int i = 0; i < codePagesPointersBlock.Items.Length; i++)
+                {
+                    codePagesPointersBlock.Items[i] = (ulong)codePagesBlocks[i].FilePosition;
+                    CodeLength += (uint)codePagesBlocks[i].ItemCount;
+                }
             }
-            LocalsPointer = (ulong)(localsBlock?.FilePosition ?? 0);
-            LocalsCount = (uint)(localsBlock?.ItemCount ?? 0);
+            StaticsPointer = (ulong)(staticsBlock?.FilePosition ?? 0);
+            StaticsCount = (uint)(staticsBlock?.ItemCount ?? 0);
             GlobalsPagesPointer = (ulong)(globalsPagesPointersBlock?.FilePosition ?? 0);
-            Console.WriteLine("bef GlobalsLengthAndBlock = {0}", GlobalsLengthAndBlock);
             GlobalsLengthAndBlock &= 0xFFFC0000; // keep the global block index
-            for (int i = 0; i < globalsPagesPointersBlock.Items.Length; i++)
+            if (globalsPagesPointersBlock != null && globalsPagesBlocks != null)
             {
-                globalsPagesPointersBlock.Items[i] = (ulong)globalsPagesBlocks[i].FilePosition;
-                GlobalsLengthAndBlock += (uint)globalsPagesBlocks[i].ItemCount;
+                for (int i = 0; i < globalsPagesPointersBlock.Items.Length; i++)
+                {
+                    globalsPagesPointersBlock.Items[i] = (ulong)globalsPagesBlocks[i].FilePosition;
+                    GlobalsLengthAndBlock += (uint)globalsPagesBlocks[i].ItemCount;
+                }
             }
-            Console.WriteLine("aft GlobalsLengthAndBlock = {0}", GlobalsLengthAndBlock);
             NativesPointer = (ulong)(nativesBlock?.FilePosition ?? 0);
             NativesCount = (uint)(nativesBlock?.ItemCount ?? 0);
             NamePointer = (ulong)(nameBlock?.FilePosition ?? 0);
             StringsPagesPointer = (ulong)(stringsPagesPointersBlock?.FilePosition ?? 0);
             StringsLength = 0;
-            for (int i = 0; i < stringsPagesPointersBlock.Items.Length; i++)
+            if (stringsPagesPointersBlock != null && stringsPagesBlocks != null)
             {
-                stringsPagesPointersBlock.Items[i] = (ulong)stringsPagesBlocks[i].FilePosition;
-                StringsLength += (uint)stringsPagesBlocks[i].ItemCount;
+                for (int i = 0; i < stringsPagesPointersBlock.Items.Length; i++)
+                {
+                    stringsPagesPointersBlock.Items[i] = (ulong)stringsPagesBlocks[i].FilePosition;
+                    StringsLength += (uint)stringsPagesBlocks[i].ItemCount;
+                }
             }
 
             // write structure data
@@ -155,10 +160,10 @@
             writer.Write(Hash);
             writer.Write(CodeLength);
             writer.Write(ArgsCount);
-            writer.Write(LocalsCount);
+            writer.Write(StaticsCount);
             writer.Write(GlobalsLengthAndBlock);
             writer.Write(NativesCount);
-            writer.Write(LocalsPointer);
+            writer.Write(StaticsPointer);
             writer.Write(GlobalsPagesPointer);
             writer.Write(NativesPointer);
             writer.Write(Unknown_48h);
@@ -170,6 +175,7 @@
             writer.Write(StringsLength);
             writer.Write(Unknown_74h);
             writer.Write(Unknown_78h);
+            Console.WriteLine("ENd:  " + writer.Position);
         }
 
         public override IResourceBlock[] GetReferences()
@@ -194,14 +200,14 @@
                 codePagesPointersBlock = null;
             }
 
-            if (Locals != null)
+            if (Statics != null)
             {
-                localsBlock = new ResourceSystemStructBlock<ScriptValue>(Locals);
-                list.Add(localsBlock);
+                staticsBlock = new ResourceSystemStructBlock<ScriptValue>(Statics);
+                list.Add(staticsBlock);
             }
             else
             {
-                localsBlock = null;
+                staticsBlock = null;
             }
 
             if (GlobalsPages != null)
@@ -282,6 +288,11 @@
 
         public IEnumerable<uint> StringIds()
         {
+            if (StringsPages == null)
+            {
+                yield break;
+            }
+
             uint pageIndex = 0;
             uint stringId = 0;
             bool inString = false;
