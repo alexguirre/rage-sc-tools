@@ -210,6 +210,18 @@
         public ref byte IP(uint ip) => ref CodePages[(int)(ip >> 14)].Data[ip & 0x3FFF];
         public ref T IP<T>(uint ip) where T : unmanaged => ref Unsafe.As<byte, T>(ref IP(ip));
 
+        public ulong NativeHash(int index)
+        {
+            if (index < 0 ||index >= NativesCount)
+            {
+                throw new IndexOutOfRangeException();
+            }
+
+            // from: https://gtamods.com/wiki/Script_Container
+            byte rotate = (byte)(((uint)index + CodeLength) & 0x3F);
+            return Natives[index] << rotate | Natives[index] >> (64 - rotate);
+        }
+
         public string String(uint id) => Encoding.UTF8.GetString(StringChars(id));
         public unsafe ReadOnlySpan<byte> StringChars(uint id)
         {

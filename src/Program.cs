@@ -161,9 +161,11 @@
             w.WriteLine("Natives Count = {0}", sc.NativesCount);
             if (sc.Natives != null)
             {
+                int i = 0;
                 foreach (ulong hash in sc.Natives)
                 {
-                    w.WriteLine("\t{0:X16}", hash);
+                    w.WriteLine("\t{0:X16} -> {1:X16}", hash, sc.NativeHash(i));
+                    i++;
                 }
             }
             w.WriteLine("Code Length = {0}", sc.CodeLength);
