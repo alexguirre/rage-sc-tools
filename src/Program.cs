@@ -83,6 +83,10 @@
             string outputPath = Path.ChangeExtension(input.FullName, "ysc");
             byte[] data = ysc.Save(Path.GetFileName(outputPath));
             File.WriteAllBytes(outputPath, data);
+
+            outputPath = Path.ChangeExtension(input.FullName, "unencrypted.ysc");
+            data = ysc.Save();
+            File.WriteAllBytes(outputPath, data);
         }
 
         private static void Disassemble(FileInfo input, FileInfo output)
