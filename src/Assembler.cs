@@ -53,9 +53,9 @@
                 ParseLine(line);
             }
 
-            sc.CodePages = new ResourcePointerArray64<ScriptPage>()
+            sc.CodePages = new ScriptPageArray<byte>
             {
-                data_items = code.ToPages(out uint codeLength),
+                Items = code.ToPages(out uint codeLength),
             };
             sc.CodeLength = codeLength;
             code = null;
@@ -410,28 +410,27 @@
                 relativeTargetLabels.Clear();
             }
 
-            public ScriptPage[] ToPages(out uint codeLength)
+            public ScriptPage<byte>[] ToPages(out uint codeLength)
             {
                 FixupTargetLabels();
                 FixupRelativeTargetLabels();
 
-                ScriptPage[] p = new ScriptPage[pages.Count];
-                for (int i = 0; i < pages.Count /*- 1*/; i++)
+                var p = new ScriptPage<byte>[pages.Count];
+                for (int i = 0; i < pages.Count - 1; i++)
                 {
-                    p[i] = new ScriptPage();
-                    p[i].Data = NewPage();
+                    p[i] = new ScriptPage<byte> { Data = NewPage() };
                     pages[i].CopyTo(p[i].Data, 0);
                 }
 
-                //p[^1] = new byte[length & 0x3FFF];
-                //Array.Copy(pages[^1], p[^1], p[^1].Length);
+                p[^1] = new ScriptPage<byte> { Data = NewPage(length & 0x3FFF) };
+                Array.Copy(pages[^1], p[^1].Data, p[^1].Data.Length);
 
                 codeLength = length;
                 return p;
             }
 
             private void AddPage() => pages.Add(NewPage());
-            private byte[] NewPage() => new byte[Script.MaxPageLength];
+            private byte[] NewPage(uint size = Script.MaxPageLength) => new byte[size];
         }
 
         private static TokenEnumerable Tokenize(ReadOnlySpan<char> line) => new TokenEnumerable(line);

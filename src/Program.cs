@@ -135,20 +135,20 @@
                     w.WriteLine("\t[{0}] = {1:X16} ({2}) ({3})", i++, v.AsInt64, v.AsInt32, v.AsFloat);
                 }
             }
-            w.WriteLine("Globals Length = {0}", sc.GlobalsLengthAndBlock);
             {
-                uint globalBlock = sc.GlobalsLengthAndBlock >> 18;
-                w.WriteLine("Globals Block = {0}", globalBlock);
+                w.WriteLine("Globals Length And Block = {0}", sc.GlobalsLengthAndBlock);
+                w.WriteLine("Globals Length           = {0}", sc.GlobalsLength);
+                w.WriteLine("Globals Block            = {0}", sc.GlobalsBlock);
 
                 if (sc.GlobalsPages != null)
                 {
                     uint pageIndex = 0;
-                    foreach (ScriptValue[] page in sc.GlobalsPages)
+                    foreach (var page in sc.GlobalsPages)
                     {
                         uint i = 0;
-                        foreach (ScriptValue g in page)
+                        foreach (ScriptValue g in page.Data)
                         {
-                            uint globalId = (globalBlock << 18) | (pageIndex << 14) | i;
+                            uint globalId = (sc.GlobalsBlock << 18) | (pageIndex << 14) | i;
 
                             w.WriteLine("\t[{0}] = {1:X16} ({2}) ({3})", globalId, g.AsInt64, g.AsInt32, g.AsFloat);
 

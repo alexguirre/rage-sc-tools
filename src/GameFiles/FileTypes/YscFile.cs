@@ -33,8 +33,6 @@
                 throw new Exception("File entry wasn't a resource! (is it binary data?)");
             }
 
-            Console.WriteLine("ResEntry: Name={0} IsEncrypted={1}, Version={2}, SystemSize={3} ({4}, {5}), GraphicsSize={6} ({7})",
-                resEntry.Name, resEntry.IsEncrypted, resEntry.Version, resEntry.SystemSize, resEntry.SystemFlags.Value, resEntry.SystemFlags.BaseShift, resEntry.GraphicsSize, resEntry.GraphicsFlags.Value);
             ResourceDataReader rd = new ResourceDataReader(resEntry, data);
 
             Script = rd.ReadBlock<Script>();
