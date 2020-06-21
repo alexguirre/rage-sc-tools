@@ -243,6 +243,40 @@
                 NoMoreTokens(i, t);
             };
 
+
+            private const char TargetLabelPrefix = '@';
+            public static InstructionBuilder I_relLabel(byte v)
+            => (i, t, l, b) =>
+            {
+                var opStr = t.MoveNext() ? t.Current : throw new AssemblerSyntaxException($"{i.Mnemonic} instruction is missing operand");
+                if (opStr[0] != TargetLabelPrefix)
+                {
+                    throw new AssemblerSyntaxException($"Operand of {i.Mnemonic} instruction is not a valid label");
+                }
+
+                b.BeginInstruction(l);
+                b.Add(v);
+                b.AddRelativeTarget(opStr.Slice(1).ToString());
+                b.EndInstruction();
+                NoMoreTokens(i, t);
+            };
+
+            public static InstructionBuilder I_absLabel(byte v)
+            => (i, t, l, b) =>
+            {
+                var opStr = t.MoveNext() ? t.Current : throw new AssemblerSyntaxException($"{i.Mnemonic} instruction is missing operand");
+                if (opStr[0] != TargetLabelPrefix)
+                {
+                    throw new AssemblerSyntaxException($"Operand of {i.Mnemonic} instruction is not a valid label");
+                }
+
+                b.BeginInstruction(l);
+                b.Add(v);
+                b.AddTarget(opStr.Slice(1).ToString());
+                b.EndInstruction();
+                NoMoreTokens(i, t);
+            };
+
             public static Inst[] Sort(Inst[] instructions)
             {
                 // sort the instructions based on MnemonicHash so we can do binary search later
@@ -385,25 +419,15 @@
             new Inst("GLOBAL_U16", Inst.I_u16(0x52)),
             new Inst("GLOBAL_U16_LOAD", Inst.I_u16(0x53)),
             new Inst("GLOBAL_U16_STORE", Inst.I_u16(0x54)),
-            // ... // TODO: jump instructions
-            new Inst(
-                "CALL",
-                (i, t, l, b) =>
-                {
-                    const char TargetLabelPrefix = '@';
-
-                    var op1Str = t.MoveNext() ? t.Current : throw new AssemblerSyntaxException("CALL instruction is missing operand 1");
-                    if (op1Str[0]  != TargetLabelPrefix)
-                    {
-                        throw new AssemblerSyntaxException("Operand 1 of CALL instruction is not a valid label");
-                    }
-
-                    b.BeginInstruction(l);
-                    b.Add(0x5D);
-                    b.AddTarget(op1Str.Slice(1).ToString());
-                    b.EndInstruction();
-                    Inst.NoMoreTokens(i, t);
-                }),
+            new Inst("J", Inst.I_relLabel(0x55)),
+            new Inst("JZ", Inst.I_relLabel(0x56)),
+            new Inst("IEQ_JZ", Inst.I_relLabel(0x57)),
+            new Inst("INE_JZ", Inst.I_relLabel(0x58)),
+            new Inst("IGT_JZ", Inst.I_relLabel(0x59)),
+            new Inst("IGE_JZ", Inst.I_relLabel(0x5A)),
+            new Inst("ILT_JZ", Inst.I_relLabel(0x5B)),
+            new Inst("ILE_JZ", Inst.I_relLabel(0x5C)),
+            new Inst("CALL", Inst.I_absLabel(0x5D)),
             new Inst("GLOBAL_U24", Inst.I_u24(0x5E)),
             new Inst("GLOBAL_U24_LOAD", Inst.I_u24(0x5F)),
             new Inst("GLOBAL_U24_STORE", Inst.I_u24(0x60)),

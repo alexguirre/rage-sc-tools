@@ -240,6 +240,7 @@
             private readonly List<byte[]> pages = new List<byte[]>();
             private readonly List<(string Label, uint IP)> labels = new List<(string, uint)>();
             private readonly List<(string TargetLabel, uint IP)> targetLabels = new List<(string, uint)>();
+            private readonly List<(string TargetLabel, uint IP)> relativeTargetLabels = new List<(string, uint)>();
             private uint length = 0;
             private readonly List<byte> buffer = new List<byte>();
 
@@ -315,8 +316,23 @@
             {
                 Debug.Assert(inInstruction);
 
+                // TODO: what happens if this is done in the page boundary where the instruction doesn't fit?
+                // the IP value may no longer match the instruction position and FixupTargetLabels will write the address in the wrong position
                 targetLabels.Add((label, length + (uint)buffer.Count));
                 buffer.Add(0);
+                buffer.Add(0);
+                buffer.Add(0);
+
+                Debug.Assert(buffer.Count < Script.MaxPageLength / 2, "instruction too long");
+            }
+
+            public void AddRelativeTarget(string label)
+            {
+                Debug.Assert(inInstruction);
+
+                // TODO: what happens if this is done in the page boundary where the instruction doesn't fit?
+                // the IP value may no longer match the instruction position and FixupRelativeTargetLabels will write the address in the wrong position
+                relativeTargetLabels.Add((label, length + (uint)buffer.Count));
                 buffer.Add(0);
                 buffer.Add(0);
 
@@ -373,9 +389,31 @@
                 targetLabels.Clear();
             }
 
+            private void FixupRelativeTargetLabels()
+            {
+                foreach (var (targetLabel, targetIP) in relativeTargetLabels)
+                {
+                    var (label, ip) = labels.Find(l => l.Label == targetLabel);
+                    if (label == null)
+                    {
+                        throw new AssemblerSyntaxException($"Unknown label '{targetLabel}'");
+                    }
+
+                    byte[] targetPage = pages[(int)(targetIP >> 14)];
+                    uint targetOffset = targetIP & 0x3FFF;
+
+                    short relIP = (short)((int)ip - (int)(targetIP + 2));
+                    targetPage[targetOffset + 0] = (byte)(relIP & 0xFF);
+                    targetPage[targetOffset + 1] = (byte)(relIP >> 8);
+                }
+
+                relativeTargetLabels.Clear();
+            }
+
             public ScriptPage[] ToPages(out uint codeLength)
             {
                 FixupTargetLabels();
+                FixupRelativeTargetLabels();
 
                 ScriptPage[] p = new ScriptPage[pages.Count];
                 for (int i = 0; i < pages.Count /*- 1*/; i++)
