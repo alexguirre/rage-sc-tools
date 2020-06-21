@@ -6,6 +6,7 @@
     using System.Globalization;
     using System.IO;
     using System.Threading;
+    using CodeWalker.GameFiles;
     using ScTools.GameFiles;
 
     internal static class Program
@@ -51,49 +52,37 @@
             };
             assemble.Handler = CommandHandler.Create<FileInfo>(Assemble);
 
-            Command loadandsave = new Command("loadandsave")
-            {
-                new Argument<FileInfo>(
-                    "input",
-                    "The input YSC file.")
-                    .ExistingOnly(),
-            };
-            loadandsave.Handler = CommandHandler.Create<FileInfo>(LoadAndSave);
 
             rootCmd.AddCommand(dump);
             rootCmd.AddCommand(disassemble);
             rootCmd.AddCommand(assemble);
-            rootCmd.AddCommand(loadandsave);
 
             return rootCmd.InvokeAsync(args).Result;
-            //return rootCmd.InvokeAsync("loadandsave .\\standard_global_init.ysc").Result;
         }
 
-        private static void LoadAndSave(FileInfo input)
+        private static void LoadGTA5Keys()
         {
-            // CRASH in sub_11FE114
-
-            YscFile ysc = new YscFile();
-            ysc.Load(File.ReadAllBytes(input.FullName));
-            //Dump(ysc.Script, Console.Out);
-            Console.WriteLine("===========================");
-            byte[] copy = ysc.Save();
-            YscFile copyYsc = new YscFile();
-            copyYsc.Load(copy);
-            //Dump(ysc.Script, Console.Out);
-
-            File.WriteAllBytes(Path.ChangeExtension(input.FullName, "dup.ysc"), copy);
+            string path = ".\\Keys";
+            GTA5Keys.PC_AES_KEY = File.ReadAllBytes(path + "\\gtav_aes_key.dat");
+            GTA5Keys.PC_NG_KEYS = CryptoIO.ReadNgKeys(path + "\\gtav_ng_key.dat");
+            GTA5Keys.PC_NG_DECRYPT_TABLES = CryptoIO.ReadNgTables(path + "\\gtav_ng_decrypt_tables.dat");
+            GTA5Keys.PC_NG_ENCRYPT_TABLES = CryptoIO.ReadNgTables(path + "\\gtav_ng_encrypt_tables.dat");
+            GTA5Keys.PC_NG_ENCRYPT_LUTs = CryptoIO.ReadNgLuts(path + "\\gtav_ng_encrypt_luts.dat");
+            GTA5Keys.PC_LUT = File.ReadAllBytes(path + "\\gtav_hash_lut.dat");
         }
 
         private static void Assemble(FileInfo input)
         {
+            LoadGTA5Keys();
+
             YscFile ysc = new YscFile();
 
             Script sc = new Assembler().Assemble(input);
             ysc.Script = sc;
 
-            byte[] data = ysc.Save();
-            File.WriteAllBytes(Path.ChangeExtension(input.FullName, "ysc"), data);
+            string outputPath = Path.ChangeExtension(input.FullName, "ysc");
+            byte[] data = ysc.Save(Path.GetFileName(outputPath));
+            File.WriteAllBytes(outputPath, data);
         }
 
         private static void Disassemble(FileInfo input, FileInfo output)

@@ -53,7 +53,10 @@
                 ParseLine(line);
             }
 
-            sc.CodePages = code.ToPages(out uint codeLength);
+            sc.CodePages = new ResourcePointerArray64<ScriptPage>()
+            {
+                data_items = code.ToPages(out uint codeLength),
+            };
             sc.CodeLength = codeLength;
             code = null;
         }
@@ -308,19 +311,20 @@
                 targetLabels.Clear();
             }
 
-            public byte[][] ToPages(out uint codeLength)
+            public ScriptPage[] ToPages(out uint codeLength)
             {
                 FixupTargetLabels();
 
-                byte[][] p = new byte[pages.Count][];
-                for (int i = 0; i < pages.Count - 1; i++)
+                ScriptPage[] p = new ScriptPage[pages.Count];
+                for (int i = 0; i < pages.Count /*- 1*/; i++)
                 {
-                    p[i] = NewPage();
-                    pages[i].CopyTo(p[i], 0);
+                    p[i] = new ScriptPage();
+                    p[i].Data = NewPage();
+                    pages[i].CopyTo(p[i].Data, 0);
                 }
 
-                p[^1] = new byte[length & 0x3FFF];
-                Array.Copy(pages[^1], p[^1], p[^1].Length);
+                //p[^1] = new byte[length & 0x3FFF];
+                //Array.Copy(pages[^1], p[^1], p[^1].Length);
 
                 codeLength = length;
                 return p;
