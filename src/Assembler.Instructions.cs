@@ -285,7 +285,7 @@
             new Inst("PUSH_CONST_U8_U8_U8", Inst.I_b_b_b(0x27)),
             new Inst("PUSH_CONST_U32", Inst.I_u32(0x28)),
             new Inst("PUSH_CONST_F", Inst.I_f(0x29)),
-            new Inst("DUB", Inst.I(0x2A)),
+            new Inst("DUP", Inst.I(0x2A)),
             new Inst("DROP", Inst.I(0x2B)),
             //new Inst("NATIVE", ), // TODO: NATIVE instruction
             new Inst(
