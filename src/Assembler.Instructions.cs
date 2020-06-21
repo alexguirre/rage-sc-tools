@@ -277,6 +277,54 @@
                 NoMoreTokens(i, t);
             };
 
+            public static InstructionBuilder I_enter(byte v)
+            => (i, t, l, b) =>
+            {
+                var op1Str = t.MoveNext() ? t.Current : throw new AssemblerSyntaxException($"{i.Mnemonic} instruction is missing operand 1");
+                var op2Str = t.MoveNext() ? t.Current : throw new AssemblerSyntaxException($"{i.Mnemonic} instruction is missing operand 2");
+                byte op1 = 0;
+                try
+                {
+                    op1 = byte.Parse(op1Str);
+                }
+                catch (Exception e) when (e is FormatException || e is OverflowException)
+                {
+                    throw new AssemblerSyntaxException($"Operand 1 of {i.Mnemonic} instruction is not a valid uint8 value", e);
+                }
+                ushort op2 = 0;
+                try
+                {
+                    op2 = ushort.Parse(op2Str);
+                }
+                catch (Exception e) when (e is FormatException || e is OverflowException)
+                {
+                    throw new AssemblerSyntaxException($"Operand 2 of {i.Mnemonic} instruction is not a valid uint16 value", e);
+                }
+
+                b.BeginInstruction(l);
+                b.Add(v);
+                b.Add(op1);
+                b.Add(op2);
+                if (!string.IsNullOrWhiteSpace(l))
+                {
+                    // if there is label, write it as the function name
+                    // TODO: option to disable writing the function name
+                    int length = Math.Min(l.Length, 254);
+                    b.Add((byte)(length + 1));
+                    for (int j = 0; j < length; j++)
+                    {
+                        b.Add((byte)l[j]);
+                    }
+                    b.Add(0); // null terminator
+                }
+                else
+                {
+                    b.Add(0);
+                }
+                b.EndInstruction();
+                NoMoreTokens(i, t);
+            };
+
             public static Inst[] Sort(Inst[] instructions)
             {
                 // sort the instructions based on MnemonicHash so we can do binary search later
@@ -332,54 +380,7 @@
             new Inst("DUP", Inst.I(0x2A)),
             new Inst("DROP", Inst.I(0x2B)),
             //new Inst("NATIVE", ), // TODO: NATIVE instruction
-            new Inst(
-                "ENTER",
-                (i, t, l, b) =>
-                {
-                    var op1Str = t.MoveNext() ? t.Current : throw new AssemblerSyntaxException("ENTER instruction is missing operand 1");
-                    var op2Str = t.MoveNext() ? t.Current : throw new AssemblerSyntaxException("ENTER instruction is missing operand 2");
-                    byte op1 = 0;
-                    try
-                    {
-                        op1 = byte.Parse(op1Str);
-                    }
-                    catch (Exception e) when (e is FormatException || e is OverflowException)
-                    {
-                        throw new AssemblerSyntaxException("Operand 1 of ENTER instruction is not a valid uint8 value", e);
-                    }
-                    ushort op2 = 0;
-                    try
-                    {
-                        op2 = ushort.Parse(op2Str);
-                    }
-                    catch (Exception e) when (e is FormatException || e is OverflowException)
-                    {
-                        throw new AssemblerSyntaxException("Operand 2 of ENTER instruction is not a valid uint16 value", e);
-                    }
-
-                    b.BeginInstruction(l);
-                    b.Add(0x2D);
-                    b.Add(op1);
-                    b.Add(op2);
-                    if (!string.IsNullOrWhiteSpace(l))
-                    {
-                        // if there is label, write it as the function name
-                        // TODO: option to disable writing the function name
-                        int length = Math.Min(l.Length, 254);
-                        b.Add((byte)(length + 1));
-                        for (int j = 0; j < length; j++)
-                        {
-                            b.Add((byte)l[j]);
-                        }
-                        b.Add(0); // null terminator
-                    }
-                    else
-                    {
-                        b.Add(0);
-                    }
-                    b.EndInstruction();
-                    Inst.NoMoreTokens(i, t);
-                }),
+            new Inst("ENTER", Inst.I_enter(0x2D)),
             new Inst("LEAVE", Inst.I_b_b(0x2E)),
             new Inst("LOAD", Inst.I(0x2F)),
             new Inst("STORE", Inst.I(0x30)),
