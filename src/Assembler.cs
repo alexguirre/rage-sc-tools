@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
+    using System.Linq;
     using CodeWalker.GameFiles;
     using ScTools.GameFiles;
 
@@ -13,7 +14,8 @@
         private const char CommentChar = ';';
 
         private Script sc;
-        private HashSet<string> labels = new HashSet<string>();
+        private readonly List<ulong> nativeHashes = new List<ulong>();
+        private readonly HashSet<string> labels = new HashSet<string>();
         private string lastLabel = null;
         private CodeBuilder code = null;
 
@@ -41,6 +43,7 @@
 
         private void Parse(FileInfo inputFile)
         {
+            nativeHashes.Clear();
             labels.Clear();
             lastLabel = null;
             code = new CodeBuilder();
@@ -58,6 +61,18 @@
                 Items = code.ToPages(out uint codeLength),
             };
             sc.CodeLength = codeLength;
+
+            static ulong RotateHash(ulong hash, int index, uint codeLength)
+            {
+                byte rotate = (byte)(((uint)index + codeLength) & 0x3F);
+                return hash >> rotate | hash << (64 - rotate);
+            }
+
+            sc.Natives = nativeHashes.Select((h, i) => RotateHash(h, i, codeLength)).ToArray();
+            sc.NativesCount = (uint)sc.Natives.Length;
+
+            Debug.Assert(sc.Natives.Select((h, i) => sc.NativeHash(i) == nativeHashes[i]).All(b => b));
+
             code = null;
         }
 
@@ -117,6 +132,7 @@
         {
             const string DirectiveName = "NAME";
             const string DirectiveStatics = "STATICS";
+            const string DirectiveNativeDef = "NATIVE_DEF";
 
             static bool Equals(ReadOnlySpan<char> s, string str) => s.Equals(str, StringComparison.OrdinalIgnoreCase);
 
@@ -146,6 +162,20 @@
                     throw new AssemblerSyntaxException("Statics count token is not a valid uint32 value", e);
                 }
                 SetStaticsCount(count);
+            }
+            else if (Equals(directive, DirectiveNativeDef))
+            {
+                var hashStr = tokens.MoveNext() ? tokens.Current : throw new AssemblerSyntaxException("Missing native hash token");
+                ulong hash;
+                try
+                {
+                    hash = ulong.Parse(hashStr, System.Globalization.NumberStyles.HexNumber);
+                }
+                catch (Exception e) when (e is FormatException || e is OverflowException)
+                {
+                    throw new AssemblerSyntaxException("Native hash token is not a valid uint64 hex value", e);
+                }
+                AddNative(hash);
             }
             else
             {
@@ -233,6 +263,18 @@
 
             sc.Statics = count == 0 ? null : new ScriptValue[count];
             sc.StaticsCount = count;
+        }
+
+        private void AddNative(ulong hash)
+        {
+            Debug.Assert(sc != null);
+
+            if (nativeHashes.Contains(hash))
+            {
+                throw new AssemblerSyntaxException($"Native hash {hash:X16} is repeated");
+            }
+
+            nativeHashes.Add(hash);
         }
 
         private class CodeBuilder
