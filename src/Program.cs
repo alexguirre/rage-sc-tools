@@ -19,16 +19,18 @@
 
             Command dump = new Command("dump")
             {
-                new Argument<FileInfo>(
-                    "input",
-                    "The input YSC file.")
-                    .ExistingOnly(),
+                new Argument<FileInfo>("input", "The input YSC file.").ExistingOnly(),
                 new Option<FileInfo>(
                     new[] { "--output", "-o" },
                     "The output file. If not specified, the dump is printed to the console.")
                     .LegalFilePathsOnly(),
+                new Option("--no-metadata", "Do not include the script metadata."),
+                new Option("--no-disassembly", "Do not include the script disassembly."),
+                new Option("--no-bytes", "Do not include the instruction bytes in the disassembly."),
+                new Option("--no-offsets", "Do not include the instruction offsets in the disassembly."),
+                new Option("--no-instructions", "Do not include the instruction textual representation in the disassembly."),
             };
-            dump.Handler = CommandHandler.Create<FileInfo, FileInfo>(Dump);
+            dump.Handler = CommandHandler.Create<DumpOptions>(Dump);
 
             Command disassemble = new Command("disassemble")
             {
@@ -104,79 +106,97 @@
             new Disassembler(sc).Disassemble(w);
         }
 
-        private static void Dump(FileInfo input, FileInfo output)
+        private class DumpOptions
         {
-            byte[] fileData = File.ReadAllBytes(input.FullName);
+            public FileInfo Input { get; set; }
+            public FileInfo Output { get; set; }
+            public bool NoMetadata { get; set; }
+            public bool NoDisassembly { get; set; }
+            public bool NoBytes { get; set; }
+            public bool NoOffsets { get; set; }
+            public bool NoInstructions { get; set; }
+        }
+
+        private static void Dump(DumpOptions o)
+        {
+            byte[] fileData = File.ReadAllBytes(o.Input.FullName);
 
             YscFile ysc = new YscFile();
             ysc.Load(fileData);
 
             Script sc = ysc.Script;
 
-            using TextWriter w = output switch
+            using TextWriter w = o.Output switch
             {
                 null => Console.Out,
-                _ => new StreamWriter(output.Open(FileMode.Create))
+                _ => new StreamWriter(o.Output.Open(FileMode.Create))
             };
 
-            Dump(sc, w);
+            Dump(sc, w, o);
         }
 
-        private static void Dump(Script sc, TextWriter w)
+        private static void Dump(Script sc, TextWriter w, DumpOptions o)
         {
-            w.WriteLine("Name = {0} (0x{1:X8})", sc.Name, sc.NameHash);
-            w.WriteLine("Hash = 0x{0:X8}", sc.Hash);
-            w.WriteLine("Statics Count = {0}", sc.StaticsCount);
-            if (sc.Statics != null)
+            if (!o.NoMetadata)
             {
-                int i = 0;
-                foreach (ScriptValue v in sc.Statics)
+                w.WriteLine("Name = {0} (0x{1:X8})", sc.Name, sc.NameHash);
+                w.WriteLine("Hash = 0x{0:X8}", sc.Hash);
+                w.WriteLine("Statics Count = {0}", sc.StaticsCount);
+                if (sc.Statics != null)
                 {
-                    w.WriteLine("\t[{0}] = {1:X16} ({2}) ({3})", i++, v.AsInt64, v.AsInt32, v.AsFloat);
-                }
-            }
-            {
-                w.WriteLine("Globals Length And Block = {0}", sc.GlobalsLengthAndBlock);
-                w.WriteLine("Globals Length           = {0}", sc.GlobalsLength);
-                w.WriteLine("Globals Block            = {0}", sc.GlobalsBlock);
-
-                if (sc.GlobalsPages != null)
-                {
-                    uint pageIndex = 0;
-                    foreach (var page in sc.GlobalsPages)
+                    int i = 0;
+                    foreach (ScriptValue v in sc.Statics)
                     {
-                        uint i = 0;
-                        foreach (ScriptValue g in page.Data)
-                        {
-                            uint globalId = (sc.GlobalsBlock << 18) | (pageIndex << 14) | i;
-
-                            w.WriteLine("\t[{0}] = {1:X16} ({2}) ({3})", globalId, g.AsInt64, g.AsInt32, g.AsFloat);
-
-                            i++;
-                        }
-                        pageIndex++;
+                        w.WriteLine("\t[{0}] = {1:X16} ({2}) ({3})", i++, v.AsInt64, v.AsInt32, v.AsFloat);
                     }
                 }
-            }
-            w.WriteLine("Natives Count = {0}", sc.NativesCount);
-            if (sc.Natives != null)
-            {
-                int i = 0;
-                foreach (ulong hash in sc.Natives)
                 {
-                    w.WriteLine("\t{0:X16} -> {1:X16}", hash, sc.NativeHash(i));
-                    i++;
+                    w.WriteLine("Globals Length And Block = {0}", sc.GlobalsLengthAndBlock);
+                    w.WriteLine("Globals Length           = {0}", sc.GlobalsLength);
+                    w.WriteLine("Globals Block            = {0}", sc.GlobalsBlock);
+
+                    if (sc.GlobalsPages != null)
+                    {
+                        uint pageIndex = 0;
+                        foreach (var page in sc.GlobalsPages)
+                        {
+                            uint i = 0;
+                            foreach (ScriptValue g in page.Data)
+                            {
+                                uint globalId = (sc.GlobalsBlock << 18) | (pageIndex << 14) | i;
+
+                                w.WriteLine("\t[{0}] = {1:X16} ({2}) ({3})", globalId, g.AsInt64, g.AsInt32, g.AsFloat);
+
+                                i++;
+                            }
+                            pageIndex++;
+                        }
+                    }
+                }
+                w.WriteLine("Natives Count = {0}", sc.NativesCount);
+                if (sc.Natives != null)
+                {
+                    int i = 0;
+                    foreach (ulong hash in sc.Natives)
+                    {
+                        w.WriteLine("\t{0:X16} -> {1:X16}", hash, sc.NativeHash(i));
+                        i++;
+                    }
+                }
+                w.WriteLine("Code Length = {0}", sc.CodeLength);
+                w.WriteLine("Num Refs = {0}", sc.NumRefs);
+                w.WriteLine("Strings Length = {0}", sc.StringsLength);
+                foreach (uint sid in sc.StringIds())
+                {
+                    w.WriteLine("\t[{0}] = {1}", sid, sc.String(sid));
                 }
             }
-            w.WriteLine("Code Length = {0}", sc.CodeLength);
-            w.WriteLine("Num Refs = {0}", sc.NumRefs);
-            w.WriteLine("Strings Length = {0}", sc.StringsLength);
-            foreach (uint sid in sc.StringIds())
+
+            if (!o.NoDisassembly)
             {
-                w.WriteLine("\t[{0}] = {1}", sid, sc.String(sid));
+                w.WriteLine("Disassembly:");
+                new Disassembler(sc).DisassembleRaw(w, showOffsets: !o.NoOffsets, showBytes: !o.NoBytes, showInstructions: !o.NoInstructions);
             }
-            w.WriteLine("Disassembly:");
-            new Disassembler(sc).Disassemble(w);
         }
     }
 }

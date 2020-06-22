@@ -9,18 +9,17 @@
     internal class Disassembler
     {
         public Script Script { get; }
-        public bool Raw { get; set; } = true;
-        public bool ShowOffsets { get; set; } = true;
-        public bool ShowBytes { get; set; } = true;
 
         public Disassembler(Script sc)
         {
             Script = sc ?? throw new ArgumentNullException(nameof(sc));
         }
 
-        public void Disassemble(TextWriter writer) => DisassembleRaw(writer);
+        public void Disassemble(TextWriter writer)
+        {
+        }
 
-        private void DisassembleRaw(TextWriter writer)
+        public void DisassembleRaw(TextWriter writer, bool showOffsets, bool showBytes, bool showInstructions)
         {
             StringBuilder lineSB = new StringBuilder();
 
@@ -31,14 +30,14 @@
                 uint size = GetSizeOfInstructionAt(Script, ip);
 
                 // write offset
-                if (ShowOffsets)
+                if (showOffsets)
                 {
                     lineSB.Append(ip.ToString("000000"));
                     lineSB.Append(" : ");
                 }
 
                 // write bytes
-                if (ShowBytes)
+                if (showBytes)
                 {
                     for (uint offset = 0; offset < size; offset++)
                     {
@@ -53,7 +52,10 @@
                 }
 
                 // write instruction
-                DisassembleInstructionAt(lineSB, Script, ip);
+                if (showInstructions)
+                {
+                    DisassembleInstructionAt(lineSB, Script, ip);
+                }
 
                 lineSB.AppendLine();
 
