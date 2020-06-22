@@ -391,6 +391,64 @@
                 NoMoreTokens(i, t);
             };
 
+            public static InstructionBuilder I_native(byte v)
+            => (i, t, l, b) =>
+            {
+                const byte ArgCountMask = 0x3F;
+                const byte ReturnValueCountMask = 0x3;
+
+                var op1Str = t.MoveNext() ? t.Current : throw new AssemblerSyntaxException($"{i.Mnemonic} instruction is missing operand 1");
+                var op2Str = t.MoveNext() ? t.Current : throw new AssemblerSyntaxException($"{i.Mnemonic} instruction is missing operand 2");
+                var op3Str = t.MoveNext() ? t.Current : throw new AssemblerSyntaxException($"{i.Mnemonic} instruction is missing operand 3");
+                byte op1 = 0; // args count
+                try
+                {
+                    op1 = byte.Parse(op1Str);
+                }
+                catch (Exception e) when (e is FormatException || e is OverflowException)
+                {
+                    throw new AssemblerSyntaxException($"Operand 1 (argument count) of {i.Mnemonic} instruction is not a valid uint8 value", e);
+                }
+
+                if (op1 != (op1 & ArgCountMask))
+                {
+                    throw new AssemblerSyntaxException($"Operand 1 (argument count) of {i.Mnemonic} instruction exceeds maximum value {ArgCountMask}");
+                }
+
+                byte op2 = 0; // return value count
+                try
+                {
+                    op2 = byte.Parse(op2Str);
+                }
+                catch (Exception e) when (e is FormatException || e is OverflowException)
+                {
+                    throw new AssemblerSyntaxException($"Operand 2 (return value count) of {i.Mnemonic} instruction is not a valid uint8 value", e);
+                }
+
+                if (op2 != (op2 & ReturnValueCountMask))
+                {
+                    throw new AssemblerSyntaxException($"Operand 2 (return value count) of {i.Mnemonic} instruction exceeds maximum value {ReturnValueCountMask}");
+                }
+
+                ushort op3 = 0; // native index
+                try
+                {
+                    op3 = ushort.Parse(op3Str);
+                }
+                catch (Exception e) when (e is FormatException || e is OverflowException)
+                {
+                    throw new AssemblerSyntaxException($"Operand 3 (native index) of {i.Mnemonic} instruction is not a valid uint16 value", e);
+                }
+
+                b.BeginInstruction(l);
+                b.Add(v);
+                b.Add((byte)((op1 & ArgCountMask) << 2 | (op2 & ReturnValueCountMask)));
+                b.Add((byte)(op3 >> 8));
+                b.Add((byte)(op3 & 0xFF));
+                b.EndInstruction();
+                NoMoreTokens(i, t);
+            };
+
             public static Inst[] Sort(Inst[] instructions)
             {
                 // sort the instructions based on MnemonicHash so we can do binary search later
@@ -445,7 +503,7 @@
             new Inst("PUSH_CONST_F", Inst.I_f(0x29)),
             new Inst("DUP", Inst.I(0x2A)),
             new Inst("DROP", Inst.I(0x2B)),
-            //new Inst("NATIVE", ), // TODO: NATIVE instruction
+            new Inst("NATIVE", Inst.I_native(0x2C)),
             new Inst("ENTER", Inst.I_enter(0x2D)),
             new Inst("LEAVE", Inst.I_b_b(0x2E)),
             new Inst("LOAD", Inst.I(0x2F)),
