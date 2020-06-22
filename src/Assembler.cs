@@ -410,14 +410,17 @@
                 FixupRelativeTargetLabels();
 
                 var p = new ScriptPage<byte>[pages.Count];
-                for (int i = 0; i < pages.Count - 1; i++)
+                if (pages.Count > 0)
                 {
-                    p[i] = new ScriptPage<byte> { Data = NewPage() };
-                    pages[i].CopyTo(p[i].Data, 0);
-                }
+                    for (int i = 0; i < pages.Count - 1; i++)
+                    {
+                        p[i] = new ScriptPage<byte> { Data = NewPage() };
+                        pages[i].CopyTo(p[i].Data, 0);
+                    }
 
-                p[^1] = new ScriptPage<byte> { Data = NewPage(length & 0x3FFF) };
-                Array.Copy(pages[^1], p[^1].Data, p[^1].Data.Length);
+                    p[^1] = new ScriptPage<byte> { Data = NewPage(length & 0x3FFF) };
+                    Array.Copy(pages[^1], p[^1].Data, p[^1].Data.Length);
+                }
 
                 codeLength = length;
                 return p;
@@ -467,9 +470,28 @@
                         return false;
                     }
 
-                    // continue until we find a whitespace character
-                    currentLength = 0;
-                    while (currentLength < line.Length && !char.IsWhiteSpace(line[currentLength])) { currentLength++; }
+                    bool isString = line.Length > 0 && line[0] == '"';
+
+                    if (isString)
+                    {
+                        // continue until we find the closing quotation mark
+                        currentLength = 1;
+                        while (currentLength < line.Length && line[currentLength] != '"') { currentLength++; }
+
+                        currentLength++; // include the quotation mark in the token
+
+                        // check if we actually found the closing quotation mark
+                        if (currentLength > line.Length || line[currentLength - 1] != '"')
+                        {
+                            throw new AssemblerSyntaxException($"Unclosed string '{line.ToString()}'");
+                        }
+                    }
+                    else
+                    {
+                        // continue until we find a whitespace character
+                        currentLength = 0;
+                        while (currentLength < line.Length && !char.IsWhiteSpace(line[currentLength])) { currentLength++; }
+                    }
 
                     return currentLength > 0;
                 }
