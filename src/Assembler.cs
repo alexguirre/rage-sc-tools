@@ -183,6 +183,30 @@
             sc.StaticsCount = count;
         }
 
+        private void SetStaticValue(uint staticIndex, int value)
+        {
+            Debug.Assert(sc != null);
+            
+            if (sc.Statics == null || staticIndex >= sc.Statics.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(staticIndex));
+            }
+
+            sc.Statics[staticIndex].AsInt32 = value;
+        }
+
+        private void SetStaticValue(uint staticIndex, float value)
+        {
+            Debug.Assert(sc != null);
+
+            if (sc.Statics == null || staticIndex >= sc.Statics.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(staticIndex));
+            }
+
+            sc.Statics[staticIndex].AsFloat = value;
+        }
+
         private void AddNative(ulong hash)
         {
             Debug.Assert(sc != null);

@@ -87,6 +87,62 @@
                     a.SetStaticsCount(count);
                     Directive.NoMoreTokens(d, t);
                 }),
+            new Directive("STATIC_INT_INIT",
+                (d, t, a) =>
+                {
+                    var indexStr = t.MoveNext() ? t.Current : throw new AssemblerSyntaxException($"Missing static index token in {d.Name} directive");
+                    uint index;
+                    try
+                    {
+                        index = uint.Parse(indexStr);
+                    }
+                    catch (Exception e) when (e is FormatException || e is OverflowException)
+                    {
+                        throw new AssemblerSyntaxException($"Static index token in {d.Name} directive is not a valid uint32 value", e);
+                    }
+
+                    var valueStr = t.MoveNext() ? t.Current : throw new AssemblerSyntaxException($"Missing value token in {d.Name} directive");
+                    int value;
+                    try
+                    {
+                        value = int.Parse(valueStr);
+                    }
+                    catch (Exception e) when (e is FormatException || e is OverflowException)
+                    {
+                        throw new AssemblerSyntaxException($"Value token in {d.Name} directive is not a valid int32 value", e);
+                    }
+
+                    a.SetStaticValue(index, value);
+                    Directive.NoMoreTokens(d, t);
+                }),
+            new Directive("STATIC_FLOAT_INIT",
+                (d, t, a) =>
+                {
+                    var indexStr = t.MoveNext() ? t.Current : throw new AssemblerSyntaxException($"Missing static index token in {d.Name} directive");
+                    uint index;
+                    try
+                    {
+                        index = uint.Parse(indexStr);
+                    }
+                    catch (Exception e) when (e is FormatException || e is OverflowException)
+                    {
+                        throw new AssemblerSyntaxException($"Static index token in {d.Name} directive is not a valid uint32 value", e);
+                    }
+
+                    var valueStr = t.MoveNext() ? t.Current : throw new AssemblerSyntaxException($"Missing value token in {d.Name} directive");
+                    float value;
+                    try
+                    {
+                        value = float.Parse(valueStr);
+                    }
+                    catch (Exception e) when (e is FormatException || e is OverflowException)
+                    {
+                        throw new AssemblerSyntaxException($"Value token in {d.Name} directive is not a valid float32 value", e);
+                    }
+
+                    a.SetStaticValue(index, value);
+                    Directive.NoMoreTokens(d, t);
+                }),
             new Directive("NATIVE_DEF",
                 (d, t, a) =>
                 {
