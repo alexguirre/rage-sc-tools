@@ -159,6 +159,17 @@
                     a.AddNative(hash);
                     Directive.NoMoreTokens(d, t);
                 }),
+            new Directive("STRING",
+                (d, t, a) =>
+                {
+                    var str = t.MoveNext() ? t.Current : throw new AssemblerSyntaxException($"Missing string token in {d.Name} directive");
+                    if (str.Length <= 2 || str[0] != '"' || str[^1] != '"')
+                    {
+                        throw new AssemblerSyntaxException($"String token in {d.Name} directive is not a valid string");
+                    }
+                    a.AddString(str[1..^1]);
+                    Directive.NoMoreTokens(d, t);
+                }),
         });
     }
 }
