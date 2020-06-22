@@ -15,9 +15,9 @@
 
             public Inst(string mnemonic, InstructionBuilder builder)
             {
-                Mnemonic = mnemonic;
-                MnemonicHash = JenkHash.GenHash(mnemonic);
-                Builder = builder;
+                Mnemonic = mnemonic ?? throw new ArgumentNullException(nameof(mnemonic));
+                MnemonicHash = mnemonic.ToHash();
+                Builder = builder ?? throw new ArgumentNullException(nameof(builder));
             }
 
             public static void NoMoreTokens(Inst i, TokenEnumerator tokens)
@@ -454,6 +454,32 @@
                 // sort the instructions based on MnemonicHash so we can do binary search later
                 Array.Sort(instructions, (a, b) => a.MnemonicHash.CompareTo(b.MnemonicHash));
                 return instructions;
+            }
+
+            public static int Find(uint mnemonicHash)
+            {
+                int left = 0;
+                int right = Instructions.Length - 1;
+
+                while (left <= right)
+                {
+                    int middle = (left + right) / 2;
+                    uint middleKey = Instructions[middle].MnemonicHash;
+                    int cmp = middleKey.CompareTo(mnemonicHash);
+                    if (cmp == 0)
+                    {
+                        return middle;
+                    }
+                    else if (cmp < 0)
+                    {
+                        left = middle + 1;
+                    }
+                    else
+                    {
+                        right = middle - 1;
+                    }
+                }
+                return -1;
             }
         }
 

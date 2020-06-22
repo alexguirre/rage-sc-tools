@@ -31,7 +31,7 @@
                 GlobalsLengthAndBlock = 0,
                 NativesCount = 0,
                 Name = DefaultName,
-                NameHash = JenkHash.GenHash(DefaultName),
+                NameHash = DefaultName.ToHash(),
                 StringsLength = 0,
             };
 
@@ -130,12 +130,6 @@
 
         private bool ParseDirective(TokenEnumerator tokens)
         {
-            const string DirectiveName = "NAME";
-            const string DirectiveStatics = "STATICS";
-            const string DirectiveNativeDef = "NATIVE_DEF";
-
-            static bool Equals(ReadOnlySpan<char> s, string str) => s.Equals(str, StringComparison.OrdinalIgnoreCase);
-
             var directive = tokens.Current;
 
             if (directive[0] != DirectiveChar)
@@ -144,100 +138,24 @@
             }
 
             directive = directive.Slice(1); // remove DirectiveChar
-            if (Equals(directive, DirectiveName))
+
+            int dirIndex = Directive.Find(directive.ToHash());
+            if (dirIndex != -1)
             {
-                var name = tokens.MoveNext() ? tokens.Current : throw new AssemblerSyntaxException("Missing name token");
-                SetName(name.ToString());
-            }
-            else if (Equals(directive, DirectiveStatics))
-            {
-                var countStr = tokens.MoveNext() ? tokens.Current : throw new AssemblerSyntaxException("Missing statics count token");
-                uint count;
-                try
-                {
-                    count = uint.Parse(countStr);
-                }
-                catch (Exception e) when (e is FormatException || e is OverflowException)
-                {
-                    throw new AssemblerSyntaxException("Statics count token is not a valid uint32 value", e);
-                }
-                SetStaticsCount(count);
-            }
-            else if (Equals(directive, DirectiveNativeDef))
-            {
-                var hashStr = tokens.MoveNext() ? tokens.Current : throw new AssemblerSyntaxException("Missing native hash token");
-                ulong hash;
-                try
-                {
-                    hash = ulong.Parse(hashStr, System.Globalization.NumberStyles.HexNumber);
-                }
-                catch (Exception e) when (e is FormatException || e is OverflowException)
-                {
-                    throw new AssemblerSyntaxException("Native hash token is not a valid uint64 hex value", e);
-                }
-                AddNative(hash);
+                ref Directive dir = ref Directives[dirIndex];
+                dir.Callback(dir, tokens, this);
+                return true;
             }
             else
             {
                 throw new AssemblerSyntaxException($"Unknown directive '{DirectiveChar}{directive.ToString()}'");
             }
-
-            if (tokens.MoveNext())
-            {
-                throw new AssemblerSyntaxException($"Unknown token '{tokens.Current.ToString()}' after label '{directive.ToString()}'");
-            }
-
-            return true;
         }
 
         private bool ParseInstruction(TokenEnumerator tokens)
         {
-            // same as JenkHash.GenHash but for spans
-            static uint GenHash(ReadOnlySpan<char> s)
-            {
-                uint h = 0;
-                for (int i = 0; i < s.Length; i++)
-                {
-                    h += (byte)s[i];
-                    h += (h << 10);
-                    h ^= (h >> 6);
-                }
-                h += (h << 3);
-                h ^= (h >> 11);
-                h += (h << 15);
-
-                return h;
-            }
-
-            // perform binary search on Instructions array
-            static int BinarySearchInstruction(uint mnemonicHash)
-            {
-                int left = 0;
-                int right = Instructions.Length - 1;
-
-                while (left <= right)
-                {
-                    int middle = (left + right) / 2;
-                    uint middleKey = Instructions[middle].MnemonicHash;
-                    int cmp = middleKey.CompareTo(mnemonicHash);
-                    if (cmp == 0)
-                    {
-                        return middle;
-                    }
-                    else if (cmp < 0)
-                    {
-                        left = middle + 1;
-                    }
-                    else
-                    {
-                        right = middle - 1;
-                    }
-                }
-                return -1;
-            }
-
-            uint mnemonic = GenHash(tokens.Current);
-            int instIndex = BinarySearchInstruction(mnemonic);
+            uint mnemonic = tokens.Current.ToHash();
+            int instIndex = Inst.Find(mnemonic);
             if (instIndex != -1)
             {
                 ref Inst inst = ref Instructions[instIndex];
@@ -254,7 +172,7 @@
             Debug.Assert(sc != null);
 
             sc.Name = name ?? throw new ArgumentNullException(nameof(name));
-            sc.NameHash = JenkHash.GenHash(name);
+            sc.NameHash = name.ToHash();
         }
 
         private void SetStaticsCount(uint count)
