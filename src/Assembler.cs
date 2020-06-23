@@ -58,6 +58,13 @@
                 ParseLine(line);
             }
 
+            if (lastLabel != null)
+            {
+                // some disassembled scripts may have a label at the end of the code, at ip == codeLength
+                // so add it here if we found a label after all the code
+                code.AddLabel(lastLabel);
+            }
+
             sc.CodePages = new ScriptPageArray<byte>
             {
                 Items = code.ToPages(out uint codeLength),
@@ -245,15 +252,20 @@
 
             private bool inInstruction = false;
 
+            public void AddLabel(string label)
+            {
+                if (!string.IsNullOrWhiteSpace(label))
+                {
+                    labels.Add((label, length));
+                }
+            }
+
             public void BeginInstruction(string label)
             {
                 Debug.Assert(!inInstruction);
 
                 buffer.Clear();
-                if (!string.IsNullOrWhiteSpace(label))
-                {
-                    labels.Add((label, length));
-                }
+                AddLabel(label);
                 inInstruction = true;
             }
 
