@@ -5,7 +5,7 @@
 
     internal partial class Assembler
     {
-        private delegate void DirectiveCallback(Directive directive, TokenEnumerator tokens, Assembler assembler);
+        private delegate void DirectiveCallback(Directive directive, Tokenizer.TokenEnumerator tokens, Assembler assembler);
 
         private readonly struct Directive
         {
@@ -20,7 +20,7 @@
                 Callback = callback ?? throw new ArgumentNullException(nameof(callback));
             }
 
-            public static void NoMoreTokens(Directive d, TokenEnumerator tokens)
+            public static void NoMoreTokens(Directive d, Tokenizer.TokenEnumerator tokens)
             {
                 if (tokens.MoveNext())
                 {
@@ -163,11 +163,11 @@
                 (d, t, a) =>
                 {
                     var str = t.MoveNext() ? t.Current : throw new AssemblerSyntaxException($"Missing string token in {d.Name} directive");
-                    if (str.Length <= 2 || str[0] != '"' || str[^1] != '"')
+                    if (!Tokenizer.IsString(str, out var contents))
                     {
                         throw new AssemblerSyntaxException($"String token in {d.Name} directive is not a valid string");
                     }
-                    a.AddString(str[1..^1]);
+                    a.AddString(contents);
                     Directive.NoMoreTokens(d, t);
                 }),
         });

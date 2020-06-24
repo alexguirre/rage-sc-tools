@@ -11,7 +11,6 @@
     internal partial class Assembler
     {
         private const char DirectiveChar = '$';
-        private const char CommentChar = ';';
 
         private Script sc;
         private readonly List<ulong> nativeHashes = new List<ulong>();
@@ -101,7 +100,7 @@
                 return;
             }
 
-            var tokens = Tokenize(line).GetEnumerator();
+            var tokens = Tokenizer.Tokenize(line).GetEnumerator();
             if (tokens.MoveNext())
             {
                 bool parsed = ParseDirective(tokens) ||
@@ -115,7 +114,7 @@
             }
         }
 
-        private bool ParseLabel(TokenEnumerator tokens)
+        private bool ParseLabel(Tokenizer.TokenEnumerator tokens)
         {
             var token = tokens.Current;
 
@@ -143,7 +142,7 @@
             return false;
         }
 
-        private bool ParseDirective(TokenEnumerator tokens)
+        private bool ParseDirective(Tokenizer.TokenEnumerator tokens)
         {
             var directive = tokens.Current;
 
@@ -167,15 +166,21 @@
             }
         }
 
-        private bool ParseInstruction(TokenEnumerator tokens)
+        private bool ParseInstruction(Tokenizer.TokenEnumerator tokens)
         {
-            uint mnemonic = tokens.Current.ToHash();
-            int instIndex = Inst.Find(mnemonic);
-            if (instIndex != -1)
+            ref readonly var inst = ref Instruction.FindByMnemonic(tokens.Current);
+            if (inst.IsValid)
             {
-                ref Inst inst = ref Instructions[instIndex];
-                inst.Builder(inst, tokens, lastLabel, code);
+                code.BeginInstruction(lastLabel);
+                inst.Builder(inst, ref tokens, code);
+                code.EndInstruction();
                 lastLabel = null;
+
+                if (tokens.MoveNext())
+                {
+                    throw new AssemblerSyntaxException($"Unknown token '{tokens.Current.ToString()}' after instruction '{inst.Mnemonic}'");
+                }
+
                 return true;
             }
 
@@ -241,9 +246,27 @@
             strings.Add(str);
         }
 
-        private class CodeBuilder
+        public interface ICodeBuilder
+        {
+            /// <summary>
+            /// The label associated to the current instruction.
+            /// </summary>
+            public string Label { get; }
+
+            public void U8(byte v);
+            public void U16(ushort v);
+            public void U24(uint v);
+            public void U32(uint v);
+            public void S16(short v);
+            public void F32(float v);
+            public void RelativeTarget(string label);
+            public void Target(string label);
+        }
+
+        private sealed class CodeBuilder : ICodeBuilder
         {
             private readonly List<byte[]> pages = new List<byte[]>();
+            private string currentLabel = null;
             private readonly List<(string Label, uint IP)> labels = new List<(string, uint)>();
             private readonly List<(string TargetLabel, uint IP)> targetLabels = new List<(string, uint)>();
             private readonly List<(string TargetLabel, uint IP)> relativeTargetLabels = new List<(string, uint)>();
@@ -256,6 +279,7 @@
             {
                 if (!string.IsNullOrWhiteSpace(label))
                 {
+                    currentLabel = label;
                     labels.Add((label, length));
                 }
             }
@@ -385,6 +409,7 @@
 
                 buffer.CopyTo(page, (int)offset);
                 length += (uint)buffer.Count;
+                currentLabel = null;
 
                 inInstruction = false;
             }
@@ -455,6 +480,16 @@
 
             private void AddPage() => pages.Add(NewPage());
             private byte[] NewPage(uint size = Script.MaxPageLength) => new byte[size];
+
+            string ICodeBuilder.Label => currentLabel;
+            void ICodeBuilder.U8(byte v) => Add(v);
+            void ICodeBuilder.U16(ushort v) => Add(v);
+            void ICodeBuilder.U24(uint v) => AddU24(v);
+            void ICodeBuilder.U32(uint v) => Add(v);
+            void ICodeBuilder.S16(short v) => Add(v);
+            void ICodeBuilder.F32(float v) => Add(v);
+            void ICodeBuilder.RelativeTarget(string label) => AddRelativeTarget(label);
+            void ICodeBuilder.Target(string label) => AddTarget(label);
         }
 
         private class StringsPagesBuilder
@@ -528,78 +563,6 @@
 
             private void AddPage() => pages.Add(NewPage());
             private byte[] NewPage(uint size = Script.MaxPageLength) => new byte[size];
-        }
-
-        private static TokenEnumerable Tokenize(ReadOnlySpan<char> line) => new TokenEnumerable(line);
-
-        private ref struct TokenEnumerable
-        {
-            public ReadOnlySpan<char> Line { get; }
-
-            public TokenEnumerable(ReadOnlySpan<char> line) => Line = line;
-
-            public TokenEnumerator GetEnumerator() => new TokenEnumerator(Line);
-        }
-
-        private ref struct TokenEnumerator
-        {
-            private ReadOnlySpan<char> line;
-            private int currentLength;
-
-            public TokenEnumerator(ReadOnlySpan<char> line) : this() => this.line = line;
-
-            public bool MoveNext()
-            {
-                if (currentLength >= line.Length)
-                {
-                    return false;
-                }
-
-                line = line.Slice(currentLength);
-                if (line.Length > 0)
-                {
-                    // skip until we find non-whitespace character
-                    int i = 0;
-                    while (i < line.Length && char.IsWhiteSpace(line[i])) { i++; }
-
-                    line = line.Slice(i);
-
-                    if (line.Length > 0 && line[0] == CommentChar)
-                    {
-                        // found a comment, ignore the rest of the line;
-                        return false;
-                    }
-
-                    bool isString = line.Length > 0 && line[0] == '"';
-
-                    if (isString)
-                    {
-                        // continue until we find the closing quotation mark
-                        currentLength = 1;
-                        while (currentLength < line.Length && line[currentLength] != '"') { currentLength++; }
-
-                        currentLength++; // include the quotation mark in the token
-
-                        // check if we actually found the closing quotation mark
-                        if (currentLength > line.Length || line[currentLength - 1] != '"')
-                        {
-                            throw new AssemblerSyntaxException($"Unclosed string '{line.ToString()}'");
-                        }
-                    }
-                    else
-                    {
-                        // continue until we find a whitespace character
-                        currentLength = 0;
-                        while (currentLength < line.Length && !char.IsWhiteSpace(line[currentLength])) { currentLength++; }
-                    }
-
-                    return currentLength > 0;
-                }
-
-                return false;
-            }
-
-            public ReadOnlySpan<char> Current => line.Slice(0, currentLength);
         }
     }
 
