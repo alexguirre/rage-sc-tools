@@ -267,7 +267,7 @@
         {
             private readonly List<byte[]> pages = new List<byte[]>();
             private string currentLabel = null;
-            private readonly List<(string Label, uint IP)> labels = new List<(string, uint)>();
+            private readonly Dictionary<string, uint> labels = new Dictionary<string, uint>(); // key = label name, value = IP
             private readonly List<(string TargetLabel, uint IP)> targetLabels = new List<(string, uint)>();
             private readonly List<(string TargetLabel, uint IP)> relativeTargetLabels = new List<(string, uint)>();
             private uint length = 0;
@@ -280,7 +280,7 @@
                 if (!string.IsNullOrWhiteSpace(label))
                 {
                     currentLabel = label;
-                    labels.Add((label, length));
+                    labels.Add(label, length);
                 }
             }
 
@@ -418,8 +418,7 @@
             {
                 foreach (var (targetLabel, targetIP) in targetLabels)
                 {
-                    var (label, ip) = labels.Find(l => l.Label == targetLabel);
-                    if (label == null)
+                    if (!labels.TryGetValue(targetLabel, out uint ip))
                     {
                         throw new AssemblerSyntaxException($"Unknown label '{targetLabel}'");
                     }
@@ -439,8 +438,7 @@
             {
                 foreach (var (targetLabel, targetIP) in relativeTargetLabels)
                 {
-                    var (label, ip) = labels.Find(l => l.Label == targetLabel);
-                    if (label == null)
+                    if (!labels.TryGetValue(targetLabel, out uint ip))
                     {
                         throw new AssemblerSyntaxException($"Unknown label '{targetLabel}'");
                     }
