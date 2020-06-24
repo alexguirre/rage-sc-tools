@@ -1,4 +1,4 @@
-﻿namespace ScTools
+namespace ScTools
 {
     using System;
     using System.IO;
@@ -157,12 +157,6 @@
 
                                 AddLabel(targetIP);
                             }
-
-                            ip += 1 + 6u * count;
-                        }
-                        else
-                        {
-                            ip++;
                         }
                     }
                     else
