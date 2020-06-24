@@ -1,6 +1,7 @@
 ﻿namespace ScTools
 {
     using System;
+    using System.Text;
     using System.CommandLine;
     using System.CommandLine.Invocation;
     using System.Globalization;
@@ -102,7 +103,8 @@
 
             Script sc = ysc.Script;
 
-            using TextWriter w = new StreamWriter(output.Open(FileMode.Create));
+            const int BufferSize = 1024 * 1024 * 32; // 32mb
+            using TextWriter w = new StreamWriter(output.Open(FileMode.Create), Encoding.UTF8, BufferSize) { AutoFlush = false };
             new Disassembler(sc).Disassemble(w);
         }
 

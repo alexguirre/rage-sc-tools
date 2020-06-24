@@ -54,7 +54,7 @@ namespace ScTools
 
             StringBuilder lineSB = new StringBuilder();
             int labelIndex = 0;
-            IList<Label> labels = ScanLabels(sc);
+            var (labels, labelsDict) = ScanLabels(sc);
             for (uint ip = 0; ip <= sc.CodeLength; ip += ip < sc.CodeLength ? GetSizeOfInstructionAt(sc, ip) : 1)
             {
                 lineSB.Clear();
@@ -66,7 +66,7 @@ namespace ScTools
                     labelIndex++;
                 }
 
-                DisassembleInstructionAt(lineSB, sc, ip, label, labels);
+                DisassembleInstructionAt(lineSB, sc, ip, label, labelsDict);
 
                 lineSB.AppendLine();
 
@@ -74,22 +74,16 @@ namespace ScTools
             }
         }
 
-        private readonly struct Label
-        {
-            public uint IP { get; }
-            public string Name { get; }
-
-            public Label(uint ip, string name)
-            {
-                IP = ip;
-                Name = name;
-            }
-        }
-
-        private static IList<Label> ScanLabels(Script sc)
+        /// <summary>
+        /// Scans all the labels in the script (instructions referenced by other instructions).
+        /// Returns a list of (IP, Name) tuples ordered by IP for sequential lookup and
+        /// a dictionary with IP as the key and Name as the value for fast random lookups by IP.
+        /// </summary>
+        private static (IList<(uint IP, string Name)>, IDictionary<uint, string>) ScanLabels(Script sc)
         {
             HashSet<uint> labeledIPs = new HashSet<uint>();
-            List<Label> labels = new List<Label>();
+            List<(uint IP, string)> labels = new List<(uint, string)>();
+            Dictionary<uint, string> labelsDict = new Dictionary<uint, string>();
 
             for (uint ip = 0; ip < sc.CodeLength; ip += GetSizeOfInstructionAt(sc, ip))
             {
@@ -139,7 +133,8 @@ namespace ScTools
                                 name = labelIP.ToString("lbl_000000");
                             }
 
-                            labels.Add(new Label(labelIP, name));
+                            labels.Add((labelIP, name));
+                            labelsDict.Add(labelIP, name);
                         }
                     }
 
@@ -174,10 +169,10 @@ namespace ScTools
             }
 
             labels.Sort((a, b) => a.IP.CompareTo(b.IP));
-            return labels;
+            return (labels, labelsDict);
         }
 
-        private static void DisassembleInstructionAt(StringBuilder sb, Script sc, uint ip, string label, IList<Label> allLabels)
+        private static void DisassembleInstructionAt(StringBuilder sb, Script sc, uint ip, string label, IDictionary<uint, string> allLabels)
         {
             byte inst = ip < sc.CodeLength ? sc.IP(ip) : (byte)0;
             if (inst >= Instruction.NumberOfInstructions)
@@ -239,7 +234,7 @@ namespace ScTools
 
                             sb.Append(' ');
                             sb.Append('@');
-                            sb.Append(allLabels.FirstOrDefault(l => l.IP == targetIP).Name);
+                            sb.Append(allLabels[targetIP]);
                         }
                         break;
                     case 'C': // CALL
@@ -248,7 +243,7 @@ namespace ScTools
 
                             sb.Append(' ');
                             sb.Append('@');
-                            sb.Append(allLabels.First(l => l.IP == targetIP).Name);
+                            sb.Append(allLabels[targetIP]);
                         }
                         break;
                     case 'N': // NATIVE
@@ -286,7 +281,7 @@ namespace ScTools
                                     sb.Append(caseValue);
                                     sb.Append(':');
                                     sb.Append('@');
-                                    sb.Append(allLabels.First(l => l.IP == targetIP).Name);
+                                    sb.Append(allLabels[targetIP]);
                                 }
 
                                 ip += 1 + 6u * count;
