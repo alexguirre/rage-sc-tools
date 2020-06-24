@@ -105,7 +105,8 @@
             {
                 bool parsed = ParseDirective(tokens) ||
                               ParseLabel(tokens) ||
-                              ParseInstruction(tokens);
+                              ParseInstruction(tokens) ||
+                              ParseHighLevelInstruction(tokens);
 
                 if (!parsed)
                 {
@@ -179,6 +180,40 @@
                 if (tokens.MoveNext())
                 {
                     throw new AssemblerSyntaxException($"Unknown token '{tokens.Current.ToString()}' after instruction '{inst.Mnemonic}'");
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool ParseHighLevelInstruction(Tokenizer.TokenEnumerator tokens)
+        {
+            var mnemonic = tokens.Current;
+            if (mnemonic.Equals("PUSH_STRING".AsSpan(), StringComparison.Ordinal))
+            {
+                var str = tokens.MoveNext() ? tokens.Current : throw new AssemblerSyntaxException();
+
+                if (!Tokenizer.IsString(str, out str))
+                {
+                    throw new AssemblerSyntaxException();
+                }
+
+                uint strId = strings.Add(str); // TODO: handle repeated strings
+
+                code.BeginInstruction(lastLabel);
+                code.Add(Instruction.PUSH_CONST_U32.Opcode);
+                code.Add(strId);
+                code.EndInstruction();
+                code.BeginInstruction(null);
+                code.Add(Instruction.STRING.Opcode);
+                code.EndInstruction();
+                lastLabel = null;
+
+                if (tokens.MoveNext())
+                {
+                    throw new AssemblerSyntaxException($"Unknown token '{tokens.Current.ToString()}' after instruction 'PUSH_STRING'");
                 }
 
                 return true;
@@ -495,7 +530,7 @@
             private readonly List<byte[]> pages = new List<byte[]>();
             private uint length = 0;
 
-            public void Add(ReadOnlySpan<byte> chars)
+            public uint Add(ReadOnlySpan<byte> chars)
             {
                 uint strLength = (uint)chars.Length + 1; // + null terminator
 
@@ -526,19 +561,21 @@
 
                 chars.CopyTo(page.AsSpan((int)offset));
                 page[offset + chars.Length] = 0; // null terminator
+                uint id = length;
                 length += strLength;
+                return id;
             }
 
-            public void Add(ReadOnlySpan<char> str)
+            public uint Add(ReadOnlySpan<char> str)
             {
                 const int MaxStackLimit = 0x200;
                 int byteCount = Encoding.UTF8.GetByteCount(str);
                 Span<byte> buffer = byteCount <= MaxStackLimit ? stackalloc byte[byteCount] : new byte[byteCount];
                 Encoding.UTF8.GetBytes(str, buffer);
-                Add(buffer);
+                return Add(buffer);
             }
 
-            public void Add(string str) => Add(str.AsSpan());
+            public uint Add(string str) => Add(str.AsSpan());
 
             public ScriptPage<byte>[] ToPages(out uint stringsLength)
             {
