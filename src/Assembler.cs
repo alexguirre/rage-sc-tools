@@ -16,6 +16,7 @@
         private readonly List<ulong> nativeHashes = new List<ulong>();
         private readonly HashSet<string> labels = new HashSet<string>();
         private string lastLabel = null;
+        private Operand[] operandsBuffer = null;
         private CodeBuilder code = null;
         private StringsPagesBuilder strings = null;
 
@@ -46,6 +47,7 @@
             nativeHashes.Clear();
             labels.Clear();
             lastLabel = null;
+            operandsBuffer = new Operand[Instruction.MaxOperands];
             code = new CodeBuilder();
             strings = new StringsPagesBuilder();
 
@@ -172,15 +174,17 @@
             ref readonly var inst = ref Instruction.FindByMnemonic(tokens.Current);
             if (inst.IsValid)
             {
-                code.BeginInstruction(lastLabel);
-                inst.Builder(inst, ref tokens, code);
-                code.EndInstruction();
-                lastLabel = null;
+                var operands = inst.Parser(inst, ref tokens, operandsBuffer);
 
                 if (tokens.MoveNext())
                 {
                     throw new AssemblerSyntaxException($"Unknown token '{tokens.Current.ToString()}' after instruction '{inst.Mnemonic}'");
                 }
+
+                code.BeginInstruction(lastLabel);
+                inst.Assemble(operands, code);
+                code.EndInstruction();
+                lastLabel = null;
 
                 return true;
             }
@@ -203,11 +207,10 @@
                 uint strId = strings.Add(str); // TODO: handle repeated strings
 
                 code.BeginInstruction(lastLabel);
-                code.Add(Instruction.PUSH_CONST_U32.Opcode);
-                code.Add(strId);
+                Instruction.PUSH_CONST_U32.Assemble(new[] { new Operand(strId) }, code);
                 code.EndInstruction();
                 code.BeginInstruction(null);
-                code.Add(Instruction.STRING.Opcode);
+                Instruction.STRING.Assemble(ReadOnlySpan<Operand>.Empty, code);
                 code.EndInstruction();
                 lastLabel = null;
 
