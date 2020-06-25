@@ -227,10 +227,14 @@
                     }
                     else
                     {
-                        if (b != 0) // null terminator
+                        stringId = (pageIndex << 14) | (pageOffset & 0x3FFF);
+                        if (b == 0) // found empty string
+                        {
+                            yield return stringId;
+                        }
+                        else
                         {
                             inString = true;
-                            stringId = (pageIndex << 14) | (pageOffset & 0x3FFF);
                         }
                     }
 
