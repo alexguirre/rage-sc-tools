@@ -52,8 +52,9 @@
                     "input",
                     "The input SCASM file.")
                     .ExistingOnly(),
+                new Option(new[] { "--function-names", "-f" }, "Include the function names in ENTER instructions."),
             };
-            assemble.Handler = CommandHandler.Create<FileInfo>(Assemble);
+            assemble.Handler = CommandHandler.Create<AssembleOptions>(Assemble);
 
 
             rootCmd.AddCommand(dump);
@@ -74,20 +75,26 @@
             GTA5Keys.PC_LUT = File.ReadAllBytes(path + "\\gtav_hash_lut.dat");
         }
 
-        private static void Assemble(FileInfo input)
+        private class AssembleOptions
+        {
+            public FileInfo Input { get; set; }
+            public bool FunctionNames { get; set; }
+        }
+
+        private static void Assemble(AssembleOptions o)
         {
             LoadGTA5Keys();
 
             YscFile ysc = new YscFile();
 
-            Script sc = new Assembler().Assemble(input);
+            Script sc = new Assembler(new AssemblerOptions(includeFunctionNames: o.FunctionNames)).Assemble(o.Input);
             ysc.Script = sc;
 
-            string outputPath = Path.ChangeExtension(input.FullName, "ysc");
+            string outputPath = Path.ChangeExtension(o.Input.FullName, "ysc");
             byte[] data = ysc.Save(Path.GetFileName(outputPath));
             File.WriteAllBytes(outputPath, data);
 
-            outputPath = Path.ChangeExtension(input.FullName, "unencrypted.ysc");
+            outputPath = Path.ChangeExtension(o.Input.FullName, "unencrypted.ysc");
             data = ysc.Save();
             File.WriteAllBytes(outputPath, data);
         }

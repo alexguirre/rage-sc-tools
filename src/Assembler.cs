@@ -8,17 +8,33 @@
     using System.Text;
     using ScTools.GameFiles;
 
+    internal readonly struct AssemblerOptions
+    {
+        public bool IncludeFunctionNames { get; }
+
+        public AssemblerOptions(bool includeFunctionNames)
+        {
+            IncludeFunctionNames = includeFunctionNames;
+        }
+    }
+
     internal partial class Assembler
     {
         private const char DirectiveChar = '$';
 
         private Script sc;
+        private readonly AssemblerOptions options;
         private readonly List<ulong> nativeHashes = new List<ulong>();
         private readonly HashSet<string> labels = new HashSet<string>();
         private string lastLabel = null;
         private Operand[] operandsBuffer = null;
         private CodeBuilder code = null;
         private StringsPagesBuilder strings = null;
+
+        public Assembler(AssemblerOptions options)
+        {
+            this.options = options;
+        }
 
         public Script Assemble(FileInfo inputFile)
         {
@@ -48,7 +64,7 @@
             labels.Clear();
             lastLabel = null;
             operandsBuffer = new Operand[Instruction.MaxOperands];
-            code = new CodeBuilder();
+            code = new CodeBuilder(options);
             strings = new StringsPagesBuilder();
 
             using TextReader input = new StreamReader(inputFile.OpenRead());
@@ -290,6 +306,7 @@
             /// The label associated to the current instruction.
             /// </summary>
             public string Label { get; }
+            public AssemblerOptions Options { get; }
 
             public void U8(byte v);
             public void U16(ushort v);
@@ -303,6 +320,7 @@
 
         private sealed class CodeBuilder : ICodeBuilder
         {
+            private readonly AssemblerOptions options;
             private readonly List<byte[]> pages = new List<byte[]>();
             private string currentLabel = null;
             private readonly Dictionary<string, uint> labels = new Dictionary<string, uint>(); // key = label name, value = IP
@@ -312,6 +330,11 @@
             private readonly List<byte> buffer = new List<byte>();
 
             private bool inInstruction = false;
+
+            public CodeBuilder(AssemblerOptions options)
+            {
+                this.options = options;
+            }
 
             public void AddLabel(string label)
             {
@@ -518,6 +541,7 @@
             private byte[] NewPage(uint size = Script.MaxPageLength) => new byte[size];
 
             string ICodeBuilder.Label => currentLabel;
+            AssemblerOptions ICodeBuilder.Options => options;
             void ICodeBuilder.U8(byte v) => Add(v);
             void ICodeBuilder.U16(ushort v) => Add(v);
             void ICodeBuilder.U24(uint v) => AddU24(v);

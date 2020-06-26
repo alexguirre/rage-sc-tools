@@ -431,19 +431,18 @@
             c.U8(i.Opcode);
             c.U8(o[0].U8);
             c.U16(o[1].U16);
-            //if (!string.IsNullOrWhiteSpace(c.Label))
-            //{
-            //    // if there is label, write it as the function name
-            //    // TODO: option to disable writing the function name
-            //    int length = Math.Min(c.Label.Length, 254);
-            //    c.U8((byte)(length + 1));
-            //    for (int j = 0; j < length; j++)
-            //    {
-            //        c.U8((byte)c.Label[j]);
-            //    }
-            //    c.U8(0); // null terminator
-            //}
-            //else
+            if (c.Options.IncludeFunctionNames && !string.IsNullOrWhiteSpace(c.Label))
+            {
+                // if there is label, write it as the function name
+                int length = Math.Min(c.Label.Length, 254);
+                c.U8((byte)(length + 1));
+                for (int j = 0; j < length; j++)
+                {
+                    c.U8((byte)c.Label[j]);
+                }
+                c.U8(0); // null terminator
+            }
+            else
             {
                 c.U8(0);
             }
