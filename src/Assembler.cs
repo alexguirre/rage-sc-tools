@@ -234,7 +234,12 @@
         {
             Debug.Assert(sc != null);
 
-            sc.Statics = count == 0 ? null : new ScriptValue[count];
+            if (sc.Statics != null)
+            {
+                throw new InvalidOperationException("Statics count was already set");
+            }
+
+            sc.Statics = new ScriptValue[count];
             sc.StaticsCount = count;
         }
 
