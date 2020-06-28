@@ -141,71 +141,8 @@
                 _ => new StreamWriter(o.Output.Open(FileMode.Create))
             };
 
-            Dump(sc, w, o);
-        }
-
-        private static void Dump(Script sc, TextWriter w, DumpOptions o)
-        {
-            if (!o.NoMetadata)
-            {
-                w.WriteLine("Name = {0} (0x{1:X8})", sc.Name, sc.NameHash);
-                w.WriteLine("Hash = 0x{0:X8}", sc.Hash);
-                w.WriteLine("Statics Count = {0}", sc.StaticsCount);
-                if (sc.Statics != null)
-                {
-                    int i = 0;
-                    foreach (ScriptValue v in sc.Statics)
-                    {
-                        w.WriteLine("\t[{0}] = {1:X16} ({2}) ({3})", i++, v.AsInt64, v.AsInt32, v.AsFloat);
-                    }
-                }
-                {
-                    w.WriteLine("Globals Length And Block = {0}", sc.GlobalsLengthAndBlock);
-                    w.WriteLine("Globals Length           = {0}", sc.GlobalsLength);
-                    w.WriteLine("Globals Block            = {0}", sc.GlobalsBlock);
-
-                    if (sc.GlobalsPages != null)
-                    {
-                        uint pageIndex = 0;
-                        foreach (var page in sc.GlobalsPages)
-                        {
-                            uint i = 0;
-                            foreach (ScriptValue g in page.Data)
-                            {
-                                uint globalId = (sc.GlobalsBlock << 18) | (pageIndex << 14) | i;
-
-                                w.WriteLine("\t[{0}] = {1:X16} ({2}) ({3})", globalId, g.AsInt64, g.AsInt32, g.AsFloat);
-
-                                i++;
-                            }
-                            pageIndex++;
-                        }
-                    }
-                }
-                w.WriteLine("Natives Count = {0}", sc.NativesCount);
-                if (sc.Natives != null)
-                {
-                    int i = 0;
-                    foreach (ulong hash in sc.Natives)
-                    {
-                        w.WriteLine("\t{0:X16} -> {1:X16}", hash, sc.NativeHash(i));
-                        i++;
-                    }
-                }
-                w.WriteLine("Code Length = {0}", sc.CodeLength);
-                w.WriteLine("Num Refs = {0}", sc.NumRefs);
-                w.WriteLine("Strings Length = {0}", sc.StringsLength);
-                foreach (uint sid in sc.StringIds())
-                {
-                    w.WriteLine("\t[{0}] = {1}", sid, sc.String(sid));
-                }
-            }
-
-            if (!o.NoDisassembly)
-            {
-                w.WriteLine("Disassembly:");
-                new Disassembler(sc).DisassembleRaw(w, showOffsets: !o.NoOffsets, showBytes: !o.NoBytes, showInstructions: !o.NoInstructions);
-            }
+            new Dumper(sc).Dump(w, showMetadata: !o.NoMetadata, showDisassembly: !o.NoDisassembly,
+                                showOffsets: !o.NoOffsets, showBytes: !o.NoBytes, showInstructions: !o.NoInstructions);
         }
     }
 }
