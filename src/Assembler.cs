@@ -65,10 +65,20 @@
 
             using TextReader input = new StreamReader(inputFile.OpenRead());
             string line = null;
+            int lineNumber = 1;
 
             while ((line = input.ReadLine()) != null)
             {
-                ParseLine(line);
+                try
+                {
+                    ParseLine(line);
+                }
+                catch (Exception e)
+                {
+                    throw new AssemblerSyntaxException(inputFile, lineNumber, e);
+                }
+
+                lineNumber++;
             }
 
             sc.CodePages = new ScriptPageArray<byte>
@@ -119,7 +129,7 @@
 
                 if (!parsed)
                 {
-                    throw new AssemblerSyntaxException($"Unknown syntax '{line}'");
+                    throw new ArgumentException($"Unknown syntax '{line}'");
                 }
             }
         }
@@ -130,13 +140,14 @@
 
             if (token[^1] == ':') // label
             {
-                if (tokens.MoveNext())
-                {
-                    throw new AssemblerSyntaxException($"Unknown token '{tokens.Current.ToString()}' after label '{token.ToString()}'");
-                }
 
                 string lbl = token[0..^1].ToString(); // remove ':'
                 code.AddLabel(lbl);
+
+                if (tokens.MoveNext())
+                {
+                    throw new ArgumentException($"Unknown token '{tokens.Current.ToString()}' after label '{token.ToString()}'");
+                }
 
                 return true;
             }
@@ -164,7 +175,7 @@
             }
             else
             {
-                throw new AssemblerSyntaxException($"Unknown directive '{DirectiveChar}{directive.ToString()}'");
+                throw new ArgumentException($"Unknown directive '{DirectiveChar}{directive.ToString()}'");
             }
         }
 
@@ -177,7 +188,7 @@
 
                 if (tokens.MoveNext())
                 {
-                    throw new AssemblerSyntaxException($"Unknown token '{tokens.Current.ToString()}' after instruction '{inst.Mnemonic}'");
+                    throw new ArgumentException($"Unknown token '{tokens.Current.ToString()}' after instruction '{inst.Mnemonic}'");
                 }
 
                 code.BeginInstruction();
@@ -195,11 +206,11 @@
             var mnemonic = tokens.Current;
             if (mnemonic.Equals("PUSH_STRING".AsSpan(), StringComparison.Ordinal))
             {
-                var str = tokens.MoveNext() ? tokens.Current : throw new AssemblerSyntaxException();
+                var str = tokens.MoveNext() ? tokens.Current : throw new Exception();
 
                 if (!Token.IsString(str, out str))
                 {
-                    throw new AssemblerSyntaxException();
+                    throw new Exception();
                 }
 
                 uint strId = strings.Add(str); // TODO: handle repeated strings
@@ -213,7 +224,7 @@
 
                 if (tokens.MoveNext())
                 {
-                    throw new AssemblerSyntaxException($"Unknown token '{tokens.Current.ToString()}' after instruction 'PUSH_STRING'");
+                    throw new ArgumentException($"Unknown token '{tokens.Current.ToString()}' after instruction 'PUSH_STRING'");
                 }
 
                 return true;
@@ -273,7 +284,7 @@
 
             if (nativeHashes.Contains(hash))
             {
-                throw new AssemblerSyntaxException($"Native hash {hash:X16} is repeated");
+                throw new ArgumentException($"Native hash {hash:X16} is repeated", nameof(hash));
             }
 
             nativeHashes.Add(hash);
@@ -336,31 +347,33 @@
 
             public void AddLabel(string label)
             {
-                if (!string.IsNullOrWhiteSpace(label))
+                if (string.IsNullOrWhiteSpace(label))
                 {
-                    bool isGlobal = true;
-                    if (label[0] == '.') // is local label
-                    {
-                        if (currentGlobalLabel == null)
-                        {
-                            throw new InvalidOperationException($"Cannot define local label '{label}' without a previous global label");
-                        }
+                    throw new ArgumentException("Empty label", nameof(label));
+                }
 
-                        isGlobal = false;
+                bool isGlobal = true;
+                if (label[0] == '.') // is local label
+                {
+                    if (currentGlobalLabel == null)
+                    {
+                        throw new InvalidOperationException($"Cannot define local label '{label}' without a previous global label");
                     }
 
-                    label = NormalizeLabelName(label);
+                    isGlobal = false;
+                }
 
-                    if (!labels.TryAdd(label, length))
-                    {
-                        throw new InvalidOperationException($"Label '{label}' is repeated");
-                    }
+                label = NormalizeLabelName(label);
 
-                    currentLabel = label;
-                    if (isGlobal)
-                    {
-                        currentGlobalLabel = label;
-                    }
+                if (!labels.TryAdd(label, length))
+                {
+                    throw new InvalidOperationException($"Label '{label}' is repeated");
+                }
+
+                currentLabel = label;
+                if (isGlobal)
+                {
+                    currentGlobalLabel = label;
                 }
             }
 
@@ -501,7 +514,7 @@
             {
                 if (!labels.TryGetValue(label, out uint ip))
                 {
-                    throw new AssemblerSyntaxException($"Unknown label '{label}'");
+                    throw new ArgumentException($"Unknown label '{label}'", label);
                 }
 
                 return ip;
@@ -654,14 +667,32 @@
         }
     }
 
-    [Serializable]
     public class AssemblerSyntaxException : Exception
     {
-        public AssemblerSyntaxException() { }
-        public AssemblerSyntaxException(string message) : base(message) { }
-        public AssemblerSyntaxException(string message, Exception inner) : base(message, inner) { }
-        protected AssemblerSyntaxException(
-          System.Runtime.Serialization.SerializationInfo info,
-          System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+        public FileInfo File { get; }
+        public int Line { get; }
+
+        public string UserMessage
+        {
+            get
+            {
+                string s = "Syntax error";
+                if (InnerException != null)
+                {
+                    s += $": {InnerException.Message}";
+                }
+
+                s += $"{Environment.NewLine}   in {File}:line {Line}";
+
+                return s;
+            }
+        }
+
+        public AssemblerSyntaxException(FileInfo file, int line, Exception inner)
+            : base($"Syntax error{Environment.NewLine}   in {file}:line {line}", inner)
+        {
+            File = file;
+            Line = line;
+        }
     }
 }

@@ -87,8 +87,18 @@
 
             YscFile ysc = new YscFile();
 
-            Script sc = new Assembler(new AssemblerOptions(includeFunctionNames: o.FunctionNames)).Assemble(o.Input);
-            ysc.Script = sc;
+            try
+            {
+                Script sc = new Assembler(new AssemblerOptions(includeFunctionNames: o.FunctionNames)).Assemble(o.Input);
+                ysc.Script = sc;
+            }
+            catch (AssemblerSyntaxException e)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Error.Write(e.UserMessage);
+                Console.ForegroundColor = ConsoleColor.White;
+                return;
+            }
 
             string outputPath = Path.ChangeExtension(o.Input.FullName, "ysc");
             byte[] data = ysc.Save(Path.GetFileName(outputPath));

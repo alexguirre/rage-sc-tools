@@ -85,7 +85,7 @@
                     // check if we actually found the closing quotation mark
                     if (currentLength > line.Length || line[currentLength - 1] != '"')
                     {
-                        throw new AssemblerSyntaxException($"Unclosed string '{line.ToString()}'");
+                        throw new FormatException($"Unclosed string '{line.ToString()}'");
                     }
                 }
                 else

@@ -403,12 +403,12 @@
 
             if (op1 != (op1 & ArgCountMask))
             {
-                throw new AssemblerSyntaxException($"Operand 1 (argument count) of {i.Mnemonic} instruction exceeds maximum value {ArgCountMask}");
+                throw new ArgumentException($"Operand 1 (argument count) of {i.Mnemonic} instruction exceeds maximum value {ArgCountMask}");
             }
 
             if (op2 != (op2 & ReturnValueCountMask))
             {
-                throw new AssemblerSyntaxException($"Operand 2 (return value count) of {i.Mnemonic} instruction exceeds maximum value {ReturnValueCountMask}");
+                throw new ArgumentException($"Operand 2 (return value count) of {i.Mnemonic} instruction exceeds maximum value {ReturnValueCountMask}");
             }
 
             c.U8(i.Opcode);
@@ -493,7 +493,7 @@
                     }
                     catch (Exception e) when (e is FormatException || e is OverflowException)
                     {
-                        throw new AssemblerSyntaxException($"Switch case value '{valueStr.ToString()}' is not a valid uint32 value", e);
+                        throw new ArgumentException($"Switch case value '{valueStr.ToString()}' is not a valid uint32 value", nameof(token), e);
                     }
 
                     var labelStr = token.Slice(sepIndex + 2);
@@ -514,12 +514,12 @@
             {
                 if (!ParseCase(t.Current, out var value, out var targetLabel))
                 {
-                    throw new AssemblerSyntaxException($"Invalid switch case syntax '{t.Current.ToString()}'");
+                    throw new ArgumentException($"Invalid switch case syntax '{t.Current.ToString()}'");
                 }
 
                 if (numCases >= MaxCases)
                 {
-                    throw new AssemblerSyntaxException("Too many switch cases");
+                    throw new ArgumentException("Too many switch cases");
                 }
 
                 o[numCases] = new Operand((value, targetLabel));
@@ -572,7 +572,7 @@
         {
             static string OpToStr(int operand) => operand == 0 ? "" : operand.ToString();
 
-            var opStr = t.MoveNext() ? t.Current : throw new AssemblerSyntaxException($"{i.Mnemonic} instruction is missing operand {OpToStr(operand)}");
+            var opStr = t.MoveNext() ? t.Current : throw new ArgumentException($"{i.Mnemonic} instruction is missing operand {OpToStr(operand)}");
             T op;
             try
             {
@@ -580,7 +580,7 @@
             }
             catch (Exception e) when (e is FormatException || e is OverflowException)
             {
-                throw new AssemblerSyntaxException($"Operand{OpToStr(operand) + " "}of {i.Mnemonic} instruction is not a valid {typeName ?? typeof(T).Name}", e);
+                throw new ArgumentException($"Operand{OpToStr(operand) + " "}of {i.Mnemonic} instruction is not a valid {typeName ?? typeof(T).Name}", e);
             }
 
             return op;
