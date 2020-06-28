@@ -232,7 +232,6 @@ namespace ScTools
                             uint targetIP = (uint)(sc.IP<short>(ip) + ip + 2);
 
                             sb.Append(' ');
-                            sb.Append('@');
                             sb.Append(allLabels[targetIP]);
                         }
                         break;
@@ -241,7 +240,6 @@ namespace ScTools
                             uint targetIP = sc.IP<uint>(ip) & 0xFFFFFF;
 
                             sb.Append(' ');
-                            sb.Append('@');
                             sb.Append(allLabels[targetIP]);
                         }
                         break;
@@ -279,7 +277,6 @@ namespace ScTools
                                     sb.Append(' ');
                                     sb.Append(caseValue);
                                     sb.Append(':');
-                                    sb.Append('@');
                                     sb.Append(allLabels[targetIP]);
                                 }
 

@@ -5,7 +5,6 @@
     internal static class Token
     {
         public const char CommentChar = ';';
-        public const char TargetLabelPrefix = '@';
 
         public static bool IsString(ReadOnlySpan<char> token, out ReadOnlySpan<char> strContents)
         {
@@ -21,13 +20,7 @@
 
         public static bool IsTargetLabel(ReadOnlySpan<char> token, out ReadOnlySpan<char> label)
         {
-            if (token.Length <= 1 || token[0] != TargetLabelPrefix)
-            {
-                label = default;
-                return false;
-            }
-
-            label = token[1..]; // remove prefix
+            label = token;
             return true;
         }
 

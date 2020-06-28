@@ -480,12 +480,12 @@
         {
             static bool ParseCase(ReadOnlySpan<char> token, out uint value, out string targetLabel)
             {
-                const string Separator = ":@";
+                const string Separator = ":";
 
                 int sepIndex = token.IndexOf(Separator.AsSpan());
                 if (sepIndex != -1)
                 {
-                    var valueStr = token.Slice(0, sepIndex);
+                    var valueStr = token[0..sepIndex];
                     value = 0;
                     try
                     {
@@ -496,7 +496,7 @@
                         throw new ArgumentException($"Switch case value '{valueStr.ToString()}' is not a valid uint32 value", nameof(token), e);
                     }
 
-                    var labelStr = token.Slice(sepIndex + 2);
+                    var labelStr = token[(sepIndex + 1)..];
                     targetLabel = labelStr.ToString();
                     return true;
                 }

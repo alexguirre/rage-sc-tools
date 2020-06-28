@@ -334,9 +334,11 @@
                 this.options = options;
             }
 
+            private bool IsLocalLabel(string label) => label[0] == '.';
+
             private string NormalizeLabelName(string label)
             {
-                if (label[0] == '.') // is local label
+                if (IsLocalLabel(label))
                 {
                     Debug.Assert(currentGlobalLabel != null);
                     label = currentGlobalLabel + label; // prepend the name of the global label
@@ -353,7 +355,7 @@
                 }
 
                 bool isGlobal = true;
-                if (label[0] == '.') // is local label
+                if (IsLocalLabel(label))
                 {
                     if (currentGlobalLabel == null)
                     {

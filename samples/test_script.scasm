@@ -3,9 +3,9 @@ $STATICS 5
 
 main:
     ENTER 0 2
-    CALL @func_changeGlobals
+    CALL func_changeGlobals
     PUSH_CONST_U8 1
-    CALL @func_isLessThan3
+    CALL func_isLessThan3
     GLOBAL_U16_STORE 5   ; global 5 = 1 < 3 
     LEAVE 0 0
 

@@ -20,7 +20,7 @@ main:
         NATIVE 0 1 4
         STATIC_U8_STORE 4   ; lastTime = GET_GAME_TIMER()
 
-    loop: ; infinite loop
+    .loop: ; infinite loop
         PUSH_CONST_U8 0
         NATIVE 1 0 0        ; WAIT(0)
         
@@ -53,27 +53,27 @@ main:
         NATIVE 0 1 4        ; GET_GAME_TIMER()
         STATIC_U8_LOAD 4    ; lastTime
         ISUB
-        ILT_JZ @loop     ; if (GET_GAME_TIMER() - lastTime) < 2000)
+        ILT_JZ .loop     ; if (GET_GAME_TIMER() - lastTime) < 2000)
                          ; then repeat loop
                          ; else nextFibonacci and repeat loop
-        CALL @nextFibonacci
+        CALL nextFibonacci
         STATIC_U8_STORE 3  ; every 2 seconds, store the next fibonacci number in static 3
         NATIVE 0 1 4
         STATIC_U8_STORE 4   ; static4 = GET_GAME_TIMER()
         
-        J @loop
+        J .loop
         LEAVE 0 0
 
 nextFibonacci:  ; no args, 1 local for return value
         ENTER 0 3
         PUSH_CONST_1
         STATIC_U8_LOAD 2    ; get current fibonacci index
-        IGE_JZ @else        ; if (index < 1)
-    then:
+        IGE_JZ .else        ; if (index < 1)
+    .then:
         PUSH_CONST_0
         LOCAL_U8_STORE 2    ; return 0
-        J @end
-    else:
+        J .end
+    .else:
         STATIC_U8_LOAD 0    ; fib0
         STATIC_U8_LOAD 1    ; fib1
         IADD
@@ -82,7 +82,7 @@ nextFibonacci:  ; no args, 1 local for return value
         STATIC_U8_STORE 0   ; fib0 = fib1
         LOCAL_U8_LOAD 2
         STATIC_U8_STORE 1   ; fib1 = newFib
-    end:
+    .end:
         STATIC_U8_LOAD 2
         IADD_U8 1
         STATIC_U8_STORE 2   ; index++
