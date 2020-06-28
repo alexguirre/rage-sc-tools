@@ -1,11 +1,10 @@
 ﻿namespace ScTools
 {
     using System;
-    using ScTools.GameFiles;
 
     internal partial class Assembler
     {
-        private delegate void DirectiveCallback(Directive directive, Tokenizer.TokenEnumerator tokens, Assembler assembler);
+        private delegate void DirectiveCallback(Directive directive, TokenEnumerator tokens, Assembler assembler);
 
         private readonly struct Directive
         {
@@ -20,7 +19,7 @@
                 Callback = callback ?? throw new ArgumentNullException(nameof(callback));
             }
 
-            public static void NoMoreTokens(Directive d, Tokenizer.TokenEnumerator tokens)
+            public static void NoMoreTokens(Directive d, TokenEnumerator tokens)
             {
                 if (tokens.MoveNext())
                 {
@@ -163,7 +162,7 @@
                 (d, t, a) =>
                 {
                     var str = t.MoveNext() ? t.Current : throw new AssemblerSyntaxException($"Missing string token in {d.Name} directive");
-                    if (!Tokenizer.IsString(str, out var contents))
+                    if (!Token.IsString(str, out var contents))
                     {
                         throw new AssemblerSyntaxException($"String token in {d.Name} directive is not a valid string");
                     }

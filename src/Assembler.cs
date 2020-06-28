@@ -26,7 +26,6 @@
         private readonly AssemblerOptions options;
         private readonly List<ulong> nativeHashes = new List<ulong>();
         private readonly HashSet<string> labels = new HashSet<string>();
-        private string lastLabel = null;
         private Operand[] operandsBuffer = null;
         private CodeBuilder code = null;
         private StringsPagesBuilder strings = null;
@@ -62,7 +61,6 @@
         {
             nativeHashes.Clear();
             labels.Clear();
-            lastLabel = null;
             operandsBuffer = new Operand[Instruction.MaxOperands];
             code = new CodeBuilder(options);
             strings = new StringsPagesBuilder();
@@ -73,13 +71,6 @@
             while ((line = input.ReadLine()) != null)
             {
                 ParseLine(line);
-            }
-
-            if (lastLabel != null)
-            {
-                // some disassembled scripts may have a label at the end of the code, at ip == codeLength
-                // so add it here if we found a label after all the code
-                code.AddLabel(lastLabel);
             }
 
             sc.CodePages = new ScriptPageArray<byte>
@@ -118,7 +109,7 @@
                 return;
             }
 
-            var tokens = Tokenizer.Tokenize(line).GetEnumerator();
+            var tokens = Token.Tokenize(line).GetEnumerator();
             if (tokens.MoveNext())
             {
                 bool parsed = ParseDirective(tokens) ||
@@ -133,27 +124,24 @@
             }
         }
 
-        private bool ParseLabel(Tokenizer.TokenEnumerator tokens)
+        private bool ParseLabel(TokenEnumerator tokens)
         {
             var token = tokens.Current;
 
             if (token[^1] == ':') // label
             {
-                if (lastLabel != null)
-                {
-                    throw new AssemblerSyntaxException($"Found label '{token.ToString()}' right after label '{lastLabel}'");
-                }
-
                 if (tokens.MoveNext())
                 {
                     throw new AssemblerSyntaxException($"Unknown token '{tokens.Current.ToString()}' after label '{token.ToString()}'");
                 }
 
-                lastLabel = token[0..^1].ToString(); // remove ':'
-                if (!labels.Add(lastLabel))
+                string lbl = token[0..^1].ToString(); // remove ':'
+                if (!labels.Add(lbl))
                 {
                     throw new AssemblerSyntaxException($"Label '{token.ToString()}' is repeated");
                 }
+
+                code.AddLabel(lbl);
 
                 return true;
             }
@@ -161,7 +149,7 @@
             return false;
         }
 
-        private bool ParseDirective(Tokenizer.TokenEnumerator tokens)
+        private bool ParseDirective(TokenEnumerator tokens)
         {
             var directive = tokens.Current;
 
@@ -185,7 +173,7 @@
             }
         }
 
-        private bool ParseInstruction(Tokenizer.TokenEnumerator tokens)
+        private bool ParseInstruction(TokenEnumerator tokens)
         {
             ref readonly var inst = ref Instruction.FindByMnemonic(tokens.Current);
             if (inst.IsValid)
@@ -197,10 +185,9 @@
                     throw new AssemblerSyntaxException($"Unknown token '{tokens.Current.ToString()}' after instruction '{inst.Mnemonic}'");
                 }
 
-                code.BeginInstruction(lastLabel);
+                code.BeginInstruction();
                 inst.Assemble(operands, code);
                 code.EndInstruction();
-                lastLabel = null;
 
                 return true;
             }
@@ -208,27 +195,26 @@
             return false;
         }
 
-        private bool ParseHighLevelInstruction(Tokenizer.TokenEnumerator tokens)
+        private bool ParseHighLevelInstruction(TokenEnumerator tokens)
         {
             var mnemonic = tokens.Current;
             if (mnemonic.Equals("PUSH_STRING".AsSpan(), StringComparison.Ordinal))
             {
                 var str = tokens.MoveNext() ? tokens.Current : throw new AssemblerSyntaxException();
 
-                if (!Tokenizer.IsString(str, out str))
+                if (!Token.IsString(str, out str))
                 {
                     throw new AssemblerSyntaxException();
                 }
 
                 uint strId = strings.Add(str); // TODO: handle repeated strings
 
-                code.BeginInstruction(lastLabel);
+                code.BeginInstruction();
                 Instruction.PUSH_CONST_U32.Assemble(new[] { new Operand(strId) }, code);
                 code.EndInstruction();
-                code.BeginInstruction(null);
+                code.BeginInstruction();
                 Instruction.STRING.Assemble(ReadOnlySpan<Operand>.Empty, code);
                 code.EndInstruction();
-                lastLabel = null;
 
                 if (tokens.MoveNext())
                 {
@@ -345,12 +331,11 @@
                 }
             }
 
-            public void BeginInstruction(string label)
+            public void BeginInstruction()
             {
                 Debug.Assert(!inInstruction);
 
                 buffer.Clear();
-                AddLabel(label);
                 inInstruction = true;
             }
 

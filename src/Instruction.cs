@@ -4,7 +4,7 @@
     using System.Diagnostics;
 
     using Inst = Instruction;
-    using Tokens = Tokenizer.TokenEnumerator;
+    using Tokens = TokenEnumerator;
     using Code = Assembler.ICodeBuilder;
 
     internal enum OperandType
@@ -559,7 +559,7 @@
         private static float NextFloat(in Inst i, ref Tokens t, int operand) => NextValue(i, ref t, operand, s => float.Parse(s));
         private static string NextTargetLabel(in Inst i, ref Tokens t, int operand) => NextValue(i, ref t, operand, s => 
         {
-            if (!Tokenizer.IsTargetLabel(s, out var lbl))
+            if (!Token.IsTargetLabel(s, out var lbl))
             {
                 throw new FormatException("Not a target label");
             }
