@@ -94,7 +94,9 @@
 
             Debug.Assert(sc.Natives.Select((h, i) => sc.NativeHash(i) == nativeHashes[i]).All(b => b));
 
+            operandsBuffer = null;
             code = null;
+            strings = null;
         }
 
         private void ParseLine(string line)

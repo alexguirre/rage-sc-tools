@@ -8,6 +8,7 @@
     using System.Text;
     using System.Diagnostics;
     using System.Collections;
+    using System.Linq;
 
     internal class Script : ResourceFileBase
     {
@@ -48,8 +49,17 @@
         private ResourceSystemStructBlock<ulong> nativesBlock;
         private string_r nameBlock;
 
-        public uint GlobalsLength => GlobalsLengthAndBlock & 0x3FFFF;
-        public uint GlobalsBlock => GlobalsLengthAndBlock >> 18;
+        public uint GlobalsLength
+        {
+            get => GlobalsLengthAndBlock & 0x3FFFF;
+            set => GlobalsLengthAndBlock = (GlobalsLengthAndBlock & 0xFFFC0000) | (value & 0x3FFFF);
+        }
+
+        public uint GlobalsBlock
+        {
+            get => GlobalsLengthAndBlock >> 18;
+            set => GlobalsLengthAndBlock = GlobalsLength | (value << 18);
+        }
 
         public override void Read(ResourceDataReader reader, params object[] parameters)
         {
@@ -91,13 +101,16 @@
 
             // update structure data
             CodePagesPointer = (ulong)(CodePages?.FilePosition ?? 0);
+            CodeLength = CodePages?.Length ?? 0;
             StaticsPointer = (ulong)(staticsBlock?.FilePosition ?? 0);
             StaticsCount = (uint)(staticsBlock?.ItemCount ?? 0);
             GlobalsPagesPointer = (ulong)(GlobalsPages?.FilePosition ?? 0);
+            GlobalsLength = GlobalsPages?.Length ?? 0;
             NativesPointer = (ulong)(nativesBlock?.FilePosition ?? 0);
             NativesCount = (uint)(nativesBlock?.ItemCount ?? 0);
             NamePointer = (ulong)(nameBlock?.FilePosition ?? 0);
             StringsPagesPointer = (ulong)(StringsPages?.FilePosition ?? 0);
+            StringsLength = StringsPages?.Length ?? 0;
 
             // write structure data
             writer.Write(CodePagesPointer);
@@ -331,6 +344,11 @@
         public ref ScriptPage<T> this[uint index] => ref Items[index];
         public ref ScriptPage<T> this[long index] => ref Items[index];
         public ref ScriptPage<T> this[ulong index] => ref Items[index];
+
+        /// <summary>
+        /// Gets the total length of all the pages combined.
+        /// </summary>
+        public uint Length => (uint)(Items?.Sum(i => i.Data?.Length ?? 0) ?? 0);
 
         public ScriptPageArray()
         {
