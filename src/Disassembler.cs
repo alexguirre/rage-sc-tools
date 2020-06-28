@@ -194,6 +194,7 @@ namespace ScTools
                 }
                 else
                 {
+                    // TODO: write as local label
                     appendIndented(sb, 1, label);
                 }
                 sb.Append(':');

@@ -25,7 +25,6 @@
         private Script sc;
         private readonly AssemblerOptions options;
         private readonly List<ulong> nativeHashes = new List<ulong>();
-        private readonly HashSet<string> labels = new HashSet<string>();
         private Operand[] operandsBuffer = null;
         private CodeBuilder code = null;
         private StringsPagesBuilder strings = null;
@@ -60,7 +59,6 @@
         private void Parse(FileInfo inputFile)
         {
             nativeHashes.Clear();
-            labels.Clear();
             operandsBuffer = new Operand[Instruction.MaxOperands];
             code = new CodeBuilder(options);
             strings = new StringsPagesBuilder();
@@ -136,11 +134,6 @@
                 }
 
                 string lbl = token[0..^1].ToString(); // remove ':'
-                if (!labels.Add(lbl))
-                {
-                    throw new AssemblerSyntaxException($"Label '{token.ToString()}' is repeated");
-                }
-
                 code.AddLabel(lbl);
 
                 return true;
@@ -309,6 +302,7 @@
             private readonly AssemblerOptions options;
             private readonly List<byte[]> pages = new List<byte[]>();
             private string currentLabel = null;
+            private string currentGlobalLabel = null;
             private readonly Dictionary<string, uint> labels = new Dictionary<string, uint>(); // key = label name, value = IP
             private readonly List<(string TargetLabel, uint IP)> targetLabels = new List<(string, uint)>();
             private readonly List<(string TargetLabel, uint IP)> relativeTargetLabels = new List<(string, uint)>();
@@ -322,12 +316,44 @@
                 this.options = options;
             }
 
+            private string NormalizeLabelName(string label)
+            {
+                if (label[0] == '.') // is local label
+                {
+                    Debug.Assert(currentGlobalLabel != null);
+                    label = currentGlobalLabel + label; // prepend the name of the global label
+                }
+
+                return label;
+            }
+
             public void AddLabel(string label)
             {
                 if (!string.IsNullOrWhiteSpace(label))
                 {
+                    bool isGlobal = true;
+                    if (label[0] == '.') // is local label
+                    {
+                        if (currentGlobalLabel == null)
+                        {
+                            throw new InvalidOperationException($"Cannot define local label '{label}' without a previous global label");
+                        }
+
+                        isGlobal = false;
+                    }
+
+                    label = NormalizeLabelName(label);
+
+                    if (!labels.TryAdd(label, length))
+                    {
+                        throw new InvalidOperationException($"Label '{label}' is repeated");
+                    }
+
                     currentLabel = label;
-                    labels.Add(label, length);
+                    if (isGlobal)
+                    {
+                        currentGlobalLabel = label;
+                    }
                 }
             }
 
@@ -402,6 +428,8 @@
                     throw new ArgumentException("null or empty label", nameof(label));
                 }
 
+                label = NormalizeLabelName(label);
+
                 // TODO: what happens if this is done in the page boundary where the instruction doesn't fit?
                 // the IP value may no longer match the instruction position and FixupTargetLabels will write the address in the wrong position
                 targetLabels.Add((label, length + (uint)buffer.Count));
@@ -420,6 +448,8 @@
                 {
                     throw new ArgumentException("null or empty label", nameof(label));
                 }
+
+                label = NormalizeLabelName(label);
 
                 // TODO: what happens if this is done in the page boundary where the instruction doesn't fit?
                 // the IP value may no longer match the instruction position and FixupRelativeTargetLabels will write the address in the wrong position
@@ -460,14 +490,21 @@
                 inInstruction = false;
             }
 
+            private uint GetLabelIP(string label)
+            {
+                if (!labels.TryGetValue(label, out uint ip))
+                {
+                    throw new AssemblerSyntaxException($"Unknown label '{label}'");
+                }
+
+                return ip;
+            }
+
             private void FixupTargetLabels()
             {
                 foreach (var (targetLabel, targetIP) in targetLabels)
                 {
-                    if (!labels.TryGetValue(targetLabel, out uint ip))
-                    {
-                        throw new AssemblerSyntaxException($"Unknown label '{targetLabel}'");
-                    }
+                    uint ip = GetLabelIP(targetLabel);
 
                     byte[] targetPage = pages[(int)(targetIP >> 14)];
                     uint targetOffset = targetIP & 0x3FFF;
@@ -484,10 +521,7 @@
             {
                 foreach (var (targetLabel, targetIP) in relativeTargetLabels)
                 {
-                    if (!labels.TryGetValue(targetLabel, out uint ip))
-                    {
-                        throw new AssemblerSyntaxException($"Unknown label '{targetLabel}'");
-                    }
+                    uint ip = GetLabelIP(targetLabel);
 
                     byte[] targetPage = pages[(int)(targetIP >> 14)];
                     uint targetOffset = targetIP & 0x3FFF;
