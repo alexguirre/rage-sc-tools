@@ -28,11 +28,41 @@ namespace ScTools
             for (int i = 0; i < sc.StaticsCount; i++)
             {
                 ScriptValue v = sc.Statics[i];
-                if (v.AsInt64 != 0)
+                if (v.AsUInt64 != 0)
                 {
                     writer.WriteLine("$STATIC_INT_INIT {0} {1}", i, v.AsInt32);
 
-                    Debug.Assert(v.AsInt32 == v.AsInt64, "int64 found");
+                    Debug.Assert(v.AsUInt32 == v.AsUInt64, "uint64 found");
+                }
+            }
+            writer.WriteLine();
+
+            if (sc.Hash != 0)
+            {
+                writer.WriteLine("$HASH 0x{0:X8}", sc.Hash);
+            }
+            if (sc.GlobalsLengthAndBlock != 0 && sc.GlobalsPages != null)
+            {
+                writer.WriteLine("$GLOBALS {0} {1}", sc.GlobalsBlock, sc.GlobalsLength);
+
+                uint pageIndex = 0;
+                foreach (var page in sc.GlobalsPages)
+                {
+                    uint i = 0;
+                    foreach (ScriptValue g in page.Data)
+                    {
+                        uint globalId = (sc.GlobalsBlock << 18) | (pageIndex << 14) | i;
+                        
+                        if (g.AsUInt64 != 0)
+                        {
+                            writer.WriteLine("$GLOBAL_INT_INIT {0} {1}", globalId, g.AsInt32);
+
+                            Debug.Assert(g.AsUInt32 == g.AsUInt64, "uint64 found");
+                        }
+
+                        i++;
+                    }
+                    pageIndex++;
                 }
             }
             writer.WriteLine();

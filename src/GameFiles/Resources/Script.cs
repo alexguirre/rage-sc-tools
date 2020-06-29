@@ -437,10 +437,22 @@
             set => union.AsInt32 = value;
         }
 
+        public uint AsUInt32
+        {
+            get => union.AsUInt32;
+            set => union.AsUInt32 = value;
+        }
+
         public long AsInt64
         {
             get => union.AsInt64;
             set => union.AsInt64 = value;
+        }
+
+        public ulong AsUInt64
+        {
+            get => union.AsUInt64;
+            set => union.AsUInt64 = value;
         }
 
         [StructLayout(LayoutKind.Explicit, Size = 8)]
@@ -448,7 +460,9 @@
         {
             [FieldOffset(0)] public float AsFloat;
             [FieldOffset(0)] public int AsInt32;
+            [FieldOffset(0)] public uint AsUInt32;
             [FieldOffset(0)] public long AsInt64;
+            [FieldOffset(0)] public ulong AsUInt64;
         }
     }
 }
