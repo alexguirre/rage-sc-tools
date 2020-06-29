@@ -8,28 +8,32 @@
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.IO;
+    using System.IO.Compression;
 
     internal readonly struct NativeCommand : IEquatable<NativeCommand>
     {
         public ulong Hash { get; }
+        public ulong CurrentHash { get; }
         public string Name { get; }
         public byte ParameterCount { get; }
         public byte ReturnValueCount { get; }
 
-        public NativeCommand(ulong hash, string name, byte parameterCount, byte returnValueCount)
+        public NativeCommand(ulong hash, ulong currentHash, string name, byte parameterCount, byte returnValueCount)
         {
             Hash = hash;
+            CurrentHash = currentHash;
             Name = name;
             ParameterCount = parameterCount;
             ReturnValueCount = returnValueCount;
         }
 
-        public override int GetHashCode() => (Hash, ParameterCount, ReturnValueCount, Name).GetHashCode();
+        public override int GetHashCode() => (Hash, CurrentHash, ParameterCount, ReturnValueCount, Name).GetHashCode();
 
         public override bool Equals(object obj) => obj is NativeCommand n && Equals(n);
         public bool Equals(NativeCommand other) => Equals(in other);
         public bool Equals(in NativeCommand other)
             => Hash == other.Hash &&
+               CurrentHash == other.CurrentHash &&
                ParameterCount == other.ParameterCount &&
                ReturnValueCount == other.ReturnValueCount &&
                Name == other.Name;
@@ -40,68 +44,64 @@
 
     internal sealed class NativeDB
     {
-        public ImmutableArray<NativeCommand> Natives { get; }
-        public ImmutableDictionary<ulong, ulong[]> CrossMap { get; }
+        public const uint HeaderMagic = 0x2042444E; // 'NDB '
 
-        private NativeDB(NativeCommand[] natives, Dictionary<ulong, ulong[]> crossMap)
+        public ImmutableArray<NativeCommand> Natives { get; }
+
+        private NativeDB(IEnumerable<NativeCommand> natives)
         {
             Natives = natives.ToImmutableArray();
-            CrossMap = crossMap.ToImmutableDictionary();
         }
 
         public void Save(BinaryWriter writer)
         {
+            writer.Write(HeaderMagic);
             writer.Write(Natives.Length);
             foreach (ref readonly var native in Natives.AsSpan())
             {
                 writer.Write(native.Hash);
+                writer.Write(native.CurrentHash);
                 writer.Write(native.ParameterCount);
                 writer.Write(native.ReturnValueCount);
                 writer.Write(native.Name);
-            }
-
-            writer.Write(CrossMap.Count);
-            writer.Write(CrossMap.First().Value.Length);
-            foreach (var kvp in CrossMap)
-            {
-                writer.Write(kvp.Key);
-                foreach (var h in kvp.Value)
-                {
-                    writer.Write(h);
-                }
             }
         }
 
         public static NativeDB Load(BinaryReader reader)
         {
+            if (reader.BaseStream.Length < sizeof(uint) * 2)
+            {
+                throw new InvalidDataException("Incorrect size");
+            }
+
+            var magic = reader.ReadUInt32();
+
+            if (magic != HeaderMagic)
+            {
+                throw new InvalidDataException("Incorrect header");
+            }
+
             var nativeCount = reader.ReadInt32();
             var natives = new NativeCommand[nativeCount];
-            for (int i = 0; i < nativeCount; i++)
+            try
             {
-                var hash = reader.ReadUInt64();
-                var paramCount = reader.ReadByte();
-                var returnValueCount = reader.ReadByte();
-                var name = reader.ReadString();
-
-                natives[i] = new NativeCommand(hash, name, paramCount, returnValueCount);
-            }
-
-            var crossMapCount = reader.ReadInt32();
-            var hashesPerEntry = reader.ReadInt32();
-            var crossMap = new Dictionary<ulong, ulong[]>(crossMapCount);
-            for (int i = 0; i < crossMapCount; i++)
-            {
-                var keyHash = reader.ReadUInt64();
-                var hashes = new ulong[hashesPerEntry];
-                for (int k = 0; k < hashesPerEntry; k++)
+                for (int i = 0; i < nativeCount; i++)
                 {
-                    hashes[k] = reader.ReadUInt64();
-                }
+                    var hash = reader.ReadUInt64();
+                    var currentHash = reader.ReadUInt64();
+                    var paramCount = reader.ReadByte();
+                    var returnValueCount = reader.ReadByte();
+                    var name = reader.ReadString();
 
-                crossMap.Add(keyHash, hashes);
+                    natives[i] = new NativeCommand(hash, currentHash, name, paramCount, returnValueCount);
+                }
+            }
+            catch (EndOfStreamException e)
+            {
+                throw new InvalidDataException("Incorrect native count", e);
             }
 
-            return new NativeDB(natives, crossMap);
+            return new NativeDB(natives);
         }
 
         public static async Task<NativeDB> Fetch(Uri crossMapUrl, Uri nativeDbUrl)
@@ -112,13 +112,13 @@
             using var nativeDbClient = new WebClient();
             var nativeDbTask = nativeDbClient.DownloadStringTaskAsync(nativeDbUrl).ContinueWith(t => ParseNativeDb(t.Result));
 
-            var crossmap = await crossMapTask;
+            var crossMap = await crossMapTask;
             var natives = await nativeDbTask;
 
-            return new NativeDB(natives, crossmap);
+            return new NativeDB(natives.Select(n => new NativeCommand(n.Hash, crossMap.GetValueOrDefault(n.Hash, n.Hash), n.Name, n.ParameterCount, n.ReturnValueCount)));
         }
 
-        private static Dictionary<ulong, ulong[]> ParseCrossMap(string crossMapStr)
+        private static Dictionary<ulong, ulong> ParseCrossMap(string crossMapStr)
         {
             static bool IsNewLine(char c) => c == '\r' || c == '\n';
 
@@ -186,10 +186,16 @@
                 lineNumber++;
             }
 
-            return crossmap.Aggregate(new Dictionary<ulong, ulong[]>(), (dict, hashes) =>
+            return crossmap.Aggregate(new Dictionary<ulong, ulong>(), (dict, hashes) =>
             {
                 var originalHash = hashes.First(h => h != 0);
-                dict.TryAdd(originalHash, hashes);
+                var currentHash = hashes.Last();
+                if (currentHash == 0)
+                {
+                    currentHash = originalHash;
+                }
+
+                dict.TryAdd(originalHash, currentHash);
                 return dict;
             });
         }
@@ -216,7 +222,7 @@
                         _ => 1
                     };
 
-                    natives[i++] = new NativeCommand(hash, name, paramCount, returnValueCount);
+                    natives[i++] = new NativeCommand(hash, 0, name, paramCount, returnValueCount);
                 }
             }
 

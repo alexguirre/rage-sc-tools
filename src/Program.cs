@@ -203,10 +203,6 @@
                 Debug.Assert(copyDB.Natives.Length == db.Natives.Length &&
                              copyDB.Natives.Select((n, i) => n == db.Natives[i]).All(b => b),
                              "natives do not match");
-
-                Debug.Assert(copyDB.CrossMap.Count == db.CrossMap.Count &&
-                             copyDB.CrossMap.All(kvp => kvp.Value.SequenceEqual(db.CrossMap[kvp.Key])),
-                             "crossmap does not match");
             }
 #endif
         }
