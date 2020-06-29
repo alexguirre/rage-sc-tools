@@ -9,6 +9,9 @@
     using System.Threading;
     using CodeWalker.GameFiles;
     using ScTools.GameFiles;
+    using System.Threading.Tasks;
+    using System.Diagnostics;
+    using System.Linq;
 
     internal static class Program
     {
@@ -56,10 +59,28 @@
             };
             assemble.Handler = CommandHandler.Create<AssembleOptions>(Assemble);
 
+            Command fetchNativeDb = new Command("fetch-nativedb")
+            {
+                new Option<Uri>(
+                    new[] { "--crossmap-url", "-c" },
+                    () => new Uri("https://raw.githubusercontent.com/citizenfx/fivem/master/code/components/rage-scripting-five/include/CrossMapping_Universal.h"),
+                    "Specifies the URL from which to download the natives cross map."),
+                new Option<Uri>(
+                    new[] { "--nativedb-url", "-n" },
+                    () => new Uri("https://raw.githubusercontent.com/alloc8or/gta5-nativedb-data/master/natives.json"),
+                    "Specifies the URL from which to download the native DB data."),
+                new Option<FileInfo>(
+                    new[] { "--output", "-o" },
+                    () => new FileInfo("natives.scndb"),
+                    "The output SCNDB file.")
+                    .LegalFilePathsOnly(),
+            };
+            fetchNativeDb.Handler = CommandHandler.Create<FetchNativeDbOptions>(FetchNativeDb);
 
             rootCmd.AddCommand(dump);
             rootCmd.AddCommand(disassemble);
             rootCmd.AddCommand(assemble);
+            rootCmd.AddCommand(fetchNativeDb);
 
             return rootCmd.InvokeAsync(args).Result;
         }
@@ -153,6 +174,41 @@
 
             new Dumper(sc).Dump(w, showMetadata: !o.NoMetadata, showDisassembly: !o.NoDisassembly,
                                 showOffsets: !o.NoOffsets, showBytes: !o.NoBytes, showInstructions: !o.NoInstructions);
+        }
+
+        private class FetchNativeDbOptions
+        {
+            public Uri CrossMapUrl { get; set; }
+            public Uri NativeDbUrl { get; set; }
+            public FileInfo Output { get; set; }
+        }
+
+        private static async Task FetchNativeDb(FetchNativeDbOptions o)
+        {
+            NativeDB db = await NativeDB.Fetch(o.CrossMapUrl, o.NativeDbUrl);
+            
+            using var w = new BinaryWriter(o.Output.Open(FileMode.Create));
+            db.Save(w);
+
+#if DEBUG
+            {
+                using var buffer = new MemoryStream();
+                using var writer = new BinaryWriter(buffer, Encoding.ASCII, leaveOpen: true);
+                db.Save(writer);
+
+                buffer.Position = 0;
+                using var reader = new BinaryReader(buffer, Encoding.ASCII, leaveOpen: true);
+                NativeDB copyDB = NativeDB.Load(reader);
+
+                Debug.Assert(copyDB.Natives.Length == db.Natives.Length &&
+                             copyDB.Natives.Select((n, i) => n == db.Natives[i]).All(b => b),
+                             "natives do not match");
+
+                Debug.Assert(copyDB.CrossMap.Count == db.CrossMap.Count &&
+                             copyDB.CrossMap.All(kvp => kvp.Value.SequenceEqual(db.CrossMap[kvp.Key])),
+                             "crossmap does not match");
+            }
+#endif
         }
     }
 }
