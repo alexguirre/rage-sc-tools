@@ -7,50 +7,43 @@ $STATIC_INT_INIT 2 0  ; current fibonnaci index
 $STATIC_INT_INIT 3 0  ; current fibonnaci value
 $STATIC_INT_INIT 4 0  ; last fibonnaci time
 
-$NATIVE_DEF 4EDE34FBADD967A6 ; void WAIT(int ms)
-$NATIVE_DEF 6EF0D5178A3B92EF ; void BEGIN_TEXT_COMMAND_DISPLAY_TEXT(const char* text)
-$NATIVE_DEF BD217E52410D1B67 ; void END_TEXT_COMMAND_DISPLAY_TEXT(float x, float y, int p2)
-$NATIVE_DEF 6A8B3CC08A759F44 ; void ADD_TEXT_COMPONENT_INTEGER(int value)
-$NATIVE_DEF 9B35D07DCD0F0B43 ; int GET_GAME_TIMER()
-$NATIVE_DEF A89C789CC9FEF523 ; void ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(const char* text)
-
 main:
         ENTER 0 2
 
-        NATIVE 0 1 4
+        CALL_NATIVE GET_GAME_TIMER
         STATIC_U8_STORE 4   ; lastTime = GET_GAME_TIMER()
 
     .loop: ; infinite loop
         PUSH_CONST_U8 0
-        NATIVE 1 0 0        ; WAIT(0)
+        CALL_NATIVE WAIT        ; WAIT(0)
         
         ; draw a string
         PUSH_STRING "STRING"
-        NATIVE 1 0 1        ; BEGIN_TEXT_COMMAND_DISPLAY_TEXT("STRING")
+        CALL_NATIVE BEGIN_TEXT_COMMAND_DISPLAY_TEXT        ; BEGIN_TEXT_COMMAND_DISPLAY_TEXT("STRING")
 
         PUSH_STRING "Fibonacci"
-        NATIVE 1 0 5        ; ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME("Fibonacci")
+        CALL_NATIVE ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME        ; ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME("Fibonacci")
 
         PUSH_CONST_F 0.5
         PUSH_CONST_F 0.175
         PUSH_CONST_0
-        NATIVE 3 0 2        ; END_TEXT_COMMAND_DISPLAY_TEXT(0.5, 0.175, 0)
+        CALL_NATIVE END_TEXT_COMMAND_DISPLAY_TEXT        ; END_TEXT_COMMAND_DISPLAY_TEXT(0.5, 0.175, 0)
 
         ; draw the fibonacci number
         PUSH_STRING "NUMBER"
-        NATIVE 1 0 1        ; BEGIN_TEXT_COMMAND_DISPLAY_TEXT("NUMBER")
+        CALL_NATIVE BEGIN_TEXT_COMMAND_DISPLAY_TEXT        ; BEGIN_TEXT_COMMAND_DISPLAY_TEXT("NUMBER")
 
         STATIC_U8_LOAD 3    ; current fibonacci number
-        NATIVE 1 0 3        ; ADD_TEXT_COMPONENT_INTEGER(currentFibonacci)
+        CALL_NATIVE ADD_TEXT_COMPONENT_INTEGER        ; ADD_TEXT_COMPONENT_INTEGER(currentFibonacci)
 
         PUSH_CONST_F 0.5
         PUSH_CONST_F 0.25
         PUSH_CONST_0
-        NATIVE 3 0 2        ; END_TEXT_COMMAND_DISPLAY_TEXT(0.5, 0.25, 0)
+        CALL_NATIVE END_TEXT_COMMAND_DISPLAY_TEXT        ; END_TEXT_COMMAND_DISPLAY_TEXT(0.5, 0.25, 0)
 
         ; check if we need to update the fibonacci number
         PUSH_CONST_S16 2000
-        NATIVE 0 1 4        ; GET_GAME_TIMER()
+        CALL_NATIVE GET_GAME_TIMER        ; GET_GAME_TIMER()
         STATIC_U8_LOAD 4    ; lastTime
         ISUB
         ILT_JZ .loop     ; if (GET_GAME_TIMER() - lastTime) < 2000)
@@ -58,7 +51,7 @@ main:
                          ; else nextFibonacci and repeat loop
         CALL nextFibonacci
         STATIC_U8_STORE 3  ; every 2 seconds, store the next fibonacci number in static 3
-        NATIVE 0 1 4
+        CALL_NATIVE GET_GAME_TIMER
         STATIC_U8_STORE 4   ; static4 = GET_GAME_TIMER()
         
         J .loop

@@ -24,14 +24,16 @@
 
         private Script sc;
         private readonly AssemblerOptions options;
+        private readonly NativeDB nativeDB;
         private readonly List<ulong> nativeHashes = new List<ulong>();
         private Operand[] operandsBuffer = null;
         private CodeBuilder code = null;
         private StringsPagesBuilder strings = null;
 
-        public Assembler(AssemblerOptions options)
+        public Assembler(AssemblerOptions options, NativeDB nativeDB)
         {
             this.options = options;
+            this.nativeDB = nativeDB;
         }
 
         public Script Assemble(FileInfo inputFile)
@@ -229,6 +231,38 @@
 
                 return true;
             }
+            else if (mnemonic.Equals("CALL_NATIVE".AsSpan(), StringComparison.Ordinal))
+            {
+                if (nativeDB == null)
+                {
+                    throw new InvalidOperationException("A nativeDB is required when using the CALL_NATIVE instruction");
+                }
+
+                var nativeName = tokens.MoveNext() ? tokens.Current : throw new Exception();
+
+                string nativeNameStr = nativeName.ToString(); // TODO: optimize
+                NativeCommand n = nativeDB.Natives.FirstOrDefault(n => nativeNameStr.Equals(n.Name));
+
+                if (n == default)
+                {
+                    throw new InvalidOperationException($"Unknown native command '{nativeName.ToString()}'");
+                }
+
+                byte paramCount = n.ParameterCount;
+                byte returnValueCount = n.ReturnValueCount;
+                ushort idx = (ushort)GetNativeIndexOrAdd(n.CurrentHash);
+
+                code.BeginInstruction();
+                Instruction.NATIVE.Assemble(new[] { new Operand(paramCount), new Operand(returnValueCount), new Operand(idx) }, code);
+                code.EndInstruction();
+
+                if (tokens.MoveNext())
+                {
+                    throw new ArgumentException($"Unknown token '{tokens.Current.ToString()}' after instruction 'CALL_NATIVE'");
+                }
+
+                return true;
+            }
 
             return false;
         }
@@ -346,7 +380,7 @@
         private void SetGlobalValue(uint globalId, int value) => GetGlobalValue(globalId).AsInt32 = value;
         private void SetGlobalValue(uint globalId, float value) => GetGlobalValue(globalId).AsFloat = value;
 
-        private void AddNative(ulong hash)
+        private int AddNative(ulong hash)
         {
             Debug.Assert(sc != null);
 
@@ -355,7 +389,22 @@
                 throw new ArgumentException($"Native hash {hash:X16} is repeated", nameof(hash));
             }
 
+            int index = nativeHashes.Count;
             nativeHashes.Add(hash);
+            return index;
+        }
+
+        private int GetNativeIndexOrAdd(ulong hash)
+        {
+            for (int i = 0; i < nativeHashes.Count; i++)
+            {
+                if (nativeHashes[i] == hash)
+                {
+                    return i;
+                }
+            }
+
+            return AddNative(hash);
         }
 
         private void AddString(ReadOnlySpan<char> str)

@@ -56,6 +56,10 @@
                     "The input SCASM file.")
                     .ExistingOnly(),
                 new Option(new[] { "--function-names", "-f" }, "Include the function names in ENTER instructions."),
+                new Option<FileInfo>(
+                    new[] { "--nativedb", "-n" },
+                    "The SCNDB file containing the native commands definitions.")
+                    .ExistingOnly(),
             };
             assemble.Handler = CommandHandler.Create<AssembleOptions>(Assemble);
 
@@ -100,6 +104,7 @@
         {
             public FileInfo Input { get; set; }
             public bool FunctionNames { get; set; }
+            public FileInfo NativeDB { get; set; }
         }
 
         private static void Assemble(AssembleOptions o)
@@ -110,7 +115,16 @@
 
             try
             {
-                Script sc = new Assembler(new AssemblerOptions(includeFunctionNames: o.FunctionNames)).Assemble(o.Input);
+                NativeDB nativeDB = null;
+                if (o.NativeDB != null)
+                {
+                    using var reader = new BinaryReader(o.NativeDB.OpenRead());
+                    nativeDB = NativeDB.Load(reader);
+                }
+
+                Script sc = new Assembler(new AssemblerOptions(includeFunctionNames: o.FunctionNames),
+                                          nativeDB)
+                            .Assemble(o.Input);
                 ysc.Script = sc;
             }
             catch (AssemblerSyntaxException e)
