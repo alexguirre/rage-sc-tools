@@ -142,6 +142,105 @@
                     a.SetStaticValue(index, value);
                     Directive.NoMoreTokens(d, t);
                 }),
+            new Directive("HASH", // tmp directive until we figure out how to calculate this hash automatically
+                (d, t, a) =>
+                {
+                    var hashStr = t.MoveNext() ? t.Current : throw new ArgumentException($"Missing hash token in {d.Name} directive");
+                    uint hash;
+                    try
+                    {
+                        hash = hashStr.StartsWith("0x".AsSpan()) ? uint.Parse(hashStr[2..], System.Globalization.NumberStyles.HexNumber) : throw new FormatException();
+                    }
+                    catch (Exception e) when (e is FormatException || e is OverflowException)
+                    {
+                        throw new ArgumentException($"Hash token in {d.Name} directive is not a valid uint32 hex value", e);
+                    }
+                    a.SetHash(hash);
+                    Directive.NoMoreTokens(d, t);
+                }),
+            new Directive("GLOBALS",
+                (d, t, a) =>
+                {
+                    var blockStr = t.MoveNext() ? t.Current : throw new ArgumentException($"Missing global block token in {d.Name} directive");
+                    byte block;
+                    try
+                    {
+                        block = byte.Parse(blockStr);
+                    }
+                    catch (Exception e) when (e is FormatException || e is OverflowException)
+                    {
+                        throw new ArgumentException($"Global block token in {d.Name} directive is not a valid uint8 value", e);
+                    }
+
+                    var countStr = t.MoveNext() ? t.Current : throw new ArgumentException($"Missing globals count token in {d.Name} directive");
+                    uint length;
+                    try
+                    {
+                        length = uint.Parse(countStr);
+                    }
+                    catch (Exception e) when (e is FormatException || e is OverflowException)
+                    {
+                        throw new ArgumentException($"Globals count token in {d.Name} directive is not a valid uint32 value", e);
+                    }
+                    a.SetGlobals(block, length);
+                    Directive.NoMoreTokens(d, t);
+                }),
+            new Directive("GLOBAL_INT_INIT",
+                (d, t, a) =>
+                {
+                    var idStr = t.MoveNext() ? t.Current : throw new ArgumentException($"Missing global ID token in {d.Name} directive");
+                    uint id;
+                    try
+                    {
+                        id = uint.Parse(idStr);
+                    }
+                    catch (Exception e) when (e is FormatException || e is OverflowException)
+                    {
+                        throw new ArgumentException($"Global ID token in {d.Name} directive is not a valid uint32 value", e);
+                    }
+
+                    var valueStr = t.MoveNext() ? t.Current : throw new ArgumentException($"Missing value token in {d.Name} directive");
+                    int value;
+                    try
+                    {
+                        value = int.Parse(valueStr);
+                    }
+                    catch (Exception e) when (e is FormatException || e is OverflowException)
+                    {
+                        throw new ArgumentException($"Value token in {d.Name} directive is not a valid int32 value", e);
+                    }
+
+                    a.SetGlobalValue(id, value);
+                    Directive.NoMoreTokens(d, t);
+                }),
+            new Directive("GLOBAL_FLOAT_INIT",
+                (d, t, a) =>
+                {
+                    var idStr = t.MoveNext() ? t.Current : throw new ArgumentException($"Missing global ID token in {d.Name} directive");
+                    uint id;
+                    try
+                    {
+                        id = uint.Parse(idStr);
+                    }
+                    catch (Exception e) when (e is FormatException || e is OverflowException)
+                    {
+                        throw new ArgumentException($"Global ID token in {d.Name} directive is not a valid uint32 value", e);
+                    }
+
+                    var valueStr = t.MoveNext() ? t.Current : throw new ArgumentException($"Missing value token in {d.Name} directive");
+                    float value;
+                    try
+                    {
+                        value = float.Parse(valueStr);
+                    }
+                    catch (Exception e) when (e is FormatException || e is OverflowException)
+                    {
+                        throw new ArgumentException($"Value token in {d.Name} directive is not a valid float32 value", e);
+                    }
+
+                    a.SetGlobalValue(id, value);
+                    Directive.NoMoreTokens(d, t);
+                }),
             new Directive("NATIVE_DEF",
                 (d, t, a) =>
                 {

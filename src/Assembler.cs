@@ -241,6 +241,18 @@
             sc.NameHash = name.ToHash();
         }
 
+        private void SetHash(uint hash)
+        {
+            Debug.Assert(sc != null);
+
+            if (sc.Hash != 0)
+            {
+                throw new InvalidOperationException("Hash was already set");
+            }
+
+            sc.Hash = hash;
+        }
+
         private void SetStaticsCount(uint count)
         {
             Debug.Assert(sc != null);
@@ -277,6 +289,62 @@
 
             sc.Statics[staticIndex].AsFloat = value;
         }
+
+        private void SetGlobals(byte block, uint length)
+        {
+            Debug.Assert(sc != null);
+
+            if (block >= 64) // limit hardcoded in the game .exe (and max value that fits in GLOBAL_U24* instructions)
+            {
+                throw new ArgumentOutOfRangeException(nameof(block), "Block is greater than or equal to 64");
+            }
+
+            if (sc.GlobalsPages != null)
+            {
+                throw new InvalidOperationException("Globals already set");
+            }
+
+            uint pageCount = (length + 0x3FFF) >> 14;
+            var pages = new ScriptPage<ScriptValue>[pageCount];
+            for (int i = 0; i < pageCount; i++)
+            {
+                uint pageSize = i == pageCount - 1 ? (length & (Script.MaxPageLength - 1)) : Script.MaxPageLength;
+                pages[i] = new ScriptPage<ScriptValue>() { Data = new ScriptValue[pageSize] };
+            }
+
+            sc.GlobalsPages = new ScriptPageArray<ScriptValue> { Items = pages };
+            sc.GlobalsBlock = block;
+            sc.GlobalsLength = length;
+        }
+
+        private ref ScriptValue GetGlobalValue(uint globalId)
+        {
+            Debug.Assert(sc != null);
+            
+            if (sc.GlobalsPages == null)
+            {
+                throw new InvalidOperationException($"Globals block and length are undefined");
+            }
+
+            uint globalBlock = globalId >> 18;
+            uint pageIndex = (globalId >> 14) & 0xF;
+            uint pageOffset = globalId & 0x3FFF;
+
+            if (globalBlock != sc.GlobalsBlock)
+            {
+                throw new ArgumentException($"Block of global {globalId} (block {globalBlock}) does not match the block of this script (block {sc.GlobalsBlock})");
+            }
+
+            if (pageIndex >= sc.GlobalsPages.Count || pageOffset >= sc.GlobalsPages[pageIndex].Data.Length)
+            {
+                throw new ArgumentOutOfRangeException($"Global {globalId} exceeds the global block length");
+            }
+
+            return ref sc.GlobalsPages[pageIndex][pageOffset];
+        }
+
+        private void SetGlobalValue(uint globalId, int value) => GetGlobalValue(globalId).AsInt32 = value;
+        private void SetGlobalValue(uint globalId, float value) => GetGlobalValue(globalId).AsFloat = value;
 
         private void AddNative(ulong hash)
         {
