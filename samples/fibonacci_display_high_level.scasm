@@ -14,35 +14,35 @@ main:
         STATIC_U8_STORE 4   ; lastTime = GET_GAME_TIMER()
 
     .loop: ; infinite loop
-        PUSH_CONST_U8 0
+        PUSH 0
         CALL_NATIVE WAIT        ; WAIT(0)
         
         ; draw a string
-        PUSH_STRING "STRING"
+        PUSH "STRING"
         CALL_NATIVE BEGIN_TEXT_COMMAND_DISPLAY_TEXT        ; BEGIN_TEXT_COMMAND_DISPLAY_TEXT("STRING")
 
-        PUSH_STRING "Fibonacci"
+        PUSH "Fibonacci"
         CALL_NATIVE ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME        ; ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME("Fibonacci")
 
-        PUSH_CONST_F 0.5
-        PUSH_CONST_F 0.175
-        PUSH_CONST_0
+        PUSH 0.5
+        PUSH 0.175
+        PUSH 0
         CALL_NATIVE END_TEXT_COMMAND_DISPLAY_TEXT        ; END_TEXT_COMMAND_DISPLAY_TEXT(0.5, 0.175, 0)
 
         ; draw the fibonacci number
-        PUSH_STRING "NUMBER"
+        PUSH "NUMBER"
         CALL_NATIVE BEGIN_TEXT_COMMAND_DISPLAY_TEXT        ; BEGIN_TEXT_COMMAND_DISPLAY_TEXT("NUMBER")
 
         STATIC_U8_LOAD 3    ; current fibonacci number
         CALL_NATIVE ADD_TEXT_COMPONENT_INTEGER        ; ADD_TEXT_COMPONENT_INTEGER(currentFibonacci)
 
-        PUSH_CONST_F 0.5
-        PUSH_CONST_F 0.25
-        PUSH_CONST_0
+        PUSH 0.5
+        PUSH 0.25
+        PUSH 0
         CALL_NATIVE END_TEXT_COMMAND_DISPLAY_TEXT        ; END_TEXT_COMMAND_DISPLAY_TEXT(0.5, 0.25, 0)
 
         ; check if we need to update the fibonacci number
-        PUSH_CONST_S16 2000
+        PUSH 2000
         CALL_NATIVE GET_GAME_TIMER        ; GET_GAME_TIMER()
         STATIC_U8_LOAD 4    ; lastTime
         ISUB
@@ -59,11 +59,11 @@ main:
 
 nextFibonacci:  ; no args, 1 local for return value
         ENTER 0 3
-        PUSH_CONST_1
+        PUSH 1
         STATIC_U8_LOAD 2    ; get current fibonacci index
         IGE_JZ .else        ; if (index < 1)
     .then:
-        PUSH_CONST_0
+        PUSH 0
         LOCAL_U8_STORE 2    ; return 0
         J .end
     .else:
