@@ -55,6 +55,11 @@
                     "input",
                     "The input SCASM file.")
                     .ExistingOnly(),
+                new Option<DirectoryInfo>(
+                    new[] { "--output", "-o" },
+                    () => new DirectoryInfo(".\\"),
+                    "The output directory.")
+                    .ExistingOnly(),
                 new Option(new[] { "--function-names", "-f" }, "Include the function names in ENTER instructions."),
                 new Option<FileInfo>(
                     new[] { "--nativedb", "-n" },
@@ -103,6 +108,7 @@
         private class AssembleOptions
         {
             public FileInfo Input { get; set; }
+            public DirectoryInfo Output { get; set; }
             public bool FunctionNames { get; set; }
             public FileInfo NativeDB { get; set; }
         }
@@ -135,11 +141,11 @@
                 return;
             }
 
-            string outputPath = Path.ChangeExtension(o.Input.FullName, "ysc");
+            string outputPath = Path.Combine(o.Output.FullName, Path.GetFileName(Path.ChangeExtension(o.Input.FullName, "ysc")));
             byte[] data = ysc.Save(Path.GetFileName(outputPath));
             File.WriteAllBytes(outputPath, data);
 
-            outputPath = Path.ChangeExtension(o.Input.FullName, "unencrypted.ysc");
+            outputPath = Path.ChangeExtension(outputPath, "unencrypted.ysc");
             data = ysc.Save();
             File.WriteAllBytes(outputPath, data);
         }
