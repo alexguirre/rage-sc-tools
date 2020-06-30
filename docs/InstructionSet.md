@@ -101,7 +101,7 @@
 | GLOBAL_U24_STORE         |   60   |                |                                      |                                                                                                         |
 | PUSH_CONST_U24           |   61   | *n1*           |                `→ n1`                | Push a 24-bit unsigned integer to the top of the stack                                                  |
 | SWITCH                   |   62   |                |                                      |                                                                                                         |
-| STRING                   |   63   |                |             `n1 → str1`              | Push the pointer to the string at offset `n1` to the top of stack                                       |
+| STRING                   |   63   |                |             `n1 → str1`              | Push the pointer to the string at offset `n1` to the top of the stack                                   |
 | STRINGHASH               |   64   |                |             `str1 → n1`              | Calculate the Jenkins one-at-a-time hash of the string at the top of the stack                          |
 | TEXT_LABEL_ASSIGN_STRING |   65   |                |                                      |                                                                                                         |
 | TEXT_LABEL_ASSIGN_INT    |   66   |                |                                      |                                                                                                         |
