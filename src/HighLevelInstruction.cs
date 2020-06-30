@@ -150,7 +150,7 @@
                 else if (Token.IsString(valueStr, out var asStr))
                 {
                     // TODO: avoid string allocation
-                    value = new Operand(asStr.ToString(), OperandType.String);
+                    value = new Operand(asStr.Unescape(), OperandType.String);
                 }
                 else
                 {
@@ -243,7 +243,7 @@
                 throw new FormatException("Not a string");
             }
 
-            return lbl.ToString();
+            return lbl.Unescape();
         }, "string");
 
         private static string NextNativeName(in HLInst i, ref Tokens t, int operand) => NextValue(i, ref t, operand, s => s.ToString(), "native command");

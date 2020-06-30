@@ -70,7 +70,7 @@
                 w.WriteLine("Strings Length = {0}", sc.StringsLength);
                 foreach (uint sid in sc.StringIds())
                 {
-                    w.WriteLine("\t[{0}] = '{1}'", sid, sc.String(sid));
+                    w.WriteLine("\t[{0}] = '{1}'", sid, sc.String(sid).Escape());
                 }
                 w.WriteLine("Code Length = {0}", sc.CodeLength);
             }

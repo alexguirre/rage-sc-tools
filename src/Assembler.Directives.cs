@@ -265,7 +265,7 @@
                     {
                         throw new ArgumentException($"String token in {d.Name} directive is not a valid string");
                     }
-                    a.AddString(contents);
+                    a.AddString(contents.Unescape());
                     Directive.NoMoreTokens(d, t);
                 }),
         });

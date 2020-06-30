@@ -76,7 +76,7 @@ namespace ScTools
 
             foreach (uint id in sc.StringIds())
             {
-                writer.WriteLine("$STRING \"{0}\" ; offset: {1}", sc.String(id), id);
+                writer.WriteLine("$STRING \"{0}\" ; offset: {1}", sc.String(id).Escape(), id);
             }
             writer.WriteLine();
 
