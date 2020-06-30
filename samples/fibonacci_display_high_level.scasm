@@ -24,9 +24,7 @@ main:
         PUSH "Fibonacci"
         CALL_NATIVE ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME        ; ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME("Fibonacci")
 
-        PUSH 0.5
-        PUSH 0.175
-        PUSH 0
+        PUSH 0.5 0.175 0
         CALL_NATIVE END_TEXT_COMMAND_DISPLAY_TEXT        ; END_TEXT_COMMAND_DISPLAY_TEXT(0.5, 0.175, 0)
 
         ; draw the fibonacci number
@@ -36,9 +34,7 @@ main:
         STATIC_U8_LOAD 3    ; current fibonacci number
         CALL_NATIVE ADD_TEXT_COMPONENT_INTEGER        ; ADD_TEXT_COMPONENT_INTEGER(currentFibonacci)
 
-        PUSH 0.5
-        PUSH 0.25
-        PUSH 0
+        PUSH 0.5 0.25 0
         CALL_NATIVE END_TEXT_COMMAND_DISPLAY_TEXT        ; END_TEXT_COMMAND_DISPLAY_TEXT(0.5, 0.25, 0)
 
         ; check if we need to update the fibonacci number

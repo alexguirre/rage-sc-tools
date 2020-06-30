@@ -125,40 +125,66 @@
 
         private static ReadOnlySpan<Operand> I_Push(in HLInst i, ref Tokens t, Span<Operand> o)
         {
-            var valueStr = t.MoveNext() ? t.Current : throw new ArgumentException($"{i.Mnemonic} instruction is missing operand 1"); ;
+            int numValues = 0;
+            while (t.MoveNext())
+            {
+                if (numValues >= MaxOperands)
+                {
+                    throw new ArgumentException("Too many values");
+                }
 
-            if (uint.TryParse(valueStr, out uint asUInt))
-            {
-                o[0] = new Operand(asUInt);
-            }
-            else if (int.TryParse(valueStr, out int asInt))
-            {
-                o[0] = new Operand(unchecked((uint)asInt));
-            }
-            else if (float.TryParse(valueStr, out float asFloat))
-            {
-                o[0] = new Operand(asFloat);
-            }
-            else if (Token.IsString(valueStr, out var asStr))
-            {
-                // TODO: avoid string allocation
-                o[0] = new Operand(asStr.ToString(), OperandType.String);
+                var valueStr = t.Current;
+                Operand value;
+                if (uint.TryParse(valueStr, out uint asUInt))
+                {
+                    value = new Operand(asUInt);
+                }
+                else if (int.TryParse(valueStr, out int asInt))
+                {
+                    value = new Operand(unchecked((uint)asInt));
+                }
+                else if (float.TryParse(valueStr, out float asFloat))
+                {
+                    value = new Operand(asFloat);
+                }
+                else if (Token.IsString(valueStr, out var asStr))
+                {
+                    // TODO: avoid string allocation
+                    value = new Operand(asStr.ToString(), OperandType.String);
+                }
+                else
+                {
+                    throw new ArgumentException($"Unknown value format '{valueStr.ToString()}'");
+                }
+
+                o[numValues] = value;
+                numValues++;
             }
 
-            return o[0..1];
+            if (numValues == 0)
+            {
+                throw new ArgumentException($"{i.Mnemonic} instruction has no operands");
+            }
+
+            return o[0..numValues];
         }
 
         private static void I_Push(in HLInst i, ReadOnlySpan<Operand> o, Code c)
         {
-            Debug.Assert(o.Length == 1 && (o[0].Type == OperandType.U32 ||
-                                           o[0].Type == OperandType.F32 ||
-                                           o[0].Type == OperandType.String));
+            Debug.Assert(o.Length > 0);
 
-            switch (o[0].Type)
+            for (int k = 0; k < o.Length; k++)
             {
-                case OperandType.U32: SinkPushUInt(o[0].U32, c); break;
-                case OperandType.F32: SinkPushFloat(o[0].F32, c); break;
-                case OperandType.String: SinkPushString(o[0].String, c); break;
+                Debug.Assert(o[k].Type == OperandType.U32 ||
+                             o[k].Type == OperandType.F32 ||
+                             o[k].Type == OperandType.String);
+
+                switch (o[k].Type)
+                {
+                    case OperandType.U32: SinkPushUInt(o[k].U32, c); break;
+                    case OperandType.F32: SinkPushFloat(o[k].F32, c); break;
+                    case OperandType.String: SinkPushString(o[k].String, c); break;
+                }
             }
         }
 
