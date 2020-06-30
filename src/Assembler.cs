@@ -205,6 +205,40 @@
 
         private bool ParseHighLevelInstruction(TokenEnumerator tokens)
         {
+            static void AssemblePushUInt(uint v, CodeBuilder code)
+            {
+                var inst = v switch
+                {
+                    0xFFFFFFFF /* -1 */ => (Instruction.PUSH_CONST_M1, Array.Empty<Operand>()),
+                    0 => (Instruction.PUSH_CONST_0, Array.Empty<Operand>()),
+                    1 => (Instruction.PUSH_CONST_1, Array.Empty<Operand>()),
+                    2 => (Instruction.PUSH_CONST_2, Array.Empty<Operand>()),
+                    3 => (Instruction.PUSH_CONST_3, Array.Empty<Operand>()),
+                    4 => (Instruction.PUSH_CONST_4, Array.Empty<Operand>()),
+                    5 => (Instruction.PUSH_CONST_5, Array.Empty<Operand>()),
+                    6 => (Instruction.PUSH_CONST_6, Array.Empty<Operand>()),
+                    7 => (Instruction.PUSH_CONST_7, Array.Empty<Operand>()),
+                    _ when v <= byte.MaxValue => (Instruction.PUSH_CONST_U8, new[] { new Operand((byte)v) }),
+                    _ when v <= ushort.MaxValue => (Instruction.PUSH_CONST_S16, new[] { new Operand(unchecked((short)v)) }),
+                    _ when v <= 0x00FFFFFF => (Instruction.PUSH_CONST_U24, new[] { new Operand(v, isU24: true) }),
+                    _ => (Instruction.PUSH_CONST_U32, new[] { new Operand(v) }),
+                };
+
+                code.BeginInstruction();
+                inst.Item1.Assemble(inst.Item2, code);
+                code.EndInstruction();
+            }
+
+            static void AssemblePushString(ReadOnlySpan<char> str, CodeBuilder code, StringsPagesBuilder strings)
+            {
+                uint strId = strings.Add(str); // TODO: handle repeated strings
+
+                AssemblePushUInt(strId, code);
+                code.BeginInstruction();
+                Instruction.STRING.Assemble(ReadOnlySpan<Operand>.Empty, code);
+                code.EndInstruction();
+            }
+
             // TODO: move these instructions somewhere else
             var mnemonic = tokens.Current;
             if (mnemonic.Equals("PUSH_STRING".AsSpan(), StringComparison.Ordinal))
@@ -216,14 +250,7 @@
                     throw new Exception();
                 }
 
-                uint strId = strings.Add(str); // TODO: handle repeated strings
-
-                code.BeginInstruction();
-                Instruction.PUSH_CONST_U32.Assemble(new[] { new Operand(strId) }, code);
-                code.EndInstruction();
-                code.BeginInstruction();
-                Instruction.STRING.Assemble(ReadOnlySpan<Operand>.Empty, code);
-                code.EndInstruction();
+                AssemblePushString(str, code, strings);
 
                 if (tokens.MoveNext())
                 {
@@ -270,26 +297,11 @@
 
                 if (uint.TryParse(valueStr, out uint asUInt))
                 {
-                    var inst = asUInt switch
-                    {
-                        0xFFFFFFFF /* -1 */ => (Instruction.PUSH_CONST_M1, Array.Empty<Operand>()),
-                        0 => (Instruction.PUSH_CONST_0, Array.Empty<Operand>()),
-                        1 => (Instruction.PUSH_CONST_1, Array.Empty<Operand>()),
-                        2 => (Instruction.PUSH_CONST_2, Array.Empty<Operand>()),
-                        3 => (Instruction.PUSH_CONST_3, Array.Empty<Operand>()),
-                        4 => (Instruction.PUSH_CONST_4, Array.Empty<Operand>()),
-                        5 => (Instruction.PUSH_CONST_5, Array.Empty<Operand>()),
-                        6 => (Instruction.PUSH_CONST_6, Array.Empty<Operand>()),
-                        7 => (Instruction.PUSH_CONST_7, Array.Empty<Operand>()),
-                        _ when asUInt <= byte.MaxValue => (Instruction.PUSH_CONST_U8, new[] { new Operand((byte)asUInt) }),
-                        _ when asUInt <= ushort.MaxValue => (Instruction.PUSH_CONST_S16, new[] { new Operand(unchecked((short)asUInt)) }),
-                        _ when asUInt <= 0x00FFFFFF => (Instruction.PUSH_CONST_U24, new[] { new Operand(asUInt, isU24: true) }),
-                        _ => (Instruction.PUSH_CONST_U32, new[] { new Operand(asUInt) }),
-                    };
-
-                    code.BeginInstruction();
-                    inst.Item1.Assemble(inst.Item2, code);
-                    code.EndInstruction();
+                    AssemblePushUInt(asUInt, code);
+                }
+                else if (int.TryParse(valueStr, out int asInt))
+                {
+                    AssemblePushUInt(unchecked((uint)asInt), code);
                 }
                 else if (float.TryParse(valueStr, out float asFloat))
                 {
@@ -313,16 +325,7 @@
                 }
                 else if (Token.IsString(valueStr, out var asStr))
                 {
-                    // equivalent to PUSH_STRING
-
-                    uint strId = strings.Add(asStr); // TODO: handle repeated strings
-
-                    code.BeginInstruction();
-                    Instruction.PUSH_CONST_U32.Assemble(new[] { new Operand(strId) }, code);
-                    code.EndInstruction();
-                    code.BeginInstruction();
-                    Instruction.STRING.Assemble(ReadOnlySpan<Operand>.Empty, code);
-                    code.EndInstruction();
+                    AssemblePushString(asStr, code, strings);
                 }
 
                 if (tokens.MoveNext())
