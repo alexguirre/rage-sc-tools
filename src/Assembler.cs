@@ -62,7 +62,7 @@
         {
             nativeHashes.Clear();
             operandsBuffer = new Operand[Instruction.MaxOperands];
-            code = new CodeBuilder(options);
+            code = new CodeBuilder(this);
             strings = new StringsPagesBuilder();
 
             using TextReader input = new StreamReader(inputFile.OpenRead());
@@ -205,133 +205,17 @@
 
         private bool ParseHighLevelInstruction(TokenEnumerator tokens)
         {
-            static void AssemblePushUInt(uint v, CodeBuilder code)
+            ref readonly var inst = ref HighLevelInstruction.FindByMnemonic(tokens.Current);
+            if (inst.IsValid)
             {
-                var inst = v switch
-                {
-                    0xFFFFFFFF /* -1 */ => (Instruction.PUSH_CONST_M1, Array.Empty<Operand>()),
-                    0 => (Instruction.PUSH_CONST_0, Array.Empty<Operand>()),
-                    1 => (Instruction.PUSH_CONST_1, Array.Empty<Operand>()),
-                    2 => (Instruction.PUSH_CONST_2, Array.Empty<Operand>()),
-                    3 => (Instruction.PUSH_CONST_3, Array.Empty<Operand>()),
-                    4 => (Instruction.PUSH_CONST_4, Array.Empty<Operand>()),
-                    5 => (Instruction.PUSH_CONST_5, Array.Empty<Operand>()),
-                    6 => (Instruction.PUSH_CONST_6, Array.Empty<Operand>()),
-                    7 => (Instruction.PUSH_CONST_7, Array.Empty<Operand>()),
-                    _ when v <= byte.MaxValue => (Instruction.PUSH_CONST_U8, new[] { new Operand((byte)v) }),
-                    _ when v <= ushort.MaxValue => (Instruction.PUSH_CONST_S16, new[] { new Operand(unchecked((short)v)) }),
-                    _ when v <= 0x00FFFFFF => (Instruction.PUSH_CONST_U24, new[] { new Operand(v, isU24: true) }),
-                    _ => (Instruction.PUSH_CONST_U32, new[] { new Operand(v) }),
-                };
-
-                code.BeginInstruction();
-                inst.Item1.Assemble(inst.Item2, code);
-                code.EndInstruction();
-            }
-
-            static void AssemblePushString(ReadOnlySpan<char> str, CodeBuilder code, StringsPagesBuilder strings)
-            {
-                uint strId = strings.Add(str); // TODO: handle repeated strings
-
-                AssemblePushUInt(strId, code);
-                code.BeginInstruction();
-                Instruction.STRING.Assemble(ReadOnlySpan<Operand>.Empty, code);
-                code.EndInstruction();
-            }
-
-            // TODO: move these instructions somewhere else
-            var mnemonic = tokens.Current;
-            if (mnemonic.Equals("PUSH_STRING".AsSpan(), StringComparison.Ordinal))
-            {
-                var str = tokens.MoveNext() ? tokens.Current : throw new Exception();
-
-                if (!Token.IsString(str, out str))
-                {
-                    throw new Exception();
-                }
-
-                AssemblePushString(str, code, strings);
+                var operands = inst.Parser(inst, ref tokens, operandsBuffer);
 
                 if (tokens.MoveNext())
                 {
-                    throw new ArgumentException($"Unknown token '{tokens.Current.ToString()}' after instruction 'PUSH_STRING'");
+                    throw new ArgumentException($"Unknown token '{tokens.Current.ToString()}' after instruction '{inst.Mnemonic}'");
                 }
 
-                return true;
-            }
-            else if (mnemonic.Equals("CALL_NATIVE".AsSpan(), StringComparison.Ordinal))
-            {
-                if (nativeDB == null)
-                {
-                    throw new InvalidOperationException("A nativeDB is required when using the CALL_NATIVE instruction");
-                }
-
-                var nativeName = tokens.MoveNext() ? tokens.Current : throw new Exception();
-
-                string nativeNameStr = nativeName.ToString(); // TODO: optimize
-                NativeCommand n = nativeDB.Natives.FirstOrDefault(n => nativeNameStr.Equals(n.Name));
-
-                if (n == default)
-                {
-                    throw new InvalidOperationException($"Unknown native command '{nativeName.ToString()}'");
-                }
-
-                byte paramCount = n.ParameterCount;
-                byte returnValueCount = n.ReturnValueCount;
-                ushort idx = (ushort)GetNativeIndexOrAdd(n.CurrentHash);
-
-                code.BeginInstruction();
-                Instruction.NATIVE.Assemble(new[] { new Operand(paramCount), new Operand(returnValueCount), new Operand(idx) }, code);
-                code.EndInstruction();
-
-                if (tokens.MoveNext())
-                {
-                    throw new ArgumentException($"Unknown token '{tokens.Current.ToString()}' after instruction 'CALL_NATIVE'");
-                }
-
-                return true;
-            }
-            else if (mnemonic.Equals("PUSH".AsSpan(), StringComparison.Ordinal))
-            {
-                var valueStr = tokens.MoveNext() ? tokens.Current : throw new Exception();
-
-                if (uint.TryParse(valueStr, out uint asUInt))
-                {
-                    AssemblePushUInt(asUInt, code);
-                }
-                else if (int.TryParse(valueStr, out int asInt))
-                {
-                    AssemblePushUInt(unchecked((uint)asInt), code);
-                }
-                else if (float.TryParse(valueStr, out float asFloat))
-                {
-                    var inst = asFloat switch
-                    {
-                        -1.0f => (Instruction.PUSH_CONST_FM1, Array.Empty<Operand>()),
-                        0.0f => (Instruction.PUSH_CONST_F0, Array.Empty<Operand>()),
-                        1.0f => (Instruction.PUSH_CONST_F1, Array.Empty<Operand>()),
-                        2.0f => (Instruction.PUSH_CONST_F2, Array.Empty<Operand>()),
-                        3.0f => (Instruction.PUSH_CONST_F3, Array.Empty<Operand>()),
-                        4.0f => (Instruction.PUSH_CONST_F4, Array.Empty<Operand>()),
-                        5.0f => (Instruction.PUSH_CONST_F5, Array.Empty<Operand>()),
-                        6.0f => (Instruction.PUSH_CONST_F6, Array.Empty<Operand>()),
-                        7.0f => (Instruction.PUSH_CONST_F7, Array.Empty<Operand>()),
-                        _ => (Instruction.PUSH_CONST_F, new[] { new Operand(asFloat) }),
-                    };
-
-                    code.BeginInstruction();
-                    inst.Item1.Assemble(inst.Item2, code);
-                    code.EndInstruction();
-                }
-                else if (Token.IsString(valueStr, out var asStr))
-                {
-                    AssemblePushString(asStr, code, strings);
-                }
-
-                if (tokens.MoveNext())
-                {
-                    throw new ArgumentException($"Unknown token '{tokens.Current.ToString()}' after instruction 'CALL_NATIVE'");
-                }
+                inst.Assemble(operands, code);
 
                 return true;
             }
@@ -452,7 +336,7 @@
         private void SetGlobalValue(uint globalId, int value) => GetGlobalValue(globalId).AsInt32 = value;
         private void SetGlobalValue(uint globalId, float value) => GetGlobalValue(globalId).AsFloat = value;
 
-        private int AddNative(ulong hash)
+        private ushort AddNative(ulong hash)
         {
             Debug.Assert(sc != null);
 
@@ -463,28 +347,30 @@
 
             int index = nativeHashes.Count;
             nativeHashes.Add(hash);
-            return index;
+
+            if (nativeHashes.Count > ushort.MaxValue)
+            {
+                throw new InvalidOperationException("Too many natives");
+            }
+
+            return (ushort)index;
         }
 
-        private int GetNativeIndexOrAdd(ulong hash)
+        private ushort AddOrGetNative(ulong hash)
         {
             for (int i = 0; i < nativeHashes.Count; i++)
             {
                 if (nativeHashes[i] == hash)
                 {
-                    return i;
+                    return (ushort)i;
                 }
             }
 
             return AddNative(hash);
         }
 
-        private void AddString(ReadOnlySpan<char> str)
-        {
-            Debug.Assert(sc != null);
-
-            strings.Add(str);
-        }
+        private uint AddString(ReadOnlySpan<char> str) => strings.Add(str);
+        private uint AddOrGetString(ReadOnlySpan<char> str) => strings.Add(str); // TODO: handle repeated strings
 
         public interface ICodeBuilder
         {
@@ -504,9 +390,19 @@
             public void Target(string label);
         }
 
-        private sealed class CodeBuilder : ICodeBuilder
+        public interface IHighLevelCodeBuilder
         {
-            private readonly AssemblerOptions options;
+            public NativeDB NativeDB { get; }
+
+            public void Sink(in Instruction inst, ReadOnlySpan<Operand> operands);
+
+            public uint AddOrGetString(ReadOnlySpan<char> str);
+            public ushort AddOrGetNative(ulong hash);
+        }
+
+        private sealed class CodeBuilder : ICodeBuilder, IHighLevelCodeBuilder
+        {
+            private readonly Assembler assembler;
             private readonly List<byte[]> pages = new List<byte[]>();
             private string currentLabel = null;
             private string currentGlobalLabel = null;
@@ -518,9 +414,9 @@
 
             private bool inInstruction = false;
 
-            public CodeBuilder(AssemblerOptions options)
+            public CodeBuilder(Assembler assembler)
             {
-                this.options = options;
+                this.assembler = assembler;
             }
 
             private bool IsLocalLabel(string label) => label[0] == '.';
@@ -771,7 +667,8 @@
             private byte[] NewPage(uint size = Script.MaxPageLength) => new byte[size];
 
             string ICodeBuilder.Label => currentLabel;
-            AssemblerOptions ICodeBuilder.Options => options;
+            AssemblerOptions ICodeBuilder.Options => assembler.options;
+
             void ICodeBuilder.U8(byte v) => Add(v);
             void ICodeBuilder.U16(ushort v) => Add(v);
             void ICodeBuilder.U24(uint v) => AddU24(v);
@@ -780,6 +677,18 @@
             void ICodeBuilder.F32(float v) => Add(v);
             void ICodeBuilder.RelativeTarget(string label) => AddRelativeTarget(label);
             void ICodeBuilder.Target(string label) => AddTarget(label);
+
+            NativeDB IHighLevelCodeBuilder.NativeDB => assembler.nativeDB;
+
+            void IHighLevelCodeBuilder.Sink(in Instruction inst, ReadOnlySpan<Operand> operands)
+            {
+                BeginInstruction();
+                inst.Assemble(operands, this);
+                EndInstruction();
+            }
+
+            uint IHighLevelCodeBuilder.AddOrGetString(ReadOnlySpan<char> str) => assembler.AddOrGetString(str);
+            ushort IHighLevelCodeBuilder.AddOrGetNative(ulong hash) => assembler.AddOrGetNative(hash);
         }
 
         private class StringsPagesBuilder

@@ -16,7 +16,8 @@
         U32,
         F32,
         Label,
-        SwitchCase
+        SwitchCase,
+        String,
     }
 
     internal readonly struct Operand
@@ -28,16 +29,33 @@
         public uint U24 => U32;
         public uint U32 { get; }
         public float F32 { get; }
-        public string Label { get; }
+        public string Label => String;
         public (uint Value, string Label) SwitchCase { get; }
+        public string String { get; }
 
         private Operand(OperandType type) : this() { Type = type; }
         public Operand(byte u8) : this(OperandType.U8) { U8 = u8; }
         public Operand(ushort u16) : this(OperandType.U16) { U16 = u16; }
         public Operand(short s16) : this(OperandType.S16) { S16 = s16; }
-        public Operand(uint u32, bool isU24 = false) : this(isU24 ? OperandType.U24 : OperandType.U32) { U32 = u32; }
+        public Operand(uint u32, OperandType type = OperandType.U32) : this(type)
+        {
+            if (type != OperandType.U24 && type != OperandType.U32)
+            {
+                throw new ArgumentException("Incorrect OperandType for a uint value. Must be U24 or U32", nameof(type));
+            }
+
+            U32 = u32;
+        }
         public Operand(float f32) : this(OperandType.F32) { F32 = f32; }
-        public Operand(string label) : this(OperandType.Label) { Label = label; }
+        public Operand(string str, OperandType type) : this(type)
+        {
+            if (type != OperandType.Label && type != OperandType.String)
+            {
+                throw new ArgumentException("Incorrect OperandType for a string value. Must be Label or String", nameof(type));
+            }
+
+            String = str;
+        }
         public Operand((uint Value, string Label) switchCase) : this(OperandType.SwitchCase) { SwitchCase = switchCase; }
     }
 
@@ -342,7 +360,7 @@
 
         private static ReadOnlySpan<Operand> I_u24(in Inst i, ref Tokens t, Span<Operand> o)
         {
-            o[0] = new Operand(NextUInt24(i, ref t, 0), isU24: true);
+            o[0] = new Operand(NextUInt24(i, ref t, 0), OperandType.U24);
             return o[0..1];
         }
 
@@ -450,7 +468,7 @@
 
         private static ReadOnlySpan<Operand> I_relLabel(in Inst i, ref Tokens t, Span<Operand> o)
         {
-            o[0] = new Operand(NextTargetLabel(i, ref t, 0));
+            o[0] = new Operand(NextTargetLabel(i, ref t, 0), OperandType.Label);
             return o[0..1];
         }
 
@@ -464,7 +482,7 @@
 
         private static ReadOnlySpan<Operand> I_absLabel(in Inst i, ref Tokens t, Span<Operand> o)
         {
-            o[0] = new Operand(NextTargetLabel(i, ref t, 0));
+            o[0] = new Operand(NextTargetLabel(i, ref t, 0), OperandType.Label);
             return o[0..1];
         }
 
