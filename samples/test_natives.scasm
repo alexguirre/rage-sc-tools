@@ -1,4 +1,4 @@
-$NAME test_script_simple
+$NAME test_natives
 $STATICS 0
 
 $NATIVE_DEF 3FB3C7ED74313FD0 ; void SET_NIGHTVISION(BOOL toggle) // 0x18F621F7A5B1F85D

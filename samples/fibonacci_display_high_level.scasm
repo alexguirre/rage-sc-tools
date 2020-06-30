@@ -1,4 +1,4 @@
-$NAME fibonacci_display
+$NAME fibonacci_display_high_level
 $STATICS 5
 
 $STATIC_INT_INIT 0 0  ; fib0

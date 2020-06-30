@@ -1,4 +1,4 @@
-$NAME test_script
+$NAME test_switch
 $STATICS 5
 
 main:
