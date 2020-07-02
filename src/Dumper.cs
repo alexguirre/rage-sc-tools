@@ -133,12 +133,12 @@
         private static void DisassembleRawInstructionAt(StringBuilder sb, Script sc, uint ip)
         {
             byte inst = sc.IP(ip);
-            if (inst >= Instruction.NumberOfInstructions)
+            if (inst >= ScriptAssembly.Instruction.NumberOfInstructions)
             {
                 return;
             }
 
-            sb.Append(Instruction.Set[inst].Mnemonic);
+            sb.Append(ScriptAssembly.Instruction.Set[inst].Mnemonic);
 
             ip++;
             foreach (char f in InstructionRawFormats[inst])
@@ -306,7 +306,7 @@
             return s;
         }
 
-        private const int InstructionCount = Instruction.NumberOfInstructions;
+        private const int InstructionCount = ScriptAssembly.Instruction.NumberOfInstructions;
 
         // TODO: move this stuff to Instruction.cs, so instructions are defined in a single place
         private static readonly byte[] InstructionSizes = new byte[InstructionCount]

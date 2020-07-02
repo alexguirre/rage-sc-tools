@@ -1,4 +1,4 @@
-﻿namespace ScTools
+﻿namespace ScTools.ScriptAssembly
 {
     using System;
     using System.Diagnostics;
@@ -13,26 +13,22 @@
         public const int NumberOfInstructions = 3;
         public const int MaxOperands = byte.MaxValue;
 
-        /// <param name="operandsBuffer">A buffer of size at least <see cref="MaxOperands"/>.</param>
-        public delegate ReadOnlySpan<Operand> TokenParser(in HLInst inst, ref Tokens tokens, Span<Operand> operandsBuffer);
         public delegate void CodeAssembler(in HLInst inst, ReadOnlySpan<Operand> operands, Code code);
 
         public int Index { get; }
         public string Mnemonic { get; }
         public uint MnemonicHash { get; }
-        public TokenParser Parser { get; }
         public CodeAssembler Assembler { get; }
 
         public bool IsValid => Mnemonic != null;
 
-        private HighLevelInstruction(string mnemonic, int index, TokenParser parser, CodeAssembler assembler)
+        private HighLevelInstruction(string mnemonic, int index, CodeAssembler assembler)
         {
             Debug.Assert(index < NumberOfInstructions);
 
             Index = index;
             Mnemonic = mnemonic ?? throw new ArgumentNullException(nameof(mnemonic));
             MnemonicHash = mnemonic.ToHash();
-            Parser = parser ?? throw new ArgumentNullException(nameof(parser));
             Assembler = assembler ?? throw new ArgumentNullException(nameof(assembler));
 
             Debug.Assert(SetStorage[index].Mnemonic == null); // ensure we haven't repeated an opcode
@@ -40,7 +36,6 @@
             SetStorage[index] = this;
         }
 
-        public ReadOnlySpan<Operand> Parse(ref Tokens tokens, Span<Operand> operandsBuffer) => Parser(this, ref tokens, operandsBuffer);
         public void Assemble(ReadOnlySpan<Operand> operands, Code code) => Assembler(this, operands, code);
 
         private static readonly HLInst[] SetStorage = new HLInst[NumberOfInstructions];
@@ -73,16 +68,9 @@
         }
 
         public static readonly HLInst Invalid = default;
-        public static readonly HLInst PUSH_STRING = new HLInst(nameof(PUSH_STRING), 0, I_PushString, I_PushString);
-        public static readonly HLInst CALL_NATIVE = new HLInst(nameof(CALL_NATIVE), 1, I_CallNative, I_CallNative);
-        public static readonly HLInst PUSH = new HLInst(nameof(PUSH), 2, I_Push, I_Push);
-
-        private static ReadOnlySpan<Operand> I_PushString(in HLInst i, ref Tokens t, Span<Operand> o)
-        {
-            // TODO: avoid string allocation
-            o[0] = new Operand(NextString(i, ref t, 0), OperandType.String);
-            return o[0..1];
-        }
+        public static readonly HLInst PUSH_STRING = new HLInst(nameof(PUSH_STRING), 0, I_PushString);
+        public static readonly HLInst CALL_NATIVE = new HLInst(nameof(CALL_NATIVE), 1, I_CallNative);
+        public static readonly HLInst PUSH = new HLInst(nameof(PUSH), 2, I_Push);
 
         private static void I_PushString(in HLInst i, ReadOnlySpan<Operand> o, Code c)
         {
@@ -90,13 +78,6 @@
 
             string str = o[0].String;
             SinkPushString(str, c);
-        }
-
-        private static ReadOnlySpan<Operand> I_CallNative(in HLInst i, ref Tokens t, Span<Operand> o)
-        {
-            // TODO: avoid string allocation
-            o[0] = new Operand(NextNativeName(i, ref t, 0), OperandType.Label);
-            return o[0..1];
         }
 
         private static void I_CallNative(in HLInst i, ReadOnlySpan<Operand> o, Code c)
@@ -121,52 +102,6 @@
             ushort idx = c.AddOrGetNative(n.CurrentHash);
 
             c.Sink(Instruction.NATIVE, new[] { new Operand(paramCount), new Operand(returnValueCount), new Operand(idx) });
-        }
-
-        private static ReadOnlySpan<Operand> I_Push(in HLInst i, ref Tokens t, Span<Operand> o)
-        {
-            int numValues = 0;
-            while (t.MoveNext())
-            {
-                if (numValues >= MaxOperands)
-                {
-                    throw new ArgumentException("Too many values");
-                }
-
-                var valueStr = t.Current;
-                Operand value;
-                if (uint.TryParse(valueStr, out uint asUInt))
-                {
-                    value = new Operand(asUInt);
-                }
-                else if (int.TryParse(valueStr, out int asInt))
-                {
-                    value = new Operand(unchecked((uint)asInt));
-                }
-                else if (float.TryParse(valueStr, out float asFloat))
-                {
-                    value = new Operand(asFloat);
-                }
-                else if (Token.IsString(valueStr, out var asStr))
-                {
-                    // TODO: avoid string allocation
-                    value = new Operand(asStr.Unescape(), OperandType.String);
-                }
-                else
-                {
-                    throw new ArgumentException($"Unknown value format '{valueStr.ToString()}'");
-                }
-
-                o[numValues] = value;
-                numValues++;
-            }
-
-            if (numValues == 0)
-            {
-                throw new ArgumentException($"{i.Mnemonic} instruction has no operands");
-            }
-
-            return o[0..numValues];
         }
 
         private static void I_Push(in HLInst i, ReadOnlySpan<Operand> o, Code c)
@@ -201,9 +136,9 @@
                 5 => (Instruction.PUSH_CONST_5, Array.Empty<Operand>()),
                 6 => (Instruction.PUSH_CONST_6, Array.Empty<Operand>()),
                 7 => (Instruction.PUSH_CONST_7, Array.Empty<Operand>()),
-                _ when v <= byte.MaxValue => (Instruction.PUSH_CONST_U8, new[] { new Operand((byte)v) }),
-                _ when v <= ushort.MaxValue => (Instruction.PUSH_CONST_S16, new[] { new Operand(unchecked((short)v)) }),
-                _ when v <= 0x00FFFFFF => (Instruction.PUSH_CONST_U24, new[] { new Operand(v, OperandType.U24) }),
+                _ when v <= byte.MaxValue => (Instruction.PUSH_CONST_U8, new[] { new Operand(v) }),
+                _ when v <= ushort.MaxValue => (Instruction.PUSH_CONST_S16, new[] { new Operand(v) }),
+                _ when v <= 0x00FFFFFF => (Instruction.PUSH_CONST_U24, new[] { new Operand(v) }),
                 _ => (Instruction.PUSH_CONST_U32, new[] { new Operand(v) }),
             };
 

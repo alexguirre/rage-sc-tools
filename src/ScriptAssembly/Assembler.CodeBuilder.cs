@@ -1,11 +1,11 @@
-﻿namespace ScTools
+﻿namespace ScTools.ScriptAssembly
 {
     using System;
     using System.Diagnostics;
     using System.Collections.Generic;
     using ScTools.GameFiles;
 
-    internal partial class Assembler
+    internal static partial class Assembler
     {
         /// <summary>
         /// Defines the interface used for assembling <see cref="Instruction"/>s.
@@ -46,9 +46,9 @@
             public ushort AddOrGetNative(ulong hash);
         }
 
-        private sealed class CodeBuilder : ICodeBuilder, IHighLevelCodeBuilder
+        public sealed class CodeBuilder : ICodeBuilder, IHighLevelCodeBuilder
         {
-            private readonly Assembler assembler;
+            private readonly AssemblerContext assembler;
             private readonly List<byte[]> pages = new List<byte[]>();
             private string currentLabel = null;
             private string currentGlobalLabel = null;
@@ -60,7 +60,7 @@
 
             private bool inInstruction = false;
 
-            public CodeBuilder(Assembler assembler)
+            public CodeBuilder(AssemblerContext assembler)
             {
                 this.assembler = assembler;
             }
@@ -314,7 +314,7 @@
 
             #region ICodeBuilder Implementation
             string ICodeBuilder.Label => currentLabel;
-            AssemblerOptions ICodeBuilder.Options => assembler.options;
+            AssemblerOptions ICodeBuilder.Options => assembler.Options;
 
             void ICodeBuilder.U8(byte v) => Add(v);
             void ICodeBuilder.U16(ushort v) => Add(v);
@@ -327,7 +327,7 @@
             #endregion // ICodeBuilder Implementation
 
             #region IHighLevelCodeBuilder Implementation
-            NativeDB IHighLevelCodeBuilder.NativeDB => assembler.nativeDB;
+            NativeDB IHighLevelCodeBuilder.NativeDB => assembler.NativeDB;
 
             void IHighLevelCodeBuilder.Sink(in Instruction inst, ReadOnlySpan<Operand> operands)
             {

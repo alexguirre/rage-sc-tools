@@ -203,7 +203,7 @@ namespace ScTools
         private static void DisassembleInstructionAt(StringBuilder sb, Script sc, uint ip, string label, IDictionary<uint, string> allLabels)
         {
             byte inst = ip < sc.CodeLength ? sc.IP(ip) : (byte)0;
-            if (inst >= Instruction.NumberOfInstructions)
+            if (inst >= ScriptAssembly.Instruction.NumberOfInstructions)
             {
                 return;
             }
@@ -236,7 +236,7 @@ namespace ScTools
                 return;
             }
 
-            appendIndented(sb, 2, Instruction.Set[inst].Mnemonic);
+            appendIndented(sb, 2, ScriptAssembly.Instruction.Set[inst].Mnemonic);
 
             ip++;
             foreach (char f in InstructionFormats[inst])
@@ -393,7 +393,7 @@ namespace ScTools
             return s;
         }
 
-        private const int InstructionCount = Instruction.NumberOfInstructions;
+        private const int InstructionCount = ScriptAssembly.Instruction.NumberOfInstructions;
 
         // TODO: move this stuff to Instruction.cs, so instructions are defined in a single place
         private static readonly byte[] InstructionSizes = new byte[InstructionCount]
