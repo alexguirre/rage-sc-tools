@@ -82,14 +82,14 @@
 
         private static void I_CallNative(in HLInst i, ReadOnlySpan<Operand> o, Code c)
         {
-            Debug.Assert(o.Length == 1 && o[0].Type == OperandType.Label);
+            Debug.Assert(o.Length == 1 && o[0].Type == OperandType.Identifier);
 
             if (c.NativeDB == null)
             {
                 throw new InvalidOperationException("A nativeDB is required when using the CALL_NATIVE instruction");
             }
 
-            string nativeName = o[0].Label;
+            string nativeName = o[0].Identifier;
             NativeCommand n = c.NativeDB.Natives.FirstOrDefault(n => nativeName.Equals(n.Name));
 
             if (n == default)

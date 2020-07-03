@@ -11,7 +11,7 @@
         U32,
         U64,
         F32,
-        Label,
+        Identifier,
         SwitchCase,
         String,
     }
@@ -22,7 +22,7 @@
         public uint U32 { get; }
         public ulong U64 { get; }
         public float F32 { get; }
-        public string Label => String;
+        public string Identifier => String;
         public string String { get; }
         public (uint Value, string Label) SwitchCase { get; }
 
@@ -32,9 +32,9 @@
         public Operand(float f32) : this(OperandType.F32) { F32 = f32; }
         public Operand(string str, OperandType type) : this(type)
         {
-            if (type != OperandType.Label && type != OperandType.String)
+            if (type != OperandType.Identifier && type != OperandType.String)
             {
-                throw new ArgumentException("Incorrect OperandType for a string value. Must be Label or String", nameof(type));
+                throw new ArgumentException("Incorrect OperandType for a string value. Must be Identifier or String", nameof(type));
             }
 
             String = str;
@@ -452,18 +452,18 @@
 
         private static void I_relLabel(in Inst i, ReadOnlySpan<Operand> o, Code c)
         {
-            CheckOperands(o.Length == 1 && o[0].Type == OperandType.Label);
+            CheckOperands(o.Length == 1 && o[0].Type == OperandType.Identifier);
 
             c.U8(i.Opcode);
-            c.RelativeTarget(o[0].Label);
+            c.RelativeTarget(o[0].Identifier);
         }
 
         private static void I_absLabel(in Inst i, ReadOnlySpan<Operand> o, Code c)
         {
-            CheckOperands(o.Length == 1 && o[0].Type == OperandType.Label);
+            CheckOperands(o.Length == 1 && o[0].Type == OperandType.Identifier);
 
             c.U8(i.Opcode);
-            c.Target(o[0].Label);
+            c.Target(o[0].Identifier);
         }
 
         private static void I_switch(in Inst i, ReadOnlySpan<Operand> o, Code c)

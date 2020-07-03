@@ -8,7 +8,9 @@
     using Antlr4.Runtime;
     using Antlr4.Runtime.Misc;
     using ScTools.GameFiles;
+    using ScTools.ScriptAssembly.Definitions;
     using ScTools.ScriptAssembly.Grammar;
+    using ScTools.ScriptAssembly.Grammar.Visitors;
 
     internal readonly struct AssemblerOptions
     {
@@ -188,6 +190,7 @@
             CommonTokenStream tokens = new CommonTokenStream(lexer);
             ScAsmParser parser = new ScAsmParser(tokens);
 
+            //Console.WriteLine(parser.script().ToStringTree());
             return parser.script().Accept(new ScriptVisitor());
         }
 
@@ -211,20 +214,27 @@
 
                 var assemblerContext = new AssemblerContext(sc);
                 var directiveVisitor = new DirectiveVisitor(assemblerContext);
-                var instructionVisitor = new InstructionVisitor(assemblerContext);
-                var labelDeclVisitor = new LabelDeclVisitor(assemblerContext);
+                var functionVisitor = new FunctionVisitor(assemblerContext);
+                var structVisitor = new StructVisitor(assemblerContext);
+                var staticFieldVisitor = new StaticFieldVisitor(assemblerContext);
 
-                foreach (var l in context.line())
-                {
-                    _ = l switch
-                    {
-                        _ when l.directive() != null => l.directive().Accept(directiveVisitor),
-                        _ when l.instruction() != null => l.instruction().Accept(instructionVisitor),
-                        _ when l.labelDecl() != null => l.labelDecl().Accept(labelDeclVisitor),
-                        _ => false,
-                    };
-                    ;
-                }
+                //var statements = context.statement();
+                //foreach (var s in statements)
+                //{
+                //    _ = s switch
+                //    {
+                //        _ when s.directive() != null => s.directive().Accept(directiveVisitor),
+                //        _ when s.function() != null => s.function().Accept(functionVisitor),
+                //        _ when s.@struct() != null => s.@struct().Accept(structVisitor),
+                //        _ when s.staticFieldDecl() != null => s.staticFieldDecl().Accept(staticFieldVisitor),
+                //        _ => false,
+                //    };
+                //}
+
+                Registry reg = new Registry();
+                RegisterStructs.Visit(context, reg);
+                RegisterStaticFields.Visit(context, reg);
+                ;
 
                 sc.CodePages = new ScriptPageArray<byte>
                 {
@@ -259,20 +269,91 @@
 
             public override bool VisitDirective([NotNull] ScAsmParser.DirectiveContext context)
             {
-                string directive = context.identifier().GetText();
-                int dirIndex = Directives.Find(directive.ToHash());
+                Console.WriteLine("Directive\t'{0}'", context.identifier().GetText());
 
-                if (dirIndex != -1)
+                return true;
+
+                //string directive = context.identifier().GetText();
+                //int dirIndex = Directives.Find(directive.ToHash());
+
+                //if (dirIndex != -1)
+                //{
+                //    Operand[] operands = context.operandList().Accept(OperandListToArray.Instance);
+                //    Directive dir = Directives.Set[dirIndex];
+                //    dir.Callback(dir, assemblerContext, operands);
+                //    return true;
+                //}
+                //else
+                //{
+                //    throw new ArgumentException($"Unknown directive '{directive}'");
+                //}
+            }
+        }
+
+        private class Function
+        {
+            public string Name { get; }
+            public bool Naked { get; }
+        }
+
+        private sealed class FunctionVisitor : ScAsmBaseVisitor<bool>
+        {
+            private readonly AssemblerContext assemblerContext;
+
+            public FunctionVisitor(AssemblerContext assemblerContext) => this.assemblerContext = assemblerContext ?? throw new ArgumentNullException(nameof(assemblerContext));
+
+            public override bool VisitFunction([NotNull] ScAsmParser.FunctionContext context)
+            {
+                Console.WriteLine("Function\t'{0}'", context.identifier().GetText());
+                Console.WriteLine("\tArgs:");
+                foreach (var a in context.functionArgList()?.fieldDecl() ?? Enumerable.Empty<ScAsmParser.FieldDeclContext>())
                 {
-                    Operand[] operands = context.operandList().Accept(OperandListToArray.Instance);
-                    Directive dir = Directives.Set[dirIndex];
-                    dir.Callback(dir, assemblerContext, operands);
-                    return true;
+                    Console.WriteLine("\t\t{0} {1}", a.identifier().GetText(), a.type().GetText());
                 }
-                else
+                Console.WriteLine("\tLocals:");
+                foreach (var l in context.functionLocalDecl().Select(d => d.fieldDecl()))
                 {
-                    throw new ArgumentException($"Unknown directive '{directive}'");
+                    Console.WriteLine("\t\t{0} {1}", l.identifier().GetText(), l.type().GetText());
                 }
+
+                return true;
+            }
+        }
+
+        private sealed class StructVisitor : ScAsmBaseVisitor<bool>
+        {
+            private readonly AssemblerContext assemblerContext;
+
+            public StructVisitor(AssemblerContext assemblerContext) => this.assemblerContext = assemblerContext ?? throw new ArgumentNullException(nameof(assemblerContext));
+
+            public override bool VisitStruct([NotNull] ScAsmParser.StructContext context)
+            {
+                Console.WriteLine("Struct\t'{0}'", context.identifier().GetText());
+                foreach (var f in context.fieldDecl())
+                {
+                    Console.WriteLine("\t\t{0} {1}", f.identifier().GetText(), f.type().GetText());
+                }
+
+                return true;
+            }
+        }
+
+        private sealed class StaticFieldVisitor : ScAsmBaseVisitor<bool>
+        {
+            private readonly AssemblerContext assemblerContext;
+
+            public StaticFieldVisitor(AssemblerContext assemblerContext) => this.assemblerContext = assemblerContext ?? throw new ArgumentNullException(nameof(assemblerContext));
+
+            public override bool VisitStaticFieldDecl([NotNull] ScAsmParser.StaticFieldDeclContext context)
+            {
+                Console.Write("Static\t'{0}'", context.fieldDecl().identifier().GetText());
+                if (context.staticFieldInitializer() != null)
+                {
+                    Console.Write("\t= {0} | {1}", context.staticFieldInitializer().integer()?.GetText(), context.staticFieldInitializer().@float()?.GetText());
+                }
+                Console.WriteLine();
+
+                return true;
             }
         }
 
@@ -311,20 +392,6 @@
             }
         }
 
-        private sealed class LabelDeclVisitor : ScAsmBaseVisitor<bool>
-        {
-            private readonly AssemblerContext assemblerContext;
-
-            public LabelDeclVisitor(AssemblerContext assemblerContext) => this.assemblerContext = assemblerContext ?? throw new ArgumentNullException(nameof(assemblerContext));
-
-            public override bool VisitLabelDecl([NotNull] ScAsmParser.LabelDeclContext context)
-            {
-                assemblerContext.Code.AddLabel(context.globalLabel()?.GetText() ??
-                                               context.localLabel()?.GetText());
-                return true;
-            }
-        }
-
         private sealed class OperandListToArray : ScAsmBaseVisitor<Operand[]>
         {
             public static OperandListToArray Instance { get; } = new OperandListToArray();
@@ -335,8 +402,7 @@
                     _ when o.integer() != null => o.integer().Accept(IntegerToOperand.Instance),
                     _ when o.@float() != null => new Operand(float.Parse(o.@float().GetText())),
                     _ when o.@string() != null => new Operand(o.GetText().AsSpan()[1..^1].Unescape(), OperandType.String),
-                    _ when o.globalLabel() != null => new Operand(o.GetText(), OperandType.Label),
-                    _ when o.localLabel() != null => new Operand(o.GetText(), OperandType.Label),
+                    _ when o.identifier() != null => new Operand(o.GetText(), OperandType.Identifier),
                     _ => throw new InvalidOperationException()
                 }).ToArray();
         }

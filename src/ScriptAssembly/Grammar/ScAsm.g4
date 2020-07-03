@@ -1,11 +1,58 @@
 grammar ScAsm;
 
 script
-    : (line EOL)*
+    : (statement? EOL)* EOF
     ;
 
-line
-    : (instruction | directive | labelDecl)? comment?
+statement
+    : directive
+    | function
+    | struct
+    | staticFieldDecl
+    ;
+
+struct
+    : K_STRUCT identifier K_BEGIN EOL
+      (fieldDecl? EOL)*
+      K_END
+    ;
+
+staticFieldDecl
+    : K_STATIC fieldDecl staticFieldInitializer?
+    ;
+
+staticFieldInitializer
+    : '=' (integer | float)
+    ;
+
+fieldDecl
+    : identifier ':' type
+    ;
+
+type
+    : K_AUTO
+    | identifier
+    | type '[' integer ']'
+    ;
+
+function
+    : K_FUNC K_NAKED? identifier functionArgList?
+      (functionLocalDecl? EOL)*
+      K_BEGIN EOL
+      (functionBody? EOL)*
+      K_END
+    ;
+
+functionArgList
+    : '(' (fieldDecl (',' fieldDecl)*)? ')'
+    ;
+
+functionLocalDecl
+    : fieldDecl
+    ;
+
+functionBody
+    : label? instruction?
     ;
 
 instruction
@@ -24,20 +71,11 @@ operand
     : integer
     | float
     | string
-    | globalLabel
-    | localLabel
+    | identifier
     ;
 
-labelDecl
-    : (globalLabel | localLabel) ':'
-    ;
-
-globalLabel
-    : identifier
-    ;
-    
-localLabel
-    : '.' identifier
+label
+    : identifier ':'
     ;
 
 identifier
@@ -57,9 +95,14 @@ string
     : STRING
     ;
 
-comment
-    : COMMENT
-    ;
+// keywords
+K_FUNC : F U N C;
+K_STRUCT : S T R U C T;
+K_BEGIN : B E G I N;
+K_END : E N D;
+K_NAKED : N A K E D;
+K_AUTO : A U O T O;
+K_STATIC : S T A T I C;
 
 IDENTIFIER
     :   [a-zA-Z_] [a-zA-Z_0-9]*

@@ -61,12 +61,12 @@
             new Directive("NAME",
                 (in Directive d, AssemblerContext c, ReadOnlySpan<Operand> o) =>
                 {
-                    if (o.Length != 1 || o[0].Type != OperandType.Label)
+                    if (o.Length != 1 || o[0].Type != OperandType.Identifier)
                     {
                         throw IncorrectOperands;
                     }
 
-                    c.SetName(o[0].Label);
+                    c.SetName(o[0].Identifier);
                 }),
             new Directive("STATICS",
                 (in Directive d, AssemblerContext c, ReadOnlySpan<Operand> o) =>

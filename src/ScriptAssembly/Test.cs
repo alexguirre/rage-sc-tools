@@ -36,13 +36,51 @@ $STRING ""NUMBER""
 $STRING ""STRING""
 $STRING ""Fibonacci""
 
-main:
+STRUCT MyStruct BEGIN
+    field1: AUTO
+    field2: AUTO
+    field3: AUTO[5]
+    field4: Vec3
+END
+
+STRUCT Vec3 BEGIN
+    ; hello
+    x: AUTO
+    y: AUTO
+    z: AUTO
+END
+
+STRUCT Test BEGIN
+    a: StructA
+    b: StructB
+    c: Test
+END
+
+;STRUCT Cyclic BEGIN
+;    f: Cyclic
+;END
+
+;STRUCT DepA BEGIN
+;    b: DepB
+;END
+;
+;STRUCT DepB BEGIn
+;    a: DepA
+;END
+
+STATIC myName: AUTO
+STATIC someInt: AUTO ; = 5
+STATIC someFloat: AUTO ; = -10.0
+STATIC someStruct: MyStruct
+STATIC someOtherName: AUTO[5]
+
+FUNC NAKED main BEGIN
         ENTER 0 2
 
         NATIVE 0 1 4
         STATIC_U8_STORE 4   ; lastTime = GET_GAME_TIMER()
 
-    .loop: ; infinite loop
+    loop: ; infinite loop
         PUSH_CONST_U8 0
         NATIVE 1 0 0        ; WAIT(0)
         
@@ -56,7 +94,7 @@ main:
         NATIVE 1 0 5        ; ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(""Fibonacci"")
 
         PUSH_CONST_F 0.5
-        PUSH_CONST_F 0.175
+    testtest:  PUSH_CONST_F 0.175
         PUSH_CONST_0
         NATIVE 3 0 2        ; END_TEXT_COMMAND_DISPLAY_TEXT(0.5, 0.175, 0)
 
@@ -78,7 +116,7 @@ main:
         NATIVE 0 1 4        ; GET_GAME_TIMER()
         STATIC_U8_LOAD 4    ; lastTime
         ISUB
-        ILT_JZ .loop     ; if (GET_GAME_TIMER() - lastTime) < 2000)
+        ILT_JZ loop     ; if (GET_GAME_TIMER() - lastTime) < 2000)
                          ; then repeat loop
                          ; else nextFibonacci and repeat loop
         CALL nextFibonacci
@@ -86,19 +124,30 @@ main:
         NATIVE 0 1 4
         STATIC_U8_STORE 4   ; static4 = GET_GAME_TIMER()
         
-        J .loop
+        J loop
         LEAVE 0 0
+END
 
-nextFibonacci:  ; no args, 1 local for return value
+FUNC someFunctionWithArgs (arg1: AUTO, arg2: AUTO)
+    local1: AUTO
+    local2: AUTO
+BEGIN
+    PUSH_CONST_0
+    PUSH_CONST_1
+    DROP
+    DROP
+END
+
+FUNC NAKED nextFibonacci BEGIN  ; no args, 1 local for return value
         ENTER 0 3
         PUSH_CONST_1
         STATIC_U8_LOAD 2    ; get current fibonacci index
-        IGE_JZ .else        ; if (index < 1)
-    .then:
+        IGE_JZ else        ; if (index < 1)
+    then:
         PUSH_CONST_0
         LOCAL_U8_STORE 2    ; return 0
-        J .end
-    .else:
+        J endif
+    else:
         STATIC_U8_LOAD 0    ; fib0
         STATIC_U8_LOAD 1    ; fib1
         IADD
@@ -107,12 +156,13 @@ nextFibonacci:  ; no args, 1 local for return value
         STATIC_U8_STORE 0   ; fib0 = fib1
         LOCAL_U8_LOAD 2
         STATIC_U8_STORE 1   ; fib1 = newFib
-    .end:
+    endif:
         STATIC_U8_LOAD 2
         IADD_U8 1
         STATIC_U8_STORE 2   ; index++
         LOCAL_U8_LOAD 2     ; push the return value to the stack
         LEAVE 0 1
+END
 ");
             ;
         }
