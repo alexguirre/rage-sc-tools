@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using ScTools.GameFiles;
 
     public sealed class Registry
     {
@@ -90,9 +91,9 @@
             return FindArray(t, length) ?? RegisterArray(t, length);
         }
 
-        public StaticFieldDefinition RegisterStaticField(string name, TypeDefinition type)
+        public StaticFieldDefinition RegisterStaticField(string name, TypeDefinition type, ScriptValue initialValue)
         {
-            var s = new StaticFieldDefinition(name, type);
+            var s = new StaticFieldDefinition(name, type, initialValue);
             RegisterSymbol(s);
             return s;
         }

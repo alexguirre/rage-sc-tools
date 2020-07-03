@@ -69,8 +69,8 @@ END
 ;END
 
 STATIC myName: AUTO
-STATIC someInt: AUTO ; = 5
-STATIC someFloat: AUTO ; = -10.0
+STATIC someInt: AUTO = 5
+STATIC someFloat: AUTO = -10.0
 STATIC someStruct: MyStruct
 STATIC someOtherName: AUTO[5]
 
