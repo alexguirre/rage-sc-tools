@@ -11,6 +11,9 @@
 
         private readonly Dictionary<uint, ISymbolDefinition> symbols = new Dictionary<uint, ISymbolDefinition>();
         private readonly List<ArrayDefinition> arrayTypes = new List<ArrayDefinition>();
+        private readonly List<FunctionDefinition> functions = new List<FunctionDefinition>();
+
+        public IEnumerable<FunctionDefinition> Functions => functions;
 
         public Registry()
         {
@@ -33,6 +36,10 @@
             if (symbol is ArrayDefinition arr)
             {
                 arrayTypes.Add(arr);
+            }
+            else if (symbol is FunctionDefinition func)
+            {
+                functions.Add(func);
             }
         }
 

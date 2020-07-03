@@ -6,9 +6,9 @@
 
     using HLInst = HighLevelInstruction;
     using Tokens = TokenEnumerator;
-    using Code = Assembler.IHighLevelCodeBuilder;
+    using Code = CodeGen.IHighLevelCodeBuilder;
 
-    internal readonly struct HighLevelInstruction
+    public readonly struct HighLevelInstruction
     {
         public const int NumberOfInstructions = 3;
         public const int MaxOperands = byte.MaxValue;

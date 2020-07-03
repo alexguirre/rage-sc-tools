@@ -18,6 +18,8 @@
                 _ when o.@float() != null => new Operand(float.Parse(o.@float().GetText())),
                 _ when o.@string() != null => new Operand(o.GetText().AsSpan()[1..^1].Unescape(), OperandType.String),
                 _ when o.identifier() != null => new Operand(o.GetText(), OperandType.Identifier),
+                _ when o.operandSwitchCase() != null => new Operand(((uint)ParseUnsignedInteger.Visit(o.operandSwitchCase().integer()),
+                                                                     o.operandSwitchCase().identifier().GetText())),
                 _ => throw new InvalidOperationException()
             }).ToArray();
 

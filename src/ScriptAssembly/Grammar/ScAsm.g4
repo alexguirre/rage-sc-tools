@@ -72,6 +72,11 @@ operand
     | float
     | string
     | identifier
+    | operandSwitchCase
+    ;
+
+operandSwitchCase
+    : integer ':' identifier
     ;
 
 label

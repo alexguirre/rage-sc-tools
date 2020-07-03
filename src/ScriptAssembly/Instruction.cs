@@ -4,7 +4,7 @@
     using System.Diagnostics;
 
     using Inst = Instruction;
-    using Code = Assembler.ICodeBuilder;
+    using Code = CodeGen.IByteCodeBuilder;
 
     public enum OperandType
     {
@@ -108,7 +108,7 @@
         }
     }
 
-    internal readonly struct Instruction
+    public readonly struct Instruction
     {
         public const int NumberOfInstructions = 127;
         public const int MaxOperands = byte.MaxValue;
@@ -274,15 +274,15 @@
         public static readonly Inst GLOBAL_U16 = new Inst(nameof(GLOBAL_U16), 0x52, I_u16);
         public static readonly Inst GLOBAL_U16_LOAD = new Inst(nameof(GLOBAL_U16_LOAD), 0x53, I_u16);
         public static readonly Inst GLOBAL_U16_STORE = new Inst(nameof(GLOBAL_U16_STORE), 0x54, I_u16);
-        public static readonly Inst J = new Inst(nameof(J), 0x55, I_relLabel);
-        public static readonly Inst JZ = new Inst(nameof(JZ), 0x56, I_relLabel);
-        public static readonly Inst IEQ_JZ = new Inst(nameof(IEQ_JZ), 0x57, I_relLabel);
-        public static readonly Inst INE_JZ = new Inst(nameof(INE_JZ), 0x58, I_relLabel);
-        public static readonly Inst IGT_JZ = new Inst(nameof(IGT_JZ), 0x59, I_relLabel);
-        public static readonly Inst IGE_JZ = new Inst(nameof(IGE_JZ), 0x5A, I_relLabel);
-        public static readonly Inst ILT_JZ = new Inst(nameof(ILT_JZ), 0x5B, I_relLabel);
-        public static readonly Inst ILE_JZ = new Inst(nameof(ILE_JZ), 0x5C, I_relLabel);
-        public static readonly Inst CALL = new Inst(nameof(CALL), 0x5D, I_absLabel);
+        public static readonly Inst J = new Inst(nameof(J), 0x55, I_labelTarget);
+        public static readonly Inst JZ = new Inst(nameof(JZ), 0x56, I_labelTarget);
+        public static readonly Inst IEQ_JZ = new Inst(nameof(IEQ_JZ), 0x57, I_labelTarget);
+        public static readonly Inst INE_JZ = new Inst(nameof(INE_JZ), 0x58, I_labelTarget);
+        public static readonly Inst IGT_JZ = new Inst(nameof(IGT_JZ), 0x59, I_labelTarget);
+        public static readonly Inst IGE_JZ = new Inst(nameof(IGE_JZ), 0x5A, I_labelTarget);
+        public static readonly Inst ILT_JZ = new Inst(nameof(ILT_JZ), 0x5B, I_labelTarget);
+        public static readonly Inst ILE_JZ = new Inst(nameof(ILE_JZ), 0x5C, I_labelTarget);
+        public static readonly Inst CALL = new Inst(nameof(CALL), 0x5D, I_functionTarget);
         public static readonly Inst GLOBAL_U24 = new Inst(nameof(GLOBAL_U24), 0x5E, I_u24);
         public static readonly Inst GLOBAL_U24_LOAD = new Inst(nameof(GLOBAL_U24_LOAD), 0x5F, I_u24);
         public static readonly Inst GLOBAL_U24_STORE = new Inst(nameof(GLOBAL_U24_STORE), 0x60, I_u24);
@@ -450,20 +450,20 @@
             }
         }
 
-        private static void I_relLabel(in Inst i, ReadOnlySpan<Operand> o, Code c)
+        private static void I_labelTarget(in Inst i, ReadOnlySpan<Operand> o, Code c)
         {
             CheckOperands(o.Length == 1 && o[0].Type == OperandType.Identifier);
 
             c.U8(i.Opcode);
-            c.RelativeTarget(o[0].Identifier);
+            c.LabelTarget(o[0].Identifier);
         }
 
-        private static void I_absLabel(in Inst i, ReadOnlySpan<Operand> o, Code c)
+        private static void I_functionTarget(in Inst i, ReadOnlySpan<Operand> o, Code c)
         {
             CheckOperands(o.Length == 1 && o[0].Type == OperandType.Identifier);
 
             c.U8(i.Opcode);
-            c.Target(o[0].Identifier);
+            c.FunctionTarget(o[0].Identifier);
         }
 
         private static void I_switch(in Inst i, ReadOnlySpan<Operand> o, Code c)
@@ -475,7 +475,7 @@
                 CheckOperands(o[k].Type == OperandType.SwitchCase);
 
                 c.U32(o[k].SwitchCase.Value);
-                c.RelativeTarget(o[k].SwitchCase.Label);
+                c.LabelTarget(o[k].SwitchCase.Label);
             }
         }
     }
