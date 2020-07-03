@@ -8,51 +8,51 @@
     {
         public static uint NameToId(string name) => name.ToHash();
 
-        private readonly List<TypeDefinition> types = new List<TypeDefinition>();
-        private readonly List<StaticFieldDefinition> staticFields = new List<StaticFieldDefinition>();
-        private readonly List<FunctionDefinition> functions = new List<FunctionDefinition>();
+        private readonly Dictionary<uint, ISymbolDefinition> symbols = new Dictionary<uint, ISymbolDefinition>();
+        private readonly List<ArrayDefinition> arrayTypes = new List<ArrayDefinition>();
 
         public Registry()
         {
-            RegisterType(AutoTypeDefintion.Instance);
+            RegisterSymbol(AutoTypeDefintion.Instance);
         }
 
-        private void RegisterType(TypeDefinition type)
+        private void RegisterSymbol(ISymbolDefinition symbol)
         {
-            if (types.Exists(t => t.Id == type.Id))
+            if (!symbols.TryAdd(symbol.Id, symbol))
             {
-                var existingType = types.First(t => t.Id == type.Id);
+                var existing = symbols[symbol.Id];
                 string extraError = "";
-                if (existingType.Name != type.Name)
+                if (existing.Name != symbol.Name)
                 {
-                    extraError = $" (with name '{existingType.Name}', hash collision?)";
+                    extraError = $" (with name '{existing.Name}', hash collision?)";
                 }
-                throw new InvalidOperationException($"Type '{type.Name}' with ID {type.Id:X8} is already registered{extraError}");
+                throw new InvalidOperationException($"Symbol '{symbol.Name}' with ID {symbol.Id:X8} is already registered{extraError}");
             }
 
-            types.Add(type);
-        }
-
-        public TypeDefinition FindType(uint id)
-        {
-            for (int i = 0; i < types.Count; i++)
+            if (symbol is ArrayDefinition arr)
             {
-                if (types[i].Id == id)
-                {
-                    return types[i];
-                }
+                arrayTypes.Add(arr);
             }
-
-            return null;
         }
 
+        public ISymbolDefinition FindSymbol(string name) => FindSymbol(NameToId(name));
+        public ISymbolDefinition FindSymbol(uint id) => symbols.TryGetValue(id, out var symbol) ? symbol : null;
+
+        public TypeDefinition FindType(uint id) => FindSymbol(id) as TypeDefinition;
         public TypeDefinition FindType(string name) => FindType(NameToId(name));
+
+        public StaticFieldDefinition FindStaticField(uint id) => FindSymbol(id) as StaticFieldDefinition;
+        public StaticFieldDefinition FindStaticField(string name) => FindStaticField(NameToId(name));
+
+        public FunctionDefinition FindFunction(uint id) => FindSymbol(id) as FunctionDefinition;
+        public FunctionDefinition FindFunction(string name) => FindFunction(NameToId(name));
 
         public ArrayDefinition FindArray(TypeDefinition itemType, uint length)
         {
-            for (int i = 0; i < types.Count; i++)
+            for (int i = 0; i < arrayTypes.Count; i++)
             {
-                if (types[i] is ArrayDefinition a && a.ItemType == itemType && a.Length == length)
+                var a = arrayTypes[i];
+                if (a.ItemType == itemType && a.Length == length)
                 {
                     return a;
                 }
@@ -64,14 +64,14 @@
         public StructDefinition RegisterStruct(string name, IEnumerable<FieldDefinition> fields)
         {
             var s = new StructDefinition(name, fields);
-            RegisterType(s);
+            RegisterSymbol(s);
             return s;
         }
 
         public ArrayDefinition RegisterArray(TypeDefinition itemType, uint length)
         {
             var a = new ArrayDefinition(itemType, length);
-            RegisterType(a);
+            RegisterSymbol(a);
             return a;
         }
 
@@ -90,51 +90,17 @@
             return FindArray(t, length) ?? RegisterArray(t, length);
         }
 
-
-        private void RegisterStaticField(StaticFieldDefinition staticField)
-        {
-            if (staticFields.Exists(t => t.Id == staticField.Id))
-            {
-                var existingField = types.First(t => t.Id == staticField.Id);
-                string extraError = "";
-                if (existingField.Name != staticField.Name)
-                {
-                    extraError = $" (with name '{existingField.Name}', hash collision?)";
-                }
-                throw new InvalidOperationException($"Static field '{staticField.Name}' with ID {staticField.Id:X8} is already registered{extraError}");
-            }
-
-            staticFields.Add(staticField);
-        }
-
         public StaticFieldDefinition RegisterStaticField(string name, TypeDefinition type)
         {
             var s = new StaticFieldDefinition(name, type);
-            RegisterStaticField(s);
+            RegisterSymbol(s);
             return s;
-        }
-
-
-        private void RegisterFunction(FunctionDefinition function)
-        {
-            if (functions.Exists(t => t.Id == function.Id))
-            {
-                var existingFunc = types.First(t => t.Id == function.Id);
-                string extraError = "";
-                if (existingFunc.Name != function.Name)
-                {
-                    extraError = $" (with name '{existingFunc.Name}', hash collision?)";
-                }
-                throw new InvalidOperationException($"Function '{function.Name}' with ID {function.Id:X8} is already registered{extraError}");
-            }
-
-            functions.Add(function);
         }
 
         public FunctionDefinition RegisterFunction(string name, bool naked, IEnumerable<FieldDefinition> args, IEnumerable<FieldDefinition> locals, IEnumerable<FunctionDefinition.Statement> statements)
         {
             var f = new FunctionDefinition(name, naked, args, locals, statements);
-            RegisterFunction(f);
+            RegisterSymbol(f);
             return f;
         }
     }

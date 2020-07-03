@@ -5,7 +5,7 @@
     using System.Collections.Immutable;
     using System.Linq;
 
-    public abstract class TypeDefinition
+    public abstract class TypeDefinition : ISymbolDefinition
     {
         public uint Id { get; }
         public string Name { get; }

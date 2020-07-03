@@ -4,7 +4,7 @@
     using System.Collections.Generic;
     using System.Collections.Immutable;
 
-    public sealed class FunctionDefinition
+    public sealed class FunctionDefinition : ISymbolDefinition
     {
         public readonly struct Statement
         {

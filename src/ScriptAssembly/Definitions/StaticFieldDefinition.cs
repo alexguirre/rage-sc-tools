@@ -1,6 +1,6 @@
 ﻿namespace ScTools.ScriptAssembly.Definitions
 {
-    public sealed class StaticFieldDefinition : FieldDefinition
+    public sealed class StaticFieldDefinition : FieldDefinition, ISymbolDefinition
     {
         public uint Id { get; }
 
