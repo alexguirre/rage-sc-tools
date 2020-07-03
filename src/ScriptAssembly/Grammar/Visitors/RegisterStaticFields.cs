@@ -5,6 +5,7 @@
     using System.Collections.Generic;
     using Antlr4.Runtime.Misc;
     using ScTools.ScriptAssembly.Definitions;
+    using System.Diagnostics;
 
     public sealed class RegisterStaticFields : ScAsmBaseVisitor<StaticFieldDefinition[]>
     {
@@ -19,29 +20,15 @@
         {
             var fields = new List<StaticFieldDefinition>();
 
-            foreach (var stat in context.statement())
+            foreach (var sf in context.statement().Select(stat => stat.staticFieldDecl()).Where(sf => sf != null))
             {
-                var sf = stat.staticFieldDecl();
-                if (sf != null)
-                {
-                    if (sf.staticFieldInitializer() != null) throw new NotImplementedException("staticFieldInitializer");
+                if (sf.staticFieldInitializer() != null) throw new NotImplementedException("staticFieldInitializer");
 
-                    var f = sf.fieldDecl();
+                var f = ParseFieldDecl.Visit(sf.fieldDecl(), registry);
 
-                    var t = f.type();
-                    var arrayType = t.type();
-                    bool isArray = arrayType != null;
-                    long arrayLength = isArray ? ParseInteger.Visit(t.integer()) : 0;
+                Debug.Assert(f.Type != null);
 
-                    if (arrayLength < 0)
-                    {
-                        throw new InvalidOperationException("Array length is negative");
-                    }
-
-                    var typeName = isArray ? arrayType.identifier().GetText() : f.type().identifier().GetText();
-                    var typeDef = isArray ? registry.FindOrRegisterArray(typeName, (uint)arrayLength) : registry.FindType(typeName);
-                    fields.Add(registry.RegisterStaticField(f.identifier().GetText(), typeDef));
-                }
+                fields.Add(registry.RegisterStaticField(f.Name, f.Type));
             }
 
             return fields.ToArray();

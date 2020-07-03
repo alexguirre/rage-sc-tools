@@ -33,23 +33,7 @@
             {
                 var (s, initialUnresolved) = queuedStructs.Dequeue();
 
-                IEnumerable<(string Name, string TypeName, TypeDefinition Type)> fields = s.fieldDecl()
-                    .Select(f =>
-                    {
-                        var t = f.type();
-                        var arrayType = t.type();
-                        bool isArray = arrayType != null;
-                        long arrayLength = isArray ? ParseInteger.Visit(t.integer()) : 0;
-
-                        if (arrayLength < 0)
-                        {
-                            throw new InvalidOperationException("Array length is negative");
-                        }
-
-                        var typeName = isArray ? arrayType.identifier().GetText() : f.type().identifier().GetText();
-                        var typeDef = isArray ? registry.FindOrRegisterArray(typeName, (uint)arrayLength) : registry.FindType(typeName);
-                        return (f.identifier().GetText(), typeName, typeDef);
-                    });
+                var fields = s.fieldDecl().Select(f => ParseFieldDecl.Visit(f, registry));
 
                 int unresolved = fields.Count(f => f.Type == null);
                 if (unresolved > 0)

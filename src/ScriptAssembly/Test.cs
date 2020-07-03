@@ -50,11 +50,11 @@ STRUCT Vec3 BEGIN
     z: AUTO
 END
 
-STRUCT Test BEGIN
-    a: StructA
-    b: StructB
-    c: Test
-END
+;STRUCT Test BEGIN
+;    a: StructA
+;    b: StructB
+;    c: Test
+;END
 
 ;STRUCT Cyclic BEGIN
 ;    f: Cyclic

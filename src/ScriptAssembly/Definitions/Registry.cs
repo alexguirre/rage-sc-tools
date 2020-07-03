@@ -10,6 +10,7 @@
 
         private readonly List<TypeDefinition> types = new List<TypeDefinition>();
         private readonly List<StaticFieldDefinition> staticFields = new List<StaticFieldDefinition>();
+        private readonly List<FunctionDefinition> functions = new List<FunctionDefinition>();
 
         public Registry()
         {
@@ -100,7 +101,7 @@
                 {
                     extraError = $" (with name '{existingField.Name}', hash collision?)";
                 }
-                throw new InvalidOperationException($"Type '{staticField.Name}' with ID {staticField.Id:X8} is already registered{extraError}");
+                throw new InvalidOperationException($"Static field '{staticField.Name}' with ID {staticField.Id:X8} is already registered{extraError}");
             }
 
             staticFields.Add(staticField);
@@ -111,6 +112,30 @@
             var s = new StaticFieldDefinition(name, type);
             RegisterStaticField(s);
             return s;
+        }
+
+
+        private void RegisterFunction(FunctionDefinition function)
+        {
+            if (functions.Exists(t => t.Id == function.Id))
+            {
+                var existingFunc = types.First(t => t.Id == function.Id);
+                string extraError = "";
+                if (existingFunc.Name != function.Name)
+                {
+                    extraError = $" (with name '{existingFunc.Name}', hash collision?)";
+                }
+                throw new InvalidOperationException($"Function '{function.Name}' with ID {function.Id:X8} is already registered{extraError}");
+            }
+
+            functions.Add(function);
+        }
+
+        public FunctionDefinition RegisterFunction(string name, bool naked, IEnumerable<FieldDefinition> args, IEnumerable<FieldDefinition> locals, IEnumerable<FunctionDefinition.Statement> statements)
+        {
+            var f = new FunctionDefinition(name, naked, args, locals, statements);
+            RegisterFunction(f);
+            return f;
         }
     }
 }

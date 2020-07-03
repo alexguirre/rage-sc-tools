@@ -231,9 +231,11 @@
                 //    };
                 //}
 
+                Stopwatch sw = Stopwatch.StartNew();
                 Registry reg = new Registry();
                 RegisterStructs.Visit(context, reg);
                 RegisterStaticFields.Visit(context, reg);
+                RegisterFunctions.Visit(context, reg);
                 ;
 
                 sc.CodePages = new ScriptPageArray<byte>

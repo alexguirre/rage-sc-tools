@@ -6,7 +6,7 @@
     using Inst = Instruction;
     using Code = Assembler.ICodeBuilder;
 
-    internal enum OperandType
+    public enum OperandType
     {
         U32,
         U64,
@@ -16,7 +16,7 @@
         String,
     }
 
-    internal readonly struct Operand
+    public readonly struct Operand
     {
         public OperandType Type { get; }
         public uint U32 { get; }
