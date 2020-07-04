@@ -5,6 +5,7 @@
     using System.Text;
     using System.Runtime.CompilerServices;
     using ScTools.GameFiles;
+    using ScTools.ScriptAssembly;
 
     internal class Dumper
     {
@@ -92,7 +93,7 @@
             {
                 lineSB.Clear();
 
-                uint size = GetSizeOfInstructionAt(Script, ip);
+                uint size = Instruction.SizeOf(Script, ip);
 
                 // write offset
                 if (showOffsets)
@@ -289,165 +290,7 @@
             }
         }
 
-        private static uint GetSizeOfInstructionAt(Script sc, uint ip)
-        {
-            byte inst = sc.IP(ip);
-            uint s = inst < InstructionCount ? InstructionSizes[inst] : 0u;
-            if (s == 0)
-            {
-                s = inst switch
-                {
-                    0x2D => (uint)sc.IP(ip + 4) + 5, // ENTER
-                    0x62 => 6 * (uint)sc.IP(ip + 1) + 2, // SWITCH
-                    _ => throw new InvalidOperationException($"Unknown instruction 0x{inst:X} at IP {ip}"),
-                };
-            }
-
-            return s;
-        }
-
         private const int InstructionCount = ScriptAssembly.Instruction.NumberOfInstructions;
-
-        // TODO: move this stuff to Instruction.cs, so instructions are defined in a single place
-        private static readonly byte[] InstructionSizes = new byte[InstructionCount]
-        {
-            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-            1,1,1,1,1,2,3,4,5,5,1,1,4,0,3,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,1,
-            2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,
-            4,4,0,1,1,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-        };
-
-        // needs to be in sync with Assembler.Instructions
-        private static readonly string[] InstructionFormats = new string[InstructionCount]
-        {
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "b",
-            "bb",
-            "bbb",
-            "u",
-            "f",
-            "",
-            "",
-            "N", // NATIVE
-            "E", // ENTER
-            "bb",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "b",
-            "b",
-            "b",
-            "b",
-            "b",
-            "b",
-            "b",
-            "b",
-            "b",
-            "b",
-            "b",
-            "",
-            "b",
-            "b",
-            "b",
-            "s",
-            "s",
-            "s",
-            "s",
-            "s",
-            "s",
-            "h",
-            "h",
-            "h",
-            "h",
-            "h",
-            "h",
-            "h",
-            "h",
-            "h",
-            "h",
-            "h",
-            "h",
-            "R",
-            "R",
-            "R",
-            "R",
-            "R",
-            "R",
-            "R",
-            "R",
-            "C", // CALL
-            "a",
-            "a",
-            "a",
-            "a",
-            "S",
-            "",
-            "",
-            "b",
-            "b",
-            "b",
-            "b",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-        };
 
         private static readonly string[] InstructionRawFormats = new string[InstructionCount]
         {

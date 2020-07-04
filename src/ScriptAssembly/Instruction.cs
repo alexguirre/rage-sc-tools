@@ -2,6 +2,7 @@
 {
     using System;
     using System.Diagnostics;
+    using ScTools.GameFiles;
 
     using Inst = Instruction;
     using Code = CodeGen.IByteCodeBuilder;
@@ -137,6 +138,23 @@
         }
 
         public void Assemble(ReadOnlySpan<Operand> operands, Code code) => Assembler(this, operands, code);
+
+        public static uint SizeOf(Script sc, uint ip)
+        {
+            byte inst = sc.IP(ip);
+            uint s = inst < NumberOfInstructions ? InstructionSizes[inst] : 0u;
+            if (s == 0)
+            {
+                s = inst switch
+                {
+                    0x2D => (uint)sc.IP(ip + 4) + 5, // ENTER
+                    0x62 => 6 * (uint)sc.IP(ip + 1) + 2, // SWITCH
+                    _ => throw new InvalidOperationException($"Unknown instruction 0x{inst:X} at IP {ip}"),
+                };
+            }
+
+            return s;
+        }
 
         private static readonly Inst[] SetStorage = new Inst[NumberOfInstructions];
         private static readonly int[] SetSorted = new int[NumberOfInstructions]; // indices sorted based on MnemonicHash
@@ -478,5 +496,13 @@
                 c.LabelTarget(o[k].SwitchCase.Label);
             }
         }
+
+        private static readonly byte[] InstructionSizes = new byte[NumberOfInstructions]
+        {
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            1,1,1,1,1,2,3,4,5,5,1,1,4,0,3,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,1,
+            2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,
+            4,4,0,1,1,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        };
     }
 }

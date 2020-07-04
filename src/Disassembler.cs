@@ -6,6 +6,7 @@ namespace ScTools
     using System.Diagnostics;
     using System.Collections.Generic;
     using ScTools.GameFiles;
+    using ScTools.ScriptAssembly;
 
     internal class Disassembler
     {
@@ -83,7 +84,7 @@ namespace ScTools
             StringBuilder lineSB = new StringBuilder();
             int labelIndex = 0;
             var (labels, labelsDict) = ScanLabels(sc);
-            for (uint ip = 0; ip <= sc.CodeLength; ip += ip < sc.CodeLength ? GetSizeOfInstructionAt(sc, ip) : 1)
+            for (uint ip = 0; ip <= sc.CodeLength; ip += ip < sc.CodeLength ? Instruction.SizeOf(sc, ip) : 1)
             {
                 lineSB.Clear();
 
@@ -113,7 +114,7 @@ namespace ScTools
             List<(uint IP, string)> labels = new List<(uint, string)>();
             Dictionary<uint, string> labelsDict = new Dictionary<uint, string>();
 
-            for (uint ip = 0; ip < sc.CodeLength; ip += GetSizeOfInstructionAt(sc, ip))
+            for (uint ip = 0; ip < sc.CodeLength; ip += Instruction.SizeOf(sc, ip))
             {
                 byte inst = sc.IP(ip);
                 if (inst < InstructionCount && InstructionFormats[inst].Length > 0)
@@ -376,33 +377,7 @@ namespace ScTools
             }
         }
 
-        private static uint GetSizeOfInstructionAt(Script sc, uint ip)
-        {
-            byte inst = sc.IP(ip);
-            uint s = inst < InstructionCount ? InstructionSizes[inst] : 0u;
-            if (s == 0)
-            {
-                s = inst switch
-                {
-                    0x2D => (uint)sc.IP(ip + 4) + 5, // ENTER
-                    0x62 => 6 * (uint)sc.IP(ip + 1) + 2, // SWITCH
-                    _ => throw new InvalidOperationException($"Unknown instruction 0x{inst:X} at IP {ip}"),
-                };
-            }
-
-            return s;
-        }
-
         private const int InstructionCount = ScriptAssembly.Instruction.NumberOfInstructions;
-
-        // TODO: move this stuff to Instruction.cs, so instructions are defined in a single place
-        private static readonly byte[] InstructionSizes = new byte[InstructionCount]
-        {
-            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-            1,1,1,1,1,2,3,4,5,5,1,1,4,0,3,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,1,
-            2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,
-            4,4,0,1,1,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-        };
 
         // needs to be in sync with Assembler.Instructions
         private static readonly string[] InstructionFormats = new string[InstructionCount]
