@@ -42,6 +42,7 @@
             Debug.Assert(!InFunction);
 
             currentFunction = function ?? throw new ArgumentNullException(nameof(currentFunction));
+            currentLabel = function.Name;
             functions.Add(function.Name, (length, new Dictionary<string, uint>()));
 
             if (!currentFunction.Naked)
@@ -135,15 +136,7 @@
             InstructionPostCondition();
         }
 
-        public void InstructionS16(short v)
-        {
-            InstructionPreCondition();
-
-            buffer.Add((byte)(v & 0xFF));
-            buffer.Add((byte)(v >> 8));
-
-            InstructionPostCondition();
-        }
+        public void InstructionS16(short v) => InstructionU16(unchecked((ushort)v));
 
         public void InstructionU32(uint v)
         {
