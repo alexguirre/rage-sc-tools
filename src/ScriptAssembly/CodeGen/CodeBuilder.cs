@@ -222,7 +222,7 @@
                     // in there is enough space for a J instruction, add it to jump to the next page
                     uint jumpIP = Script.MaxPageLength * (pageIndex + 1);
                     short relIP = (short)((int)jumpIP - (int)(offset + 3));
-                    page[offset + 0] = Instruction.J.Opcode;
+                    page[offset + 0] = Instruction.J.Opcode; // NOTE: cannot use Emit here because we are still assembling an instruction
                     page[offset + 1] = (byte)(relIP & 0xFF);
                     page[offset + 2] = (byte)(relIP >> 8);
                 }
