@@ -105,9 +105,9 @@
             return s;
         }
 
-        public FunctionDefinition RegisterFunction(string name, bool naked, IEnumerable<FieldDefinition> args, IEnumerable<FieldDefinition> locals, IEnumerable<FunctionDefinition.Statement> statements)
+        public FunctionDefinition RegisterFunction(string name, bool naked, IEnumerable<FieldDefinition> args, IEnumerable<FieldDefinition> locals, TypeDefinition returnType, IEnumerable<FunctionDefinition.Statement> statements)
         {
-            var f = new FunctionDefinition(name, naked, args, locals, statements);
+            var f = new FunctionDefinition(name, naked, args, locals, returnType, statements);
             RegisterSymbol(f);
             return f;
         }

@@ -139,6 +139,38 @@
                 DROP
             END
 
+            FUNC someFunctionWithArgsAndReturn(arg1: AUTO, arg2: AUTO): AUTO
+                local1: AUTO
+                local2: AUTO
+            BEGIN
+                PUSH_CONST_0
+                PUSH_CONST_1
+                DROP
+                DROP
+                PUSH_CONST_2
+            END
+
+            FUNC someFunctionWithReturnAndLocals: AUTO
+                local1: AUTO
+                local2: AUTO
+            BEGIN
+                PUSH_CONST_0
+                PUSH_CONST_1
+                DROP
+                DROP
+                PUSH_CONST_2
+            END
+
+            FUNC someFunctionWithReturn: Vec3 BEGIN
+                PUSH_CONST_0
+                PUSH_CONST_1
+                DROP
+                DROP
+                PUSH_CONST_1
+                PUSH_CONST_2
+                PUSH_CONST_3
+            END
+
             FUNC NAKED nextFibonacci BEGIN  ; no args, 1 local for return value
                     ENTER 0 3
                     PUSH_CONST_1

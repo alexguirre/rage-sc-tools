@@ -79,7 +79,7 @@
         private void EmitEpilogue()
         {
             uint argsSize = (uint)currentFunction.Args.Sum(a => a.Type.SizeOf);
-            uint returnSize = 0; // TODO: return values in epilogue
+            uint returnSize = currentFunction.ReturnType?.SizeOf ?? 0;
             Emit(Instruction.LEAVE, new[] { new Operand(argsSize), new Operand(returnSize) });
         }
 

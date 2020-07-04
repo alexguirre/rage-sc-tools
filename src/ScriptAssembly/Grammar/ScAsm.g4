@@ -36,7 +36,7 @@ type
     ;
 
 function
-    : K_FUNC K_NAKED? identifier functionArgList?
+    : K_FUNC K_NAKED? identifier functionArgList? functionReturnType?
       (functionLocalDecl? EOL)*
       K_BEGIN EOL
       (functionBody? EOL)*
@@ -45,6 +45,10 @@ function
 
 functionArgList
     : '(' (fieldDecl (',' fieldDecl)*)? ')'
+    ;
+
+functionReturnType
+    : ':' type
     ;
 
 functionLocalDecl

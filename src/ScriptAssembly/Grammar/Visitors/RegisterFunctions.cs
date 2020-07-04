@@ -26,11 +26,13 @@
                 var naked = f.K_NAKED() != null;
                 var args = f.functionArgList()?.fieldDecl().Select(f => ParseFieldDecl.Visit(f, registry)) ?? Enumerable.Empty<(string, string, TypeDefinition)>();
                 var locals = f.functionLocalDecl().Select(l => ParseFieldDecl.Visit(l.fieldDecl(), registry));
+                var returnType = f.functionReturnType() != null ? ParseType.Visit(f.functionReturnType().type(), registry).Type : null;
                 var statements = f.functionBody().Select(b => b.Accept(bodyVisitor));
 
                 funcs.Add(registry.RegisterFunction(name, naked, 
                                                     args.Select(a => new FieldDefinition(a.Name,a.Type)),
                                                     locals.Select(l => new FieldDefinition(l.Name, l.Type)),
+                                                    returnType,
                                                     statements));
             }
 
