@@ -14,6 +14,59 @@
     {
         public static void DoTest()
         {
+            //using TextWriter wr = new StreamWriter("page_boundaries_analysis.txt");
+
+            foreach (var f in Directory.EnumerateFiles(".\\allscripts\\", "*.ysc"))
+            {
+                Console.WriteLine(f);
+
+                YscFile ysc = new YscFile();
+                ysc.Load(File.ReadAllBytes(f));
+
+                var funcs = new Disassembler(ysc.Script).Disassemble();
+
+                //wr.WriteLine("{0}:", f);
+
+                //const uint Range = 10;
+                //bool writing = false;
+                //foreach (var func in funcs)
+                //{
+                //    for (int i = 0; i < func.Code.Count; i++)
+                //    {
+                //        var loc = func.Code[i];
+
+                //        if (!writing)
+                //        {
+                //            if (loc.IP % 0x4000 >= (0x4000 - Range))
+                //            {
+                //                writing = true;
+                //            }
+                //        }
+                //        else
+                //        {
+                //            uint v = loc.IP % 0x4000;
+                //            if (v < (0x4000 - Range) && v >= Range)
+                //            {
+                //                writing = false;
+                //                wr.WriteLine();
+                //            }
+                //        }
+
+
+                //        if (writing)
+                //        {
+                //            wr.WriteLine("\t{0:000000}: {1}", loc.IP, Instruction.Set[loc.Opcode].Mnemonic);
+                //        }
+                //    }
+                //}
+                //wr.WriteLine();
+                //wr.WriteLine();
+                //wr.WriteLine();
+            }
+
+
+
+            return;
 
             Script sc = Assembler.Assemble(
 @"
@@ -230,6 +283,11 @@
 
             new Dumper(sc).Dump(w, showMetadata: true, showDisassembly: true,
                                 showOffsets: true, showBytes: true, showInstructions: true);
+
+            var dis = new Disassembler(sc);
+            dis.Disassemble();
+
+            ;
         }
     }
 }
