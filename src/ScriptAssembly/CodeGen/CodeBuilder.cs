@@ -201,6 +201,7 @@
         public void EndInstruction()
         {
             Debug.Assert(InFunction && inInstruction);
+            Debug.Assert(buffer.Count > 0);
 
             uint pageIndex = length >> 14;
             if (pageIndex >= pages.Count)
@@ -211,8 +212,15 @@
             uint offset = length & 0x3FFF;
             byte[] page = pages[(int)pageIndex];
 
+            byte opcode = buffer[0];
 
-            if (offset + buffer.Count > page.Length) // the instruction doesn't fit in the current page
+            // At page boundary a NOP may be required for the interpreter to switch to the next page,
+            // the interpreter only does this with control flow instructions and NOP
+            // If the NOP is needed, skip 1 byte at the end of the page
+            bool needsNopAtBoundary = !Instruction.Set[opcode].IsControlFlow &&
+                                      opcode != Instruction.NOP.Opcode;
+
+            if (offset + buffer.Count > (page.Length - (needsNopAtBoundary ? 1 : 0))) // the instruction doesn't fit in the current page
             {
                 const uint JumpInstructionSize = 3;
                 if (buffer.Count > JumpInstructionSize)

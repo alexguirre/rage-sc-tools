@@ -120,10 +120,12 @@
         public string Mnemonic { get; }
         public uint MnemonicHash { get; }
         public CodeAssembler Assembler { get; }
+        public bool IsJump { get; }
+        public bool IsControlFlow { get; }
 
         public bool IsValid => Mnemonic != null;
 
-        private Instruction(string mnemonic, byte opcode, CodeAssembler assembler)
+        private Instruction(string mnemonic, byte opcode, CodeAssembler assembler, bool isJump = false, bool isControlFlow = false)
         {
             Debug.Assert(opcode < NumberOfInstructions);
 
@@ -131,6 +133,8 @@
             Mnemonic = mnemonic ?? throw new ArgumentNullException(nameof(mnemonic));
             MnemonicHash = mnemonic.ToHash();
             Assembler = assembler ?? throw new ArgumentNullException(nameof(assembler));
+            IsJump = isJump;
+            IsControlFlow = isJump || isControlFlow;
 
             Debug.Assert(SetStorage[opcode].Mnemonic == null); // ensure we haven't repeated an opcode
 
@@ -253,7 +257,7 @@
         public static readonly Inst DROP = new Inst(nameof(DROP), 0x2B, I);
         public static readonly Inst NATIVE = new Inst(nameof(NATIVE), 0x2C, I_native);
         public static readonly Inst ENTER = new Inst(nameof(ENTER), 0x2D, I_enter);
-        public static readonly Inst LEAVE = new Inst(nameof(LEAVE), 0x2E, I_b_b);
+        public static readonly Inst LEAVE = new Inst(nameof(LEAVE), 0x2E, I_b_b, isControlFlow: true);
         public static readonly Inst LOAD = new Inst(nameof(LOAD), 0x2F, I);
         public static readonly Inst STORE = new Inst(nameof(STORE), 0x30, I);
         public static readonly Inst STORE_REV = new Inst(nameof(STORE_REV), 0x31, I);
@@ -292,20 +296,20 @@
         public static readonly Inst GLOBAL_U16 = new Inst(nameof(GLOBAL_U16), 0x52, I_u16);
         public static readonly Inst GLOBAL_U16_LOAD = new Inst(nameof(GLOBAL_U16_LOAD), 0x53, I_u16);
         public static readonly Inst GLOBAL_U16_STORE = new Inst(nameof(GLOBAL_U16_STORE), 0x54, I_u16);
-        public static readonly Inst J = new Inst(nameof(J), 0x55, I_labelTarget);
-        public static readonly Inst JZ = new Inst(nameof(JZ), 0x56, I_labelTarget);
-        public static readonly Inst IEQ_JZ = new Inst(nameof(IEQ_JZ), 0x57, I_labelTarget);
-        public static readonly Inst INE_JZ = new Inst(nameof(INE_JZ), 0x58, I_labelTarget);
-        public static readonly Inst IGT_JZ = new Inst(nameof(IGT_JZ), 0x59, I_labelTarget);
-        public static readonly Inst IGE_JZ = new Inst(nameof(IGE_JZ), 0x5A, I_labelTarget);
-        public static readonly Inst ILT_JZ = new Inst(nameof(ILT_JZ), 0x5B, I_labelTarget);
-        public static readonly Inst ILE_JZ = new Inst(nameof(ILE_JZ), 0x5C, I_labelTarget);
-        public static readonly Inst CALL = new Inst(nameof(CALL), 0x5D, I_functionTarget);
+        public static readonly Inst J = new Inst(nameof(J), 0x55, I_labelTarget, isJump: true);
+        public static readonly Inst JZ = new Inst(nameof(JZ), 0x56, I_labelTarget, isJump: true);
+        public static readonly Inst IEQ_JZ = new Inst(nameof(IEQ_JZ), 0x57, I_labelTarget, isJump: true);
+        public static readonly Inst INE_JZ = new Inst(nameof(INE_JZ), 0x58, I_labelTarget, isJump: true);
+        public static readonly Inst IGT_JZ = new Inst(nameof(IGT_JZ), 0x59, I_labelTarget, isJump: true);
+        public static readonly Inst IGE_JZ = new Inst(nameof(IGE_JZ), 0x5A, I_labelTarget, isJump: true);
+        public static readonly Inst ILT_JZ = new Inst(nameof(ILT_JZ), 0x5B, I_labelTarget, isJump: true);
+        public static readonly Inst ILE_JZ = new Inst(nameof(ILE_JZ), 0x5C, I_labelTarget, isJump: true);
+        public static readonly Inst CALL = new Inst(nameof(CALL), 0x5D, I_functionTarget, isControlFlow: true);
         public static readonly Inst GLOBAL_U24 = new Inst(nameof(GLOBAL_U24), 0x5E, I_u24);
         public static readonly Inst GLOBAL_U24_LOAD = new Inst(nameof(GLOBAL_U24_LOAD), 0x5F, I_u24);
         public static readonly Inst GLOBAL_U24_STORE = new Inst(nameof(GLOBAL_U24_STORE), 0x60, I_u24);
         public static readonly Inst PUSH_CONST_U24 = new Inst(nameof(PUSH_CONST_U24), 0x61, I_u24);
-        public static readonly Inst SWITCH = new Inst(nameof(SWITCH), 0x62, I_switch);
+        public static readonly Inst SWITCH = new Inst(nameof(SWITCH), 0x62, I_switch, isControlFlow: true);
         public static readonly Inst STRING = new Inst(nameof(STRING), 0x63, I);
         public static readonly Inst STRINGHASH = new Inst(nameof(STRINGHASH), 0x64, I);
         public static readonly Inst TEXT_LABEL_ASSIGN_STRING = new Inst(nameof(TEXT_LABEL_ASSIGN_STRING), 0x65, I_b);
@@ -314,8 +318,8 @@
         public static readonly Inst TEXT_LABEL_APPEND_INT = new Inst(nameof(TEXT_LABEL_APPEND_INT), 0x68, I_b);
         public static readonly Inst TEXT_LABEL_COPY = new Inst(nameof(TEXT_LABEL_COPY), 0x69, I);
         public static readonly Inst CATCH = new Inst(nameof(CATCH), 0x6A, I);
-        public static readonly Inst THROW = new Inst(nameof(THROW), 0x6B, I);
-        public static readonly Inst CALLINDIRECT = new Inst(nameof(CALLINDIRECT), 0x6C, I);
+        public static readonly Inst THROW = new Inst(nameof(THROW), 0x6B, I, isControlFlow: true);
+        public static readonly Inst CALLINDIRECT = new Inst(nameof(CALLINDIRECT), 0x6C, I, isControlFlow: true);
         public static readonly Inst PUSH_CONST_M1 = new Inst(nameof(PUSH_CONST_M1), 0x6D, I);
         public static readonly Inst PUSH_CONST_0 = new Inst(nameof(PUSH_CONST_0), 0x6E, I);
         public static readonly Inst PUSH_CONST_1 = new Inst(nameof(PUSH_CONST_1), 0x6F, I);
