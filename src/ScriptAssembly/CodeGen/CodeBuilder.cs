@@ -30,8 +30,11 @@
         private bool inInstruction = false;
         private bool InFunction => currentFunction != null;
 
-        public CodeBuilder()
+        private readonly AssemblerContext context;
+
+        public CodeBuilder(AssemblerContext context)
         {
+            this.context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
         public void BeginFunction(FunctionDefinition function)
@@ -61,6 +64,8 @@
 
         public void Emit(in Instruction inst, ReadOnlySpan<Operand> operands)
         {
+            Debug.Assert(InFunction);
+
             BeginInstruction();
             inst.Assemble(operands, this);
             EndInstruction();
@@ -102,13 +107,13 @@
 
         public void BeginInstruction()
         {
-            Debug.Assert(!inInstruction);
+            Debug.Assert(InFunction && !inInstruction);
 
             buffer.Clear();
             inInstruction = true;
         }
 
-        [Conditional("DEBUG")] private void InstructionPreCondition() => Debug.Assert(inInstruction);
+        [Conditional("DEBUG")] private void InstructionPreCondition() => Debug.Assert(InFunction && inInstruction);
         [Conditional("DEBUG")] private void InstructionPostCondition() => Debug.Assert(buffer.Count < Script.MaxPageLength / 2, "instruction too long");
 
         public void InstructionU8(byte v)
@@ -202,7 +207,7 @@
 
         public void EndInstruction()
         {
-            Debug.Assert(inInstruction);
+            Debug.Assert(InFunction && inInstruction);
 
             uint pageIndex = length >> 14;
             if (pageIndex >= pages.Count)
@@ -213,13 +218,13 @@
             uint offset = length & 0x3FFF;
             byte[] page = pages[(int)pageIndex];
 
-            const uint JumpInstructionSize = 3;
 
             if (offset + buffer.Count > page.Length) // the instruction doesn't fit in the current page
             {
+                const uint JumpInstructionSize = 3;
                 if (buffer.Count > JumpInstructionSize)
                 {
-                    // in there is enough space for a J instruction, add it to jump to the next page
+                    // if there is enough space for a J instruction, add it to jump to the next page
                     uint jumpIP = Script.MaxPageLength * (pageIndex + 1);
                     short relIP = (short)((int)jumpIP - (int)(offset + 3));
                     page[offset + 0] = Instruction.J.Opcode; // NOTE: cannot use Emit here because we are still assembling an instruction
@@ -339,7 +344,7 @@
 
         #region IByteCodeBuilder Implementation
         string IByteCodeBuilder.Label => currentLabel;
-        CodeGenOptions IByteCodeBuilder.Options => default; // TODO
+        CodeGenOptions IByteCodeBuilder.Options => context.CodeGenOptions;
 
         void IByteCodeBuilder.U8(byte v) => InstructionU8(v);
         void IByteCodeBuilder.U16(ushort v) => InstructionU16(v);
@@ -352,13 +357,13 @@
         #endregion // IByteCodeBuilder Implementation
 
         #region IHighLevelCodeBuilder Implementation
-        NativeDB IHighLevelCodeBuilder.NativeDB => null; // TODO
-        CodeGenOptions IHighLevelCodeBuilder.Options => default; // TODO
+        NativeDB IHighLevelCodeBuilder.NativeDB => context.NativeDB;
+        CodeGenOptions IHighLevelCodeBuilder.Options => context.CodeGenOptions;
 
         void IHighLevelCodeBuilder.Emit(in Instruction inst, ReadOnlySpan<Operand> operands) => Emit(inst, operands);
 
-        uint IHighLevelCodeBuilder.AddOrGetString(ReadOnlySpan<char> str) => 0; // TODO
-        ushort IHighLevelCodeBuilder.AddOrGetNative(ulong hash) => 0; // TODO
+        uint IHighLevelCodeBuilder.AddOrGetString(ReadOnlySpan<char> str) => context.AddOrGetString(str);
+        ushort IHighLevelCodeBuilder.AddOrGetNative(ulong hash) => context.AddOrGetNative(hash);
         #endregion // IHighLevelCodeBuilder Implementation
     }
 }

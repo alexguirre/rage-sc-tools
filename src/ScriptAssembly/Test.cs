@@ -171,7 +171,33 @@
                 PUSH_CONST_3
             END
 
-            FUNC NAKED nextFibonacci BEGIN  ; no args, 1 local for return value
+            FUNC nextFibonacci: AUTO ; no args, returns a fibonacci number, 1 local for return value
+                returnValue: AUTO ; local 2
+            BEGIN
+                    PUSH_CONST_1
+                    STATIC_U8_LOAD 2    ; get current fibonacci index
+                    IGE_JZ else        ; if (index < 1)
+                then:
+                    PUSH_CONST_0
+                    LOCAL_U8_STORE 2    ; return 0
+                    J endif
+                else:
+                    STATIC_U8_LOAD 0    ; fib0
+                    STATIC_U8_LOAD 1    ; fib1
+                    IADD
+                    LOCAL_U8_STORE 2    ; return fib0 + fib1
+                    STATIC_U8_LOAD 1
+                    STATIC_U8_STORE 0   ; fib0 = fib1
+                    LOCAL_U8_LOAD 2
+                    STATIC_U8_STORE 1   ; fib1 = newFib
+                endif:
+                    STATIC_U8_LOAD 2
+                    IADD_U8 1
+                    STATIC_U8_STORE 2   ; index++
+                    LOCAL_U8_LOAD 2     ; push the return value to the stack
+            END
+
+            FUNC NAKED nextFibonacciNaked BEGIN  ; no args, returns a fibonacci number, 1 local for return value
                     ENTER 0 3
                     PUSH_CONST_1
                     STATIC_U8_LOAD 2    ; get current fibonacci index

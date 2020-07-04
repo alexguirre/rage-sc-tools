@@ -12,20 +12,21 @@
     using ScTools.ScriptAssembly.Grammar;
     using ScTools.ScriptAssembly.Grammar.Visitors;
 
-    internal sealed class AssemblerContext
+    public sealed class AssemblerContext
     {
         private readonly Script sc;
         private bool nameSet = false;
 
         public NativeDB NativeDB { get; }
         public CodeBuilder Code { get; }
+        public CodeGenOptions CodeGenOptions { get; }
         public StringPagesBuilder Strings { get; } = new StringPagesBuilder();
         public IList<ulong> NativeHashes { get; } = new List<ulong>();
 
         public AssemblerContext(Script sc)
         {
             this.sc = sc ?? throw new ArgumentNullException(nameof(sc));
-            Code = new CodeBuilder();
+            Code = new CodeBuilder(this);
         }
 
         public void SetName(string name)
@@ -229,9 +230,7 @@
                             ref readonly var inst = ref Instruction.FindByMnemonic(mnemonicHash);
                             if (inst.IsValid)
                             {
-                                code.BeginInstruction();
-                                inst.Assemble(statement.Operands.AsSpan(), code);
-                                code.EndInstruction();
+                                code.Emit(inst, statement.Operands.AsSpan());
                             }
                             else
                             {
