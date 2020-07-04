@@ -77,7 +77,7 @@
             Debug.Assert(o.Length == 1 && o[0].Type == OperandType.String);
 
             string str = o[0].String;
-            SinkPushString(str, c);
+            EmitPushString(str, c);
         }
 
         private static void I_CallNative(in HLInst i, ReadOnlySpan<Operand> o, Code c)
@@ -101,7 +101,7 @@
             byte returnValueCount = n.ReturnValueCount;
             ushort idx = c.AddOrGetNative(n.CurrentHash);
 
-            c.Sink(Instruction.NATIVE, new[] { new Operand(paramCount), new Operand(returnValueCount), new Operand(idx) });
+            c.Emit(Instruction.NATIVE, new[] { new Operand(paramCount), new Operand(returnValueCount), new Operand(idx) });
         }
 
         private static void I_Push(in HLInst i, ReadOnlySpan<Operand> o, Code c)
@@ -116,14 +116,14 @@
 
                 switch (o[k].Type)
                 {
-                    case OperandType.U32: SinkPushUInt(o[k].U32, c); break;
-                    case OperandType.F32: SinkPushFloat(o[k].F32, c); break;
-                    case OperandType.String: SinkPushString(o[k].String, c); break;
+                    case OperandType.U32: EmitPushUInt(o[k].U32, c); break;
+                    case OperandType.F32: EmitPushFloat(o[k].F32, c); break;
+                    case OperandType.String: EmitPushString(o[k].String, c); break;
                 }
             }
         }
 
-        private static void SinkPushUInt(uint v, Code code)
+        private static void EmitPushUInt(uint v, Code code)
         {
             var inst = v switch
             {
@@ -142,10 +142,10 @@
                 _ => (Instruction.PUSH_CONST_U32, new[] { new Operand(v) }),
             };
 
-            code.Sink(inst.Item1, inst.Item2);
+            code.Emit(inst.Item1, inst.Item2);
         }
 
-        private static void SinkPushFloat(float v, Code code)
+        private static void EmitPushFloat(float v, Code code)
         {
             var inst = v switch
             {
@@ -161,45 +161,14 @@
                 _ => (Instruction.PUSH_CONST_F, new[] { new Operand(v) }),
             };
 
-            code.Sink(inst.Item1, inst.Item2);
+            code.Emit(inst.Item1, inst.Item2);
         }
 
-        private static void SinkPushString(ReadOnlySpan<char> str, Code code)
+        private static void EmitPushString(ReadOnlySpan<char> str, Code code)
         {
             uint strId = code.AddOrGetString(str);
-            SinkPushUInt(strId, code);
-            code.Sink(Instruction.STRING, ReadOnlySpan<Operand>.Empty);
-        }
-
-        private static string NextString(in HLInst i, ref Tokens t, int operand) => NextValue(i, ref t, operand, s =>
-        {
-            if (!Token.IsString(s, out var lbl))
-            {
-                throw new FormatException("Not a string");
-            }
-
-            return lbl.Unescape();
-        }, "string");
-
-        private static string NextNativeName(in HLInst i, ref Tokens t, int operand) => NextValue(i, ref t, operand, s => s.ToString(), "native command");
-
-        private delegate T ParseValue<T>(ReadOnlySpan<char> str);
-        private static T NextValue<T>(in HLInst i, ref Tokens t, int operand, ParseValue<T> parse, string typeName = null)
-        {
-            static string OpToStr(int operand) => operand == 0 ? "" : operand.ToString();
-
-            var opStr = t.MoveNext() ? t.Current : throw new ArgumentException($"{i.Mnemonic} instruction is missing operand {OpToStr(operand)}");
-            T op;
-            try
-            {
-                op = parse(opStr);
-            }
-            catch (Exception e) when (e is FormatException || e is OverflowException)
-            {
-                throw new ArgumentException($"Operand{OpToStr(operand) + " "}of {i.Mnemonic} instruction is not a valid {typeName ?? typeof(T).Name}", e);
-            }
-
-            return op;
+            EmitPushUInt(strId, code);
+            code.Emit(Instruction.STRING, ReadOnlySpan<Operand>.Empty);
         }
     }
 }

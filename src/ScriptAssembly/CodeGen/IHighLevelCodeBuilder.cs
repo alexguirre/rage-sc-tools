@@ -15,7 +15,7 @@
         /// </summary>
         /// <param name="inst">The instruction to assemble.</param>
         /// <param name="operands">The operands of the instruction.</param>
-        public void Sink(in Instruction inst, ReadOnlySpan<Operand> operands);
+        public void Emit(in Instruction inst, ReadOnlySpan<Operand> operands);
 
         public uint AddOrGetString(ReadOnlySpan<char> str);
         public ushort AddOrGetNative(ulong hash);

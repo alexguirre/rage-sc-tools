@@ -3,22 +3,29 @@
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using ScTools.GameFiles;
     using ScTools.ScriptAssembly.Definitions;
 
     public class CodeBuilder : IByteCodeBuilder, IHighLevelCodeBuilder
     {
-        private readonly List<byte[]> pages = new List<byte[]>();
+        private readonly List<byte[]> pages = new List<byte[]>(); // bytecode pages so far
+        private uint length = 0; // byte count of all the code
+        
+        // bytes of the current instruction
+        private readonly List<byte> buffer = new List<byte>();
+
         private FunctionDefinition currentFunction = null;
         private string currentLabel = null;
+        
+        // functions addresses and labels
         private readonly Dictionary<string, (uint IP, Dictionary<string, uint> Labels)> functions = new Dictionary<string, (uint, Dictionary<string, uint>)>();
-        //private readonly Dictionary<string, uint> labels = new Dictionary<string, uint>(); // key = label name, value = IP
+        
+        // addresses that need fixup
         private readonly List<(string TargetFunctionName, uint IP)> functionTargets = new List<(string, uint)>();
         private readonly List<(string FunctionName, string TargetLabel, uint IP)> labelTargets = new List<(string, string, uint)>();
         private readonly List<int> functionTargetsInCurrentInstruction = new List<int>(); // index of functionTargets
         private readonly List<int> labelTargetsInCurrentInstruction = new List<int>(); // index of labelTargets
-        private uint length = 0;
-        private readonly List<byte> buffer = new List<byte>();
 
         private bool inInstruction = false;
         private bool InFunction => currentFunction != null;
@@ -31,15 +38,49 @@
         {
             Debug.Assert(!InFunction);
 
-            currentFunction = function;
+            currentFunction = function ?? throw new ArgumentNullException(nameof(currentFunction));
             functions.Add(function.Name, (length, new Dictionary<string, uint>()));
+
+            if (!currentFunction.Naked)
+            {
+                EmitPrologue();
+            }
         }
 
         public void EndFunction()
         {
             Debug.Assert(InFunction);
 
+            if (!currentFunction.Naked)
+            {
+                EmitEpilogue();
+            }
+
             currentFunction = null;
+        }
+
+        public void Emit(in Instruction inst, ReadOnlySpan<Operand> operands)
+        {
+            BeginInstruction();
+            inst.Assemble(operands, this);
+            EndInstruction();
+        }
+
+        private void EmitPrologue()
+        {
+            // TODO: verify, all ENTER instructions seem to have at least 2 locals (for return address + something else?)
+            const uint MinLocals = 2;
+
+            uint argsSize = (uint)currentFunction.Args.Sum(a => a.Type.SizeOf);
+            uint localsSize = (uint)currentFunction.Locals.Sum(l => l.Type.SizeOf) + MinLocals;
+            Emit(Instruction.ENTER, new[] { new Operand(argsSize), new Operand(localsSize) });
+        }
+
+        private void EmitEpilogue()
+        {
+            uint argsSize = (uint)currentFunction.Args.Sum(a => a.Type.SizeOf);
+            uint returnSize = 0; // TODO: return values in epilogue
+            Emit(Instruction.LEAVE, new[] { new Operand(argsSize), new Operand(returnSize) });
         }
 
         public void AddLabel(string label)
@@ -314,12 +355,7 @@
         NativeDB IHighLevelCodeBuilder.NativeDB => null; // TODO
         CodeGenOptions IHighLevelCodeBuilder.Options => default; // TODO
 
-        void IHighLevelCodeBuilder.Sink(in Instruction inst, ReadOnlySpan<Operand> operands)
-        {
-            BeginInstruction();
-            inst.Assemble(operands, this);
-            EndInstruction();
-        }
+        void IHighLevelCodeBuilder.Emit(in Instruction inst, ReadOnlySpan<Operand> operands) => Emit(inst, operands);
 
         uint IHighLevelCodeBuilder.AddOrGetString(ReadOnlySpan<char> str) => 0; // TODO
         ushort IHighLevelCodeBuilder.AddOrGetNative(ulong hash) => 0; // TODO
