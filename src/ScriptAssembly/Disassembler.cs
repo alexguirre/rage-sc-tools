@@ -38,7 +38,7 @@
                 // They may have NOPs and a J before the ENTER, here explore backwards from the start of the currFunc
                 // to see if this is the case, if so, add this instruction to currFunc and remove them from prevFunc and just the StartIP and EndIP
                 int k = prevFunc.Code.Count - 1;
-                while (k >= 0 && prevFunc.Code[k].Opcode == Instruction.NOP.Opcode)
+                while (k >= 0 && prevFunc.Code[k].Opcode == Opcode.NOP)
                 {
                     k--;
                 }
@@ -46,12 +46,12 @@
                 bool changeFuncBounds = false;
                 
                 Location prevLast = prevFunc.Code[k];
-                if (prevLast.Opcode == Instruction.J.Opcode && // is there a jump to the ENTER instruction?
+                if (prevLast.Opcode == Opcode.J && // is there a jump to the ENTER instruction?
                     Script.IP<short>(prevLast.IP + 1) == (currFunc.StartIP - (prevLast.IP + 3)))
                 {
                     changeFuncBounds = true;
                 }
-                else if (k < prevFunc.Code.Count - 1 && (prevFunc.Code[k + 1].Opcode == Instruction.NOP.Opcode))
+                else if (k < prevFunc.Code.Count - 1 && (prevFunc.Code[k + 1].Opcode == Opcode.NOP))
                 {
                     k++;
                     prevLast = prevFunc.Code[k];
@@ -88,10 +88,10 @@
         {
             public uint IP { get; set; }
             public string Label { get; set; }
-            public byte Opcode { get; set; }
+            public Opcode Opcode { get; set; }
             public bool HasInstruction { get; set; }
 
-            public Location(uint ip, byte opcode)
+            public Location(uint ip, Opcode opcode)
             {
                 IP = ip;
                 Label = null;
@@ -122,8 +122,8 @@
                 currentFunction.StartIP = ip;
                 functions.Add(currentFunction);
 
-                byte inst = sc.IP(ip);
-                if (inst == Instruction.ENTER.Opcode)
+                Opcode inst = (Opcode)sc.IP(ip);
+                if (inst == Opcode.ENTER)
                 {
                     // if we are at an ENTER instruction, check if it has a name
                     byte nameLen = sc.IP(ip + 4);
@@ -166,7 +166,7 @@
                     throw new InvalidOperationException($"Unknown opcode 0x{opcode:X2}");
                 }
 
-                if (opcode == Instruction.ENTER.Opcode && currentFunction != null)
+                if (opcode == (byte)Opcode.ENTER && currentFunction != null)
                 {
                     EndFunction(ip);
                 }
@@ -176,7 +176,7 @@
                     BeginFunction(ip);
                 }
 
-                codeBuffer.Add(new Location(ip, opcode));
+                codeBuffer.Add(new Location(ip, (Opcode)opcode));
             }
 
 
@@ -226,9 +226,9 @@
 
             foreach (Location loc in func.Code.ToArray()) // TODO: AddLabel modifies the Code list so we can't iterate through it, find some cleaner solution than copying the whole list
             {
-                byte inst = loc.Opcode;
+                Opcode inst = loc.Opcode;
 
-                if (inst == Instruction.SWITCH.Opcode) // SWITCH
+                if (inst == Opcode.SWITCH)
                 {
                     byte count = sc.IP(loc.IP + 1);
 
@@ -244,7 +244,7 @@
                         }
                     }
                 }
-                else if (Instruction.Set[inst].IsJump)
+                else if (inst.IsJump())
                 {
                     AddLabel(func, (uint)(sc.IP<short>(loc.IP + 1) + loc.IP + 3));
                 }

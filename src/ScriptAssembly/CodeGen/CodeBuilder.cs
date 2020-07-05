@@ -212,13 +212,13 @@
             uint offset = length & 0x3FFF;
             byte[] page = pages[(int)pageIndex];
 
-            byte opcode = buffer[0];
+            Opcode opcode = (Opcode)buffer[0];
 
             // At page boundary a NOP may be required for the interpreter to switch to the next page,
             // the interpreter only does this with control flow instructions and NOP
             // If the NOP is needed, skip 1 byte at the end of the page
-            bool needsNopAtBoundary = !Instruction.Set[opcode].IsControlFlow &&
-                                      opcode != Instruction.NOP.Opcode;
+            bool needsNopAtBoundary = !opcode.IsControlFlow() &&
+                                      opcode != Opcode.NOP;
 
             if (offset + buffer.Count > (page.Length - (needsNopAtBoundary ? 1 : 0))) // the instruction doesn't fit in the current page
             {
@@ -228,7 +228,7 @@
                     // if there is enough space for a J instruction, add it to jump to the next page
                     uint jumpIP = Script.MaxPageLength * (pageIndex + 1);
                     short relIP = (short)((int)jumpIP - (int)(offset + 3));
-                    page[offset + 0] = Instruction.J.Opcode; // NOTE: cannot use Emit here because we are still assembling an instruction
+                    page[offset + 0] = (byte)Opcode.J; // NOTE: cannot use Emit here because we are still assembling an instruction
                     page[offset + 1] = (byte)(relIP & 0xFF);
                     page[offset + 2] = (byte)(relIP >> 8);
                 }
@@ -347,6 +347,7 @@
         string IByteCodeBuilder.Label => currentLabel;
         CodeGenOptions IByteCodeBuilder.Options => context.CodeGenOptions;
 
+        void IByteCodeBuilder.Opcode(Opcode v) => InstructionU8((byte)v);
         void IByteCodeBuilder.U8(byte v) => InstructionU8(v);
         void IByteCodeBuilder.U16(ushort v) => InstructionU16(v);
         void IByteCodeBuilder.U24(uint v) => InstructionU24(v);

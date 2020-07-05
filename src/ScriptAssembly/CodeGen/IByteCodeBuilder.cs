@@ -11,6 +11,7 @@
         public string Label { get; }
         public CodeGenOptions Options { get; }
 
+        public void Opcode(Opcode v);
         public void U8(byte v);
         public void U16(ushort v);
         public void U24(uint v);
