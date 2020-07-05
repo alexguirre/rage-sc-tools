@@ -22,13 +22,58 @@
         public Function[] Disassemble()
         {
             var funcs = ExploreByteCode(Script);
+            PostProcess(funcs);
+
+            return funcs;
+        }
+
+        private void PostProcess(Function[] funcs)
+        {
+            for (int i = 1; i < funcs.Length; i++)
+            {
+                Function prevFunc = funcs[i - 1];
+                Function currFunc = funcs[i];
+
+                // Functions at page boundaries may not start with an ENTER instruction as ExploreByteCode assumes.
+                // They may have NOPs and a J before the ENTER, here explore backwards from the start of the currFunc
+                // to see if this is the case, if so, add this instruction to currFunc and remove them from prevFunc and just the StartIP and EndIP
+                int k = prevFunc.Code.Count - 1;
+                while (k >= 0 && prevFunc.Code[k].Opcode == Instruction.NOP.Opcode)
+                {
+                    k--;
+                }
+
+                bool changeFuncBounds = false;
+                
+                Location prevLast = prevFunc.Code[k];
+                if (prevLast.Opcode == Instruction.J.Opcode && // is there a jump to the ENTER instruction?
+                    Script.IP<short>(prevLast.IP + 1) == (currFunc.StartIP - (prevLast.IP + 3)))
+                {
+                    changeFuncBounds = true;
+                }
+                else if (k < prevFunc.Code.Count - 1 && (prevFunc.Code[k + 1].Opcode == Instruction.NOP.Opcode))
+                {
+                    k++;
+                    prevLast = prevFunc.Code[k];
+                    changeFuncBounds = true;
+                }
+
+                if (changeFuncBounds)
+                {
+                    // add the instructions to the current functions
+                    currFunc.Code.InsertRange(0, prevFunc.Code.Skip(k));
+                    currFunc.StartIP = prevLast.IP;
+
+                    // and remove them from the previous
+                    prevFunc.Code.RemoveRange(k, prevFunc.Code.Count - k);
+                    prevFunc.EndIP = prevLast.IP;
+                }
+            }
 
             foreach (var f in funcs)
             {
                 ScanLabels(Script, f);
             }
-
-            return funcs;
         }
 
         public class Function
@@ -53,12 +98,20 @@
                 Opcode = opcode;
                 HasInstruction = true;
             }
+
+            public Location(uint ip, string label)
+            {
+                IP = ip;
+                Label = label;
+                Opcode = 0;
+                HasInstruction = false;
+            }
         }
 
         private static Function[] ExploreByteCode(Script sc)
         {
-            List<Function> functions = new List<Function>(128);
-            List<Location> codeBuffer = new List<Location>(512);
+            List<Function> functions = new List<Function>(1024);
+            List<Location> codeBuffer = new List<Location>(4096);
             Function currentFunction = null;
 
             void BeginFunction(uint ip)
@@ -148,7 +201,7 @@
             {
                 if (labelIP == func.EndIP)
                 {
-                    func.Code.Add(new Location { Label = LabelToString(labelIP) });
+                    func.Code.Add(new Location(labelIP, LabelToString(labelIP)));
                 }
                 else
                 {
