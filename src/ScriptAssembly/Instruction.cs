@@ -143,10 +143,12 @@
         public void Assemble(ReadOnlySpan<Operand> operands, Code code) => Assembler(this, operands, code);
         public void Decode(IInstructionDecoder decoder) => Decoder(this, decoder);
 
+        public static uint SizeOf(Opcode opcode) => (int)opcode < NumberOfInstructions ? InstructionSizes[(int)opcode] : 0u;
+
         public static uint SizeOf(Script sc, uint ip)
         {
             byte inst = sc.IP(ip);
-            uint s = inst < NumberOfInstructions ? InstructionSizes[inst] : 0u;
+            uint s = SizeOf((Opcode)inst);
             if (s == 0)
             {
                 s = inst switch

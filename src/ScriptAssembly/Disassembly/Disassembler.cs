@@ -7,6 +7,7 @@
     using System.Diagnostics;
     using System.Collections.Generic;
     using ScTools.GameFiles;
+    using ScTools.ScriptAssembly.Disassembly.Analyzers;
 
     public static class Disassembler
     {
@@ -17,6 +18,12 @@
             var funcs = ExploreByteCode(sc);
             PostProcess(sc, funcs);
 
+            PushStringAnalyzer analyzer = new PushStringAnalyzer(sc);
+            foreach (Function f in funcs)
+            {
+                analyzer.Analyze(f);
+            }
+
             return funcs;
         }
 
@@ -25,7 +32,7 @@
             w.WriteLine("$NAME {0}", sc.Name);
             w.WriteLine();
 
-            w.WriteLine("$ARGS {0}", sc.ArgsCount);
+            w.WriteLine("$ARGS_COUNT {0}", sc.ArgsCount);
 
             w.WriteLine("$STATICS_COUNT {0}", sc.StaticsCount);
             for (int i = 0; i < sc.StaticsCount; i++)
@@ -77,11 +84,12 @@
             }
             w.WriteLine();
 
-            foreach (uint id in sc.StringIds())
-            {
-                w.WriteLine("$STRING \"{0}\" ; offset: {1}", sc.String(id).Escape(), id);
-            }
-            w.WriteLine();
+            // disabled while we use PushStringAnalyzer
+            //foreach (uint id in sc.StringIds())
+            //{
+            //    w.WriteLine("$STRING \"{0}\" ; offset: {1}", sc.String(id).Escape(), id);
+            //}
+            //w.WriteLine();
 
             foreach (Function f in functions)
             {

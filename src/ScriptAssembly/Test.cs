@@ -16,13 +16,13 @@
     {
         public static void DoTest()
         {
-            YscFile ysc2 = new YscFile();
-            ysc2.Load(File.ReadAllBytes("re_bus_tours.orig.ysc"));
+            //YscFile ysc2 = new YscFile();
+            //ysc2.Load(File.ReadAllBytes("re_bus_tours.orig.ysc"));
 
-            var funcs2 = Disassembler.Disassemble(ysc2.Script);
+            //var funcs2 = Disassembler.Disassemble(ysc2.Script);
 
-            using TextWriter wr = new StreamWriter("re_bus_tours.new.scasm");
-            Disassembler.Print(wr, ysc2.Script, funcs2);
+            //using TextWriter wr = new StreamWriter("re_bus_tours.scasm");
+            //Disassembler.Print(wr, ysc2.Script, funcs2);
 
 
             //YscFile ysc2 = new YscFile();
@@ -35,6 +35,17 @@
             //outputPath = Path.ChangeExtension(outputPath, "unencrypted.ysc");
             //data = ysc2.Save();
             //File.WriteAllBytes(outputPath, data);
+
+
+
+
+            YscFile ysc2 = new YscFile();
+            ysc2.Load(File.ReadAllBytes("re_bus_tours.unencrypted.ysc"));
+
+            using TextWriter w = new StreamWriter(new FileInfo("re_bus_tours.new.dump.txt").Open(FileMode.Create));
+
+            new Dumper(ysc2.Script).Dump(w, showMetadata: true, showDisassembly: true,
+                                showOffsets: true, showBytes: true, showInstructions: true);
 
             return;
 

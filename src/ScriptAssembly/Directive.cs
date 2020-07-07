@@ -68,7 +68,7 @@
 
                     c.SetName(o[0].Identifier);
                 }),
-            new Directive("ARGS",
+            new Directive("ARGS_COUNT",
                 (in Directive d, AssemblerContext c, ReadOnlySpan<Operand> o) =>
                 {
                     if (o.Length != 1 || o[0].Type != OperandType.U32)

@@ -31,14 +31,14 @@
                 str += $"\t{location.Label}:";
             }
 
-            if (location.HasInstruction)
+            if (location.HasInstruction || location.HasHLInstruction)
             {
                 if (location.Label != null)
                 {
                     str += '\n';
                 }
 
-                str += $"\t\t{location.Opcode.Mnemonic()}";
+                str += $"\t\t{(location.HasInstruction ? location.Opcode.Mnemonic() : HighLevelInstruction.Set[location.HLIndex].Mnemonic)}";
                 if (location.Operands.Length > 0)
                 {
                     str += ' ';
