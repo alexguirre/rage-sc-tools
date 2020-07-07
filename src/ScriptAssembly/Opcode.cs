@@ -135,5 +135,6 @@
     {
         public static bool IsJump(this Opcode opcode) => Instruction.Set[(byte)opcode].IsJump;
         public static bool IsControlFlow(this Opcode opcode) => Instruction.Set[(byte)opcode].IsControlFlow;
+        public static string Mnemonic(this Opcode opcode) => Instruction.Set[(byte)opcode].Mnemonic;
     }
 }

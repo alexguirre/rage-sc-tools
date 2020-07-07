@@ -3,6 +3,7 @@
     using System;
     using System.Diagnostics;
     using ScTools.GameFiles;
+    using ScTools.ScriptAssembly.Disassembly;
 
     using Inst = Instruction;
     using Code = CodeGen.IByteCodeBuilder;

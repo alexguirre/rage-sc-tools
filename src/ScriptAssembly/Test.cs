@@ -9,19 +9,20 @@
     using Antlr4.Runtime.Misc;
     using Antlr4.Runtime.Tree;
     using ScTools.GameFiles;
+    using ScTools.ScriptAssembly.Disassembly;
     using ScTools.ScriptAssembly.Grammar;
 
     public static class Test
     {
         public static void DoTest()
         {
-            //YscFile ysc2 = new YscFile();
-            //ysc2.Load(File.ReadAllBytes("re_bus_tours.orig.ysc"));
+            YscFile ysc2 = new YscFile();
+            ysc2.Load(File.ReadAllBytes("re_bus_tours.orig.ysc"));
 
-            //var funcs2 = new Disassembler(ysc2.Script).Disassemble();
+            var funcs2 = Disassembler.Disassemble(ysc2.Script);
 
-            //using TextWriter wr = new StreamWriter("re_bus_tours.scasm");
-            //Disassembler.Print(wr, ysc2.Script, funcs2);
+            using TextWriter wr = new StreamWriter("re_bus_tours.new.scasm");
+            Disassembler.Print(wr, ysc2.Script, funcs2);
 
 
             //YscFile ysc2 = new YscFile();
@@ -35,7 +36,7 @@
             //data = ysc2.Save();
             //File.WriteAllBytes(outputPath, data);
 
-            //return;
+            return;
 
             ////using TextWriter wr = new StreamWriter("funcs_analysis.txt");
 
