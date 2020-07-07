@@ -79,15 +79,10 @@
                 throw new InvalidOperationException("Type is not U32");
             }
 
-            int v = unchecked((int)U32);
-            if (v > short.MaxValue)
+            uint v = U32;
+            if (v > ushort.MaxValue)
             {
                 throw new InvalidOperationException("U32 value exceeds maximum S16 value");
-            }
-
-            if (v < short.MinValue)
-            {
-                throw new InvalidOperationException("U32 value is below minimum S16 value");
             }
 
             return unchecked((short)(v & 0xFFFF));

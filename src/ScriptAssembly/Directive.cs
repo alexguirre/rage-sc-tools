@@ -68,6 +68,16 @@
 
                     c.SetName(o[0].Identifier);
                 }),
+            new Directive("ARGS",
+                (in Directive d, AssemblerContext c, ReadOnlySpan<Operand> o) =>
+                {
+                    if (o.Length != 1 || o[0].Type != OperandType.U32)
+                    {
+                        throw IncorrectOperands;
+                    }
+
+                    c.SetArgsCount(o[0].U32);
+                }),
             new Directive("STATICS",
                 (in Directive d, AssemblerContext c, ReadOnlySpan<Operand> o) =>
                 {

@@ -28,7 +28,7 @@
             return funcs;
         }
 
-        public static void Print(TextWriter w, Function[] functions)
+        public static void Print(TextWriter w, Script sc, Function[] functions)
         {
             static IEnumerable<string> ToString(Operand[] operands)
                 => operands.Select(o => o.Type switch
@@ -41,6 +41,67 @@
                     OperandType.String => $"\"{o.String.Escape()}\"",
                     _ => throw new InvalidOperationException()
                 });
+
+            w.WriteLine("$NAME {0}", sc.Name);
+            w.WriteLine();
+
+            w.WriteLine("$ARGS {0}", sc.ArgsCount);
+
+            w.WriteLine("$STATICS {0}", sc.StaticsCount);
+            for (int i = 0; i < sc.StaticsCount; i++)
+            {
+                ScriptValue v = sc.Statics[i];
+                if (v.AsUInt64 != 0)
+                {
+                    w.WriteLine("$STATIC_INT_INIT {0} {1}", i, v.AsInt32);
+
+                    Debug.Assert(v.AsUInt32 == v.AsUInt64, "uint64 found");
+                }
+            }
+            w.WriteLine();
+
+            if (sc.Hash != 0)
+            {
+                w.WriteLine("$HASH 0x{0:X8}", sc.Hash);
+            }
+            if (sc.GlobalsLengthAndBlock != 0 && sc.GlobalsPages != null)
+            {
+                w.WriteLine("$GLOBALS {0} {1}", sc.GlobalsBlock, sc.GlobalsLength);
+
+                uint pageIndex = 0;
+                foreach (var page in sc.GlobalsPages)
+                {
+                    uint i = 0;
+                    foreach (ScriptValue g in page.Data)
+                    {
+                        uint globalId = (sc.GlobalsBlock << 18) | (pageIndex << 14) | i;
+
+                        if (g.AsUInt64 != 0)
+                        {
+                            w.WriteLine("$GLOBAL_INT_INIT {0} {1}", globalId, g.AsInt32);
+
+                            Debug.Assert(g.AsUInt32 == g.AsUInt64, "uint64 found");
+                        }
+
+                        i++;
+                    }
+                    pageIndex++;
+                }
+            }
+            w.WriteLine();
+
+            for (int i = 0; i < sc.NativesCount; i++)
+            {
+                ulong hash = sc.NativeHash(i);
+                w.WriteLine("$NATIVE_DEF 0x{0:X16}", hash);
+            }
+            w.WriteLine();
+
+            foreach (uint id in sc.StringIds())
+            {
+                w.WriteLine("$STRING \"{0}\" ; offset: {1}", sc.String(id).Escape(), id);
+            }
+            w.WriteLine();
 
             foreach (Function f in functions)
             {
@@ -258,7 +319,16 @@
             {
                 if (labelIP == func.EndIP)
                 {
-                    func.Code.Add(new Location(labelIP, LabelToString(labelIP)));
+                    Location last = func.Code[^1];
+                    if (last.IP != func.EndIP)
+                    {
+                        func.Code.Add(new Location(labelIP, LabelToString(labelIP)));
+                    }
+                    else if (last.Label == null)
+                    {
+                        last.Label = LabelToString(labelIP);
+                        func.Code[^1] = last;
+                    }
                 }
                 else
                 {

@@ -17,6 +17,7 @@
     {
         private static int Main(string[] args)
         {
+            LoadGTA5Keys();
             Thread.CurrentThread.CurrentCulture = CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
             ScTools.ScriptAssembly.Test.DoTest();
 

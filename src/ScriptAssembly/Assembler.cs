@@ -51,6 +51,16 @@
             sc.Hash = hash;
         }
 
+        public void SetArgsCount(uint count)
+        {
+            if (sc.ArgsCount != 0)
+            {
+                throw new InvalidOperationException("Args count was already set");
+            }
+
+            sc.ArgsCount = count;
+        }
+
         public void SetStaticsCount(uint count)
         {
             if (sc.Statics != null)
@@ -207,6 +217,12 @@
                 RegisterStaticFields.Visit(context, reg);
                 RegisterFunctions.Visit(context, reg);
 
+                var directiveVisitor = new DirectiveVisitor(assemblerContext);
+                foreach (var d in context.statement().Select(stat => stat.directive()).Where(d => d != null))
+                {
+                    d.Accept(directiveVisitor);
+                }
+
                 // TODO: directives
                 // TODO: static fields
                 // TODO: globals
@@ -271,6 +287,31 @@
                 sc.NativesCount = (uint)sc.Natives.Length;
 
                 return sc;
+            }
+
+            private sealed class DirectiveVisitor : ScAsmBaseVisitor<bool>
+            {
+                private readonly AssemblerContext assemblerContext;
+
+                public DirectiveVisitor(AssemblerContext assemblerContext) => this.assemblerContext = assemblerContext ?? throw new ArgumentNullException(nameof(assemblerContext));
+
+                public override bool VisitDirective([NotNull] ScAsmParser.DirectiveContext context)
+                {
+                    string directive = context.identifier().GetText();
+                    int dirIndex = Directives.Find(directive.ToHash());
+
+                    if (dirIndex != -1)
+                    {
+                        Operand[] operands = ParseOperands.Visit(context.operandList());
+                        Directive dir = Directives.Set[dirIndex];
+                        dir.Callback(dir, assemblerContext, operands);
+                        return true;
+                    }
+                    else
+                    {
+                        throw new ArgumentException($"Unknown directive '{directive}'");
+                    }
+                }
             }
         }
     }
