@@ -47,7 +47,7 @@
 
             w.WriteLine("$ARGS {0}", sc.ArgsCount);
 
-            w.WriteLine("$STATICS {0}", sc.StaticsCount);
+            w.WriteLine("$STATICS_COUNT {0}", sc.StaticsCount);
             for (int i = 0; i < sc.StaticsCount; i++)
             {
                 ScriptValue v = sc.Statics[i];

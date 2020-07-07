@@ -2,7 +2,7 @@
 {
     using ScTools.GameFiles;
 
-    public sealed class StaticFieldDefinition : FieldDefinition, ISymbolDefinition
+    public class StaticFieldDefinition : FieldDefinition, ISymbolDefinition
     {
         public uint Id { get; }
         public ScriptValue InitialValue { get; }
@@ -11,6 +11,13 @@
         {
             Id = Registry.NameToId(Name);
             InitialValue = initialValue;
+        }
+    }
+
+    public sealed class ArgDefinition : StaticFieldDefinition
+    {
+        public ArgDefinition(string name, TypeDefinition type, ScriptValue initialValue) : base(name, type, initialValue)
+        {
         }
     }
 }

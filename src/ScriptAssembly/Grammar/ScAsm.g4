@@ -8,7 +8,8 @@ statement
     : directive
     | function
     | struct
-    | staticFieldDecl
+    | statics
+    | args
     ;
 
 struct
@@ -17,12 +18,20 @@ struct
       K_END
     ;
 
-staticFieldDecl
-    : K_STATIC fieldDecl staticFieldInitializer?
+statics
+    : K_STATICS K_BEGIN
+      (fieldDeclWithInitializer? EOL)*
+      K_END
     ;
 
-staticFieldInitializer
-    : '=' (integer | float)
+args
+    : K_ARGS K_BEGIN
+      (fieldDeclWithInitializer? EOL)*
+      K_END
+    ;
+
+fieldDeclWithInitializer
+    : fieldDecl ('=' (integer | float))?
     ;
 
 fieldDecl
@@ -30,8 +39,7 @@ fieldDecl
     ;
 
 type
-    : K_AUTO
-    | identifier
+    : identifier
     | type '[' integer ']'
     ;
 
@@ -110,8 +118,8 @@ K_STRUCT : S T R U C T;
 K_BEGIN : B E G I N;
 K_END : E N D;
 K_NAKED : N A K E D;
-K_AUTO : A U O T O;
-K_STATIC : S T A T I C;
+K_STATICS : S T A T I C S;
+K_ARGS : A R G S;
 
 IDENTIFIER
     :   [a-zA-Z_] [a-zA-Z_0-9]*

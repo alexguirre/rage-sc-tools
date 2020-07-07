@@ -12,8 +12,12 @@
         private readonly Dictionary<uint, ISymbolDefinition> symbols = new Dictionary<uint, ISymbolDefinition>();
         private readonly List<ArrayDefinition> arrayTypes = new List<ArrayDefinition>();
         private readonly List<FunctionDefinition> functions = new List<FunctionDefinition>();
+        private readonly List<StaticFieldDefinition> staticFields = new List<StaticFieldDefinition>();
+        private readonly List<ArgDefinition> args = new List<ArgDefinition>();
 
         public IEnumerable<FunctionDefinition> Functions => functions;
+        public IEnumerable<StaticFieldDefinition> StaticFields => staticFields;
+        public IEnumerable<ArgDefinition> Args => args;
 
         public Registry()
         {
@@ -40,6 +44,14 @@
             else if (symbol is FunctionDefinition func)
             {
                 functions.Add(func);
+            }
+            else if (symbol is ArgDefinition arg)
+            {
+                args.Add(arg);
+            }
+            else if (symbol is StaticFieldDefinition sf)
+            {
+                staticFields.Add(sf);
             }
         }
 
@@ -103,6 +115,13 @@
             var s = new StaticFieldDefinition(name, type, initialValue);
             RegisterSymbol(s);
             return s;
+        }
+
+        public ArgDefinition RegisterArg(string name, TypeDefinition type, ScriptValue initialValue)
+        {
+            var a = new ArgDefinition(name, type, initialValue);
+            RegisterSymbol(a);
+            return a;
         }
 
         public FunctionDefinition RegisterFunction(string name, bool naked, IEnumerable<FieldDefinition> args, IEnumerable<FieldDefinition> locals, TypeDefinition returnType, IEnumerable<FunctionDefinition.Statement> statements)

@@ -18,21 +18,26 @@
         }
 
         public override StaticFieldDefinition[] VisitScript([NotNull] ScAsmParser.ScriptContext context)
-        {
-            var fields = new List<StaticFieldDefinition>();
+         => DoParse<StaticFieldDefinition>(registry, context.statement()
+                                                        .Select(stat => stat.statics())
+                                                        .Where(s => s != null)
+                                                        .SelectMany(s => s.fieldDeclWithInitializer())
+                                                        .Where(s => s != null));
 
-            foreach (var sf in context.statement().Select(stat => stat.staticFieldDecl()).Where(sf => sf != null))
+        internal static T[] DoParse<T>(Registry registry, IEnumerable<ScAsmParser.FieldDeclWithInitializerContext> decls) where T : StaticFieldDefinition
+        {
+            var fields = new List<T>();
+
+            foreach (var decl in decls)
             {
-                var init = sf.staticFieldInitializer();
-                ScriptValue initialValue = init switch
+                ScriptValue initialValue = decl switch
                 {
-                    null => default,
-                    _ when init.@float() != null => new ScriptValue { AsFloat = ParseFloat.Visit(init.@float()) },
-                    _ when init.integer() != null => new ScriptValue { AsUInt64 = ParseUnsignedInteger.Visit(init.integer()) },
-                    _ => throw new InvalidOperationException()
+                    _ when decl.@float() != null => new ScriptValue { AsFloat = ParseFloat.Visit(decl.@float()) },
+                    _ when decl.integer() != null => new ScriptValue { AsUInt64 = ParseUnsignedInteger.Visit(decl.integer()) },
+                    _ => default
                 };
 
-                var f = ParseFieldDecl.Visit(sf.fieldDecl(), registry);
+                var f = ParseFieldDecl.Visit(decl.fieldDecl(), registry);
 
                 Debug.Assert(f.Type != null);
 
@@ -41,7 +46,18 @@
                     throw new InvalidOperationException("Only static fields of type AUTO can have initializers");
                 }
 
-                fields.Add(registry.RegisterStaticField(f.Name, f.Type, initialValue));
+                if (typeof(T) == typeof(StaticFieldDefinition))
+                {
+                    fields.Add((T)registry.RegisterStaticField(f.Name, f.Type, initialValue));
+                }
+                else if (typeof(T) == typeof(ArgDefinition))
+                {
+                    fields.Add((T)(StaticFieldDefinition)registry.RegisterArg(f.Name, f.Type, initialValue));
+                }
+                else
+                {
+                    throw new InvalidOperationException();
+                }
             }
 
             return fields.ToArray();
@@ -49,5 +65,24 @@
 
         public static StaticFieldDefinition[] Visit(ScAsmParser.ScriptContext script, Registry registry)
             => script?.Accept(new RegisterStaticFields(registry)) ?? throw new ArgumentNullException(nameof(script));
+    }
+
+    public sealed class RegisterArgs : ScAsmBaseVisitor<ArgDefinition[]>
+    {
+        private readonly Registry registry;
+
+        private RegisterArgs(Registry registry)
+        {
+            this.registry = registry ?? throw new ArgumentNullException(nameof(registry));
+        }
+        public override ArgDefinition[] VisitScript([NotNull] ScAsmParser.ScriptContext context)
+         => RegisterStaticFields.DoParse<ArgDefinition>(registry, context.statement()
+                                                                    .Select(stat => stat.args())
+                                                                    .Where(s => s != null)
+                                                                    .SelectMany(s => s.fieldDeclWithInitializer())
+                                                                    .Where(s => s != null));
+
+        public static ArgDefinition[] Visit(ScAsmParser.ScriptContext script, Registry registry)
+            => script?.Accept(new RegisterArgs(registry)) ?? throw new ArgumentNullException(nameof(script));
     }
 }

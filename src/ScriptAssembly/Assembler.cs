@@ -215,7 +215,20 @@
                 Registry reg = new Registry();
                 RegisterStructs.Visit(context, reg);
                 RegisterStaticFields.Visit(context, reg);
+                RegisterArgs.Visit(context, reg);
                 RegisterFunctions.Visit(context, reg);
+
+                Console.WriteLine("Args");
+                foreach(var a in reg.Args)
+                {
+                    Console.WriteLine("\t{0} {1}", a.Name, a.Type.Name);
+                }
+
+                Console.WriteLine("StaticFields");
+                foreach (var f in reg.StaticFields)
+                {
+                    Console.WriteLine("\t{0} {1}", f.Name, f.Type.Name);
+                }
 
                 var directiveVisitor = new DirectiveVisitor(assemblerContext);
                 foreach (var d in context.statement().Select(stat => stat.directive()).Where(d => d != null))
