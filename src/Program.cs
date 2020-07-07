@@ -17,6 +17,7 @@
     {
         private static int Main(string[] args)
         {
+            Thread.CurrentThread.CurrentCulture = CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
             ScTools.ScriptAssembly.Test.DoTest();
 
             return 0;

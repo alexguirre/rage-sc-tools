@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Runtime;
     using Antlr4.Runtime;
     using Antlr4.Runtime.Misc;
     using Antlr4.Runtime.Tree;
@@ -14,19 +15,36 @@
     {
         public static void DoTest()
         {
-            //using TextWriter wr = new StreamWriter("page_boundaries_analysis.txt");
+            YscFile ysc2 = new YscFile();
+            ysc2.Load(File.ReadAllBytes("standard_global_init.ysc"));
 
-            foreach (var f in Directory.EnumerateFiles(".\\allscripts\\", "*.ysc"))
+            var funcs2 = new Disassembler(ysc2.Script).Disassemble();
+
+            using TextWriter wr = new StreamWriter("standard_global_init_test_disassembly.scasm");
+            Disassembler.Print(wr, funcs2);
+
+
+            return;
+
+            //using TextWriter wr = new StreamWriter("funcs_analysis.txt");
+
+            foreach (var f in Directory.EnumerateFiles(".\\allscripts_with_dumps\\", "*.ysc"))
             {
-                Console.WriteLine(f);
+                //Console.WriteLine(f);
 
                 YscFile ysc = new YscFile();
                 ysc.Load(File.ReadAllBytes(f));
 
+
                 var funcs = new Disassembler(ysc.Script).Disassemble();
 
-                //wr.WriteLine("{0}:", f);
+                //wr.WriteLine("{0} (num: {1}):", f, funcs.Length);
+                //foreach (var func in funcs)
+                //{
+                //    wr.WriteLine("\t{0:000000} - {1:000000}  (num: {2})", func.StartIP, func.EndIP, func.Code.Where(l => l.HasInstruction).Count());
+                //}
 
+                //wr.WriteLine("{0}:", f);
                 //const uint Range = 10;
                 //bool writing = false;
                 //foreach (var func in funcs)

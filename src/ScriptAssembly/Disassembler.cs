@@ -5,6 +5,7 @@
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Diagnostics;
+    using System.IO;
     using System.Linq;
     using System.Reflection.Emit;
     using System.Text;
@@ -22,12 +23,52 @@
         public Function[] Disassemble()
         {
             var funcs = ExploreByteCode(Script);
-            PostProcess(funcs);
+            PostProcess(Script, funcs);
 
             return funcs;
         }
 
-        private void PostProcess(Function[] funcs)
+        public static void Print(TextWriter w, Function[] functions)
+        {
+            static IEnumerable<string> ToString(Operand[] operands)
+                => operands.Select(o => o.Type switch
+                {
+                    OperandType.U32 => o.U32.ToString(),
+                    OperandType.U64 => o.U64.ToString(),
+                    OperandType.F32 => o.F32.ToString("0.0#######"),
+                    OperandType.Identifier => o.String,
+                    OperandType.SwitchCase => $"{o.SwitchCase.Value}:{o.SwitchCase.Label}",
+                    OperandType.String => $"\"{o.String.Escape()}\"",
+                    _ => throw new InvalidOperationException()
+                });
+
+            foreach (Function f in functions)
+            {
+                w.WriteLine("FUNC NAKED {0} BEGIN", f.Name);
+                foreach (Location loc in f.Code)
+                {
+                    if (loc.Label != null)
+                    {
+                        w.WriteLine("\t{0}:", loc.Label);
+                    }
+
+                    if (loc.HasInstruction)
+                    {
+                        w.Write("\t\t{0}", Instruction.Set[(byte)loc.Opcode].Mnemonic);
+                        if (loc.Operands.Length > 0)
+                        {
+                            w.Write(' ');
+                            w.Write(string.Join(" ", ToString(loc.Operands)));
+                        }
+                        w.WriteLine();
+                    }
+                }
+                w.WriteLine("END");
+                w.WriteLine();
+            }
+        }
+
+        private static void PostProcess(Script sc, Function[] funcs)
         {
             for (int i = 1; i < funcs.Length; i++)
             {
@@ -47,7 +88,7 @@
                 
                 Location prevLast = prevFunc.Code[k];
                 if (prevLast.Opcode == Opcode.J && // is there a jump to the ENTER instruction?
-                    Script.IP<short>(prevLast.IP + 1) == (currFunc.StartIP - (prevLast.IP + 3)))
+                    sc.IP<short>(prevLast.IP + 1) == (currFunc.StartIP - (prevLast.IP + 3)))
                 {
                     changeFuncBounds = true;
                 }
@@ -70,9 +111,22 @@
                 }
             }
 
+            var operandsDecoder = new OperandsDecoder(sc, funcs);
             foreach (var f in funcs)
             {
-                ScanLabels(Script, f);
+                ScanLabels(sc, f);
+            
+                for (int i = 0; i < f.Code.Count; i++)
+                {
+                    Location loc = f.Code[i];
+                    if (loc.HasInstruction)
+                    {
+                        operandsDecoder.BeginInstruction(f, loc);
+                        Instruction.Set[(byte)loc.Opcode].Decode(operandsDecoder);
+                        loc.Operands = operandsDecoder.EndInstruction();
+                        f.Code[i] = loc;
+                    }
+                }
             }
         }
 
@@ -89,6 +143,7 @@
             public uint IP { get; set; }
             public string Label { get; set; }
             public Opcode Opcode { get; set; }
+            public Operand[] Operands { get; set; }
             public bool HasInstruction { get; set; }
 
             public Location(uint ip, Opcode opcode)
@@ -96,6 +151,7 @@
                 IP = ip;
                 Label = null;
                 Opcode = opcode;
+                Operands = Array.Empty<Operand>();
                 HasInstruction = true;
             }
 
@@ -104,6 +160,7 @@
                 IP = ip;
                 Label = label;
                 Opcode = 0;
+                Operands = null;
                 HasInstruction = false;
             }
         }
@@ -250,5 +307,115 @@
                 }
             }
         }
+
+        public class OperandsDecoder : IInstructionDecoder
+        {
+            private readonly List<Operand> operands = new List<Operand>(16);
+            private readonly Script script;
+            private readonly Function[] functions;
+            private Function currentFunction;
+            private Location currentLocation;
+
+            public OperandsDecoder(Script script, Function[] functions)
+            {
+                this.script = script ?? throw new ArgumentNullException(nameof(script));
+                this.functions = functions ?? throw new ArgumentNullException(nameof(functions));
+            }
+
+            public void BeginInstruction(Function func, Location loc)
+            {
+                Debug.Assert(func != null);
+                Debug.Assert(loc.HasInstruction);
+
+                currentFunction = func;
+                currentLocation = loc;
+
+                operands.Clear();
+            }
+
+            public Operand[] EndInstruction()
+            {
+                currentFunction = null;
+                currentLocation = default;
+                return operands.ToArray();
+            }
+
+            public uint IP => currentLocation.IP;
+            public byte Get(uint offset) => script.IP(currentLocation.IP + offset);
+            public T Get<T>(uint offset) where T : unmanaged => script.IP<T>(currentLocation.IP + offset);
+
+            public void U8(byte v) => operands.Add(new Operand(v));
+            public void U16(ushort v) => operands.Add(new Operand(v));
+            public void U24(uint v) => operands.Add(new Operand(v));
+            public void U32(uint v) => operands.Add(new Operand(v));
+            public void S16(short v) => operands.Add(new Operand(unchecked((ushort)v)));
+            public void F32(float v) => operands.Add(new Operand(v));
+            
+            public void LabelTarget(uint ip)
+            {
+                string label = GetLabel(ip);
+                Debug.Assert(label != null);
+
+                operands.Add(new Operand(label, OperandType.Identifier));
+            }
+
+            public void FunctionTarget(uint ip)
+            {
+                string name = null;
+                for (int i = 0; i < functions.Length; i++)
+                {
+                    if (functions[i].StartIP == ip)
+                    {
+                        name = functions[i].Name;
+                        break;
+                    }
+                }
+
+                Debug.Assert(name != null);
+
+                operands.Add(new Operand(name, OperandType.Identifier));
+            }
+
+            public void SwitchCase(uint value, uint ip)
+            {
+                string label = GetLabel(ip);
+                Debug.Assert(label != null);
+
+                operands.Add(new Operand((value, label)));
+            }
+
+            private string GetLabel(uint ip)
+            {
+                for (int i = 0; i < currentFunction.Code.Count; i++)
+                {
+                    if (currentFunction.Code[i].IP == ip)
+                    {
+                        return currentFunction.Code[i].Label;
+                    }
+                }
+
+                return null;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Defines the interface used for decoding <see cref="Instruction"/>s.
+    /// </summary>
+    public interface IInstructionDecoder
+    {
+        public uint IP { get; }
+        public byte Get(uint offset);
+        public T Get<T>(uint offset) where T : unmanaged;
+
+        public void U8(byte v);
+        public void U16(ushort v);
+        public void U24(uint v);
+        public void U32(uint v);
+        public void S16(short v);
+        public void F32(float v);
+        public void LabelTarget(uint ip);
+        public void FunctionTarget(uint ip);
+        public void SwitchCase(uint value, uint ip);
     }
 }
