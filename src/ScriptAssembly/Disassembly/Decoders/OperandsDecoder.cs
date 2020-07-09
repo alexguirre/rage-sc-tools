@@ -9,11 +9,11 @@
     {
         private readonly List<Operand> operands = new List<Operand>(16);
         private readonly Script script;
-        private readonly Function[] functions;
+        private readonly IList<Function> functions;
         private Function currentFunction;
         private Location currentLocation;
 
-        public OperandsDecoder(Script script, Function[] functions)
+        public OperandsDecoder(Script script, IList<Function> functions)
         {
             this.script = script ?? throw new ArgumentNullException(nameof(script));
             this.functions = functions ?? throw new ArgumentNullException(nameof(functions));
@@ -59,7 +59,7 @@
         public void FunctionTarget(uint ip)
         {
             string name = null;
-            for (int i = 0; i < functions.Length; i++)
+            for (int i = 0; i < functions.Count; i++)
             {
                 if (functions[i].StartIP == ip)
                 {

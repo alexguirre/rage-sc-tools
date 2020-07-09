@@ -8,15 +8,25 @@
     using System.Collections.Generic;
     using ScTools.GameFiles;
     using ScTools.ScriptAssembly.Disassembly.Analyzers;
+    using ScTools.ScriptAssembly.Types;
+
+    public class DisassembledScript
+    {
+        public List<Function> Functions { get; set; }
+        public List<Static> Statics { get; set; }
+        public List<Argument> Args { get; set; }
+    }
 
     public static class Disassembler
     {
-        public static Function[] Disassemble(Script sc)
+        public static DisassembledScript Disassemble(Script sc)
         {
             sc = sc ?? throw new ArgumentNullException(nameof(sc));
 
             var funcs = ExploreByteCode(sc);
             PostProcess(sc, funcs);
+
+            var (statics, args) = GetStatics(sc);
 
             PushStringAnalyzer analyzer = new PushStringAnalyzer(sc);
             foreach (Function f in funcs)
@@ -24,28 +34,38 @@
                 analyzer.Analyze(f);
             }
 
-            return funcs;
+            return new DisassembledScript { Functions = funcs, Statics = statics, Args = args };
         }
 
-        public static void Print(TextWriter w, Script sc, Function[] functions)
+        public static void Print(TextWriter w, Script sc, DisassembledScript disassembly)
         {
             w.WriteLine("$NAME {0}", sc.Name);
             w.WriteLine();
 
-            w.WriteLine("$ARGS_COUNT {0}", sc.ArgsCount);
-
-            w.WriteLine("$STATICS_COUNT {0}", sc.StaticsCount);
-            for (int i = 0; i < sc.StaticsCount; i++)
+            //w.WriteLine("$ARGS_COUNT {0}", sc.ArgsCount);
+            if (disassembly.Args.Count > 0)
             {
-                ScriptValue v = sc.Statics[i];
-                if (v.AsUInt64 != 0)
-                {
-                    w.WriteLine("$STATIC_INT_INIT {0} {1}", i, v.AsInt32);
-
-                    Debug.Assert(v.AsUInt32 == v.AsUInt64, "uint64 found");
-                }
+                w.WriteLine(Printer.PrintArguments(disassembly.Args));
+                w.WriteLine();
             }
-            w.WriteLine();
+
+            //w.WriteLine("$STATICS_COUNT {0}", sc.StaticsCount);
+            //for (int i = 0; i < sc.StaticsCount; i++)
+            //{
+            //    ScriptValue v = sc.Statics[i];
+            //    if (v.AsUInt64 != 0)
+            //    {
+            //        w.WriteLine("$STATIC_INT_INIT {0} {1}", i, v.AsInt32);
+
+            //        Debug.Assert(v.AsUInt32 == v.AsUInt64, "uint64 found");
+            //    }
+            //}
+            //w.WriteLine();
+            if (disassembly.Statics.Count > 0)
+            {
+                w.WriteLine(Printer.PrintStatics(disassembly.Statics));
+                w.WriteLine();
+            }
 
             if (sc.Hash != 0)
             {
@@ -91,16 +111,38 @@
             //}
             //w.WriteLine();
 
-            foreach (Function f in functions)
+            foreach (Function f in disassembly.Functions)
             {
                 w.WriteLine(Printer.PrintFunction(f));
                 w.WriteLine();
             }
         }
 
-        private static void PostProcess(Script sc, Function[] funcs)
+        private static (List<Static>, List<Argument>) GetStatics(Script sc)
         {
-            for (int i = 1; i < funcs.Length; i++)
+            uint argsCount = sc.ArgsCount;
+            uint staticsCount = sc.StaticsCount - argsCount;
+
+            var statics = new List<Static>((int)staticsCount);
+            var args = new List<Argument>((int)argsCount);
+
+            for (uint i = 0; i< staticsCount; i++)
+            {
+                statics.Add(new Static { Name = $"static_{i}", Offset = i, Type = AutoType.Instance, InitialValue = sc.Statics[i].AsUInt64 });
+            }
+
+            for (uint i = 0; i < argsCount; i++)
+            {
+                uint offset = staticsCount + i;
+                args.Add(new Argument { Name = $"arg_{i}", Offset = offset, Type = AutoType.Instance, InitialValue = sc.Statics[offset].AsUInt64 });
+            }
+
+            return (statics, args);
+        }
+
+        private static void PostProcess(Script sc, IList<Function> funcs)
+        {
+            for (int i = 1; i < funcs.Count; i++)
             {
                 Function prevFunc = funcs[i - 1];
                 Function currFunc = funcs[i];
@@ -160,7 +202,7 @@
             }
         }
 
-        private static Function[] ExploreByteCode(Script sc)
+        private static List<Function> ExploreByteCode(Script sc)
         {
             List<Function> functions = new List<Function>(1024);
             List<Location> codeBuffer = new List<Location>(4096);
@@ -242,7 +284,8 @@
                 EndFunction(sc.CodeLength);
             }
 
-            return functions.ToArray();
+            functions.TrimExcess();
+            return functions;
         }
 
         private static void ScanLabels(Script sc, Function func)

@@ -5,6 +5,7 @@
     using System.Diagnostics;
     using System.Linq;
     using System.Reflection.Metadata.Ecma335;
+    using ScTools.ScriptAssembly.Types;
 
     public static class Printer
     {
@@ -53,6 +54,33 @@
         {
             string str = $"FUNC NAKED {function.Name} BEGIN\n";
             str += string.Join('\n', function.Code.Select(PrintLocation));
+            str += "\nEND";
+            return str;
+        }
+
+        public static string PrintStructField(StructField f) => $"\t{f.Name}:\t{f.Type.Name}";
+
+        public static string PrintStruct(StructType s)
+        {
+            string str = $"STRUCT {s.Name} BEGIN\n";
+            str += string.Join('\n', s.Fields.Select(PrintStructField));
+            str += "\nEND";
+            return str;
+        }
+
+        public static string PrintStatic(Static s) => $"\t{s.Name}:\t{s.Type.Name}{(s.InitialValue != 0 ? $" = {s.InitialValue}" : "")}";
+
+        public static string PrintStatics(IEnumerable<Static> statics)
+        {
+            string str = $"STATICS BEGIN\n";
+            str += string.Join('\n', statics.Select(PrintStatic));
+            str += "\nEND";
+            return str;
+        }
+        public static string PrintArguments(IEnumerable<Argument> args)
+        {
+            string str = $"ARGS BEGIN\n";
+            str += string.Join('\n', args.Select(PrintStatic));
             str += "\nEND";
             return str;
         }
