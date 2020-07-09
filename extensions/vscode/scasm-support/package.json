@@ -1,0 +1,25 @@
+{
+    "name": "scasm-support",
+    "displayName": "ScAsm Support",
+    "description": "Language support for ScAsm",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.46.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "contributes": {
+        "languages": [{
+            "id": "scasm",
+            "aliases": ["ScAsm", "scasm"],
+            "extensions": [".scasm"],
+            "configuration": "./language-configuration.json"
+        }],
+        "grammars": [{
+            "language": "scasm",
+            "scopeName": "source.scasm",
+            "path": "./syntaxes/scasm.tmLanguage.json"
+        }]
+    }
+}

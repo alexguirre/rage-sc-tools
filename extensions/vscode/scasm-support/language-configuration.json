@@ -1,0 +1,25 @@
+{
+    "comments": {
+        // symbol used for single line comment
+        "lineComment": ";"
+    },
+    // symbols used as brackets
+    "brackets": [
+        ["BEGIN", "END"],
+        ["[", "]"],
+        ["(", ")"]
+    ],
+    // symbols that are auto closed when typing
+    "autoClosingPairs": [
+        ["BEGIN", "END"],
+        ["[", "]"],
+        ["(", ")"],
+        ["\"", "\""]
+    ],
+    // symbols that that can be used to surround a selection
+    "surroundingPairs": [
+        ["[", "]"],
+        ["(", ")"],
+        ["\"", "\""]
+    ]
+}
