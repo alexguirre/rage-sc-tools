@@ -61,7 +61,7 @@
 
                         uint ip = prevLoc.IP;
                         string label = prevLoc.Label;
-                        List<Location> newLoc = new List<Location>(4);
+                        List<Location> newLoc = new List<Location>(2);
 
                         // in instructions that push multiple values we only take the last one,
                         // so we need to insert new instructions that push the other values

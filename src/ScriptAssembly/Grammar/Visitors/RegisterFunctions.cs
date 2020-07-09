@@ -5,6 +5,7 @@
     using System.Collections.Generic;
     using Antlr4.Runtime.Misc;
     using ScTools.ScriptAssembly.Definitions;
+    using ScTools.ScriptAssembly.Types;
 
     public sealed class RegisterFunctions : ScAsmBaseVisitor<FunctionDefinition[]>
     {
@@ -24,7 +25,7 @@
             {
                 var name = f.identifier().GetText();
                 var naked = f.K_NAKED() != null;
-                var args = f.functionArgList()?.fieldDecl().Select(f => ParseFieldDecl.Visit(f, registry)) ?? Enumerable.Empty<(string, string, TypeDefinition)>();
+                var args = f.functionArgList()?.fieldDecl().Select(f => ParseFieldDecl.Visit(f, registry)) ?? Enumerable.Empty<(string, string, TypeBase)>();
                 var locals = f.functionLocalDecl().Select(l => ParseFieldDecl.Visit(l.fieldDecl(), registry));
                 var returnType = f.functionReturnType() != null ? ParseType.Visit(f.functionReturnType().type(), registry).Type : null;
                 var statements = f.functionBody().Select(b => b.Accept(bodyVisitor));

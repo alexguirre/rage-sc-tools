@@ -5,8 +5,9 @@
     using System.Collections.Generic;
     using Antlr4.Runtime.Misc;
     using ScTools.ScriptAssembly.Definitions;
+    using ScTools.ScriptAssembly.Types;
 
-    public sealed class RegisterStructs : ScAsmBaseVisitor<StructDefinition[]>
+    public sealed class RegisterStructs : ScAsmBaseVisitor<StructType[]>
     {
         private readonly Registry registry;
 
@@ -15,7 +16,7 @@
             this.registry = registry ?? throw new ArgumentNullException(nameof(registry));
         }
 
-        public override StructDefinition[] VisitScript([NotNull] ScAsmParser.ScriptContext context)
+        public override StructType[] VisitScript([NotNull] ScAsmParser.ScriptContext context)
         {
             var queuedStructs = new Queue<(ScAsmParser.StructContext Ctx, int UnresolvedDependencies)>();
 
@@ -28,7 +29,7 @@
             }
 
             int i = 0;
-            StructDefinition[] structs = new StructDefinition[queuedStructs.Count];
+            StructType[] structs = new StructType[queuedStructs.Count];
             while (queuedStructs.Count > 0)
             {
                 var (s, initialUnresolved) = queuedStructs.Dequeue();
@@ -49,14 +50,14 @@
                 }
                 else
                 {
-                    structs[i++] = registry.RegisterStruct(s.identifier().GetText(), fields.Select(f => new FieldDefinition(f.Name, f.Type)));
+                    structs[i++] = registry.Types.RegisterStruct(s.identifier().GetText(), fields.Select(f => new StructField(f.Name, f.Type)));
                 }
             }
 
             return structs.ToArray();
         }
 
-        public static StructDefinition[] Visit(ScAsmParser.ScriptContext script, Registry registry)
+        public static StructType[] Visit(ScAsmParser.ScriptContext script, Registry registry)
             => script?.Accept(new RegisterStructs(registry)) ?? throw new ArgumentNullException(nameof(script));
     }
 }

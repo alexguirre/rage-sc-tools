@@ -7,6 +7,7 @@
     using ScTools.ScriptAssembly.Definitions;
     using System.Diagnostics;
     using ScTools.GameFiles;
+    using ScTools.ScriptAssembly.Types;
 
     public sealed class RegisterStaticFields : ScAsmBaseVisitor<StaticFieldDefinition[]>
     {
@@ -41,7 +42,7 @@
 
                 Debug.Assert(f.Type != null);
 
-                if (initialValue.AsUInt64 != 0 && !(f.Type is AutoTypeDefintion))
+                if (initialValue.AsUInt64 != 0 && !(f.Type is AutoType))
                 {
                     throw new InvalidOperationException("Only static fields of type AUTO can have initializers");
                 }
