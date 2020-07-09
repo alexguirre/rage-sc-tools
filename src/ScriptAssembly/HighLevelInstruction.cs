@@ -10,7 +10,7 @@
 
     public readonly struct HighLevelInstruction
     {
-        public const int NumberOfInstructions = 3;
+        public const int NumberOfInstructions = 6;
         public const int MaxOperands = byte.MaxValue;
 
         public delegate void CodeAssembler(in HLInst inst, ReadOnlySpan<Operand> operands, Code code);
@@ -71,6 +71,11 @@
         public static readonly HLInst PUSH_STRING = new HLInst(nameof(PUSH_STRING), 0, I_PushString);
         public static readonly HLInst CALL_NATIVE = new HLInst(nameof(CALL_NATIVE), 1, I_CallNative);
         public static readonly HLInst PUSH = new HLInst(nameof(PUSH), 2, I_Push);
+        public static readonly HLInst STATIC = new HLInst(nameof(STATIC), 3, I_NotImplemented);
+        public static readonly HLInst STATIC_LOAD = new HLInst(nameof(STATIC_LOAD), 4, I_NotImplemented);
+        public static readonly HLInst STATIC_STORE = new HLInst(nameof(STATIC_STORE), 5, I_NotImplemented);
+
+        private static void I_NotImplemented(in HLInst i, ReadOnlySpan<Operand> o, Code c) => throw new NotImplementedException();
 
         private static void I_PushString(in HLInst i, ReadOnlySpan<Operand> o, Code c)
         {

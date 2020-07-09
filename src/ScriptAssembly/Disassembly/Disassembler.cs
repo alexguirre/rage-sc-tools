@@ -45,6 +45,12 @@
             }
             analyzer2.FinalizeAnalysis();
 
+            StaticsAnalyzer analyzer3 = new StaticsAnalyzer(disassembled);
+            foreach (Function f in disassembled.Functions)
+            {
+                analyzer3.Analyze(f);
+            }
+
             return disassembled;
         }
 
