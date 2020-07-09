@@ -40,9 +40,8 @@
                             continue;
                         }
 
-                        // FIXME: here J no longer contains an S16 offset but an Identifer with label name
                         if (prevLoc.Opcode == Opcode.J && // is there a jump to the ARRAY instruction
-                            prevLoc.Operands[0].AsS16() == (loc.IP - (prevLoc.IP + 3)))
+                            function.GetLabelIP(prevLoc.Operands[0].Identifier) == loc.IP)
                         {
                             continue;
                         }
