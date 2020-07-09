@@ -11,6 +11,7 @@
     using ScTools.ScriptAssembly.Definitions;
     using ScTools.ScriptAssembly.Grammar;
     using ScTools.ScriptAssembly.Grammar.Visitors;
+    using ScTools.ScriptAssembly.Types;
 
     public sealed class AssemblerContext
     {
@@ -22,6 +23,7 @@
         public CodeGenOptions CodeGenOptions { get; }
         public StringPagesBuilder Strings { get; } = new StringPagesBuilder();
         public IList<ulong> NativeHashes { get; } = new List<ulong>();
+        public Dictionary<string, uint> Statics { get; } = new Dictionary<string, uint>();
 
         public AssemblerContext(Script sc)
         {
@@ -91,6 +93,8 @@
 
             sc.Statics[staticIndex].AsFloat = value;
         }
+
+        public uint GetStaticOffset(string name) => Statics[name];
 
         public void SetGlobals(byte block, uint length)
         {
@@ -218,16 +222,45 @@
                 RegisterArgs.Visit(context, reg);
                 RegisterFunctions.Visit(context, reg);
 
-                Console.WriteLine("Args");
-                foreach(var a in reg.Args)
-                {
-                    Console.WriteLine("\t{0} {1}", a.Name, a.Type.Name);
-                }
 
-                Console.WriteLine("StaticFields");
-                foreach (var f in reg.StaticFields)
                 {
-                    Console.WriteLine("\t{0} {1}", f.Name, f.Type.Name);
+                    uint argsSize = (uint)reg.Args.Sum(a => a.Type.SizeOf);
+                    uint staticsSize = (uint)reg.StaticFields.Sum(sf => sf.Type.SizeOf) + argsSize;
+
+                    assemblerContext.SetStaticsCount(staticsSize);
+                    assemblerContext.SetArgsCount(argsSize);
+
+                    static void init(AssemblerContext c, StaticFieldDefinition sf, ref uint offset)
+                    {
+                        c.Statics.Add(sf.Name, offset);
+
+                        if (sf.Type is ArrayType arr)
+                        {
+                            c.SetStaticValue(offset, (int)arr.Length);
+                            // TODO: can Array item have initial values?
+                        }
+                        else if (sf.Type is StructType s)
+                        {
+                            // TODO: can Structs have initial values?
+                        }
+                        else
+                        {
+                            c.SetStaticValue(offset, (int)sf.InitialValue.AsUInt32);
+                        }
+
+                        offset += sf.Type.SizeOf;
+                    }
+
+                    uint offset = 0;
+                    foreach (StaticFieldDefinition sf in reg.StaticFields)
+                    {
+                        init(assemblerContext, sf, ref offset);
+                    }
+
+                    foreach (ArgDefinition a in reg.Args)
+                    {
+                        init(assemblerContext, a, ref offset);
+                    }
                 }
 
                 var directiveVisitor = new DirectiveVisitor(assemblerContext);
@@ -237,7 +270,6 @@
                 }
 
                 // TODO: directives
-                // TODO: static fields
                 // TODO: globals
                 // TODO: high level instructions
                 // TODO: generate prologue/epilogue of non-naked functions

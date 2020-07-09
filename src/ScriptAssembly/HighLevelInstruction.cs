@@ -71,9 +71,9 @@
         public static readonly HLInst PUSH_STRING = new HLInst(nameof(PUSH_STRING), 0, I_PushString);
         public static readonly HLInst CALL_NATIVE = new HLInst(nameof(CALL_NATIVE), 1, I_CallNative);
         public static readonly HLInst PUSH = new HLInst(nameof(PUSH), 2, I_Push);
-        public static readonly HLInst STATIC = new HLInst(nameof(STATIC), 3, I_NotImplemented);
-        public static readonly HLInst STATIC_LOAD = new HLInst(nameof(STATIC_LOAD), 4, I_NotImplemented);
-        public static readonly HLInst STATIC_STORE = new HLInst(nameof(STATIC_STORE), 5, I_NotImplemented);
+        public static readonly HLInst STATIC = new HLInst(nameof(STATIC), 3, I_Static);
+        public static readonly HLInst STATIC_LOAD = new HLInst(nameof(STATIC_LOAD), 4, I_Static);
+        public static readonly HLInst STATIC_STORE = new HLInst(nameof(STATIC_STORE), 5, I_Static);
 
         private static void I_NotImplemented(in HLInst i, ReadOnlySpan<Operand> o, Code c) => throw new NotImplementedException();
 
@@ -126,6 +126,35 @@
                     case OperandType.String: EmitPushString(o[k].String, c); break;
                 }
             }
+        }
+
+        private static void I_Static(in HLInst i, ReadOnlySpan<Operand> o, Code c)
+        {
+            Debug.Assert(o.Length == 1 && o[0].Type == OperandType.Identifier);
+
+            uint offset = c.GetStaticOffset(o[0].Identifier);
+
+            Opcode op;
+            if (offset <= byte.MaxValue)
+            {
+                op = i.Index switch
+                {
+                    int idx when idx == STATIC.Index        => Opcode.STATIC_U8,
+                    int idx when idx == STATIC_LOAD.Index   => Opcode.STATIC_U8_LOAD,
+                    int idx when idx == STATIC_STORE.Index  => Opcode.STATIC_U8_STORE,
+                };
+            }
+            else
+            {
+                op = i.Index switch
+                {
+                    int idx when idx == STATIC.Index        => Opcode.STATIC_U16,
+                    int idx when idx == STATIC_LOAD.Index   => Opcode.STATIC_U16_LOAD,
+                    int idx when idx == STATIC_STORE.Index  => Opcode.STATIC_U16_STORE,
+                };
+            }
+
+            c.Emit(Instruction.Set[(byte)op], new[] { new Operand(offset) });
         }
 
         private static void EmitPushUInt(uint v, Code code)

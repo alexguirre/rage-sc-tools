@@ -366,6 +366,8 @@
 
         uint IHighLevelCodeBuilder.AddOrGetString(ReadOnlySpan<char> str) => context.AddOrGetString(str);
         ushort IHighLevelCodeBuilder.AddOrGetNative(ulong hash) => context.AddOrGetNative(hash);
+
+        uint IHighLevelCodeBuilder.GetStaticOffset(string name) => context.GetStaticOffset(name);
         #endregion // IHighLevelCodeBuilder Implementation
     }
 }

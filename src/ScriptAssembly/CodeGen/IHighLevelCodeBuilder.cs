@@ -19,5 +19,7 @@
 
         public uint AddOrGetString(ReadOnlySpan<char> str);
         public ushort AddOrGetNative(ulong hash);
+
+        public uint GetStaticOffset(string name);
     }
 }
