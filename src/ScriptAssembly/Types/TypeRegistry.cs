@@ -61,7 +61,7 @@
                 {
                     if (unregisterDependantTypes)
                     {
-                        Unregister(id, true);
+                        Unregister(a.Id, true);
                     }
                     else
                     {
@@ -76,7 +76,7 @@
                 {
                     if (unregisterDependantTypes)
                     {
-                        Unregister(id, true);
+                        Unregister(s.Id, true);
                     }
                     else
                     {
