@@ -10,6 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Antlr4.Runtime.Standard" Version="4.8.0" />
     <PackageReference Include="SharpDX.Mathematics" Version="4.2.0" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.20303.1" />
   </ItemGroup>
@@ -19,5 +20,9 @@
       <HintPath>..\dependencies\CodeWalker.Core.dll</HintPath>
     </Reference>
   </ItemGroup>
+
+  <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+    <Exec Command="java -jar ../tools/antlr-4.8-complete.jar -o ScriptAssembly/Grammar/Generated/ -package ScTools.ScriptAssembly.Grammar -visitor -no-listener -Dlanguage=CSharp ScriptAssembly/Grammar/ScAsm.g4" />
+  </Target>
 
 </Project>

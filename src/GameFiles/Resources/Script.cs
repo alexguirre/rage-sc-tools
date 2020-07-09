@@ -10,7 +10,7 @@
     using System.Collections;
     using System.Linq;
 
-    internal class Script : ResourceFileBase
+    public class Script : ResourceFileBase
     {
         public const uint MaxPageLength = 0x4000;
 

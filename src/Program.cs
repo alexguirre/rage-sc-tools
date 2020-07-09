@@ -17,6 +17,12 @@
     {
         private static int Main(string[] args)
         {
+            LoadGTA5Keys();
+            Thread.CurrentThread.CurrentCulture = CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+            ScTools.ScriptAssembly.Test.DoTest();
+
+            return 0;
+
             Thread.CurrentThread.CurrentCulture = CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 
             var rootCmd = new RootCommand("Tool for working with Grand Theft Auto V script files (.ysc).");
@@ -119,27 +125,27 @@
 
             YscFile ysc = new YscFile();
 
-            try
-            {
-                NativeDB nativeDB = null;
-                if (o.NativeDB != null)
-                {
-                    using var reader = new BinaryReader(o.NativeDB.OpenRead());
-                    nativeDB = NativeDB.Load(reader);
-                }
+            //try
+            //{
+            //    NativeDB nativeDB = null;
+            //    if (o.NativeDB != null)
+            //    {
+            //        using var reader = new BinaryReader(o.NativeDB.OpenRead());
+            //        nativeDB = NativeDB.Load(reader);
+            //    }
 
-                Script sc = new Assembler(new AssemblerOptions(includeFunctionNames: o.FunctionNames),
-                                          nativeDB)
-                            .Assemble(o.Input);
-                ysc.Script = sc;
-            }
-            catch (AssemblerSyntaxException e)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.Error.Write(e.UserMessage);
-                Console.ForegroundColor = ConsoleColor.White;
-                return;
-            }
+            //    Script sc = new Assembler(new AssemblerOptions(includeFunctionNames: o.FunctionNames),
+            //                              nativeDB)
+            //                .Assemble(o.Input);
+            //    ysc.Script = sc;
+            //}
+            //catch (AssemblerSyntaxException e)
+            //{
+            //    Console.ForegroundColor = ConsoleColor.Red;
+            //    Console.Error.Write(e.UserMessage);
+            //    Console.ForegroundColor = ConsoleColor.White;
+            //    return;
+            //}
 
             string outputPath = Path.Combine(o.Output.FullName, Path.GetFileName(Path.ChangeExtension(o.Input.FullName, "ysc")));
             byte[] data = ysc.Save(Path.GetFileName(outputPath));

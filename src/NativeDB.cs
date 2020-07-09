@@ -8,9 +8,8 @@
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.IO;
-    using System.IO.Compression;
 
-    internal readonly struct NativeCommand : IEquatable<NativeCommand>
+    public readonly struct NativeCommand : IEquatable<NativeCommand>
     {
         public ulong Hash { get; }
         public ulong CurrentHash { get; }
@@ -42,7 +41,7 @@
         public static bool operator !=(in NativeCommand a, in NativeCommand b) => !a.Equals(in b);
     }
 
-    internal sealed class NativeDB
+    public sealed class NativeDB
     {
         public const uint HeaderMagic = 0x2042444E; // 'NDB '
 
