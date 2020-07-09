@@ -38,6 +38,7 @@
                             continue;
                         }
 
+                        // FIXME: here J no longer contains an S16 offset but an Identifer with label name
                         if (prevLoc.Opcode == Opcode.J && // is there a jump to the STRING instruction
                             prevLoc.Operands[0].AsS16() == (loc.IP - (prevLoc.IP + 3)))
                         {

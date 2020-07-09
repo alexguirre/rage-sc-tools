@@ -13,6 +13,8 @@
         private readonly List<ArrayType> arrays = new List<ArrayType>();
         private readonly List<StructType> structs = new List<StructType>();
 
+        public IEnumerable<StructType> Structs => structs;
+
         public TypeRegistry()
         {
             Register(AutoType.Instance);
@@ -130,14 +132,16 @@
         /// If a type with the specified name does not exist, returns <c>null</c>.
         /// </summary>
         public ArrayType FindOrRegisterArray(string name, uint length)
+            => FindOrRegisterArray(FindType(name), length);
+
+        public ArrayType FindOrRegisterArray(TypeBase itemType, uint length)
         {
-            var t = FindType(name);
-            if (t == null)
+            if (itemType == null)
             {
                 return null;
             }
 
-            return FindArray(t, length) ?? RegisterArray(t, length);
+            return FindArray(itemType, length) ?? RegisterArray(itemType, length);
         }
     }
 }

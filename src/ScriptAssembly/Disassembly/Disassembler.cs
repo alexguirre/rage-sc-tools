@@ -12,6 +12,8 @@
 
     public class DisassembledScript
     {
+        public Script Script { get; set; }
+        public TypeRegistry Types { get; set; }
         public List<Function> Functions { get; set; }
         public List<Static> Statics { get; set; }
         public List<Argument> Args { get; set; }
@@ -28,19 +30,34 @@
 
             var (statics, args) = GetStatics(sc);
 
+            var disassembled = new DisassembledScript { Script = sc, Types = new TypeRegistry(), Functions = funcs, Statics = statics, Args = args };
+
             PushStringAnalyzer analyzer = new PushStringAnalyzer(sc);
-            foreach (Function f in funcs)
+            foreach (Function f in disassembled.Functions)
             {
                 analyzer.Analyze(f);
             }
 
-            return new DisassembledScript { Functions = funcs, Statics = statics, Args = args };
+            StaticArraysAnalyzer analyzer2 = new StaticArraysAnalyzer(disassembled);
+            foreach (Function f in disassembled.Functions)
+            {
+                analyzer2.Analyze(f);
+            }
+            analyzer2.FinalizeAnalysis();
+
+            return disassembled;
         }
 
         public static void Print(TextWriter w, Script sc, DisassembledScript disassembly)
         {
             w.WriteLine("$NAME {0}", sc.Name);
             w.WriteLine();
+
+            foreach (var s in disassembly.Types.Structs)
+            {
+                w.WriteLine(Printer.PrintStruct(s));
+                w.WriteLine();
+            }
 
             //w.WriteLine("$ARGS_COUNT {0}", sc.ArgsCount);
             if (disassembly.Args.Count > 0)
