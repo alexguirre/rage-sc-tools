@@ -16,6 +16,9 @@
 		},
 		{
 			"include": "#numbers"
+		},
+		{
+			"include": "#comments"
 		}
 	],
 	"repository": {
@@ -67,6 +70,15 @@
 				{
 					"name": "constant.numeric.integer.hex.scasm",
 					"match": "\\b0x[0-9a-fA-F]+\\b"
+				}
+			]
+		},
+		"comments": {
+			"patterns": [
+				{
+					"begin": ";",
+					"end": "\\n",
+					"name": "comment.line.scasm"
 				}
 			]
 		}
