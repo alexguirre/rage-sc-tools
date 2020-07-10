@@ -133,8 +133,9 @@
 
     public static class OpcodeExtensions
     {
-        public static bool IsJump(this Opcode opcode) => Instruction.Set[(byte)opcode].IsJump;
-        public static bool IsControlFlow(this Opcode opcode) => Instruction.Set[(byte)opcode].IsControlFlow;
-        public static string Mnemonic(this Opcode opcode) => Instruction.Set[(byte)opcode].Mnemonic;
+        public static ref readonly Instruction Instruction(this Opcode opcode) => ref ScriptAssembly.Instruction.Set[(byte)opcode];
+        public static bool IsJump(this Opcode opcode) => opcode.Instruction().IsJump;
+        public static bool IsControlFlow(this Opcode opcode) => opcode.Instruction().IsControlFlow;
+        public static string Mnemonic(this Opcode opcode) => opcode.Instruction().Mnemonic;
     }
 }

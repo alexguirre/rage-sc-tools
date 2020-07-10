@@ -106,7 +106,7 @@
             byte returnValueCount = n.ReturnValueCount;
             ushort idx = c.AddOrGetNative(n.CurrentHash);
 
-            c.Emit(Instruction.NATIVE, new[] { new Operand(paramCount), new Operand(returnValueCount), new Operand(idx) });
+            c.Emit(Opcode.NATIVE, new[] { new Operand(paramCount), new Operand(returnValueCount), new Operand(idx) });
         }
 
         private static void I_Push(in HLInst i, ReadOnlySpan<Operand> o, Code c)
@@ -154,26 +154,26 @@
                 };
             }
 
-            c.Emit(Instruction.Set[(byte)op], new[] { new Operand(offset) });
+            c.Emit(op, new[] { new Operand(offset) });
         }
 
         private static void EmitPushUInt(uint v, Code code)
         {
             var inst = v switch
             {
-                0xFFFFFFFF /* -1 */ => (Instruction.PUSH_CONST_M1, Array.Empty<Operand>()),
-                0 => (Instruction.PUSH_CONST_0, Array.Empty<Operand>()),
-                1 => (Instruction.PUSH_CONST_1, Array.Empty<Operand>()),
-                2 => (Instruction.PUSH_CONST_2, Array.Empty<Operand>()),
-                3 => (Instruction.PUSH_CONST_3, Array.Empty<Operand>()),
-                4 => (Instruction.PUSH_CONST_4, Array.Empty<Operand>()),
-                5 => (Instruction.PUSH_CONST_5, Array.Empty<Operand>()),
-                6 => (Instruction.PUSH_CONST_6, Array.Empty<Operand>()),
-                7 => (Instruction.PUSH_CONST_7, Array.Empty<Operand>()),
-                _ when v <= byte.MaxValue => (Instruction.PUSH_CONST_U8, new[] { new Operand(v) }),
-                _ when v <= ushort.MaxValue => (Instruction.PUSH_CONST_S16, new[] { new Operand(v) }),
-                _ when v <= 0x00FFFFFF => (Instruction.PUSH_CONST_U24, new[] { new Operand(v) }),
-                _ => (Instruction.PUSH_CONST_U32, new[] { new Operand(v) }),
+                0xFFFFFFFF /* -1 */ => (Opcode.PUSH_CONST_M1, Array.Empty<Operand>()),
+                0 => (Opcode.PUSH_CONST_0, Array.Empty<Operand>()),
+                1 => (Opcode.PUSH_CONST_1, Array.Empty<Operand>()),
+                2 => (Opcode.PUSH_CONST_2, Array.Empty<Operand>()),
+                3 => (Opcode.PUSH_CONST_3, Array.Empty<Operand>()),
+                4 => (Opcode.PUSH_CONST_4, Array.Empty<Operand>()),
+                5 => (Opcode.PUSH_CONST_5, Array.Empty<Operand>()),
+                6 => (Opcode.PUSH_CONST_6, Array.Empty<Operand>()),
+                7 => (Opcode.PUSH_CONST_7, Array.Empty<Operand>()),
+                _ when v <= byte.MaxValue => (Opcode.PUSH_CONST_U8, new[] { new Operand(v) }),
+                _ when v <= ushort.MaxValue => (Opcode.PUSH_CONST_S16, new[] { new Operand(v) }),
+                _ when v <= 0x00FFFFFF => (Opcode.PUSH_CONST_U24, new[] { new Operand(v) }),
+                _ => (Opcode.PUSH_CONST_U32, new[] { new Operand(v) }),
             };
 
             code.Emit(inst.Item1, inst.Item2);
@@ -183,16 +183,16 @@
         {
             var inst = v switch
             {
-                -1.0f => (Instruction.PUSH_CONST_FM1, Array.Empty<Operand>()),
-                0.0f => (Instruction.PUSH_CONST_F0, Array.Empty<Operand>()),
-                1.0f => (Instruction.PUSH_CONST_F1, Array.Empty<Operand>()),
-                2.0f => (Instruction.PUSH_CONST_F2, Array.Empty<Operand>()),
-                3.0f => (Instruction.PUSH_CONST_F3, Array.Empty<Operand>()),
-                4.0f => (Instruction.PUSH_CONST_F4, Array.Empty<Operand>()),
-                5.0f => (Instruction.PUSH_CONST_F5, Array.Empty<Operand>()),
-                6.0f => (Instruction.PUSH_CONST_F6, Array.Empty<Operand>()),
-                7.0f => (Instruction.PUSH_CONST_F7, Array.Empty<Operand>()),
-                _ => (Instruction.PUSH_CONST_F, new[] { new Operand(v) }),
+                -1.0f => (Opcode.PUSH_CONST_FM1, Array.Empty<Operand>()),
+                0.0f => (Opcode.PUSH_CONST_F0, Array.Empty<Operand>()),
+                1.0f => (Opcode.PUSH_CONST_F1, Array.Empty<Operand>()),
+                2.0f => (Opcode.PUSH_CONST_F2, Array.Empty<Operand>()),
+                3.0f => (Opcode.PUSH_CONST_F3, Array.Empty<Operand>()),
+                4.0f => (Opcode.PUSH_CONST_F4, Array.Empty<Operand>()),
+                5.0f => (Opcode.PUSH_CONST_F5, Array.Empty<Operand>()),
+                6.0f => (Opcode.PUSH_CONST_F6, Array.Empty<Operand>()),
+                7.0f => (Opcode.PUSH_CONST_F7, Array.Empty<Operand>()),
+                _ => (Opcode.PUSH_CONST_F, new[] { new Operand(v) }),
             };
 
             code.Emit(inst.Item1, inst.Item2);
@@ -202,7 +202,7 @@
         {
             uint strId = code.AddOrGetString(str);
             EmitPushUInt(strId, code);
-            code.Emit(Instruction.STRING, ReadOnlySpan<Operand>.Empty);
+            code.Emit(Opcode.STRING, ReadOnlySpan<Operand>.Empty);
         }
     }
 }

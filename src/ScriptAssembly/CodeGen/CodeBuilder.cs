@@ -63,12 +63,14 @@
             currentFunction = null;
         }
 
-        public void Emit(in Instruction inst, ReadOnlySpan<Operand> operands)
+        public void Emit(Opcode opcode, ReadOnlySpan<Operand> operands) => Emit(opcode.Instruction(), operands);
+
+        public void Emit(in Instruction instruction, ReadOnlySpan<Operand> operands)
         {
             Debug.Assert(InFunction);
 
             BeginInstruction();
-            inst.Assemble(operands, this);
+            instruction.Assemble(operands, this);
             EndInstruction();
         }
 
@@ -79,14 +81,14 @@
 
             uint argsSize = (uint)currentFunction.Args.Sum(a => a.Type.SizeOf);
             uint localsSize = (uint)currentFunction.Locals.Sum(l => l.Type.SizeOf) + MinLocals;
-            Emit(Instruction.ENTER, new[] { new Operand(argsSize), new Operand(localsSize) });
+            Emit(Opcode.ENTER, new[] { new Operand(argsSize), new Operand(localsSize) });
         }
 
         private void EmitEpilogue()
         {
             uint argsSize = (uint)currentFunction.Args.Sum(a => a.Type.SizeOf);
             uint returnSize = currentFunction.ReturnType?.SizeOf ?? 0;
-            Emit(Instruction.LEAVE, new[] { new Operand(argsSize), new Operand(returnSize) });
+            Emit(Opcode.LEAVE, new[] { new Operand(argsSize), new Operand(returnSize) });
         }
 
         public void AddLabel(string label)
@@ -362,7 +364,7 @@
         NativeDB IHighLevelCodeBuilder.NativeDB => context.NativeDB;
         CodeGenOptions IHighLevelCodeBuilder.Options => context.CodeGenOptions;
 
-        void IHighLevelCodeBuilder.Emit(in Instruction inst, ReadOnlySpan<Operand> operands) => Emit(inst, operands);
+        void IHighLevelCodeBuilder.Emit(Opcode opcode, ReadOnlySpan<Operand> operands) => Emit(opcode, operands);
 
         uint IHighLevelCodeBuilder.AddOrGetString(ReadOnlySpan<char> str) => context.AddOrGetString(str);
         ushort IHighLevelCodeBuilder.AddOrGetNative(ulong hash) => context.AddOrGetNative(hash);

@@ -13,9 +13,9 @@
         /// <summary>
         /// Assembles a low-level instruction with the specified operands.
         /// </summary>
-        /// <param name="inst">The instruction to assemble.</param>
+        /// <param name="opcode">The instruction to assemble.</param>
         /// <param name="operands">The operands of the instruction.</param>
-        public void Emit(in Instruction inst, ReadOnlySpan<Operand> operands);
+        public void Emit(Opcode opcode, ReadOnlySpan<Operand> operands);
 
         public uint AddOrGetString(ReadOnlySpan<char> str);
         public ushort AddOrGetNative(ulong hash);
