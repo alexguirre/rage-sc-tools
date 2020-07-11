@@ -80,7 +80,7 @@
             const uint MinLocals = 2;
 
             uint argsSize = (uint)currentFunction.Args.Sum(a => a.Type.SizeOf);
-            uint localsSize = (uint)currentFunction.Locals.Sum(l => l.Type.SizeOf) + MinLocals;
+            uint localsSize = (uint)currentFunction.Locals.Sum(l => l.Type.SizeOf) + argsSize + MinLocals;
             Emit(Opcode.ENTER, new[] { new Operand(argsSize), new Operand(localsSize) });
         }
 
