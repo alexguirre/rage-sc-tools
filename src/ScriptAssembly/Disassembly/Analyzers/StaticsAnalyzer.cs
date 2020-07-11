@@ -65,14 +65,14 @@
             }
         }
 
-        private static int GetHLReplacement(Opcode opcode) => opcode switch
+        private static HighLevelInstruction.UniqueId GetHLReplacement(Opcode opcode) => opcode switch
         {
-            Opcode.STATIC_U8        => HighLevelInstruction.STATIC.Index,
-            Opcode.STATIC_U8_LOAD   => HighLevelInstruction.STATIC_LOAD.Index,
-            Opcode.STATIC_U8_STORE  => HighLevelInstruction.STATIC_STORE.Index,
-            Opcode.STATIC_U16       => HighLevelInstruction.STATIC.Index,
-            Opcode.STATIC_U16_LOAD  => HighLevelInstruction.STATIC_LOAD.Index,
-            Opcode.STATIC_U16_STORE => HighLevelInstruction.STATIC_STORE.Index,
+            Opcode.STATIC_U8        => HighLevelInstruction.UniqueId.STATIC,
+            Opcode.STATIC_U8_LOAD   => HighLevelInstruction.UniqueId.STATIC_LOAD,
+            Opcode.STATIC_U8_STORE  => HighLevelInstruction.UniqueId.STATIC_STORE,
+            Opcode.STATIC_U16       => HighLevelInstruction.UniqueId.STATIC,
+            Opcode.STATIC_U16_LOAD  => HighLevelInstruction.UniqueId.STATIC_LOAD,
+            Opcode.STATIC_U16_STORE => HighLevelInstruction.UniqueId.STATIC_STORE,
             _ => throw new ArgumentException("Not a STATIC opcode", nameof(opcode)),
         };
 

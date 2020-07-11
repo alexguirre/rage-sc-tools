@@ -5,7 +5,6 @@
     using System.Linq;
 
     using HLInst = HighLevelInstruction;
-    using Tokens = TokenEnumerator;
     using Code = CodeGen.IHighLevelCodeBuilder;
 
     public readonly struct HighLevelInstruction
@@ -15,25 +14,25 @@
 
         public delegate void CodeAssembler(in HLInst inst, ReadOnlySpan<Operand> operands, Code code);
 
-        public int Index { get; }
+        public UniqueId Id { get; }
         public string Mnemonic { get; }
         public uint MnemonicHash { get; }
         public CodeAssembler Assembler { get; }
 
         public bool IsValid => Mnemonic != null;
 
-        private HighLevelInstruction(string mnemonic, int index, CodeAssembler assembler)
+        private HighLevelInstruction(string mnemonic, UniqueId id, CodeAssembler assembler)
         {
-            Debug.Assert(index < NumberOfInstructions);
+            Debug.Assert((byte)id < NumberOfInstructions);
 
-            Index = index;
+            Id = id;
             Mnemonic = mnemonic ?? throw new ArgumentNullException(nameof(mnemonic));
             MnemonicHash = mnemonic.ToHash();
             Assembler = assembler ?? throw new ArgumentNullException(nameof(assembler));
 
-            Debug.Assert(SetStorage[index].Mnemonic == null); // ensure we haven't repeated an opcode
+            Debug.Assert(SetStorage[(byte)id].Mnemonic == null); // ensure we haven't repeated an opcode
 
-            SetStorage[index] = this;
+            SetStorage[(byte)id] = this;
         }
 
         public void Assemble(ReadOnlySpan<Operand> operands, Code code) => Assembler(this, operands, code);
@@ -68,12 +67,22 @@
         }
 
         public static readonly HLInst Invalid = default;
-        public static readonly HLInst PUSH_STRING = new HLInst(nameof(PUSH_STRING), 0, I_PushString);
-        public static readonly HLInst CALL_NATIVE = new HLInst(nameof(CALL_NATIVE), 1, I_CallNative);
-        public static readonly HLInst PUSH = new HLInst(nameof(PUSH), 2, I_Push);
-        public static readonly HLInst STATIC = new HLInst(nameof(STATIC), 3, I_Static);
-        public static readonly HLInst STATIC_LOAD = new HLInst(nameof(STATIC_LOAD), 4, I_Static);
-        public static readonly HLInst STATIC_STORE = new HLInst(nameof(STATIC_STORE), 5, I_Static);
+        public static readonly HLInst PUSH_STRING = new HLInst(nameof(PUSH_STRING), UniqueId.PUSH_STRING, I_PushString);
+        public static readonly HLInst CALL_NATIVE = new HLInst(nameof(CALL_NATIVE), UniqueId.CALL_NATIVE, I_CallNative);
+        public static readonly HLInst PUSH = new HLInst(nameof(PUSH), UniqueId.PUSH, I_Push);
+        public static readonly HLInst STATIC = new HLInst(nameof(STATIC), UniqueId.STATIC, I_Static);
+        public static readonly HLInst STATIC_LOAD = new HLInst(nameof(STATIC_LOAD), UniqueId.STATIC_LOAD, I_Static);
+        public static readonly HLInst STATIC_STORE = new HLInst(nameof(STATIC_STORE), UniqueId.STATIC_STORE, I_Static);
+
+        public enum UniqueId : byte
+        {
+            PUSH_STRING = 0,
+            CALL_NATIVE = 1,
+            PUSH = 2,
+            STATIC = 3,
+            STATIC_LOAD = 4,
+            STATIC_STORE = 5,
+        }
 
         private static void I_NotImplemented(in HLInst i, ReadOnlySpan<Operand> o, Code c) => throw new NotImplementedException();
 
@@ -134,25 +143,16 @@
 
             uint offset = c.GetStaticOffset(o[0].Identifier);
 
-            Opcode op;
-            if (offset <= byte.MaxValue)
+            Opcode op = (Index: i.Id, offset <= byte.MaxValue) switch
             {
-                op = i.Index switch
-                {
-                    int idx when idx == STATIC.Index        => Opcode.STATIC_U8,
-                    int idx when idx == STATIC_LOAD.Index   => Opcode.STATIC_U8_LOAD,
-                    int idx when idx == STATIC_STORE.Index  => Opcode.STATIC_U8_STORE,
-                };
-            }
-            else
-            {
-                op = i.Index switch
-                {
-                    int idx when idx == STATIC.Index        => Opcode.STATIC_U16,
-                    int idx when idx == STATIC_LOAD.Index   => Opcode.STATIC_U16_LOAD,
-                    int idx when idx == STATIC_STORE.Index  => Opcode.STATIC_U16_STORE,
-                };
-            }
+                (UniqueId.STATIC, true) => Opcode.STATIC_U8,
+                (UniqueId.STATIC_LOAD, true) => Opcode.STATIC_U8_LOAD,
+                (UniqueId.STATIC_STORE, true) => Opcode.STATIC_U8_STORE,
+                (UniqueId.STATIC, false) => Opcode.STATIC_U16,
+                (UniqueId.STATIC_LOAD, false) => Opcode.STATIC_U16_LOAD,
+                (UniqueId.STATIC_STORE, false) => Opcode.STATIC_U16_STORE,
+                _ => throw new InvalidOperationException()
+            };
 
             c.Emit(op, new[] { new Operand(offset) });
         }

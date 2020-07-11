@@ -9,7 +9,7 @@
         public Opcode Opcode { get; set; }
         public Operand[] Operands { get; set; }
         public bool HasInstruction { get; set; }
-        public int HLIndex { get; set; }
+        public HighLevelInstruction.UniqueId HLId { get; set; }
         public bool HasHLInstruction { get; set; }
 
         public Location(uint ip, Opcode opcode)
@@ -19,7 +19,7 @@
             Opcode = opcode;
             Operands = Array.Empty<Operand>();
             HasInstruction = true;
-            HLIndex = -1;
+            HLId = 0;
             HasHLInstruction = false;
         }
 
@@ -30,18 +30,18 @@
             Opcode = 0;
             Operands = null;
             HasInstruction = false;
-            HLIndex = -1;
+            HLId = 0;
             HasHLInstruction = false;
         }
 
-        public Location(uint ip, int hlIndex)
+        public Location(uint ip, HighLevelInstruction.UniqueId hlId)
         {
             IP = ip;
             Label = null;
             Opcode = 0;
             Operands = null;
             HasInstruction = false;
-            HLIndex = hlIndex;
+            HLId = hlId;
             HasHLInstruction = true;
         }
     }
