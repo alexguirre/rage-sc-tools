@@ -39,7 +39,7 @@
                     str += '\n';
                 }
 
-                str += $"\t\t{(location.HasInstruction ? location.Opcode.Mnemonic() : HighLevelInstruction.Set[location.HLIndex].Mnemonic)}";
+                str += $"\t\t{(location.HasInstruction ? location.Opcode.Mnemonic() : HighLevelInstruction.Set[(byte)location.HLId].Mnemonic)}";
                 if (location.Operands.Length > 0)
                 {
                     str += ' ';

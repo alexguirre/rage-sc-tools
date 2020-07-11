@@ -87,7 +87,7 @@
                         }
 
                         // the new high-level instruction
-                        newLoc.Add(new Location(ip, HighLevelInstruction.UniqueId.PUSH_STRING)
+                        newLoc.Add(new Location(ip, HighLevelInstruction.UniqueId.PUSH_CONST)
                         {
                             Label = label,
                             Operands = new[] { new Operand(Script.String(id), OperandType.String) }

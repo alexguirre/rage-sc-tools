@@ -9,7 +9,7 @@
 
     public readonly struct HighLevelInstruction
     {
-        public const int NumberOfInstructions = 6;
+        public const int NumberOfInstructions = 5;
         public const int MaxOperands = byte.MaxValue;
 
         public delegate void CodeAssembler(in HLInst inst, ReadOnlySpan<Operand> operands, Code code);
@@ -67,31 +67,41 @@
         }
 
         public static readonly HLInst Invalid = default;
-        public static readonly HLInst PUSH_STRING = new HLInst(nameof(PUSH_STRING), UniqueId.PUSH_STRING, I_PushString);
+        public static readonly HLInst PUSH_CONST = new HLInst(nameof(PUSH_CONST), UniqueId.PUSH_CONST, I_PushConst);
         public static readonly HLInst CALL_NATIVE = new HLInst(nameof(CALL_NATIVE), UniqueId.CALL_NATIVE, I_CallNative);
-        public static readonly HLInst PUSH = new HLInst(nameof(PUSH), UniqueId.PUSH, I_Push);
         public static readonly HLInst STATIC = new HLInst(nameof(STATIC), UniqueId.STATIC, I_Static);
         public static readonly HLInst STATIC_LOAD = new HLInst(nameof(STATIC_LOAD), UniqueId.STATIC_LOAD, I_Static);
         public static readonly HLInst STATIC_STORE = new HLInst(nameof(STATIC_STORE), UniqueId.STATIC_STORE, I_Static);
 
         public enum UniqueId : byte
         {
-            PUSH_STRING = 0,
-            CALL_NATIVE = 1,
-            PUSH = 2,
-            STATIC = 3,
-            STATIC_LOAD = 4,
-            STATIC_STORE = 5,
+            PUSH_CONST = 0,
+            CALL_NATIVE,
+            STATIC,
+            STATIC_LOAD,
+            STATIC_STORE,
         }
 
         private static void I_NotImplemented(in HLInst i, ReadOnlySpan<Operand> o, Code c) => throw new NotImplementedException();
 
-        private static void I_PushString(in HLInst i, ReadOnlySpan<Operand> o, Code c)
+        private static void I_PushConst(in HLInst i, ReadOnlySpan<Operand> o, Code c)
         {
-            Debug.Assert(o.Length == 1 && o[0].Type == OperandType.String);
+            Debug.Assert(o.Length > 0);
 
-            string str = o[0].String;
-            EmitPushString(str, c);
+            // TODO: emit PUSH_CONST_U8_U8 and PUSH_CONST_U8_U8_U8 in PUSH_CONST
+            for (int k = 0; k < o.Length; k++)
+            {
+                Debug.Assert(o[k].Type == OperandType.U32 ||
+                             o[k].Type == OperandType.F32 ||
+                             o[k].Type == OperandType.String);
+
+                switch (o[k].Type)
+                {
+                    case OperandType.U32: EmitPushUInt(o[k].U32, c); break;
+                    case OperandType.F32: EmitPushFloat(o[k].F32, c); break;
+                    case OperandType.String: EmitPushString(o[k].String, c); break;
+                }
+            }
         }
 
         private static void I_CallNative(in HLInst i, ReadOnlySpan<Operand> o, Code c)
@@ -116,25 +126,6 @@
             ushort idx = c.AddOrGetNative(n.CurrentHash);
 
             c.Emit(Opcode.NATIVE, new[] { new Operand(paramCount), new Operand(returnValueCount), new Operand(idx) });
-        }
-
-        private static void I_Push(in HLInst i, ReadOnlySpan<Operand> o, Code c)
-        {
-            Debug.Assert(o.Length > 0);
-
-            for (int k = 0; k < o.Length; k++)
-            {
-                Debug.Assert(o[k].Type == OperandType.U32 ||
-                             o[k].Type == OperandType.F32 ||
-                             o[k].Type == OperandType.String);
-
-                switch (o[k].Type)
-                {
-                    case OperandType.U32: EmitPushUInt(o[k].U32, c); break;
-                    case OperandType.F32: EmitPushFloat(o[k].F32, c); break;
-                    case OperandType.String: EmitPushString(o[k].String, c); break;
-                }
-            }
         }
 
         private static void I_Static(in HLInst i, ReadOnlySpan<Operand> o, Code c)
