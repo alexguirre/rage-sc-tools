@@ -322,12 +322,15 @@
                     Location last = func.Code[^1];
                     if (last.IP != func.EndIP)
                     {
-                        func.Code.Add(new Location(labelIP, LabelToString(labelIP)));
+                        last = new Location(labelIP, LabelToString(labelIP));
+                        func.Code.Add(last);
+                        func.Labels.Add(last.Label, last.IP);
                     }
                     else if (last.Label == null)
                     {
                         last.Label = LabelToString(labelIP);
                         func.Code[^1] = last;
+                        func.Labels.Add(last.Label, last.IP);
                     }
                 }
                 else
@@ -337,7 +340,12 @@
                         Location loc = func.Code[i];
                         if (labelIP == loc.IP)
                         {
-                            func.Code[i] = new Location(loc.IP, loc.Opcode) { Label = LabelToString(labelIP) };
+                            if (loc.Label == null)
+                            {
+                                loc.Label = LabelToString(labelIP);
+                                func.Code[i] = loc;
+                                func.Labels.Add(loc.Label, loc.IP);
+                            }
                             return;
                         }
                         else if (loc.IP > labelIP)
@@ -350,6 +358,8 @@
                         $"Label at IP {labelIP:000000} is outside the function '{func.Name}' bounds (startIP: {func.StartIP:000000}, endIP: {func.EndIP:000000})");
                 }
             }
+
+            func.Labels = new Dictionary<string, uint>();
 
             foreach (Location loc in func.Code.ToArray()) // TODO: AddLabel modifies the Code list so we can't iterate through it, find some cleaner solution than copying the whole list
             {

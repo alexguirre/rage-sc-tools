@@ -8,18 +8,8 @@
         public uint StartIP { get; set; }
         public uint EndIP { get; set; }
         public List<Location> Code { get; set; }
+        public Dictionary<string, uint> Labels { get; set; }
 
-        public uint GetLabelIP(string labelName)
-        {
-            foreach (Location loc in Code)
-            {
-                if (loc.Label != null && loc.Label == labelName)
-                {
-                    return loc.IP;
-                }
-            }
-
-            return 0xFFFFFFFF;
-        }
+        public uint GetLabelIP(string labelName) => Labels.TryGetValue(labelName, out uint ip) ? ip : 0xFFFFFFFF;
     }
 }
