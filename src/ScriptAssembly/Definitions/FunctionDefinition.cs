@@ -7,6 +7,9 @@
 
     public sealed class FunctionDefinition : ISymbolDefinition
     {
+        public const string EntrypointName = "main";
+        public static readonly uint EntrypointId = Registry.NameToId(EntrypointName);
+
         public readonly struct Statement
         {
             public string Label { get; }
@@ -23,6 +26,7 @@
 
         public uint Id { get; }
         public string Name { get; }
+        public bool IsEntrypoint { get; }
         public bool Naked { get; }
         public ImmutableArray<FieldDefinition> Args { get; }
         public ImmutableArray<FieldDefinition> Locals { get; }
@@ -33,6 +37,7 @@
         {
             Name = !string.IsNullOrWhiteSpace(name) ? name : throw new ArgumentException("null or empty string", nameof(name));
             Id = Registry.NameToId(name);
+            IsEntrypoint = Id == EntrypointId;
             Naked = naked;
             Args  = args?.ToImmutableArray() ?? throw new ArgumentNullException(nameof(args));
             Locals = locals?.ToImmutableArray() ?? throw new ArgumentNullException(nameof(locals));

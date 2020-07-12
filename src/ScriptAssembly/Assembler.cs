@@ -279,6 +279,11 @@
                 // TODO: high level instructions
                 // TODO: generate prologue/epilogue of non-naked functions
 
+                if (!reg.Functions.Any(f => f.IsEntrypoint))
+                {
+                    throw new InvalidOperationException($"Missing entrypoint: no function named '{FunctionDefinition.EntrypointName}'");
+                }
+
                 var code = assemblerContext.Code;
                 foreach (var f in reg.Functions)
                 {

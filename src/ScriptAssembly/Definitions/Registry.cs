@@ -37,6 +37,12 @@
             if (symbol is FunctionDefinition func)
             {
                 functions.Add(func);
+            
+                if (func.IsEntrypoint) // the entrypoint function needs to be the first in the code pages
+                {
+                    functions[^1] = functions[0];
+                    functions[0] = func;
+                }
             }
             else if (symbol is ArgDefinition arg)
             {
