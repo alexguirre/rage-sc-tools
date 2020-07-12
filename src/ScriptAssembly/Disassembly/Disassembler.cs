@@ -7,7 +7,7 @@
     using System.Diagnostics;
     using System.Collections.Generic;
     using ScTools.GameFiles;
-    using ScTools.ScriptAssembly.Disassembly.Analyzers;
+    using ScTools.ScriptAssembly.Disassembly.Analysis;
     using ScTools.ScriptAssembly.Types;
 
     public class DisassembledScript

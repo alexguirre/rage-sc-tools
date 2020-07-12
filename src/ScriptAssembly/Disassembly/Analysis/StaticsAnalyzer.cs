@@ -1,4 +1,4 @@
-﻿namespace ScTools.ScriptAssembly.Disassembly.Analyzers
+﻿namespace ScTools.ScriptAssembly.Disassembly.Analysis
 {
     using System;
     using System.Collections.Generic;
