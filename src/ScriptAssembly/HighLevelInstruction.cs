@@ -9,7 +9,7 @@
 
     public readonly struct HighLevelInstruction
     {
-        public const int NumberOfInstructions = 5;
+        public const int NumberOfInstructions = 8;
         public const int MaxOperands = byte.MaxValue;
 
         public delegate void CodeAssembler(in HLInst inst, ReadOnlySpan<Operand> operands, Code code);
@@ -72,6 +72,9 @@
         public static readonly HLInst STATIC = new HLInst(nameof(STATIC), UniqueId.STATIC, I_Static);
         public static readonly HLInst STATIC_LOAD = new HLInst(nameof(STATIC_LOAD), UniqueId.STATIC_LOAD, I_Static);
         public static readonly HLInst STATIC_STORE = new HLInst(nameof(STATIC_STORE), UniqueId.STATIC_STORE, I_Static);
+        public static readonly HLInst LOCAL = new HLInst(nameof(LOCAL), UniqueId.LOCAL, I_Local);
+        public static readonly HLInst LOCAL_LOAD = new HLInst(nameof(LOCAL_LOAD), UniqueId.LOCAL_LOAD, I_Local);
+        public static readonly HLInst LOCAL_STORE = new HLInst(nameof(LOCAL_STORE), UniqueId.LOCAL_STORE, I_Local);
 
         public enum UniqueId : byte
         {
@@ -80,6 +83,9 @@
             STATIC,
             STATIC_LOAD,
             STATIC_STORE,
+            LOCAL,
+            LOCAL_LOAD,
+            LOCAL_STORE,
         }
 
         private static void I_NotImplemented(in HLInst i, ReadOnlySpan<Operand> o, Code c) => throw new NotImplementedException();
@@ -134,7 +140,7 @@
 
             uint offset = c.GetStaticOffset(o[0].Identifier);
 
-            Opcode op = (Index: i.Id, offset <= byte.MaxValue) switch
+            Opcode op = (i.Id, offset <= byte.MaxValue) switch
             {
                 (UniqueId.STATIC, true) => Opcode.STATIC_U8,
                 (UniqueId.STATIC_LOAD, true) => Opcode.STATIC_U8_LOAD,
@@ -142,6 +148,26 @@
                 (UniqueId.STATIC, false) => Opcode.STATIC_U16,
                 (UniqueId.STATIC_LOAD, false) => Opcode.STATIC_U16_LOAD,
                 (UniqueId.STATIC_STORE, false) => Opcode.STATIC_U16_STORE,
+                _ => throw new InvalidOperationException()
+            };
+
+            c.Emit(op, new[] { new Operand(offset) });
+        }
+
+        private static void I_Local(in HLInst i, ReadOnlySpan<Operand> o, Code c)
+        {
+            Debug.Assert(o.Length == 1 && o[0].Type == OperandType.Identifier);
+
+            uint offset = c.GetLocalOffset(o[0].Identifier);
+
+            Opcode op = (i.Id, offset <= byte.MaxValue) switch
+            {
+                (UniqueId.LOCAL, true) => Opcode.LOCAL_U8,
+                (UniqueId.LOCAL_LOAD, true) => Opcode.LOCAL_U8_LOAD,
+                (UniqueId.LOCAL_STORE, true) => Opcode.LOCAL_U8_STORE,
+                (UniqueId.LOCAL, false) => Opcode.LOCAL_U16,
+                (UniqueId.LOCAL_LOAD, false) => Opcode.LOCAL_U16_LOAD,
+                (UniqueId.LOCAL_STORE, false) => Opcode.LOCAL_U16_STORE,
                 _ => throw new InvalidOperationException()
             };
 

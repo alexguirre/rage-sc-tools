@@ -42,7 +42,7 @@
 				},
 				{
 					"name": "entity.name.function.instruction.highlevel.scasm",
-					"match": "\\b(PUSH_CONST|CALL_NATIVE|STATIC|STATIC_LOAD|STATIC_STORE)\\b"
+					"match": "\\b(PUSH_CONST|CALL_NATIVE|STATIC|STATIC_LOAD|STATIC_STORE|LOCAL|LOCAL_LOAD|LOCAL_STORE)\\b"
 				}
 			]
 		},

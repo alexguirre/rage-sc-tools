@@ -23,5 +23,6 @@
         public ushort AddOrGetNative(ulong hash);
 
         public uint GetStaticOffset(string name);
+        public uint GetLocalOffset(string name);
     }
 }

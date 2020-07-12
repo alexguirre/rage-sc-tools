@@ -63,6 +63,44 @@
             currentFunction = null;
         }
 
+        private uint LocalOffset(string name)
+        {
+            Debug.Assert(InFunction);
+
+            if (currentFunction.Naked)
+            {
+                throw new InvalidOperationException("Named locals are not available in naked functions");
+            }
+
+            uint offset = 0;
+
+            // look in function args
+            for (int i = 0; i < currentFunction.Args.Length; i++)
+            {
+                if (currentFunction.Args[i].Name == name)
+                {
+                    return offset;
+                }
+
+                offset += currentFunction.Args[i].Type.SizeOf;
+            }
+
+            offset += 2; // see MinLocals in EmitPrologue
+
+            // look in function locals
+            for (int i = 0; i < currentFunction.Locals.Length; i++)
+            {
+                if (currentFunction.Locals[i].Name == name)
+                {
+                    return offset;
+                }
+
+                offset += currentFunction.Locals[i].Type.SizeOf;
+            }
+
+            throw new ArgumentException($"Unknown local '{name}'");
+        }
+
         public void Emit(Opcode opcode, ReadOnlySpan<Operand> operands) => Emit(opcode.Instruction(), operands);
 
         public void Emit(in Instruction instruction, ReadOnlySpan<Operand> operands)
@@ -371,6 +409,7 @@
         ushort IHighLevelCodeBuilder.AddOrGetNative(ulong hash) => context.AddOrGetNative(hash);
 
         uint IHighLevelCodeBuilder.GetStaticOffset(string name) => context.GetStaticOffset(name);
+        uint IHighLevelCodeBuilder.GetLocalOffset(string name) => LocalOffset(name);
         #endregion // IHighLevelCodeBuilder Implementation
     }
 }
