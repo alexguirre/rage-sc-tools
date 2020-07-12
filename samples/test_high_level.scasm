@@ -1,0 +1,105 @@
+$NAME test_high_level
+
+STRUCT Vec3 BEGIN
+    x: AUTO
+    y: AUTO
+    z: AUTO
+END
+
+STRUCT SimplerStruct BEGIN
+    a: Vec3
+    b: AUTO
+END
+
+STRUCT ComplexStruct BEGIN 
+    v: AUTO
+    simpler1: SimplerStruct
+    simpler2: SimplerStruct
+END
+
+STATICS BEGIN 
+    someValue: AUTO
+    someVector: Vec3
+    someComplex: ComplexStruct
+END
+
+
+FUNC main BEGIN
+        ; STATIC someComplex.v
+        ; STATIC someComplex.simpler1
+        ; STATIC someComplex.simpler2
+        ; STATIC someComplex.simpler1.a
+        ; STATIC someComplex.simpler1.a.z
+        ; STATIC someComplex.simpler2.b
+
+        PUSH_CONST 5.0 10.0 15.0
+        PUSH_CONST SIZEOF(someVector)
+        STATIC someVector
+        STORE_N
+
+        PUSH_CONST 1.5
+        STATIC someVector
+        IOFFSET_U8_STORE OFFSETOF(someVector.y)
+
+        PUSH_CONST 1.0
+        STATIC_STORE someValue
+
+        STATIC someVector
+        IOFFSET_U8 OFFSETOF(someVector.y)
+        CALL addFivePointFive
+
+        STATIC someValue
+        CALL addFivePointFive
+
+    loop: ; infinite loop
+        PUSH_CONST 0
+        CALL_NATIVE WAIT
+        
+        ; draw value
+        PUSH_CONST 0.5 0.25
+        STATIC_LOAD someValue
+        CALL drawFloat
+
+        ; draw vector
+        PUSH_CONST 0.25 0.5
+        STATIC someVector
+        IOFFSET_U8_LOAD OFFSETOF(someVector.x)
+        CALL drawFloat
+
+        PUSH_CONST 0.5 0.5
+        STATIC someVector
+        IOFFSET_U8_LOAD OFFSETOF(someVector.y)
+        CALL drawFloat
+        
+        PUSH_CONST 0.75 0.5
+        STATIC someVector
+        IOFFSET_U8_LOAD OFFSETOF(someVector.z)
+        CALL drawFloat
+
+        J loop
+END
+
+FUNC addFivePointFive(valueRef: AUTO) BEGIN
+        LOCAL_U8_LOAD 0 ; valueRef
+        LOAD
+        PUSH_CONST 5.5
+        FADD                   ; *valueRef + 5.5
+
+        LOCAL_U8_LOAD 0 ; valueRef
+        STORE                  ; *valueRef = *valueRef + 5.5
+END
+
+
+FUNC drawFloat(x: AUTO, y: AUTO, value: AUTO) BEGIN
+        PUSH_CONST "NUMBER"
+        CALL_NATIVE BEGIN_TEXT_COMMAND_DISPLAY_TEXT
+
+        LOCAL_U8_LOAD 2 ; value
+        PUSH_CONST 2
+        CALL_NATIVE ADD_TEXT_COMPONENT_FLOAT        ; (float value, int decimalPlaces)
+
+        LOCAL_U8_LOAD 0 ; x
+        LOCAL_U8_LOAD 1 ; y
+        PUSH_CONST 0
+        CALL_NATIVE END_TEXT_COMMAND_DISPLAY_TEXT
+END

@@ -217,7 +217,7 @@
                     if (loc.HasInstruction)
                     {
                         operandsDecoder.BeginInstruction(f, loc);
-                        Instruction.Set[(byte)loc.Opcode].Decode(operandsDecoder);
+                        loc.Opcode.Instruction().Decode(operandsDecoder);
                         loc.Operands = operandsDecoder.EndInstruction();
                         f.Code[i] = loc;
                     }

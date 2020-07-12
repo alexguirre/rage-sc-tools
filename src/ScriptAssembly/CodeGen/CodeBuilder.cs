@@ -363,6 +363,7 @@
         #region IHighLevelCodeBuilder Implementation
         NativeDB IHighLevelCodeBuilder.NativeDB => context.NativeDB;
         CodeGenOptions IHighLevelCodeBuilder.Options => context.CodeGenOptions;
+        Registry IHighLevelCodeBuilder.Symbols => context.Symbols;
 
         void IHighLevelCodeBuilder.Emit(Opcode opcode, ReadOnlySpan<Operand> operands) => Emit(opcode, operands);
 

@@ -85,6 +85,12 @@ operand
     | string
     | identifier
     | operandSwitchCase
+    | operator
+    ;
+
+operator
+    : K_SIZEOF '(' identifier ('.' identifier)* ')'
+    | K_OFFSETOF '(' identifier ('.' identifier)+ ')'
     ;
 
 operandSwitchCase
@@ -120,6 +126,8 @@ K_END : E N D;
 K_NAKED : N A K E D;
 K_STATICS : S T A T I C S;
 K_ARGS : A R G S;
+K_SIZEOF : S I Z E O F;
+K_OFFSETOF : O F F S E T O F;
 
 IDENTIFIER
     :   [a-zA-Z_] [a-zA-Z_0-9]*

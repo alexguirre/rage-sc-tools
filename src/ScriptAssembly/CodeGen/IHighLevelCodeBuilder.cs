@@ -1,6 +1,7 @@
 ﻿namespace ScTools.ScriptAssembly.CodeGen
 {
     using System;
+    using ScTools.ScriptAssembly.Definitions;
 
     /// <summary>
     /// Defines the interface used for assembling <see cref="HighLevelInstruction"/>s.
@@ -9,6 +10,7 @@
     {
         public CodeGenOptions Options { get; }
         public NativeDB NativeDB { get; }
+        public Registry Symbols { get; }
 
         /// <summary>
         /// Assembles a low-level instruction with the specified operands.

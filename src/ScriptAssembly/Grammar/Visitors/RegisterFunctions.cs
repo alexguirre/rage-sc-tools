@@ -20,7 +20,7 @@
         {
             var funcs = new List<FunctionDefinition>();
 
-            var bodyVisitor = new BodyVisitor();
+            var bodyVisitor = new BodyVisitor(registry);
             foreach (var f in context.statement().Select(stat => stat.function()).Where(f => f != null))
             {
                 var name = f.identifier().GetText();
@@ -47,11 +47,18 @@
 
         private sealed class BodyVisitor : ScAsmBaseVisitor<FunctionDefinition.Statement>
         {
+            private readonly Registry registry;
+
+            public BodyVisitor(Registry registry)
+            {
+                this.registry = registry ?? throw new ArgumentNullException(nameof(registry));
+            }
+
             public override FunctionDefinition.Statement VisitFunctionBody([NotNull] ScAsmParser.FunctionBodyContext context)
                 => new FunctionDefinition.Statement(
                         label: context.label()?.identifier().GetText(),
                         mnemonic: context.instruction()?.identifier().GetText(),
-                        operands: context.instruction()?.operandList().Accept(ParseOperands.Instance));
+                        operands: context.instruction()?.operandList().Accept(new ParseOperands(registry)));
         }
     }
 }

@@ -10,10 +10,38 @@
         public override uint SizeOf => (uint)Fields.Sum(f => f.Type.SizeOf);
 
         public ImmutableArray<StructField> Fields { get; }
+        public ImmutableArray<uint> Offsets { get; }
 
         public StructType(string name, IEnumerable<StructField> fields) : base(name)
         {
             Fields = fields?.ToImmutableArray() ?? throw new ArgumentNullException(nameof(fields));
+
+            var offsets = ImmutableArray.CreateBuilder<uint>(Fields.Length);
+
+            uint offset = 0;
+            for (int i = 0; i < Fields.Length; i++)
+            {
+                offsets.Add(offset);
+                offset += Fields[i].Type.SizeOf;
+            }
+
+            Offsets = offsets.MoveToImmutable();
+        }
+
+        public int IndexOfField(string fieldName)
+        {
+            int i = 0;
+            foreach (var f in Fields)
+            {
+                if (f.Name == fieldName)
+                {
+                    return i;
+                }
+
+                i++;
+            }
+
+            return -1;
         }
     }
 

@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Data;
+    using System.IO;
     using System.Linq;
     using Antlr4.Runtime;
     using Antlr4.Runtime.Misc;
@@ -24,11 +25,15 @@
         public StringPagesBuilder Strings { get; } = new StringPagesBuilder();
         public IList<ulong> NativeHashes { get; } = new List<ulong>();
         public Dictionary<string, uint> Statics { get; } = new Dictionary<string, uint>();
+        public Registry Symbols { get; } = new Registry();
 
         public AssemblerContext(Script sc)
         {
             this.sc = sc ?? throw new ArgumentNullException(nameof(sc));
             Code = new CodeBuilder(this);
+
+            using var a = new BinaryReader(File.OpenRead("natives.scndb"));
+            NativeDB = NativeDB.Load(a);
         }
 
         public void SetName(string name)
@@ -216,7 +221,7 @@
 
                 var assemblerContext = new AssemblerContext(sc);
 
-                Registry reg = new Registry();
+                var reg = assemblerContext.Symbols;
                 RegisterStructs.Visit(context, reg);
                 RegisterStaticFields.Visit(context, reg);
                 RegisterArgs.Visit(context, reg);
@@ -347,7 +352,7 @@
 
                     if (dirIndex != -1)
                     {
-                        Operand[] operands = ParseOperands.Visit(context.operandList());
+                        Operand[] operands = ParseOperands.Visit(context.operandList(), null);
                         Directive dir = Directives.Set[dirIndex];
                         dir.Callback(dir, assemblerContext, operands);
                         return true;
