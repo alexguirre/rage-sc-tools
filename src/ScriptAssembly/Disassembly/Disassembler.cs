@@ -16,7 +16,7 @@
         public TypeRegistry Types { get; set; }
         public List<Function> Functions { get; set; }
         public List<Static> Statics { get; set; }
-        public List<Argument> Args { get; set; }
+        public List<StaticArgument> Args { get; set; }
     }
 
     public static class Disassembler
@@ -141,13 +141,13 @@
             }
         }
 
-        private static (List<Static>, List<Argument>) GetStatics(Script sc)
+        private static (List<Static>, List<StaticArgument>) GetStatics(Script sc)
         {
             uint argsCount = sc.ArgsCount;
             uint staticsCount = sc.StaticsCount - argsCount;
 
             var statics = new List<Static>((int)staticsCount);
-            var args = new List<Argument>((int)argsCount);
+            var args = new List<StaticArgument>((int)argsCount);
 
             for (uint i = 0; i< staticsCount; i++)
             {
@@ -157,7 +157,7 @@
             for (uint i = 0; i < argsCount; i++)
             {
                 uint offset = staticsCount + i;
-                args.Add(new Argument { Name = $"arg_{i}", Offset = offset, Type = AutoType.Instance, InitialValue = sc.Statics[offset].AsUInt64 });
+                args.Add(new StaticArgument { Name = $"arg_{i}", Offset = offset, Type = AutoType.Instance, InitialValue = sc.Statics[offset].AsUInt64 });
             }
 
             return (statics, args);

@@ -50,13 +50,49 @@
             return str;
         }
 
-        public static string PrintFunction(Function function)
+        public static string PrintFunction(Function function) => function.Naked ? PrintNakedFunction(function) : PrintNonNakedFunction(function);
+
+        private static string PrintNakedFunction(Function function)
         {
+            Debug.Assert(function.Naked);
+
             string str = $"FUNC NAKED {function.Name} BEGIN\n";
             str += string.Join('\n', function.Code.Select(PrintLocation));
             str += "\nEND";
             return str;
         }
+
+        private static string PrintNonNakedFunction(Function function)
+        {
+            Debug.Assert(!function.Naked);
+
+            string str = $"FUNC {function.Name}";
+            if ((function.Arguments?.Count ?? 0) > 0)
+            {
+                str += '(';
+                str += string.Join(", ", function.Arguments.Select(PrintLocal));
+                str += ')';
+            }
+            if (function.ReturnType != null)
+            {
+                str += $": {function.ReturnType.Name}";
+            }
+            if ((function.Locals?.Count ?? 0) > 0)
+            {
+                str += "\n\t";
+                str += string.Join("\n\t", function.Locals.Select(PrintLocal));
+                str += "\nBEGIN\n";
+            }
+            else
+            {
+                str += " BEGIN\n";
+            }
+            str += string.Join('\n', function.Code.Select(PrintLocation));
+            str += "\nEND";
+            return str;
+        }
+
+        public static string PrintLocal(Local l) => $"{l.Name}: {l.Type.Name}";
 
         public static string PrintStructField(StructField f) => $"\t{f.Name}:\t{f.Type.Name}";
 
@@ -77,7 +113,7 @@
             str += "\nEND";
             return str;
         }
-        public static string PrintArguments(IEnumerable<Argument> args)
+        public static string PrintArguments(IEnumerable<StaticArgument> args)
         {
             string str = $"ARGS BEGIN\n";
             str += string.Join('\n', args.Select(PrintStatic));

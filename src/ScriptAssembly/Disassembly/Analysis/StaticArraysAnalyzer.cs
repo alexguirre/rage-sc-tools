@@ -107,10 +107,10 @@
                 {
                     int i = Disassembly.Args.FindIndex(a => a.Offset == staticOffset);
                     Debug.Assert(i != -1);
-                    Argument old = Disassembly.Args[i];
+                    StaticArgument old = Disassembly.Args[i];
 
                     Disassembly.Args.RemoveRange(i, (int)arr.SizeOf);
-                    Disassembly.Args.Insert(i, new Argument { Name = old.Name, Offset = staticOffset, Type = arr });
+                    Disassembly.Args.Insert(i, new StaticArgument { Name = old.Name, Offset = staticOffset, Type = arr });
                 }
                 else
                 {
