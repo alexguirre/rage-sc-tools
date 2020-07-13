@@ -6,6 +6,7 @@
     using Antlr4.Runtime.Misc;
     using ScTools.ScriptAssembly.Definitions;
     using ScTools.ScriptAssembly.Types;
+    using System.Collections.Immutable;
 
     public sealed class RegisterFunctions : ScAsmBaseVisitor<FunctionDefinition[]>
     {
@@ -25,14 +26,16 @@
             {
                 var name = f.identifier().GetText();
                 var naked = f.K_NAKED() != null;
-                var args = f.functionArgList()?.fieldDecl().Select(f => ParseFieldDecl.Visit(f, registry)) ?? Enumerable.Empty<(string, string, TypeBase)>();
-                var locals = f.functionLocalDecl().Select(l => ParseFieldDecl.Visit(l.fieldDecl(), registry));
+                var args = (f.functionArgList()?.fieldDecl().Select(f => ParseFieldDecl.Visit(f, registry)) ?? Enumerable.Empty<(string, string, TypeBase)>())
+                                .Select(a => new FieldDefinition(a.Name,a.Type)).ToImmutableArray();
+                var locals = f.functionLocalDecl().Select(l => ParseFieldDecl.Visit(l.fieldDecl(), registry))
+                                .Select(l => new FieldDefinition(l.Name, l.Type)).ToImmutableArray();
                 var returnType = f.functionReturnType() != null ? ParseType.Visit(f.functionReturnType().type(), registry).Type : null;
+                bodyVisitor.CurrentScope = (locals, args);
                 var statements = f.functionBody().Select(b => b.Accept(bodyVisitor));
 
                 funcs.Add(registry.RegisterFunction(name, naked, 
-                                                    args.Select(a => new FieldDefinition(a.Name,a.Type)),
-                                                    locals.Select(l => new FieldDefinition(l.Name, l.Type)),
+                                                    args, locals,
                                                     returnType,
                                                     statements));
             }
@@ -49,6 +52,8 @@
         {
             private readonly Registry registry;
 
+            public (ImmutableArray<FieldDefinition> Locals, ImmutableArray<FieldDefinition> Args) CurrentScope { get; set; }
+
             public BodyVisitor(Registry registry)
             {
                 this.registry = registry ?? throw new ArgumentNullException(nameof(registry));
@@ -58,7 +63,7 @@
                 => new FunctionDefinition.Statement(
                         label: context.label()?.identifier().GetText(),
                         mnemonic: context.instruction()?.identifier().GetText(),
-                        operands: context.instruction()?.operandList().Accept(new ParseOperands(registry)));
+                        operands: context.instruction()?.operandList().Accept(new ParseOperands(registry, CurrentScope)));
         }
     }
 }

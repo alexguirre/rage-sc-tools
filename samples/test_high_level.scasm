@@ -47,7 +47,7 @@ BEGIN
         CALL addFivePointFive
 
         PUSH_CONST 1.11 2.22 3.33
-        PUSH_CONST SIZEOF(Vec3) ; SIZEOF(someLocalVector)
+        PUSH_CONST SIZEOF(someLocalVector)
         LOCAL someLocalVector
         STORE_N
 
@@ -90,17 +90,17 @@ BEGIN
         ; draw local vector
         PUSH_CONST 0.25 0.6
         LOCAL someLocalVector
-        IOFFSET_U8_LOAD OFFSETOF(Vec3.x) ; OFFSETOF(someLocalVector.x)
+        IOFFSET_U8_LOAD OFFSETOF(someLocalVector.x)
         CALL drawFloat
 
         PUSH_CONST 0.5 0.6
         LOCAL someLocalVector
-        IOFFSET_U8_LOAD OFFSETOF(Vec3.y) ; OFFSETOF(someLocalVector.y)
+        IOFFSET_U8_LOAD OFFSETOF(someLocalVector.y)
         CALL drawFloat
         
         PUSH_CONST 0.75 0.6
         LOCAL someLocalVector
-        IOFFSET_U8_LOAD OFFSETOF(Vec3.z) ; OFFSETOF(someLocalVector.z)
+        IOFFSET_U8_LOAD OFFSETOF(someLocalVector.z)
         CALL drawFloat
 
         PUSH_CONST 0.5 0.8 HASH("Hello, World!")

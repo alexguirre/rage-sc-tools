@@ -11,10 +11,12 @@
     public sealed class ParseOperands : ScAsmBaseVisitor<Operand[]>
     {
         private readonly Registry registry;
+        private readonly (ImmutableArray<FieldDefinition> Locals, ImmutableArray<FieldDefinition> Args)? scope;
 
-        public ParseOperands(Registry registry)
+        public ParseOperands(Registry registry, (ImmutableArray<FieldDefinition> Locals, ImmutableArray<FieldDefinition> Args)? scope = null)
         {
             this.registry = registry;
+            this.scope = scope;
         }
 
         public override Operand[] VisitOperandList([NotNull] ScAsmParser.OperandListContext context)
@@ -46,10 +48,7 @@
 
             var identifiers = op.identifier().Select(id => id.GetText()).ToImmutableArray();
 
-            // TODO: support locals and args identifiers
-            var type = registry.Types.FindType(identifiers[0]) ?? 
-                       registry.FindStaticField(identifiers[0])?.Type ??
-                       throw new InvalidOperationException($"Unknown type or static field '{identifiers[0]}'");
+            var type = FindType(identifiers[0]);
 
             for (int i = 1; i < identifiers.Length; i++)
             {
@@ -79,10 +78,7 @@
 
             var identifiers = op.identifier().Select(id => id.GetText()).ToImmutableArray();
 
-            // TODO: support locals and args identifiers
-            var type = registry.Types.FindType(identifiers[0]) ??
-                       registry.FindStaticField(identifiers[0])?.Type ??
-                       throw new InvalidOperationException($"Unknown type or static field '{identifiers[0]}'");
+            var type = FindType(identifiers[0]);
 
             uint offset = 0xFFFFFFFF;
             for (int i = 1; i < identifiers.Length; i++)
@@ -116,6 +112,39 @@
             return new Operand(str.ToLowercaseHash());
         }
 
+        private TypeBase FindType(string name)
+            => registry.Types.FindType(name) ??
+               registry.FindStaticField(name)?.Type ??
+                FindLocalType(name) ??
+           throw new InvalidOperationException($"Unknown type, static field, local or function argument '{name}'");
+
+        private TypeBase FindLocalType(string name)
+        {
+            if (!scope.HasValue)
+            {
+                return null;
+            }
+
+            var s = scope.Value;
+            foreach (var f in s.Args)
+            {
+                if (f.Name == name)
+                {
+                    return f.Type;
+                }
+            }
+
+            foreach (var f in s.Locals)
+            {
+                if (f.Name == name)
+                {
+                    return f.Type;
+                }
+            }
+
+            return null;
+        }
+
         private static Operand IntegerToOperand(ulong v)
             => v <= uint.MaxValue ?
                     new Operand(unchecked((uint)v)) :
@@ -123,7 +152,7 @@
 
         private static string UnquoteString(string str) => str.AsSpan()[1..^1].Unescape();
 
-        public static Operand[] Visit(ScAsmParser.OperandListContext operandList, Registry registry)
-            => operandList?.Accept(new ParseOperands(registry)) ?? throw new ArgumentNullException(nameof(operandList));
+        public static Operand[] Visit(ScAsmParser.OperandListContext operandList, Registry registry, (ImmutableArray<FieldDefinition> Locals, ImmutableArray<FieldDefinition> Args)? scope = null)
+            => operandList?.Accept(new ParseOperands(registry, scope)) ?? throw new ArgumentNullException(nameof(operandList));
     }
 }

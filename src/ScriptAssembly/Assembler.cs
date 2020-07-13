@@ -357,7 +357,7 @@
 
                     if (dirIndex != -1)
                     {
-                        Operand[] operands = ParseOperands.Visit(context.operandList(), null);
+                        Operand[] operands = ParseOperands.Visit(context.operandList(), null, null);
                         Directive dir = Directives.Set[dirIndex];
                         dir.Callback(dir, assemblerContext, operands);
                         return true;
