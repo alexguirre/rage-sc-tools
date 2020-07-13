@@ -247,6 +247,7 @@
                         else if (sf.Type is StructType s)
                         {
                             // TODO: can Structs have initial values?
+                            // TODO: initialize arrays inside structs
                         }
                         else
                         {

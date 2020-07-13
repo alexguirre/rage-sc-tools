@@ -31,7 +31,7 @@
 		"keywords": {
 			"patterns": [{
 				"name": "storage.type.struct.scasm",
-				"match": "\\b(STRUCT|ARGS|STATICS|FUNC|NAKED|BEGIN|END|AUTO|SIZEOF|OFFSETOF|HASH)\\b"
+				"match": "\\b(STRUCT|ARGS|STATICS|FUNC|NAKED|BEGIN|END|AUTO|SIZEOF|OFFSETOF|ITEMSIZEOF|LENGTHOF|HASH)\\b"
 			}]
 		},
 		"mnemonics": {

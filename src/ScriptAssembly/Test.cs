@@ -83,13 +83,13 @@
 
         public static void DoTest()
         {
-            foreach (var f in F())
-            {
-                Console.WriteLine(Printer.PrintFunction(f));
-                Console.WriteLine();
-            }
+            //foreach (var f in F())
+            //{
+            //    Console.WriteLine(Printer.PrintFunction(f));
+            //    Console.WriteLine();
+            //}
 
-            return;
+            //return;
 
             //YscFile ysc2 = new YscFile();
             //ysc2.Load(File.ReadAllBytes("re_bus_tours.orig.ysc"));
@@ -100,26 +100,26 @@
             //Disassembler.Print(wr, ysc2.Script, funcs2);
 
 
-            //YscFile ysc2 = new YscFile();
-            //ysc2.Script = Assembler.Assemble(File.ReadAllText("re_bus_tours.scasm"));
-
-            //string outputPath = "re_bus_tours.ysc";
-            //byte[] data = ysc2.Save(Path.GetFileName(outputPath));
-            //File.WriteAllBytes(outputPath, data);
-
-            //outputPath = Path.ChangeExtension(outputPath, "unencrypted.ysc");
-            //data = ysc2.Save();
-            //File.WriteAllBytes(outputPath, data);
-
-
-
-
             YscFile ysc2 = new YscFile();
-            ysc2.Load(File.ReadAllBytes("re_bus_tours.unencrypted.ysc"));
+            ysc2.Script = Assembler.Assemble(File.ReadAllText("test_high_level.scasm"));
 
-            using TextWriter w = new StreamWriter(new FileInfo("re_bus_tours.new.dump.txt").Open(FileMode.Create));
+            string outputPath = "test_high_level.ysc";
+            byte[] data = ysc2.Save(Path.GetFileName(outputPath));
+            File.WriteAllBytes(outputPath, data);
 
-            new Dumper(ysc2.Script).Dump(w, showMetadata: true, showDisassembly: true,
+            outputPath = Path.ChangeExtension(outputPath, "unencrypted.ysc");
+            data = ysc2.Save();
+            File.WriteAllBytes(outputPath, data);
+
+
+
+
+            YscFile ysc3 = new YscFile();
+            ysc3.Load(File.ReadAllBytes("test_high_level.unencrypted.ysc"));
+
+            using TextWriter w = new StreamWriter(new FileInfo("test_high_level.dump.txt").Open(FileMode.Create));
+
+            new Dumper(ysc3.Script).Dump(w, showMetadata: true, showDisassembly: true,
                                 showOffsets: true, showBytes: true, showInstructions: true);
 
             return;

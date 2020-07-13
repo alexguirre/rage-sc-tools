@@ -33,55 +33,81 @@
             }).ToArray();
 
         private Operand ParseOperator(ScAsmParser.OperatorContext op)
-            => op switch
+            => (op, Identifiers: op.identifier().Select(id => id.GetText()).ToImmutableArray()) switch
             {
-                _ when op.K_SIZEOF() != null => OperatorSizeOf(op),
-                _ when op.K_OFFSETOF() != null => OperatorOffsetOf(op),
-                _ when op.K_HASH() != null => OperatorHash(op),
+                var x when op.K_SIZEOF() != null => OperatorSizeOf(x.Identifiers.AsSpan()),
+                var x when op.K_OFFSETOF() != null => OperatorOffsetOf(x.Identifiers.AsSpan()),
+                var x when op.K_ITEMSIZEOF() != null => OperatorItemSizeOf(x.Identifiers.AsSpan()),
+                var x when op.K_LENGTHOF() != null => OperatorLengthOf(x.Identifiers.AsSpan()),
+                _ when op.K_HASH() != null => OperatorHash(UnquoteString(op.@string().GetText())),
                 _ => throw new NotImplementedException()
             };
 
-        private Operand OperatorSizeOf(ScAsmParser.OperatorContext op)
+        private Operand OperatorSizeOf(ReadOnlySpan<string> identifiers)
         {
             Debug.Assert(registry != null);
-            Debug.Assert(op.K_SIZEOF() != null);
 
-            var identifiers = op.identifier().Select(id => id.GetText()).ToImmutableArray();
-
-            var type = FindType(identifiers[0]);
-
-            for (int i = 1; i < identifiers.Length; i++)
-            {
-                if (type is StructType struc)
-                {
-                    int field = struc.IndexOfField(identifiers[i]);
-                    if (field == -1)
-                    {
-                        throw new InvalidOperationException($"Unknown field '{identifiers[i]}'");
-                    }
-
-                    type = struc.Fields[field].Type;
-                }
-                else
-                {
-                    throw new InvalidOperationException($"Invalid field '{identifiers[i]}': only structs can have fields");
-                }
-            }
+            var type = AccessTypeOrVariable(identifiers).Type;
 
             return new Operand(type.SizeOf);
         }
 
-        private Operand OperatorOffsetOf(ScAsmParser.OperatorContext op)
+        private Operand OperatorOffsetOf(ReadOnlySpan<string> identifiers)
         {
             Debug.Assert(registry != null);
-            Debug.Assert(op.K_OFFSETOF() != null);
+            Debug.Assert(identifiers.Length > 1);
 
-            var identifiers = op.identifier().Select(id => id.GetText()).ToImmutableArray();
+            var offset = AccessTypeOrVariable(identifiers).Offset;
 
-            var type = FindType(identifiers[0]);
+            return new Operand(offset);
+        }
 
+        private Operand OperatorItemSizeOf(ReadOnlySpan<string> identifiers)
+        {
+            Debug.Assert(registry != null);
+
+            var type = AccessVariable(identifiers).Type;
+
+            return type is ArrayType arr ?
+                    new Operand(arr.ItemType.SizeOf) :
+                    throw new InvalidOperationException($"'{string.Join('.', identifiers.ToArray())}' is not an array");
+        }
+
+        private Operand OperatorLengthOf(ReadOnlySpan<string> identifiers)
+        {
+            Debug.Assert(registry != null);
+
+            var type = AccessVariable(identifiers).Type;
+
+            return type is ArrayType arr ?
+                    new Operand(arr.Length) :
+                    throw new InvalidOperationException($"'{string.Join('.', identifiers.ToArray())}' is not an array");
+        }
+
+        private Operand OperatorHash(string str) => new Operand(str.ToLowercaseHash());
+
+        private TypeBase FindTypeOrVariableType(string name)
+            => registry.Types.FindType(name) ??
+               registry.FindStaticField(name)?.Type ??
+               FindLocalType(name) ??
+               throw new InvalidOperationException($"Unknown type, static field, local or function argument '{name}'");
+
+        private TypeBase FindVariableType(string name)
+            => registry.FindStaticField(name)?.Type ??
+               FindLocalType(name) ??
+               throw new InvalidOperationException($"Unknown static field, local or function argument '{name}'");
+
+        private (TypeBase Type, uint Offset) AccessTypeOrVariable(ReadOnlySpan<string> identifiers)
+            => AccessFields(FindTypeOrVariableType(identifiers[0]), identifiers[1..]);
+
+        private (TypeBase Type, uint Offset) AccessVariable(ReadOnlySpan<string> identifiers)
+            => AccessFields(identifiers.Length == 1 ? FindVariableType(identifiers[0]) : FindTypeOrVariableType(identifiers[0]),
+                            identifiers[1..]);
+
+        private (TypeBase Type, uint Offset) AccessFields(TypeBase type, ReadOnlySpan<string> identifiers)
+        {
             uint offset = 0xFFFFFFFF;
-            for (int i = 1; i < identifiers.Length; i++)
+            for (int i = 0; i < identifiers.Length; i++)
             {
                 if (type is StructType struc)
                 {
@@ -100,23 +126,8 @@
                 }
             }
 
-            return new Operand(offset);
+            return (type, offset);
         }
-
-        private Operand OperatorHash(ScAsmParser.OperatorContext op)
-        {
-            Debug.Assert(op.K_HASH() != null);
-
-            var str = UnquoteString(op.@string().GetText());
-
-            return new Operand(str.ToLowercaseHash());
-        }
-
-        private TypeBase FindType(string name)
-            => registry.Types.FindType(name) ??
-               registry.FindStaticField(name)?.Type ??
-                FindLocalType(name) ??
-           throw new InvalidOperationException($"Unknown type, static field, local or function argument '{name}'");
 
         private TypeBase FindLocalType(string name)
         {

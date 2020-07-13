@@ -120,6 +120,8 @@
             uint argsSize = (uint)currentFunction.Args.Sum(a => a.Type.SizeOf);
             uint localsSize = (uint)currentFunction.Locals.Sum(l => l.Type.SizeOf) + argsSize + MinLocals;
             Emit(Opcode.ENTER, new[] { new Operand(argsSize), new Operand(localsSize) });
+
+            // TODO: initialize local arrays (offset 0 needs to have the length) and structures (arrays fields and field initializers if we decide to have those)
         }
 
         private void EmitEpilogue()
