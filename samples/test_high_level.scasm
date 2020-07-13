@@ -103,6 +103,9 @@ BEGIN
         IOFFSET_U8_LOAD OFFSETOF(Vec3.z) ; OFFSETOF(someLocalVector.z)
         CALL drawFloat
 
+        PUSH_CONST 0.5 0.8 HASH("Hello, World!")
+        CALL drawInt
+
         J loop
 END
 
@@ -123,6 +126,19 @@ FUNC drawFloat(x: AUTO, y: AUTO, value: AUTO) BEGIN
         LOCAL_LOAD value
         PUSH_CONST 2
         CALL_NATIVE ADD_TEXT_COMPONENT_FLOAT        ; (float value, int decimalPlaces)
+
+        LOCAL_LOAD x
+        LOCAL_LOAD y
+        PUSH_CONST 0
+        CALL_NATIVE END_TEXT_COMMAND_DISPLAY_TEXT
+END
+
+FUNC drawInt(x: AUTO, y: AUTO, value: AUTO) BEGIN
+        PUSH_CONST "NUMBER"
+        CALL_NATIVE BEGIN_TEXT_COMMAND_DISPLAY_TEXT
+
+        LOCAL_LOAD value
+        CALL_NATIVE ADD_TEXT_COMPONENT_INTEGER
 
         LOCAL_LOAD x
         LOCAL_LOAD y

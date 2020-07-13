@@ -22,7 +22,7 @@
             {
                 _ when o.integer() != null => IntegerToOperand(ParseUnsignedInteger.Visit(o.integer())),
                 _ when o.@float() != null => new Operand(float.Parse(o.@float().GetText())),
-                _ when o.@string() != null => new Operand(o.GetText().AsSpan()[1..^1].Unescape(), OperandType.String),
+                _ when o.@string() != null => new Operand(UnquoteString(o.GetText()), OperandType.String),
                 _ when o.identifier() != null => new Operand(o.GetText(), OperandType.Identifier),
                 _ when o.operandSwitchCase() != null => new Operand(((uint)ParseUnsignedInteger.Visit(o.operandSwitchCase().integer()),
                                                                      o.operandSwitchCase().identifier().GetText())),
@@ -35,6 +35,7 @@
             {
                 _ when op.K_SIZEOF() != null => OperatorSizeOf(op),
                 _ when op.K_OFFSETOF() != null => OperatorOffsetOf(op),
+                _ when op.K_HASH() != null => OperatorHash(op),
                 _ => throw new NotImplementedException()
             };
 
@@ -106,10 +107,21 @@
             return new Operand(offset);
         }
 
+        private Operand OperatorHash(ScAsmParser.OperatorContext op)
+        {
+            Debug.Assert(op.K_HASH() != null);
+
+            var str = UnquoteString(op.@string().GetText());
+
+            return new Operand(str.ToLowercaseHash());
+        }
+
         private static Operand IntegerToOperand(ulong v)
-            => v < uint.MaxValue ?
+            => v <= uint.MaxValue ?
                     new Operand(unchecked((uint)v)) :
                     new Operand(v);
+
+        private static string UnquoteString(string str) => str.AsSpan()[1..^1].Unescape();
 
         public static Operand[] Visit(ScAsmParser.OperandListContext operandList, Registry registry)
             => operandList?.Accept(new ParseOperands(registry)) ?? throw new ArgumentNullException(nameof(operandList));
