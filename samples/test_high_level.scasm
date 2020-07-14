@@ -23,12 +23,20 @@ STRUCT ComplexStruct BEGIN
     z: SixNumbers[5]
 END
 
+STRUCT StrucWithInitialValues BEGIN
+    a: AUTO = 1.234
+    b: AUTO = 42
+    c: AUTO
+    d: AUTO = 1
+END
+
 STATICS BEGIN 
     someValue: AUTO
     someVector: Vec3
     someComplex: ComplexStruct
     someArray: AUTO[4]
     someVectorArray: Vec3[8]
+    theStructsWithInitialValues: StrucWithInitialValues[4]
 END
 
 FUNC main

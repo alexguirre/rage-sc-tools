@@ -14,7 +14,7 @@ statement
 
 struct
     : K_STRUCT identifier K_BEGIN EOL
-      (fieldDecl? EOL)*
+      (fieldDeclWithInitializer? EOL)*
       K_END
     ;
 

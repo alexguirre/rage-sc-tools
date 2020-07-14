@@ -44,10 +44,12 @@
                 {
                     int start = (int)struc.Offsets[i];
                     int end = (int)struc.Offsets[i + 1];
-                    Init(struc.Fields[i].Type, dest[start..end]);
+                    var f = struc.Fields[i];
+                    Init(f.Type, dest[start..end], f.InitialValue);
                 }
 
-                Init(struc.Fields[^1].Type, dest[(int)struc.Offsets[^1]..]);
+                var last = struc.Fields[^1];
+                Init(last.Type, dest[(int)struc.Offsets[^1]..], last.InitialValue);
             }
 
             static void Init(TypeBase type, Span<ScriptValue> dest, ScriptValue? autoInitValue = null)

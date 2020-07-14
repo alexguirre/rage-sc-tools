@@ -121,7 +121,7 @@
             uint localsSize = (uint)currentFunction.Locals.Sum(l => l.Type.SizeOf) + argsSize + MinLocals;
             Emit(Opcode.ENTER, new[] { new Operand(argsSize), new Operand(localsSize) });
 
-            // TODO: initialize local arrays (offset 0 needs to have the length) and structures (arrays fields and field initializers if we decide to have those)
+            // TODO: initialize local arrays (offset 0 needs to have the length) and structures (arrays fields and field initializers)
         }
 
         private void EmitEpilogue()

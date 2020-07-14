@@ -31,18 +31,21 @@
 
             foreach (var decl in decls)
             {
-                ScriptValue initialValue = decl switch
-                {
-                    _ when decl.@float() != null => new ScriptValue { AsFloat = ParseFloat.Visit(decl.@float()) },
-                    _ when decl.integer() != null => new ScriptValue { AsUInt64 = ParseUnsignedInteger.Visit(decl.integer()) },
-                    _ => default
-                };
-
                 var f = ParseFieldDecl.Visit(decl.fieldDecl(), registry);
 
                 Debug.Assert(f.Type != null);
 
-                if (initialValue.AsUInt64 != 0 && !(f.Type is AutoType))
+                ScriptValue initialValue = default;
+                if (f.Type is AutoType)
+                {
+                    initialValue = decl switch
+                    {
+                        _ when decl.@float() != null => new ScriptValue { AsFloat = ParseFloat.Visit(decl.@float()) },
+                        _ when decl.integer() != null => new ScriptValue { AsUInt64 = ParseUnsignedInteger.Visit(decl.integer()) },
+                        _ => default
+                    };
+                }
+                else if (decl.@float() != null || decl.integer() != null)
                 {
                     throw new InvalidOperationException("Only static fields of type AUTO can have initializers");
                 }

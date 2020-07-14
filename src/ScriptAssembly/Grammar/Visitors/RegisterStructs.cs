@@ -6,6 +6,7 @@
     using Antlr4.Runtime.Misc;
     using ScTools.ScriptAssembly.Definitions;
     using ScTools.ScriptAssembly.Types;
+    using ScTools.GameFiles;
 
     public sealed class RegisterStructs : ScAsmBaseVisitor<StructType[]>
     {
@@ -34,7 +35,30 @@
             {
                 var (s, initialUnresolved) = queuedStructs.Dequeue();
 
-                var fields = s.fieldDecl().Select(f => ParseFieldDecl.Visit(f, registry));
+                var fields = s.fieldDeclWithInitializer().Select(decl =>
+                {
+                    var (name, typeName, type) = ParseFieldDecl.Visit(decl.fieldDecl(), registry);
+
+                    ScriptValue? initialValue = null;
+                    if (type != null)
+                    {
+                        if (type is AutoType)
+                        {
+                            initialValue = decl switch
+                            {
+                                _ when decl.@float() != null => new ScriptValue { AsFloat = ParseFloat.Visit(decl.@float()) },
+                                _ when decl.integer() != null => new ScriptValue { AsUInt64 = ParseUnsignedInteger.Visit(decl.integer()) },
+                                _ => null,
+                            };
+                        }
+                        else if (decl.@float() != null || decl.integer() != null)
+                        {
+                            throw new InvalidOperationException("Only fields of type AUTO can have initializers");
+                        }
+                    }
+
+                    return (Name: name, TypeName: typeName, Type: type, InitialValue: initialValue);
+                });
 
                 int unresolved = fields.Count(f => f.Type == null);
                 if (unresolved > 0)
@@ -50,7 +74,7 @@
                 }
                 else
                 {
-                    structs[i++] = registry.Types.RegisterStruct(s.identifier().GetText(), fields.Select(f => new StructField(f.Name, f.Type)));
+                    structs[i++] = registry.Types.RegisterStruct(s.identifier().GetText(), fields.Select(f => new StructField(f.Name, f.Type, f.InitialValue)));
                 }
             }
 

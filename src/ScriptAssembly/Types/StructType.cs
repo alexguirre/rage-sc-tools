@@ -4,6 +4,8 @@
     using System.Linq;
     using System.Collections.Generic;
     using System.Collections.Immutable;
+    using ScTools.GameFiles;
+    using System.Diagnostics;
 
     public sealed class StructType : TypeBase
     {
@@ -50,11 +52,15 @@
     {
         public string Name { get; }
         public TypeBase Type { get; }
+        public ScriptValue? InitialValue { get; }
 
-        public StructField(string name, TypeBase type)
+        public StructField(string name, TypeBase type, ScriptValue? initialValue = null)
         {
+            Debug.Assert(!initialValue.HasValue ||(initialValue.HasValue && type is AutoType));
+
             Name = !string.IsNullOrWhiteSpace(name) ? name : throw new ArgumentException("null or empty string", nameof(name));
             Type = type ?? throw new ArgumentNullException(nameof(type));
+            InitialValue = initialValue;
         }
     }
 }
