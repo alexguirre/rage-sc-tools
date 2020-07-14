@@ -7,8 +7,12 @@ STRUCT Vec3 BEGIN
 END
 
 STRUCT SimplerStruct BEGIN
-    a: Vec3
     b: AUTO
+    c: AUTO[2]
+END
+
+STRUCT SixNumbers BEGIN
+    values: AUTO[6]
 END
 
 STRUCT ComplexStruct BEGIN 
@@ -16,6 +20,7 @@ STRUCT ComplexStruct BEGIN
     a: AUTO[5]
     simpler1: SimplerStruct
     simpler2: SimplerStruct
+    z: SixNumbers[5]
 END
 
 STATICS BEGIN 
