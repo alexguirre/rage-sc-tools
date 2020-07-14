@@ -9,6 +9,7 @@
     {
         public override uint SizeOf => (uint)Fields.Sum(f => f.Type.SizeOf);
 
+        // TODO: struct fields initial values
         public ImmutableArray<StructField> Fields { get; }
         public ImmutableArray<uint> Offsets { get; }
 

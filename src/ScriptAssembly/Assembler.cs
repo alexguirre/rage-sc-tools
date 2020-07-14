@@ -25,6 +25,7 @@
         public StringPagesBuilder Strings { get; } = new StringPagesBuilder();
         public IList<ulong> NativeHashes { get; } = new List<ulong>();
         public Dictionary<string, uint> Statics { get; } = new Dictionary<string, uint>();
+        public ScriptValue[] StaticValues => sc.Statics;
         public Registry Symbols { get; } = new Registry();
 
         public AssemblerContext(Script sc)
@@ -239,22 +240,9 @@
                     {
                         c.Statics.Add(sf.Name, offset);
 
-                        if (sf.Type is ArrayType arr)
-                        {
-                            c.SetStaticValue(offset, (int)arr.Length);
-                            // TODO: can Array item have initial values?
-                        }
-                        else if (sf.Type is StructType s)
-                        {
-                            // TODO: can Structs have initial values?
-                            // TODO: initialize arrays inside structs
-                        }
-                        else
-                        {
-                            c.SetStaticValue(offset, (int)sf.InitialValue.AsUInt32);
-                        }
-
-                        offset += sf.Type.SizeOf;
+                        uint size = sf.Type.SizeOf;
+                        sf.InitializeValue(c.StaticValues.AsSpan()[(int)offset..(int)(offset + size)]);
+                        offset += size;
                     }
 
                     uint offset = 0;
@@ -275,10 +263,7 @@
                     d.Accept(directiveVisitor);
                 }
 
-                // TODO: directives
                 // TODO: globals
-                // TODO: high level instructions
-                // TODO: generate prologue/epilogue of non-naked functions
 
                 if (!reg.Functions.Any(f => f.IsEntrypoint))
                 {
