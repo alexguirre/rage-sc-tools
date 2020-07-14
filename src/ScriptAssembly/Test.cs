@@ -99,9 +99,14 @@
             //using TextWriter wr = new StreamWriter("re_bus_tours.scasm");
             //Disassembler.Print(wr, ysc2.Script, funcs2);
 
+            NativeDB n;
+            using (var a = new BinaryReader(File.OpenRead("natives.scndb")))
+            {
+                n = NativeDB.Load(a);
+            }
 
             YscFile ysc2 = new YscFile();
-            ysc2.Script = Assembler.Assemble(File.ReadAllText("test_high_level.scasm"));
+            ysc2.Script = Assembler.Assemble(File.ReadAllText("test_high_level.scasm"), n, default);
 
             string outputPath = "test_high_level.ysc";
             byte[] data = ysc2.Save(Path.GetFileName(outputPath));
@@ -398,7 +403,7 @@
                     LOCAL_U8_LOAD 2     ; push the return value to the stack
                     LEAVE 0 1
             END
-            ");
+            ", null, default);
 
             ;
 

@@ -108,7 +108,7 @@
 
                     c.SetStaticValue(o[0].U32, o[1].F32);
                 }),
-            new Directive("HASH", // tmp directive until we figure out how to calculate this hash automatically
+            new Directive("SIGNATURE_HASH", // tmp directive until we figure out how to calculate this hash automatically
                 (in Directive d, AssemblerContext c, ReadOnlySpan<Operand> o) =>
                 {
                     if (o.Length != 1 || o[0].Type != OperandType.U32)
@@ -161,12 +161,12 @@
             new Directive("NATIVE_DEF",
                 (in Directive d, AssemblerContext c, ReadOnlySpan<Operand> o) =>
                 {
-                    if (o.Length != 1 || o[0].Type != OperandType.U64)
+                    if (o.Length != 1 || (o[0].Type != OperandType.U64 && o[0].Type != OperandType.U32))
                     {
                         throw IncorrectOperands;
                     }
-                    
-                    c.AddNative(o[0].U64);
+
+                    c.AddNative(o[0].U64 == 0 ? o[0].U32 : o[0].U64);
                 }),
         });
     }

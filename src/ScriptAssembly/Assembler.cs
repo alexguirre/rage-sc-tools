@@ -28,13 +28,12 @@
         public ScriptValue[] StaticValues => sc.Statics;
         public Registry Symbols { get; } = new Registry();
 
-        public AssemblerContext(Script sc)
+        public AssemblerContext(Script sc, NativeDB nativeDB, CodeGenOptions codeGenOptions)
         {
             this.sc = sc ?? throw new ArgumentNullException(nameof(sc));
             Code = new CodeBuilder(this);
-
-            using var a = new BinaryReader(File.OpenRead("natives.scndb"));
-            NativeDB = NativeDB.Load(a);
+            NativeDB = nativeDB;
+            CodeGenOptions = codeGenOptions;
         }
 
         public void SetName(string name)
@@ -191,7 +190,7 @@
 
     internal static partial class Assembler
     {
-        public static Script Assemble(string input)
+        public static Script Assemble(string input, NativeDB nativeDB, CodeGenOptions codeGenOptions)
         {
             AntlrInputStream inputStream = new AntlrInputStream(input);
 
@@ -199,11 +198,20 @@
             CommonTokenStream tokens = new CommonTokenStream(lexer);
             ScAsmParser parser = new ScAsmParser(tokens);
 
-            return parser.script().Accept(new ScriptVisitor());
+            return parser.script().Accept(new ScriptVisitor(nativeDB, codeGenOptions));
         }
 
         private sealed class ScriptVisitor : ScAsmBaseVisitor<Script>
         {
+            private readonly NativeDB nativeDB;
+            private readonly CodeGenOptions codeGenOptions;
+
+            public ScriptVisitor(NativeDB nativeDB, CodeGenOptions codeGenOptions)
+            {
+                this.nativeDB = nativeDB;
+                this.codeGenOptions = codeGenOptions;
+            }
+
             public override Script VisitScript([NotNull] ScAsmParser.ScriptContext context)
             {
                 const string DefaultName = "unknown";
@@ -220,7 +228,7 @@
                     StringsLength = 0,
                 };
 
-                var assemblerContext = new AssemblerContext(sc);
+                var assemblerContext = new AssemblerContext(sc, nativeDB, codeGenOptions);
 
                 var reg = assemblerContext.Symbols;
                 RegisterStructs.Visit(context, reg);

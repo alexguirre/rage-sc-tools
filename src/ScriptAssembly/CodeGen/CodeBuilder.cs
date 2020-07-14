@@ -265,7 +265,7 @@
             if (offset + buffer.Count > (page.Length - (needsNopAtBoundary ? 1 : 0))) // the instruction doesn't fit in the current page
             {
                 const uint JumpInstructionSize = 3;
-                if (buffer.Count > JumpInstructionSize)
+                if ((page.Length - offset) > JumpInstructionSize)
                 {
                     // if there is enough space for a J instruction, add it to jump to the next page
                     uint jumpIP = Script.MaxPageLength * (pageIndex + 1);

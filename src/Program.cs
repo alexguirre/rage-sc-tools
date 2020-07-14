@@ -12,17 +12,14 @@
     using System.Threading.Tasks;
     using System.Diagnostics;
     using System.Linq;
+    using ScTools.ScriptAssembly;
+    using ScTools.ScriptAssembly.CodeGen;
+    using ScTools.ScriptAssembly.Disassembly;
 
     internal static class Program
     {
         private static int Main(string[] args)
         {
-            LoadGTA5Keys();
-            Thread.CurrentThread.CurrentCulture = CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
-            ScTools.ScriptAssembly.Test.DoTest();
-
-            return 0;
-
             Thread.CurrentThread.CurrentCulture = CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 
             var rootCmd = new RootCommand("Tool for working with Grand Theft Auto V script files (.ysc).");
@@ -125,27 +122,26 @@
 
             YscFile ysc = new YscFile();
 
-            //try
-            //{
-            //    NativeDB nativeDB = null;
-            //    if (o.NativeDB != null)
-            //    {
-            //        using var reader = new BinaryReader(o.NativeDB.OpenRead());
-            //        nativeDB = NativeDB.Load(reader);
-            //    }
+            try
+            {
+                NativeDB nativeDB = null;
+                if (o.NativeDB != null)
+                {
+                    using var reader = new BinaryReader(o.NativeDB.OpenRead());
+                    nativeDB = NativeDB.Load(reader);
+                }
 
-            //    Script sc = new Assembler(new AssemblerOptions(includeFunctionNames: o.FunctionNames),
-            //                              nativeDB)
-            //                .Assemble(o.Input);
-            //    ysc.Script = sc;
-            //}
-            //catch (AssemblerSyntaxException e)
-            //{
-            //    Console.ForegroundColor = ConsoleColor.Red;
-            //    Console.Error.Write(e.UserMessage);
-            //    Console.ForegroundColor = ConsoleColor.White;
-            //    return;
-            //}
+                string source = File.ReadAllText(o.Input.FullName);
+                Script sc = Assembler.Assemble(source, nativeDB, new CodeGenOptions(includeFunctionNames: o.FunctionNames));
+                ysc.Script = sc;
+            }
+            catch (Exception e) // TODO: improve assembler error messages
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Error.Write(e.ToString());
+                Console.ForegroundColor = ConsoleColor.White;
+                return;
+            }
 
             string outputPath = Path.Combine(o.Output.FullName, Path.GetFileName(Path.ChangeExtension(o.Input.FullName, "ysc")));
             byte[] data = ysc.Save(Path.GetFileName(outputPath));
@@ -166,10 +162,11 @@
             ysc.Load(fileData);
 
             Script sc = ysc.Script;
+            var disassembly = Disassembler.Disassemble(sc);
 
             const int BufferSize = 1024 * 1024 * 32; // 32mb
             using TextWriter w = new StreamWriter(output.Open(FileMode.Create), Encoding.UTF8, BufferSize) { AutoFlush = false };
-            new Disassembler(sc).Disassemble(w);
+            Disassembler.Print(w, sc, disassembly);
         }
 
         private class DumpOptions

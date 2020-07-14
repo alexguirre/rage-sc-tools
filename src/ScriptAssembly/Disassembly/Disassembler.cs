@@ -92,7 +92,7 @@
 
             if (sc.Hash != 0)
             {
-                w.WriteLine("$HASH 0x{0:X8}", sc.Hash);
+                w.WriteLine("$SIGNATURE_HASH 0x{0:X8}", sc.Hash);
             }
             if (sc.GlobalsLengthAndBlock != 0 && sc.GlobalsPages != null)
             {
