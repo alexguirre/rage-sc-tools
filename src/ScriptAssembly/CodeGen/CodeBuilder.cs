@@ -114,7 +114,7 @@
 
         private void EmitPrologue()
         {
-            // TODO: verify, all ENTER instructions seem to have at least 2 locals (for return address + something else?)
+            // every function needs at least 2 locals (return address + function frame number)
             const uint MinLocals = 2;
 
             uint argsSize = (uint)currentFunction.Args.Sum(a => a.Type.SizeOf);
