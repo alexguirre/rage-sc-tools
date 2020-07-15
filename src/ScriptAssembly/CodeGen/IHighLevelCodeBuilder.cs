@@ -19,7 +19,7 @@
         /// <param name="operands">The operands of the instruction.</param>
         public void Emit(Opcode opcode, ReadOnlySpan<Operand> operands);
 
-        public uint AddOrGetString(ReadOnlySpan<char> str);
+        public uint AddOrGetString(string str);
         public ushort AddOrGetNative(ulong hash);
 
         public uint GetStaticOffset(string name);

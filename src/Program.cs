@@ -22,6 +22,13 @@
         {
             Thread.CurrentThread.CurrentCulture = CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 
+#if DEBUG
+            LoadGTA5Keys();
+
+            Test.DoTest();
+            return 0;
+#endif
+
             var rootCmd = new RootCommand("Tool for working with Grand Theft Auto V script files (.ysc).");
 
             Command dump = new Command("dump")

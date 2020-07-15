@@ -184,8 +184,8 @@
             return AddNative(hash);
         }
 
-        public uint AddString(ReadOnlySpan<char> str) => Strings.Add(str);
-        public uint AddOrGetString(ReadOnlySpan<char> str) => Strings.Add(str); // TODO: handle repeated strings
+        public uint AddString(string str) => Strings.Add(str);
+        public uint AddOrGetString(string str) => Strings.AddOrGet(str);
     }
 
     internal static partial class Assembler

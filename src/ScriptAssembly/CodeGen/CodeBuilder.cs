@@ -407,7 +407,7 @@
 
         void IHighLevelCodeBuilder.Emit(Opcode opcode, ReadOnlySpan<Operand> operands) => Emit(opcode, operands);
 
-        uint IHighLevelCodeBuilder.AddOrGetString(ReadOnlySpan<char> str) => context.AddOrGetString(str);
+        uint IHighLevelCodeBuilder.AddOrGetString(string str) => context.AddOrGetString(str);
         ushort IHighLevelCodeBuilder.AddOrGetNative(ulong hash) => context.AddOrGetNative(hash);
 
         uint IHighLevelCodeBuilder.GetStaticOffset(string name) => context.GetStaticOffset(name);

@@ -7,9 +7,10 @@
     public class StringPagesBuilder
     {
         private readonly List<byte[]> pages = new List<byte[]>();
+        private readonly Dictionary<string, uint> addedStrings = new Dictionary<string, uint>();
         private uint length = 0;
 
-        public uint Add(ReadOnlySpan<byte> chars)
+        private uint Add(ReadOnlySpan<byte> chars)
         {
             uint strLength = (uint)chars.Length + 1; // + null terminator
 
@@ -42,10 +43,11 @@
             page[offset + chars.Length] = 0; // null terminator
             uint id = length;
             length += strLength;
+
             return id;
         }
 
-        public uint Add(ReadOnlySpan<char> str)
+        private uint Add(ReadOnlySpan<char> str)
         {
             const int MaxStackLimit = 0x200;
             int byteCount = System.Text.Encoding.UTF8.GetByteCount(str);
@@ -54,7 +56,14 @@
             return Add(buffer);
         }
 
-        public uint Add(string str) => Add(str.AsSpan());
+        public uint Add(string str)
+        {
+            uint offset = Add(str.AsSpan());
+            addedStrings.TryAdd(str, offset);
+            return offset;
+        }
+
+        public uint AddOrGet(string str) => addedStrings.TryGetValue(str, out var offset) ? offset : Add(str);
 
         public ScriptPage<byte>[] ToPages(out uint stringsLength)
         {

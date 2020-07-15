@@ -215,7 +215,7 @@
             code.Emit(inst.Item1, inst.Item2);
         }
 
-        private static void EmitPushString(ReadOnlySpan<char> str, Code code)
+        private static void EmitPushString(string str, Code code)
         {
             uint strId = code.AddOrGetString(str);
             EmitPushUInt(strId, code);
