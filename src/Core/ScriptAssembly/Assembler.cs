@@ -188,7 +188,7 @@
         public uint AddOrGetString(string str) => Strings.AddOrGet(str);
     }
 
-    internal static partial class Assembler
+    public static class Assembler
     {
         public static Script Assemble(string input, NativeDB nativeDB, CodeGenOptions codeGenOptions)
         {

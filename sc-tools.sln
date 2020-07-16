@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30011.22
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "sc-tools", "src\sc-tools.csproj", "{A58329C4-FB85-4189-90DC-E324D2A9D033}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Core", "src\Core\Core.csproj", "{A58329C4-FB85-4189-90DC-E324D2A9D033}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cli", "src\Cli\Cli.csproj", "{CB55BE86-E482-4FD6-89C5-FCAEB4EDA853}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{A58329C4-FB85-4189-90DC-E324D2A9D033}.Debug|x64.Build.0 = Debug|x64
 		{A58329C4-FB85-4189-90DC-E324D2A9D033}.Release|x64.ActiveCfg = Release|x64
 		{A58329C4-FB85-4189-90DC-E324D2A9D033}.Release|x64.Build.0 = Release|x64
+		{CB55BE86-E482-4FD6-89C5-FCAEB4EDA853}.Debug|x64.ActiveCfg = Debug|x64
+		{CB55BE86-E482-4FD6-89C5-FCAEB4EDA853}.Debug|x64.Build.0 = Debug|x64
+		{CB55BE86-E482-4FD6-89C5-FCAEB4EDA853}.Release|x64.ActiveCfg = Release|x64
+		{CB55BE86-E482-4FD6-89C5-FCAEB4EDA853}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -5,7 +5,7 @@
     using System.Collections.Generic;
     using CodeWalker.GameFiles;
 
-    internal class YscFile : GameFile, PackedFile
+    public class YscFile : GameFile, PackedFile
     {
         public const GameFileType FileType = (GameFileType)27;
         public const int FileVersion = 10;

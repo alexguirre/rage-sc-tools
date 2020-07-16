@@ -7,7 +7,7 @@
     using ScTools.GameFiles;
     using ScTools.ScriptAssembly;
 
-    internal class Dumper
+    public class Dumper
     {
         public Script Script { get; }
 

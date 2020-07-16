@@ -216,7 +216,7 @@
         private static async Task FetchNativeDb(FetchNativeDbOptions o)
         {
             NativeDB db = await NativeDB.Fetch(o.CrossMapUrl, o.NativeDbUrl);
-            
+
             using var w = new BinaryWriter(o.Output.Open(FileMode.Create));
             db.Save(w);
 

@@ -1,8 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <OutputType>Library</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
+    <AssemblyName>ScTools.Core</AssemblyName>
     <RootNamespace>ScTools</RootNamespace>
     <LangVersion>8.0</LangVersion>
     <Platforms>x64</Platforms>
@@ -12,17 +13,16 @@
   <ItemGroup>
     <PackageReference Include="Antlr4.Runtime.Standard" Version="4.8.0" />
     <PackageReference Include="SharpDX.Mathematics" Version="4.2.0" />
-    <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.20303.1" />
   </ItemGroup>
 
   <ItemGroup>
     <Reference Include="CodeWalker.Core">
-      <HintPath>..\dependencies\CodeWalker.Core.dll</HintPath>
+      <HintPath>..\..\dependencies\CodeWalker.Core.dll</HintPath>
     </Reference>
   </ItemGroup>
 
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-    <Exec Command="java -jar ../tools/antlr-4.8-complete.jar -o ScriptAssembly/Grammar/Generated/ -package ScTools.ScriptAssembly.Grammar -visitor -no-listener -Dlanguage=CSharp ScriptAssembly/Grammar/ScAsm.g4" />
+    <Exec Command="java -jar ../../tools/antlr-4.8-complete.jar -o ScriptAssembly/Grammar/Generated/ -package ScTools.ScriptAssembly.Grammar -visitor -no-listener -Dlanguage=CSharp ScriptAssembly/Grammar/ScAsm.g4" />
   </Target>
 
 </Project>
