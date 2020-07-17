@@ -188,7 +188,7 @@
                 6 => (Opcode.PUSH_CONST_6, Array.Empty<Operand>()),
                 7 => (Opcode.PUSH_CONST_7, Array.Empty<Operand>()),
                 _ when v <= byte.MaxValue => (Opcode.PUSH_CONST_U8, new[] { new Operand(v) }),
-                _ when v <= ushort.MaxValue => (Opcode.PUSH_CONST_S16, new[] { new Operand(v) }),
+                _ when v <= short.MaxValue => (Opcode.PUSH_CONST_S16, new[] { new Operand(v) }),
                 _ when v <= 0x00FFFFFF => (Opcode.PUSH_CONST_U24, new[] { new Operand(v) }),
                 _ => (Opcode.PUSH_CONST_U32, new[] { new Operand(v) }),
             };
