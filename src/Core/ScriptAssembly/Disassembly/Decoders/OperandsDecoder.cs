@@ -4,6 +4,7 @@
     using System.Diagnostics;
     using System.Collections.Generic;
     using ScTools.GameFiles;
+    using System.Linq;
 
     public class OperandsDecoder : IInstructionDecoder
     {
@@ -11,7 +12,7 @@
         private readonly Script script;
         private readonly IList<Function> functions;
         private Function currentFunction;
-        private Location currentLocation;
+        private InstructionLocation currentLocation;
 
         public OperandsDecoder(Script script, IList<Function> functions)
         {
@@ -19,10 +20,10 @@
             this.functions = functions ?? throw new ArgumentNullException(nameof(functions));
         }
 
-        public void BeginInstruction(Function func, Location loc)
+        public void BeginInstruction(Function func, InstructionLocation loc)
         {
             Debug.Assert(func != null);
-            Debug.Assert(loc.HasInstruction);
+            Debug.Assert(loc != null);
 
             currentFunction = func;
             currentLocation = loc;
@@ -81,17 +82,6 @@
             operands.Add(new Operand((value, label)));
         }
 
-        private string GetLabel(uint ip)
-        {
-            for (int i = 0; i < currentFunction.Code.Count; i++)
-            {
-                if (currentFunction.Code[i].IP == ip)
-                {
-                    return currentFunction.Code[i].Label;
-                }
-            }
-
-            return null;
-        }
+        private string GetLabel(uint ip) => currentFunction.CodeStart.EnumerateForward().FirstOrDefault(l => l.IP == ip)?.Label;
     }
 }

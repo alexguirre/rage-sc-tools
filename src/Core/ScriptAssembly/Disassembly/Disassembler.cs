@@ -173,36 +173,38 @@
                 // Functions at page boundaries may not start with an ENTER instruction as ExploreByteCode assumes.
                 // They may have NOPs and a J before the ENTER, here explore backwards from the start of the currFunc
                 // to see if this is the case, if so, add this instruction to currFunc and remove them from prevFunc and just the StartIP and EndIP
-                int k = prevFunc.Code.Count - 1;
-                while (k >= 0 && prevFunc.Code[k].Opcode == Opcode.NOP)
-                {
-                    k--;
-                }
-
                 bool changeFuncBounds = false;
+                var prevLast = (InstructionLocation)prevFunc.CodeEnd.EnumerateBackwards().SkipWhile(l => !(l is InstructionLocation iloc) || iloc.Opcode == Opcode.NOP).First();
 
-                Location prevLast = prevFunc.Code[k];
                 if (prevLast.Opcode == Opcode.J && // is there a jump to the ENTER instruction?
                     sc.IP<short>(prevLast.IP + 1) == (currFunc.StartIP - (prevLast.IP + 3)))
                 {
                     changeFuncBounds = true;
                 }
-                else if (k < prevFunc.Code.Count - 1 && (prevFunc.Code[k + 1].Opcode == Opcode.NOP))
+                else if (prevLast != prevFunc.CodeEnd && (prevLast.NextInstruction()?.Opcode == Opcode.NOP))
                 {
-                    k++;
-                    prevLast = prevFunc.Code[k];
-                    changeFuncBounds = true;
+                    var next = prevLast.NextInstruction();
+                    if (next?.Opcode == Opcode.NOP)
+                    {
+                        prevLast = next;
+                        changeFuncBounds = true;
+                    }
                 }
 
                 if (changeFuncBounds)
                 {
-                    // add the instructions to the current functions
-                    currFunc.Code.InsertRange(0, prevFunc.Code.Skip(k));
-                    currFunc.StartIP = prevLast.IP;
-
-                    // and remove them from the previous
-                    prevFunc.Code.RemoveRange(k, prevFunc.Code.Count - k);
+                    // remove the instruction from the previous function
+                    prevFunc.CodeEnd = prevLast.Previous;
+                    prevFunc.CodeEnd.Next = null;
                     prevFunc.EndIP = prevLast.IP;
+
+                    // and add them to the current function
+                    var oldHead = currFunc.CodeStart;
+                    currFunc.CodeStart = prevLast;
+                    currFunc.CodeStart.Next = oldHead;
+                    currFunc.CodeStart.Previous = null;
+                    oldHead.Previous = currFunc.CodeStart;
+                    currFunc.StartIP = currFunc.CodeStart.IP;
                 }
             }
 
@@ -211,15 +213,13 @@
             {
                 ScanLabels(sc, f);
 
-                for (int i = 0; i < f.Code.Count; i++)
+                foreach (var loc in f.CodeStart.EnumerateForward())
                 {
-                    Location loc = f.Code[i];
-                    if (loc.HasInstruction)
+                    if (loc is InstructionLocation iloc)
                     {
-                        operandsDecoder.BeginInstruction(f, loc);
-                        loc.Opcode.Instruction().Decode(operandsDecoder);
-                        loc.Operands = operandsDecoder.EndInstruction();
-                        f.Code[i] = loc;
+                        operandsDecoder.BeginInstruction(f, iloc);
+                        iloc.Opcode.Instruction().Decode(operandsDecoder);
+                        iloc.Operands = operandsDecoder.EndInstruction();
                     }
                 }
             }
@@ -228,7 +228,8 @@
         private static List<Function> ExploreByteCode(Script sc)
         {
             List<Function> functions = new List<Function>(1024);
-            List<Location> codeBuffer = new List<Location>(4096);
+            Location codeStart = null;
+            Location codeCurr = null;
             Function currentFunction = null;
 
             void BeginFunction(uint ip)
@@ -262,16 +263,20 @@
                     _ => currentFunction.StartIP.ToString("func_000000")
                 };
 
-                codeBuffer.Clear();
+                codeStart = null;
+                codeCurr = null;
             }
 
             void EndFunction(uint ip)
             {
                 Debug.Assert(currentFunction != null);
 
-                currentFunction.Code = codeBuffer.ToList();
+                currentFunction.CodeStart = codeStart;
+                currentFunction.CodeEnd = codeCurr;
                 currentFunction.EndIP = ip;
                 currentFunction = null;
+                codeStart = null;
+                codeCurr = null;
             }
 
             void AddInstructionAt(uint ip)
@@ -293,7 +298,18 @@
                     BeginFunction(ip);
                 }
 
-                codeBuffer.Add(new Location(ip, (Opcode)opcode));
+                var l = new InstructionLocation(ip, (Opcode)opcode);
+                if (codeStart == null)
+                {
+                    codeStart = l;
+                    codeCurr = codeStart;
+                }
+                else
+                {
+                    codeCurr.Next = l;
+                    l.Previous = codeCurr;
+                    codeCurr = l;
+                }
             }
 
 
@@ -319,33 +335,27 @@
             {
                 if (labelIP == func.EndIP)
                 {
-                    Location last = func.Code[^1];
+                    Location last = func.CodeEnd;
                     if (last.IP != func.EndIP)
                     {
-                        last = new Location(labelIP, LabelToString(labelIP));
-                        func.Code.Add(last);
-                        func.Labels.Add(last.Label, last.IP);
+                        func.CodeEnd = last.Next = new EmptyLocation(labelIP, LabelToString(labelIP));
                     }
                     else if (last.Label == null)
                     {
                         last.Label = LabelToString(labelIP);
-                        func.Code[^1] = last;
-                        func.Labels.Add(last.Label, last.IP);
                     }
                 }
                 else
                 {
-                    for (int i = 0; i < func.Code.Count; i++)
+                    foreach (var loc in func.CodeStart.EnumerateForward())
                     {
-                        Location loc = func.Code[i];
                         if (labelIP == loc.IP)
                         {
                             if (loc.Label == null)
                             {
                                 loc.Label = LabelToString(labelIP);
-                                func.Code[i] = loc;
-                                func.Labels.Add(loc.Label, loc.IP);
                             }
+
                             return;
                         }
                         else if (loc.IP > labelIP)
@@ -359,11 +369,14 @@
                 }
             }
 
-            func.Labels = new Dictionary<string, uint>();
-
-            foreach (Location loc in func.Code.ToArray()) // TODO: AddLabel modifies the Code list so we can't iterate through it, find some cleaner solution than copying the whole list
+            foreach (Location loc in func.CodeStart.EnumerateForward())
             {
-                Opcode inst = loc.Opcode;
+                if (!(loc is InstructionLocation iloc))
+                {
+                    continue;
+                }
+
+                Opcode inst = iloc.Opcode;
 
                 if (inst == Opcode.SWITCH)
                 {
@@ -386,6 +399,8 @@
                     AddLabel(func, (uint)(sc.IP<short>(loc.IP + 1) + loc.IP + 3));
                 }
             }
+
+            func.RebuildLabelsDictionary();
         }
     }
 }

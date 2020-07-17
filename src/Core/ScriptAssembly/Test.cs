@@ -21,20 +21,29 @@
             yield return new Function()
             {
                 Name = "func_naked",
-                Code = new List<Location> { new Location(0, Opcode.NOP), new Location(1, Opcode.NOP) },
+                CodeStart = new InstructionLocation(0, Opcode.NOP)
+                {
+                    Next = new InstructionLocation(1, Opcode.NOP)
+                },
             };
 
             yield return new Function()
             {
                 Name = "func_nonnaked",
-                Code = new List<Location> { new Location(0, Opcode.NOP), new Location(1, Opcode.NOP) },
+                CodeStart = new InstructionLocation(0, Opcode.NOP)
+                {
+                    Next = new InstructionLocation(1, Opcode.NOP)
+                },
                 Naked = false,
             };
 
             yield return new Function()
             {
                 Name = "func_with_args",
-                Code = new List<Location> { new Location(0, Opcode.NOP), new Location(1, Opcode.NOP) },
+                CodeStart = new InstructionLocation(0, Opcode.NOP)
+                {
+                    Next = new InstructionLocation(1, Opcode.NOP)
+                },
                 Naked = false,
                 Arguments = new List<Argument>
                 { 
@@ -46,7 +55,10 @@
             yield return new Function()
             {
                 Name = "func_with_return",
-                Code = new List<Location> { new Location(0, Opcode.NOP), new Location(1, Opcode.NOP) },
+                CodeStart = new InstructionLocation(0, Opcode.NOP)
+                {
+                    Next = new InstructionLocation(1, Opcode.NOP)
+                },
                 Naked = false,
                 ReturnType = AutoType.Instance
             };
@@ -54,7 +66,10 @@
             yield return new Function()
             {
                 Name = "func_with_locals",
-                Code = new List<Location> { new Location(0, Opcode.NOP), new Location(1, Opcode.NOP) },
+                CodeStart = new InstructionLocation(0, Opcode.NOP)
+                {
+                    Next = new InstructionLocation(1, Opcode.NOP)
+                },
                 Naked = false,
                 Locals = new List<Local>
                 {
@@ -66,7 +81,10 @@
             yield return new Function()
             {
                 Name = "func_with_all",
-                Code = new List<Location> { new Location(0, Opcode.NOP), new Location(1, Opcode.NOP) },
+                CodeStart = new InstructionLocation(0, Opcode.NOP)
+                {
+                    Next = new InstructionLocation(1, Opcode.NOP)
+                },
                 Naked = false,
                 Arguments = new List<Argument>
                 {
@@ -108,57 +126,57 @@
             //return;
 
 
-            {
-                NativeDB n;
-                using (var a = new BinaryReader(File.OpenRead("natives.scndb")))
-                {
-                    n = NativeDB.Load(a);
-                }
+            //{
+            //    NativeDB n;
+            //    using (var a = new BinaryReader(File.OpenRead("natives.scndb")))
+            //    {
+            //        n = NativeDB.Load(a);
+            //    }
 
-                YscFile ysc2 = new YscFile();
-                ysc2.Script = Assembler.Assemble(File.ReadAllText("rural_bank_heist.scasm"), n, default);
+            //    YscFile ysc2 = new YscFile();
+            //    ysc2.Script = Assembler.Assemble(File.ReadAllText("rural_bank_heist.scasm"), n, new CodeGen.CodeGenOptions(includeFunctionNames: true));
 
-                string outputPath = "rural_bank_heist.ysc";
-                byte[] data = ysc2.Save(Path.GetFileName(outputPath));
-                File.WriteAllBytes(outputPath, data);
+            //    string outputPath = "rural_bank_heist.ysc";
+            //    byte[] data = ysc2.Save(Path.GetFileName(outputPath));
+            //    File.WriteAllBytes(outputPath, data);
 
-                outputPath = Path.ChangeExtension(outputPath, "unencrypted.ysc");
-                data = ysc2.Save();
-                File.WriteAllBytes(outputPath, data);
-            }
-
-            {
-                YscFile ysc2 = new YscFile();
-                ysc2.Load(File.ReadAllBytes("rural_bank_heist.unencrypted.ysc"));
-
-                var funcs2 = Disassembler.Disassemble(ysc2.Script);
-
-                using TextWriter wr = new StreamWriter("rural_bank_heist.reassembled.scasm");
-                Disassembler.Print(wr, ysc2.Script, funcs2);
-            }
-
-
-            {
-                YscFile ysc3 = new YscFile();
-                ysc3.Load(File.ReadAllBytes("rural_bank_heist.unencrypted.ysc"));
-
-                using TextWriter w = new StreamWriter(new FileInfo("rural_bank_heist.reassembled.dump.txt").Open(FileMode.Create));
-
-                new Dumper(ysc3.Script).Dump(w, showMetadata: true, showDisassembly: true,
-                                    showOffsets: true, showBytes: true, showInstructions: true);
-            }
-
-
+            //    outputPath = Path.ChangeExtension(outputPath, "unencrypted.ysc");
+            //    data = ysc2.Save();
+            //    File.WriteAllBytes(outputPath, data);
+            //}
 
             //{
             //    YscFile ysc2 = new YscFile();
-            //    ysc2.Load(File.ReadAllBytes("rural_bank_heist.orig.ysc"));
+            //    ysc2.Load(File.ReadAllBytes("rural_bank_heist.unencrypted.ysc"));
 
             //    var funcs2 = Disassembler.Disassemble(ysc2.Script);
 
-            //    using TextWriter wr = new StreamWriter("rural_bank_heist.scasm");
+            //    using TextWriter wr = new StreamWriter("rural_bank_heist.reassembled.scasm");
             //    Disassembler.Print(wr, ysc2.Script, funcs2);
             //}
+
+
+            //{
+            //    YscFile ysc3 = new YscFile();
+            //    ysc3.Load(File.ReadAllBytes("rural_bank_heist.unencrypted.ysc"));
+
+            //    using TextWriter w = new StreamWriter(new FileInfo("rural_bank_heist.reassembled.dump.txt").Open(FileMode.Create));
+
+            //    new Dumper(ysc3.Script).Dump(w, showMetadata: true, showDisassembly: true,
+            //                        showOffsets: true, showBytes: true, showInstructions: true);
+            //}
+
+
+
+            {
+                YscFile ysc2 = new YscFile();
+                ysc2.Load(File.ReadAllBytes("rural_bank_heist.orig.ysc"));
+
+                var funcs2 = Disassembler.Disassemble(ysc2.Script);
+
+                using TextWriter wr = new StreamWriter("rural_bank_heist.NEW.scasm");
+                Disassembler.Print(wr, ysc2.Script, funcs2);
+            }
 
             return;
 

@@ -32,18 +32,24 @@
                 str += $"\t{location.Label}:";
             }
 
-            if (location.HasInstruction || location.HasHLInstruction)
+            if (location is InstructionLocation || location is HLInstructionLocation)
             {
                 if (location.Label != null)
                 {
                     str += '\n';
                 }
 
-                str += $"\t\t{(location.HasInstruction ? location.Opcode.Mnemonic() : HighLevelInstruction.Set[(byte)location.HLId].Mnemonic)}";
-                if (location.Operands.Length > 0)
+                var iLoc = location as InstructionLocation;
+                var hlLoc = location as HLInstructionLocation;
+
+                var mnemonic = iLoc?.Opcode.Mnemonic() ?? HighLevelInstruction.Set[(byte)hlLoc.InstructionId].Mnemonic;
+                var operands = iLoc?.Operands ?? hlLoc.Operands;
+
+                str += $"\t\t{mnemonic}";
+                if (operands.Length > 0)
                 {
                     str += ' ';
-                    str += PrintOperands(location.Operands);
+                    str += PrintOperands(operands);
                 }
             }
 
@@ -57,7 +63,7 @@
             Debug.Assert(function.Naked);
 
             string str = $"FUNC NAKED {function.Name} BEGIN\n";
-            str += string.Join('\n', function.Code.Select(PrintLocation));
+            str += string.Join('\n', function.CodeStart.EnumerateForward().Select(PrintLocation));
             str += "\nEND";
             return str;
         }
@@ -87,7 +93,7 @@
             {
                 str += " BEGIN\n";
             }
-            str += string.Join('\n', function.Code.Select(PrintLocation));
+            str += string.Join('\n', function.CodeStart.EnumerateForward().Select(PrintLocation));
             str += "\nEND";
             return str;
         }

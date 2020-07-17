@@ -19,21 +19,16 @@
 
         public void Analyze(Function function)
         {
-            for (int i = 0; i < function.Code.Count; i++)
+            foreach (var loc in function.CodeStart.EnumerateForward())
             {
-                Location loc = function.Code[i];
-
-                if (loc.HasInstruction && loc.Opcode == Opcode.STRING)
+                if (loc is InstructionLocation iloc && iloc.Opcode == Opcode.STRING)
                 {
                     // go back until we find the push instruction
-                    int k = i;
-                    Location prevLoc = default;
+                    InstructionLocation prevLoc = null;
                     bool found = false;
-                    while (--k >= 0)
+                    while ((prevLoc = (prevLoc ?? iloc).PreviousInstruction()) != null)
                     {
-                        prevLoc = function.Code[k];
-
-                        if (!prevLoc.HasInstruction || prevLoc.Opcode == Opcode.NOP)
+                        if (prevLoc.Opcode == Opcode.NOP)
                         {
                             continue;
                         }
@@ -61,45 +56,50 @@
 
                         uint ip = prevLoc.IP;
                         string label = prevLoc.Label;
-                        List<Location> newLoc = new List<Location>(2);
 
                         // in instructions that push multiple values we only take the last one,
                         // so we need to insert new instructions that push the other values
+                        Location newPrevLoc = null;
                         if (prevLoc.Opcode == Opcode.PUSH_CONST_U8_U8_U8)
                         {
-                            newLoc.Add(new Location(ip, Opcode.PUSH_CONST_U8_U8)
+                            newPrevLoc = new InstructionLocation(ip, Opcode.PUSH_CONST_U8_U8)
                             {
                                 Label = label,
                                 Operands = new[] { prevLoc.Operands[0], prevLoc.Operands[1] }
-                            });
+                            };
                             ip += Instruction.SizeOf(Opcode.PUSH_CONST_U8_U8);
-                            label = null;
                         }
                         else if (prevLoc.Opcode == Opcode.PUSH_CONST_U8_U8)
                         {
-                            newLoc.Add(new Location(ip, Opcode.PUSH_CONST_U8)
+                            newPrevLoc = new InstructionLocation(ip, Opcode.PUSH_CONST_U8)
                             {
                                 Label = label,
                                 Operands = new[] { prevLoc.Operands[0] }
-                            });
+                            };
                             ip += Instruction.SizeOf(Opcode.PUSH_CONST_U8);
                             label = null;
                         }
 
                         // the new high-level instruction
-                        newLoc.Add(new Location(ip, HighLevelInstruction.UniqueId.PUSH_CONST)
+                        Location newStartLoc = new HLInstructionLocation(ip, HighLevelInstruction.UniqueId.PUSH_CONST)
                         {
                             Label = label,
                             Operands = new[] { new Operand(Script.String(id), OperandType.String) }
-                        });
+                        };
+                        Location newEndLoc = newStartLoc;
 
-                        // remove the old instructions...
-                        function.Code.RemoveRange(k, i - k + 1);
-                        // ... and insert the new ones
-                        function.Code.InsertRange(k, newLoc);
+                        if (newPrevLoc != null)
+                        {
+                            newStartLoc = newPrevLoc;
+                            newStartLoc.Next = newEndLoc;
+                            newEndLoc.Previous = newStartLoc;
+                        }
 
-                        // set the new index to the first instruction after the new ones
-                        i = k + newLoc.Count;
+                        // remove the old instructions and insert the new ones
+                        prevLoc.Previous.Next = newStartLoc;
+                        newStartLoc.Previous = prevLoc.Previous;
+                        loc.Next.Previous = newEndLoc;
+                        newEndLoc.Next = loc.Next;
                     }
                     else
                     {
@@ -133,7 +133,7 @@
             }
         }
 
-        private static uint GetPushValue(Location loc)
+        private static uint GetPushValue(InstructionLocation loc)
         {
             Debug.Assert(IsPush(loc.Opcode));
 

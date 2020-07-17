@@ -17,16 +17,19 @@
 
         public void Analyze(Function function)
         {
-            for (int i = 0; i < function.Code.Count; i++)
+            foreach (var loc in function.CodeStart.EnumerateForward())
             {
-                Location loc = function.Code[i];
-
-                if (loc.HasInstruction && IsStatic(loc.Opcode))
+                if (loc is InstructionLocation iloc && IsStatic(iloc.Opcode))
                 {
-                    uint staticOffset = GetStaticOffset(loc);
+                    uint staticOffset = GetStaticOffset(iloc);
                     Static s = GetStatic(staticOffset);
-                    Location newLoc = new Location(loc.IP, GetHLReplacement(loc.Opcode)) { Label = loc.Label, Operands = new[] { new Operand(s.Name, OperandType.Identifier) } };
-                    function.Code[i] = newLoc;
+                    var newLoc = new HLInstructionLocation(loc.IP, GetHLReplacement(iloc.Opcode)) { Label = loc.Label, Operands = new[] { new Operand(s.Name, OperandType.Identifier) } };
+                    
+                    // replace loc with newLoc
+                    loc.Previous.Next = newLoc;
+                    newLoc.Previous = loc.Previous;
+                    loc.Next.Previous = newLoc;
+                    newLoc.Next = loc.Next;
                 }
             }
         }
@@ -76,7 +79,7 @@
             _ => throw new ArgumentException("Not a STATIC opcode", nameof(opcode)),
         };
 
-        private static uint GetStaticOffset(Location loc)
+        private static uint GetStaticOffset(InstructionLocation loc)
         {
             Debug.Assert(IsStatic(loc.Opcode));
 

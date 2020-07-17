@@ -21,21 +21,16 @@
 
         public void Analyze(Function function)
         {
-            for (int i = 0; i < function.Code.Count; i++)
+            foreach (var loc in function.CodeStart.EnumerateForward())
             {
-                Location loc = function.Code[i];
-
-                if (loc.HasInstruction && IsArray(loc.Opcode))
+                if (loc is InstructionLocation iloc && IsArray(iloc.Opcode))
                 {
                     // go back until we find the STATIC instruction
-                    int k = i;
-                    Location prevLoc = default;
+                    InstructionLocation prevLoc = null;
                     bool found = false;
-                    while (--k >= 0)
+                    while ((prevLoc = (prevLoc ?? iloc).PreviousInstruction()) != null)
                     {
-                        prevLoc = function.Code[k];
-
-                        if (!prevLoc.HasInstruction || prevLoc.Opcode == Opcode.NOP)
+                        if (prevLoc.Opcode == Opcode.NOP)
                         {
                             continue;
                         }
@@ -60,7 +55,7 @@
                     if (found)
                     {
                         uint staticOffset = GetStaticOffset(prevLoc);
-                        uint arrayItemSize = GetArrayItemSize(loc);
+                        uint arrayItemSize = GetArrayItemSize(iloc);
 
                         if (!changes.TryAdd(staticOffset, arrayItemSize))
                         {
@@ -154,14 +149,14 @@
             }
         }
 
-        private static uint GetArrayItemSize(Location loc)
+        private static uint GetArrayItemSize(InstructionLocation loc)
         {
             Debug.Assert(IsArray(loc.Opcode));
 
             return loc.Operands[0].U32;
         }
 
-        private static uint GetStaticOffset(Location loc)
+        private static uint GetStaticOffset(InstructionLocation loc)
         {
             Debug.Assert(IsStatic(loc.Opcode));
 
