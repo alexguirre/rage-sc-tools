@@ -5,6 +5,7 @@
     using System.IO;
     using System.Linq;
     using System.Runtime;
+    using System.Text;
     using Antlr4.Runtime;
     using Antlr4.Runtime.Misc;
     using Antlr4.Runtime.Tree;
@@ -83,6 +84,21 @@
 
         public static void DoTest()
         {
+            //{
+            //    using var w = new StreamWriter("strings_usage.txt", false, Encoding.ASCII, 1024 * 1024 * 64);
+            //    Console.SetOut(w);
+            //    foreach (var f in Directory.EnumerateFiles("allscripts\\", "*.ysc"))
+            //    {
+            //        YscFile y = new YscFile();
+            //        y.Load(File.ReadAllBytes(f));
+
+            //        Disassembler.Disassemble(y.Script);
+            //    }
+
+            //    w.Flush();
+            //    return;
+            //}
+
             //foreach (var f in F())
             //{
             //    Console.WriteLine(Printer.PrintFunction(f));
@@ -91,41 +107,58 @@
 
             //return;
 
-            //YscFile ysc2 = new YscFile();
-            //ysc2.Load(File.ReadAllBytes("re_bus_tours.orig.ysc"));
 
-            //var funcs2 = Disassembler.Disassemble(ysc2.Script);
-
-            //using TextWriter wr = new StreamWriter("re_bus_tours.scasm");
-            //Disassembler.Print(wr, ysc2.Script, funcs2);
-
-            NativeDB n;
-            using (var a = new BinaryReader(File.OpenRead("natives.scndb")))
             {
-                n = NativeDB.Load(a);
+                NativeDB n;
+                using (var a = new BinaryReader(File.OpenRead("natives.scndb")))
+                {
+                    n = NativeDB.Load(a);
+                }
+
+                YscFile ysc2 = new YscFile();
+                ysc2.Script = Assembler.Assemble(File.ReadAllText("rural_bank_heist.scasm"), n, default);
+
+                string outputPath = "rural_bank_heist.ysc";
+                byte[] data = ysc2.Save(Path.GetFileName(outputPath));
+                File.WriteAllBytes(outputPath, data);
+
+                outputPath = Path.ChangeExtension(outputPath, "unencrypted.ysc");
+                data = ysc2.Save();
+                File.WriteAllBytes(outputPath, data);
             }
 
-            YscFile ysc2 = new YscFile();
-            ysc2.Script = Assembler.Assemble(File.ReadAllText("test_high_level.scasm"), n, default);
+            {
+                YscFile ysc2 = new YscFile();
+                ysc2.Load(File.ReadAllBytes("rural_bank_heist.unencrypted.ysc"));
 
-            string outputPath = "test_high_level.ysc";
-            byte[] data = ysc2.Save(Path.GetFileName(outputPath));
-            File.WriteAllBytes(outputPath, data);
+                var funcs2 = Disassembler.Disassemble(ysc2.Script);
 
-            outputPath = Path.ChangeExtension(outputPath, "unencrypted.ysc");
-            data = ysc2.Save();
-            File.WriteAllBytes(outputPath, data);
-
+                using TextWriter wr = new StreamWriter("rural_bank_heist.reassembled.scasm");
+                Disassembler.Print(wr, ysc2.Script, funcs2);
+            }
 
 
+            {
+                YscFile ysc3 = new YscFile();
+                ysc3.Load(File.ReadAllBytes("rural_bank_heist.unencrypted.ysc"));
 
-            YscFile ysc3 = new YscFile();
-            ysc3.Load(File.ReadAllBytes("test_high_level.unencrypted.ysc"));
+                using TextWriter w = new StreamWriter(new FileInfo("rural_bank_heist.reassembled.dump.txt").Open(FileMode.Create));
 
-            using TextWriter w = new StreamWriter(new FileInfo("test_high_level.dump.txt").Open(FileMode.Create));
+                new Dumper(ysc3.Script).Dump(w, showMetadata: true, showDisassembly: true,
+                                    showOffsets: true, showBytes: true, showInstructions: true);
+            }
 
-            new Dumper(ysc3.Script).Dump(w, showMetadata: true, showDisassembly: true,
-                                showOffsets: true, showBytes: true, showInstructions: true);
+
+
+            //{
+            //    YscFile ysc2 = new YscFile();
+            //    ysc2.Load(File.ReadAllBytes("rural_bank_heist.orig.ysc"));
+
+            //    var funcs2 = Disassembler.Disassemble(ysc2.Script);
+
+            //    using TextWriter wr = new StreamWriter("rural_bank_heist.scasm");
+            //    Disassembler.Print(wr, ysc2.Script, funcs2);
+            //}
 
             return;
 
