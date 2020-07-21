@@ -97,15 +97,13 @@
             // TODO: emit PUSH_CONST_U8_U8 and PUSH_CONST_U8_U8_U8 in PUSH_CONST
             for (int k = 0; k < o.Length; k++)
             {
-                Debug.Assert(o[k].Type == OperandType.U32 ||
-                             o[k].Type == OperandType.F32 ||
-                             o[k].Type == OperandType.String);
-
                 switch (o[k].Type)
                 {
                     case OperandType.U32: EmitPushUInt(o[k].U32, c); break;
                     case OperandType.F32: EmitPushFloat(o[k].F32, c); break;
                     case OperandType.String: EmitPushString(o[k].String, c); break;
+                    case OperandType.AddrOfFunction: c.Emit(Opcode.PUSH_CONST_U24, o[k..(k + 1)]); break;
+                    default: throw new NotImplementedException();
                 }
             }
         }

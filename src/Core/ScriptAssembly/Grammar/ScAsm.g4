@@ -94,6 +94,7 @@ operator
     | K_ITEMSIZEOF '(' identifier ('.' identifier)* ')'
     | K_LENGTHOF '(' identifier ('.' identifier)* ')'
     | K_HASH '(' string ')'
+    | K_ADDROF '(' identifier ')'
     ;
 
 operandSwitchCase
@@ -134,6 +135,7 @@ K_OFFSETOF : O F F S E T O F;
 K_ITEMSIZEOF : I T E M S I Z E O F;
 K_LENGTHOF : L E N G T H O F;
 K_HASH : H A S H;
+K_ADDROF : A D D R O F;
 
 IDENTIFIER
     :   [a-zA-Z_] [a-zA-Z_0-9]*

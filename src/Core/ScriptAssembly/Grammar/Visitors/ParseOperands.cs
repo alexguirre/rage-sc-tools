@@ -39,6 +39,7 @@
                 var x when op.K_OFFSETOF() != null => OperatorOffsetOf(x.Identifiers.AsSpan()),
                 var x when op.K_ITEMSIZEOF() != null => OperatorItemSizeOf(x.Identifiers.AsSpan()),
                 var x when op.K_LENGTHOF() != null => OperatorLengthOf(x.Identifiers.AsSpan()),
+                var x when op.K_ADDROF() != null => OperatorAddrOf(x.Identifiers[0]),
                 _ when op.K_HASH() != null => OperatorHash(UnquoteString(op.@string().GetText())),
                 _ => throw new NotImplementedException()
             };
@@ -85,6 +86,8 @@
         }
 
         private Operand OperatorHash(string str) => new Operand(str.ToLowercaseHash());
+
+        private Operand OperatorAddrOf(string identifier) => new Operand(identifier, OperandType.AddrOfFunction);
 
         private TypeBase FindTypeOrVariableType(string name)
             => registry.Types.FindType(name) ??

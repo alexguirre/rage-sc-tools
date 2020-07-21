@@ -14,8 +14,9 @@
         U64,
         F32,
         Identifier,
-        SwitchCase,
+        AddrOfFunction,
         String,
+        SwitchCase,
     }
 
     public readonly struct Operand
@@ -25,6 +26,7 @@
         public ulong U64 { get; }
         public float F32 { get; }
         public string Identifier => String;
+        public string AddrOfFunction => String;
         public string String { get; }
         public (uint Value, string Label) SwitchCase { get; }
 
@@ -34,9 +36,9 @@
         public Operand(float f32) : this(OperandType.F32) { F32 = f32; }
         public Operand(string str, OperandType type) : this(type)
         {
-            if (type != OperandType.Identifier && type != OperandType.String)
+            if (type != OperandType.Identifier && type != OperandType.AddrOfFunction &&  type != OperandType.String)
             {
-                throw new ArgumentException("Incorrect OperandType for a string value. Must be Identifier or String", nameof(type));
+                throw new ArgumentException("Incorrect OperandType for a string value. Must be Identifier, AddrOfIdentifier or String", nameof(type));
             }
 
             String = str;
@@ -155,7 +157,7 @@
                 {
                     0x2D => (uint)sc.IP(ip + 4) + 5, // ENTER
                     0x62 => 6 * (uint)sc.IP(ip + 1) + 2, // SWITCH
-                    _ => throw new InvalidOperationException($"Unknown instruction 0x{inst:X} at IP {ip}"),
+                    _ => 1//throw new InvalidOperationException($"Unknown instruction 0x{inst:X} at IP {ip}"),
                 };
             }
 
@@ -310,7 +312,7 @@
         public static readonly Inst GLOBAL_U24 = new Inst(nameof(GLOBAL_U24), Opcode.GLOBAL_U24, I_u24, D_u24);
         public static readonly Inst GLOBAL_U24_LOAD = new Inst(nameof(GLOBAL_U24_LOAD), Opcode.GLOBAL_U24_LOAD, I_u24, D_u24);
         public static readonly Inst GLOBAL_U24_STORE = new Inst(nameof(GLOBAL_U24_STORE), Opcode.GLOBAL_U24_STORE, I_u24, D_u24);
-        public static readonly Inst PUSH_CONST_U24 = new Inst(nameof(PUSH_CONST_U24), Opcode.PUSH_CONST_U24, I_u24, D_u24);
+        public static readonly Inst PUSH_CONST_U24 = new Inst(nameof(PUSH_CONST_U24), Opcode.PUSH_CONST_U24, I_u24_addrof, D_u24);
         public static readonly Inst SWITCH = new Inst(nameof(SWITCH), Opcode.SWITCH, I_switch, D_switch, isControlFlow: true);
         public static readonly Inst STRING = new Inst(nameof(STRING), Opcode.STRING, I, D);
         public static readonly Inst STRINGHASH = new Inst(nameof(STRINGHASH), Opcode.STRINGHASH, I, D);
@@ -437,6 +439,22 @@
 
             c.Opcode(i.Opcode);
             c.U24(o[0].AsU24());
+        }
+
+        private static void I_u24_addrof(in Inst i, ReadOnlySpan<Operand> o, Code c)
+        {
+            CheckOperands(o.Length == 1 && (o[0].Type == OperandType.U32 || o[0].Type == OperandType.AddrOfFunction));
+
+            switch (o[0].Type)
+            {
+                case OperandType.U32: I_u24(i, o, c); break;
+                case OperandType.AddrOfFunction:
+                {
+                    c.Opcode(i.Opcode);
+                    c.FunctionTarget(o[0].AddrOfFunction);
+                }
+                break;
+            }
         }
 
         private static void D_u24(in Inst i, IInstructionDecoder d)
