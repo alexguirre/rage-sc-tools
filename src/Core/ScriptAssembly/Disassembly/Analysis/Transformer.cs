@@ -81,7 +81,7 @@
                         while (newNext.Next != null)
                         {
                             newNext = newNext.Next;
-                            next = next?.Previous;
+                            next = next?.Next;
                         }
 
                         // and link it, replacing the old location
