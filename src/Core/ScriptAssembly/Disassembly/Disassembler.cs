@@ -56,6 +56,10 @@
                 .With<PushConstSimplifier>()
                 .Process();
 
+            new Transformer(disassembled)
+                .With<PushConstReducer>()
+                .Process();
+
             return disassembled;
         }
 
