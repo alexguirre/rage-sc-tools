@@ -3,16 +3,18 @@
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.IO;
     using System.Linq;
-    using System.Reflection.Metadata.Ecma335;
     using ScTools.ScriptAssembly.Types;
 
     public static class Printer
     {
+        static Printer() => HashDict.Init(new FileInfo("hash_dictionary.txt")); // TODO: allow the user to specify the hash dictionary path
+
         public static string PrintOperand(Operand operand)
             => operand.Type switch
             {
-                OperandType.U32 => operand.U32.ToString(), // TODO: check if U32 operand value matches any hashes
+                OperandType.U32 => TryPrintHash(operand.U32) ?? operand.U32.ToString(),
                 OperandType.U64 => operand.U64.ToString(),
                 OperandType.F32 => operand.F32.ToString("0.0#######"),
                 OperandType.Identifier => operand.Identifier,
@@ -24,6 +26,13 @@
 
         public static string PrintOperands(IEnumerable<Operand> operands)
             => string.Join(" ", operands.Select(PrintOperand));
+
+        private static string TryPrintHash(uint hash)
+        {
+            var str = hash != 0 ? HashDict.Get(hash) : null;
+
+            return str == null ? null : $"HASH(\"{str.Escape()}\")";
+        }
 
         public static string PrintLocation(Location location)
         {
@@ -123,12 +132,39 @@
             str += "\nEND";
             return str;
         }
+
         public static string PrintArguments(IEnumerable<StaticArgument> args)
         {
             string str = $"ARGS BEGIN\n";
             str += string.Join('\n', args.Select(PrintStatic));
             str += "\nEND";
             return str;
+        }
+
+        private static class HashDict
+        {
+            private static readonly Dictionary<uint, string> dict = new Dictionary<uint, string>();
+            private static readonly object dictLock = new object();
+
+            public static void Init(FileInfo hashDictionaryFile)
+            {
+                hashDictionaryFile = hashDictionaryFile ?? throw new ArgumentNullException(nameof(hashDictionaryFile));
+
+                if (!hashDictionaryFile.Exists)
+                {
+                    throw new FileNotFoundException("The specified hash dictionary file does not exist", hashDictionaryFile.FullName);
+                }
+
+                lock (dictLock)
+                {
+                    foreach (var line in File.ReadAllLines(hashDictionaryFile.FullName))
+                    {
+                        dict.TryAdd(line.ToLowerInvariant().ToLowercaseHash(), line);
+                    }
+                }
+            }
+
+            public static string Get(uint hash) => dict.TryGetValue(hash, out var str) ? str : null;
         }
     }
 }
