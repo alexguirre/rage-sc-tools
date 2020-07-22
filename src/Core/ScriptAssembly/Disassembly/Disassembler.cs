@@ -32,12 +32,6 @@
 
             var disassembled = new DisassembledScript { Script = sc, Types = new TypeRegistry(), Functions = funcs, Statics = statics, Args = args };
 
-            PushStringAnalyzer analyzer = new PushStringAnalyzer(sc);
-            foreach (Function f in disassembled.Functions)
-            {
-                analyzer.Analyze(f);
-            }
-
             StaticArraysAnalyzer analyzer2 = new StaticArraysAnalyzer(disassembled);
             foreach (Function f in disassembled.Functions)
             {
@@ -50,6 +44,11 @@
             {
                 analyzer3.Analyze(f);
             }
+
+            new Transformer(disassembled)
+                .With<NopRemover>()
+                .With<PushStringSimplifier>()
+                .Process();
 
             return disassembled;
         }

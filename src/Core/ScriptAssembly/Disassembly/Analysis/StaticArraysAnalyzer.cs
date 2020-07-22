@@ -9,7 +9,7 @@
     /// <summary>
     /// Analyzes the disassembly to find array types in static variables and script arguments.
     /// </summary>
-    public class StaticArraysAnalyzer
+    public class StaticArraysAnalyzer // TODO: reimplement StaticArraysAnalyzer with ILocationVisitor if possible
     {
         public DisassembledScript Disassembly { get; }
         private Dictionary<uint, uint> changes = new Dictionary<uint, uint>(16); // key = StaticOffset, value = ArrayItemSize

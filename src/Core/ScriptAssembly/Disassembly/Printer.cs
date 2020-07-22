@@ -63,7 +63,10 @@
             Debug.Assert(function.Naked);
 
             string str = $"FUNC NAKED {function.Name} BEGIN\n";
-            str += string.Join('\n', function.CodeStart.EnumerateForward().Select(PrintLocation));
+            str += string.Join('\n', function.CodeStart.EnumerateForward()
+                                                       // skip empty locations that don't have a label
+                                                       .Where(l => !(l is EmptyLocation e) || e.Label != null)
+                                                       .Select(PrintLocation));
             str += "\nEND";
             return str;
         }

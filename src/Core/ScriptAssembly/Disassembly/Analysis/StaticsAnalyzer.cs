@@ -6,7 +6,7 @@
     using System.Linq;
     using ScTools.ScriptAssembly.Types;
 
-    public class StaticsAnalyzer
+    public class StaticsAnalyzer // TODO: reimplement StaticsAnalyzer with ILocationVisitor if possible
     {
         public DisassembledScript Disassembly { get; }
         
