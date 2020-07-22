@@ -164,7 +164,13 @@
                 }
             }
 
-            public static string Get(uint hash) => dict.TryGetValue(hash, out var str) ? str : null;
+            public static string Get(uint hash)
+            {
+                lock (dictLock)
+                {
+                    return dict.TryGetValue(hash, out var str) ? str : null;
+                }
+            }
         }
     }
 }
