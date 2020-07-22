@@ -47,6 +47,7 @@
 
             new Transformer(disassembled)
                 .With<NopRemover>()
+                .With<NativeSimplifier>()
                 .With<PushStringSimplifier>()
                 .Process();
 
@@ -129,12 +130,12 @@
             }
             w.WriteLine();
 
-            for (int i = 0; i < sc.NativesCount; i++)
-            {
-                ulong hash = sc.NativeHash(i);
-                w.WriteLine("$NATIVE_DEF 0x{0:X16}", hash);
-            }
-            w.WriteLine();
+            //for (int i = 0; i < sc.NativesCount; i++)
+            //{
+            //    ulong hash = sc.NativeHash(i);
+            //    w.WriteLine("$NATIVE_DEF 0x{0:X16}", hash);
+            //}
+            //w.WriteLine();
 
             // disabled while we use PushStringAnalyzer
             //foreach (uint id in sc.StringIds())

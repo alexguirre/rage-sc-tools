@@ -110,7 +110,8 @@
 
         private static void I_CallNative(in HLInst i, ReadOnlySpan<Operand> o, Code c)
         {
-            Debug.Assert(o.Length == 1 && o[0].Type == OperandType.Identifier);
+            Debug.Assert((o.Length == 1 && o[0].Type == OperandType.Identifier) ||
+                         (o.Length == 3 && o[0].Type == OperandType.Identifier && o[1].Type == OperandType.U32 && o[2].Type == OperandType.U32));
 
             if (c.NativeDB == null)
             {
@@ -125,8 +126,9 @@
                 throw new InvalidOperationException($"Unknown native command '{nativeName}'");
             }
 
-            byte paramCount = n.ParameterCount;
-            byte returnValueCount = n.ReturnValueCount;
+            var (paramCount, returnValueCount) = o.Length == 1 ? (n.ParameterCount, n.ReturnValueCount) :
+                                                                 (o[1].AsU8(), o[2].AsU8());
+
             ushort idx = c.AddOrGetNative(n.CurrentHash);
 
             c.Emit(Opcode.NATIVE, new[] { new Operand(paramCount), new Operand(returnValueCount), new Operand(idx) });
