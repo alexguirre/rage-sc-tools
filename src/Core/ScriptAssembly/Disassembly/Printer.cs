@@ -12,13 +12,14 @@
         public static string PrintOperand(Operand operand)
             => operand.Type switch
             {
-                OperandType.U32 => operand.U32.ToString(),
+                OperandType.U32 => operand.U32.ToString(), // TODO: check if U32 operand value matches any hashes
                 OperandType.U64 => operand.U64.ToString(),
                 OperandType.F32 => operand.F32.ToString("0.0#######"),
                 OperandType.Identifier => operand.Identifier,
                 OperandType.SwitchCase => $"{operand.SwitchCase.Value}:{operand.SwitchCase.Label}",
                 OperandType.String => $"\"{operand.String.Escape()}\"",
-                _ => throw new InvalidOperationException()
+                OperandType.AddrOfFunction => $"ADDROF({operand.AddrOfFunction})",
+                _ => throw new NotImplementedException()
             };
 
         public static string PrintOperands(IEnumerable<Operand> operands)

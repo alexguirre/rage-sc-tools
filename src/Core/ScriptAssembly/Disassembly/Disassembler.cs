@@ -50,6 +50,12 @@
                 .With<PushStringSimplifier>()
                 .Process();
 
+            // PushStringSimplifier needs to run before PushConstSimplifier because
+            // the string simplifier doesn't check for high-level PUSH_CONST instructions
+            new Transformer(disassembled)
+                .With<PushConstSimplifier>()
+                .Process();
+
             return disassembled;
         }
 
