@@ -50,8 +50,23 @@
                     //       For now, the visitors handle it, see PushStringSimplifier
                     if (newLoc == null) // if null, remove this location
                     {
-                        prev.Next = next;
-                        next.Previous = prev;
+                        if (prev != null)
+                        {
+                            prev.Next = next;
+                        }
+                        else
+                        {
+                            function.CodeStart = next;
+                        }
+
+                        if (next != null)
+                        {
+                            next.Previous = prev;
+                        }
+                        else
+                        {
+                            function.CodeEnd = prev;
+                        }
                     }
                     else // insert the new location
                     {
