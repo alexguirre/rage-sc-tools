@@ -33,12 +33,17 @@
             ushort nativeIndex = loc.Operands[2].AsU16();
 
             ulong nativeHash = context.Disassembly.Script.NativeHash(nativeIndex);
-            var cmd = nativeDB.Natives.First(n => n.CurrentHash == nativeHash);
+            var cmd = nativeDB.Natives.FirstOrDefault(n => n.CurrentHash == nativeHash);
+            if (cmd == default)
+            {
+                Console.WriteLine($"WARNING ({context.Disassembly.Script.Name}): Unknown native with hash 0x{nativeHash:X16}");
+                return loc;
+            }
 
             bool specifyArgReturnCounts = argCount != cmd.ParameterCount || returnCount != cmd.ReturnValueCount;
             
-            if (argCount != cmd.ParameterCount) { Console.WriteLine($"WARNING: {cmd.Name} has a different arg count (in disassembly: {argCount}, in nativeDB: {cmd.ParameterCount})"); }
-            if (returnCount != cmd.ReturnValueCount) { Console.WriteLine($"WARNING: {cmd.Name} has a different return value count (in disassembly: {returnCount}, in nativeDB: {cmd.ReturnValueCount})"); }
+            if (argCount != cmd.ParameterCount) { Console.WriteLine($"WARNING ({context.Disassembly.Script.Name}): {cmd.Name} has a different arg count (in disassembly: {argCount}, in nativeDB: {cmd.ParameterCount})"); }
+            if (returnCount != cmd.ReturnValueCount) { Console.WriteLine($"WARNING ({context.Disassembly.Script.Name}): {cmd.Name} has a different return value count (in disassembly: {returnCount}, in nativeDB: {cmd.ReturnValueCount})"); }
 
             var operands = specifyArgReturnCounts ?
                             new[] { new Operand(cmd.Name, OperandType.Identifier), new Operand(argCount), new Operand(returnCount) } :
