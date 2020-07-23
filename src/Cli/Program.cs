@@ -1,4 +1,4 @@
-﻿namespace ScTools
+﻿namespace ScTools.Cli
 {
     using System;
     using System.Text;
@@ -10,7 +10,6 @@
     using CodeWalker.GameFiles;
     using ScTools.GameFiles;
     using System.Threading.Tasks;
-    using System.Diagnostics;
     using System.Linq;
     using ScTools.ScriptAssembly;
     using ScTools.ScriptAssembly.CodeGen;
@@ -48,33 +47,35 @@
 
             Command disassemble = new Command("disassemble")
             {
-                new Argument<FileInfo>(
+                new Argument<FileGlob[]>(
                     "input",
-                    "The input YSC file.")
-                    .ExistingOnly(),
-                new Option<FileInfo>(
-                    new[] { "--output", "-o" },
-                    "The output file. If not specified, the output file path is the same as the input file but with the extension changed to '.scasm'.")
-                    .LegalFilePathsOnly(),
-            };
-            disassemble.Handler = CommandHandler.Create<FileInfo, FileInfo>(Disassemble);
-
-            Command assemble = new Command("assemble")
-            {
-                new Argument<FileInfo>(
-                    "input",
-                    "The input SCASM file.")
-                    .ExistingOnly(),
+                    "The input YSC files. Supports glob patterns.")
+                    .AtLeastOne(),
                 new Option<DirectoryInfo>(
                     new[] { "--output", "-o" },
                     () => new DirectoryInfo(".\\"),
                     "The output directory.")
                     .ExistingOnly(),
-                new Option(new[] { "--function-names", "-f" }, "Include the function names in ENTER instructions."),
+            };
+            disassemble.Handler = CommandHandler.Create<DisassembleOptions>(Disassemble);
+
+            Command assemble = new Command("assemble")
+            {
+                new Argument<FileGlob[]>(
+                    "input",
+                    "The input SCASM files. Supports glob patterns.")
+                    .AtLeastOne(),
+                new Option<DirectoryInfo>(
+                    new[] { "--output", "-o" },
+                    () => new DirectoryInfo(".\\"),
+                    "The output directory.")
+                    .ExistingOnly(),
                 new Option<FileInfo>(
                     new[] { "--nativedb", "-n" },
                     "The SCNDB file containing the native commands definitions.")
                     .ExistingOnly(),
+                new Option(new[] { "--function-names", "-f" }, "Include the function names in ENTER instructions."),
+                new Option(new[] { "--unencrypted", "-u" }, "Output unencrypted files of the assembled scripts."),
             };
             assemble.Handler = CommandHandler.Create<AssembleOptions>(Assemble);
 
@@ -117,63 +118,104 @@
 
         private class AssembleOptions
         {
-            public FileInfo Input { get; set; }
+            public FileGlob[] Input { get; set; }
             public DirectoryInfo Output { get; set; }
-            public bool FunctionNames { get; set; }
             public FileInfo NativeDB { get; set; }
+            public bool FunctionNames { get; set; }
+            public bool Unencrypted { get; set; }
         }
 
-        private static void Assemble(AssembleOptions o)
+        private static void Assemble(AssembleOptions options)
         {
+            static void Print(string str)
+            {
+                lock (Console.Out)
+                {
+                    Console.WriteLine(str);
+                }
+            }
+
             LoadGTA5Keys();
 
-            YscFile ysc = new YscFile();
-
-            try
+            NativeDB nativeDB;
+            using (var reader = new BinaryReader(options.NativeDB.OpenRead()))
             {
-                NativeDB nativeDB = null;
-                if (o.NativeDB != null)
+                nativeDB = NativeDB.Load(reader);
+            }
+
+            Parallel.ForEach(options.Input.SelectMany(i => i.Matches), inputFile =>
+            {
+                var outputFile = new FileInfo(Path.Combine(options.Output.FullName, Path.ChangeExtension(inputFile.Name, "ysc")));
+
+                Print($"Reading '{inputFile}'...");
+                string source = File.ReadAllText(inputFile.FullName);
+
+                YscFile ysc = new YscFile();
+                try
                 {
-                    using var reader = new BinaryReader(o.NativeDB.OpenRead());
-                    nativeDB = NativeDB.Load(reader);
+                    Print($"Assembling '{inputFile}'...");
+                    Script sc = Assembler.Assemble(source, nativeDB, new CodeGenOptions(includeFunctionNames: options.FunctionNames));
+                    ysc.Script = sc;
+                }
+                catch (Exception e) // TODO: improve assembler error messages
+                {
+                    lock (Console.Error)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.Error.Write(e.ToString());
+                        Console.ForegroundColor = ConsoleColor.White;
+                    }
+                    return;
                 }
 
-                string source = File.ReadAllText(o.Input.FullName);
-                Script sc = Assembler.Assemble(source, nativeDB, new CodeGenOptions(includeFunctionNames: o.FunctionNames));
-                ysc.Script = sc;
-            }
-            catch (Exception e) // TODO: improve assembler error messages
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.Error.Write(e.ToString());
-                Console.ForegroundColor = ConsoleColor.White;
-                return;
-            }
+                Print($"Writing '{inputFile}'...");
+                byte[] data = ysc.Save(Path.GetFileName(outputFile.FullName));
+                File.WriteAllBytes(outputFile.FullName, data);
 
-            string outputPath = Path.Combine(o.Output.FullName, Path.GetFileName(Path.ChangeExtension(o.Input.FullName, "ysc")));
-            byte[] data = ysc.Save(Path.GetFileName(outputPath));
-            File.WriteAllBytes(outputPath, data);
-
-            outputPath = Path.ChangeExtension(outputPath, "unencrypted.ysc");
-            data = ysc.Save();
-            File.WriteAllBytes(outputPath, data);
+                if (options.Unencrypted)
+                {
+                    data = ysc.Save();
+                    File.WriteAllBytes(Path.ChangeExtension(outputFile.FullName, "unencrypted.ysc"), data);
+                }
+            });
         }
 
-        private static void Disassemble(FileInfo input, FileInfo output)
+        private class DisassembleOptions
         {
-            output ??= new FileInfo(Path.ChangeExtension(input.FullName, "scasm"));
+            public FileGlob[] Input { get; set; }
+            public DirectoryInfo Output { get; set; }
+        }
 
-            byte[] fileData = File.ReadAllBytes(input.FullName);
+        private static void Disassemble(DisassembleOptions options)
+        {
+            static void Print(string str)
+            {
+                lock (Console.Out)
+                {
+                    Console.WriteLine(str);
+                }
+            }
 
-            YscFile ysc = new YscFile();
-            ysc.Load(fileData);
+            Parallel.ForEach(options.Input.SelectMany(i => i.Matches), inputFile =>
+            {
+                var outputFile = new FileInfo(Path.Combine(options.Output.FullName, Path.ChangeExtension(inputFile.Name, "scasm")));
 
-            Script sc = ysc.Script;
-            var disassembly = Disassembler.Disassemble(sc);
+                Print($"Reading '{inputFile}'...");
+                byte[] fileData = File.ReadAllBytes(inputFile.FullName);
 
-            const int BufferSize = 1024 * 1024 * 32; // 32mb
-            using TextWriter w = new StreamWriter(output.Open(FileMode.Create), Encoding.UTF8, BufferSize) { AutoFlush = false };
-            Disassembler.Print(w, sc, disassembly);
+                Print($"Loading '{inputFile}'...");
+                YscFile ysc = new YscFile();
+                ysc.Load(fileData);
+
+                Print($"Disassembling '{inputFile}'...");
+                Script sc = ysc.Script;
+                var disassembly = Disassembler.Disassemble(sc);
+
+                Print($"Writing '{inputFile}'...");
+                const int BufferSize = 1024 * 1024 * 32; // 32mb
+                using TextWriter w = new StreamWriter(outputFile.Open(FileMode.Create), Encoding.UTF8, BufferSize) { AutoFlush = false };
+                Disassembler.Print(w, sc, disassembly);
+            });
         }
 
         private class DumpOptions
