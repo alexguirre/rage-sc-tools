@@ -12,8 +12,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v1.0.1
+      - uses: microsoft/setup-msbuild@v1.0.1
+      - uses: nuget/setup-nuget@v1
 
       - name: Cache Codewalker.Core
         id: cache-codewalker
@@ -34,9 +34,21 @@ jobs:
         run: |
           msbuild codewalker/CodeWalker.sln -t:CodeWalker_Core -p:Configuration=Release -p:Platform=x64 -p:OutputPath=..\..\dependencies -restore
 
+      - name: Cache NuGet Packages
+        id: cache-nuget
+        uses: actions/cache@v2
+        with:
+          path: ~/.nuget/packages/
+          key: nuget-${{ hashFiles('**/packages.lock.json') }}
+          
+      - name: Restore NuGet Packages
+        if: steps.cache-nuget.outputs.cache-hit != 'true'
+        run: |
+          nuget restore sc-tools.sln
+
       - name: Build
         run: |
-          msbuild sc-tools.sln -p:Configuration=${{ matrix.config }} -p:Platform=x64 -restore
+          msbuild sc-tools.sln -p:Configuration=${{ matrix.config }} -p:Platform=x64
 
       # TODO: upload artifacts
       # - name: Upload Artifact
