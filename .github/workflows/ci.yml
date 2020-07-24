@@ -48,7 +48,7 @@ jobs:
 
       - name: Build
         run: |
-          msbuild sc-tools.sln -p:Configuration=${{ matrix.config }} -p:Platform=x64
+          msbuild sc-tools.sln -p:Configuration=${{ matrix.config }} -p:Platform=x64 -restore
 
       # TODO: upload artifacts
       # - name: Upload Artifact
