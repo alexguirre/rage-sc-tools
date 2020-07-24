@@ -21,8 +21,19 @@
     </Reference>
   </ItemGroup>
 
-  <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+  <Target Name="GenerateGrammar" BeforeTargets="BeforeBuild;BeforeRebuild" Inputs="ScriptAssembly/Grammar/ScAsm.g4" Outputs="ScriptAssembly/Grammar/Generated/ScAsmParser.cs">
     <Exec Command="java -jar ../../tools/antlr-4.8-complete.jar -o ScriptAssembly/Grammar/Generated/ -package ScTools.ScriptAssembly.Grammar -visitor -no-listener -Dlanguage=CSharp ScriptAssembly/Grammar/ScAsm.g4" />
+    <ItemGroup>
+        <Compile Remove="ScriptAssembly/Grammar/Generated/*.cs" /> <!-- Needed in case the files already existed, to avoid "Duplicate 'Compile' items were included..." error -->
+        <Compile Include="ScriptAssembly/Grammar/Generated/*.cs" />
+    </ItemGroup>
   </Target>
-
+  
+  <Target Name="CleanGrammar" BeforeTargets="BeforeClean">
+    <ItemGroup>
+      <GrammarFilesToDelete Include="ScriptAssembly/Grammar/Generated/*.*"/>
+    </ItemGroup>
+    <Delete Files="@(GrammarFilesToDelete)"/>
+  </Target>
+  
 </Project>
