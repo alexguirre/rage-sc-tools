@@ -7,6 +7,7 @@
     using System.Globalization;
     using System.IO;
     using System.Threading;
+    using System.Diagnostics;
     using CodeWalker.GameFiles;
     using ScTools.GameFiles;
     using System.Threading.Tasks;
