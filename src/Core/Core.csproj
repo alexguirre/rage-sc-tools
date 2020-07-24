@@ -12,6 +12,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="packages.lock.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Antlr4.Runtime.Standard" Version="4.8.0" />
     <PackageReference Include="SharpDX.Mathematics" Version="4.2.0" />
   </ItemGroup>
@@ -32,9 +36,9 @@
   
   <Target Name="CleanGrammar" BeforeTargets="BeforeClean">
     <ItemGroup>
-      <GrammarFilesToDelete Include="ScriptAssembly/Grammar/Generated/*.*"/>
+      <GrammarFilesToDelete Include="ScriptAssembly/Grammar/Generated/*.*" />
     </ItemGroup>
-    <Delete Files="@(GrammarFilesToDelete)"/>
+    <Delete Files="@(GrammarFilesToDelete)" />
   </Target>
   
 </Project>
