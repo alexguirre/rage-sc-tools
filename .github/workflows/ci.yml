@@ -1,0 +1,58 @@
+name: CI
+
+on: [push]
+
+jobs:
+  build:
+    name: Build
+    runs-on: windows-2019
+    strategy:
+      matrix:
+        config: [Debug, Release]
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: microsoft/setup-msbuild@v1.0.1
+      - uses: nuget/setup-nuget@v1
+
+      - name: Cache Codewalker.Core
+        id: cache-codewalker
+        uses: actions/cache@v2
+        with:
+          path: dependencies/
+          key: dependencies
+
+      - name: Checkout CodeWalker.Core
+        if: steps.cache-codewalker.outputs.cache-hit != 'true'
+        uses: actions/checkout@v2
+        with:
+          repository: dexyfex/CodeWalker
+          path: codewalker
+          
+      - name: Build CodeWalker.Core
+        if: steps.cache-codewalker.outputs.cache-hit != 'true'
+        run: |
+          msbuild codewalker/CodeWalker.sln -t:CodeWalker_Core -p:Configuration=Release -p:Platform=x64 -p:OutputPath=..\..\dependencies -restore
+
+      - name: Cache NuGet Packages
+        id: cache-nuget
+        uses: actions/cache@v2
+        with:
+          path: ~/.nuget/packages/
+          key: nuget-${{ hashFiles('**/packages.lock.json') }}
+          
+      - name: Restore NuGet Packages
+        if: steps.cache-nuget.outputs.cache-hit != 'true'
+        run: |
+          nuget restore sc-tools.sln
+
+      - name: Build
+        run: |
+          msbuild sc-tools.sln -p:Configuration=${{ matrix.config }} -p:Platform=x64 -restore
+
+      # TODO: upload artifacts
+      # - name: Upload Artifact
+      #   uses: actions/upload-artifact@v1
+      #   with:
+      #     name:
+      #     path:
