@@ -5,18 +5,22 @@
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
+    using System.Runtime.CompilerServices;
+
     using ScTools.ScriptAssembly.Types;
 
     public static class Printer
     {
         static Printer() => HashDict.Init(new FileInfo("hash_dictionary.txt")); // TODO: allow the user to specify the hash dictionary path
 
+        private static string FormatFloat(float v) => v.ToString("0.0#######");
+
         public static string PrintOperand(Operand operand)
             => operand.Type switch
             {
                 OperandType.U32 => TryPrintHash(operand.U32) ?? operand.U32.ToString(),
                 OperandType.U64 => operand.U64.ToString(),
-                OperandType.F32 => operand.F32.ToString("0.0#######"),
+                OperandType.F32 => FormatFloat(operand.F32),
                 OperandType.Identifier => operand.Identifier,
                 OperandType.SwitchCase => $"{operand.SwitchCase.Value}:{operand.SwitchCase.Label}",
                 OperandType.String => $"\"{operand.String.Escape()}\"",
@@ -113,7 +117,26 @@
 
         public static string PrintLocal(Local l) => $"{l.Name}: {l.Type.Name}";
 
-        public static string PrintStructField(StructField f) => $"\t{f.Name}:\t{f.Type.Name}";
+        private static string PrintScriptValue(ulong value)
+        {
+            if (value == 0)
+            {
+                return "0";
+            }
+
+            if ((value & 0xFFFFFFFF00000000) == 0)
+            {
+                float asFloat = BitConverter.Int32BitsToSingle(unchecked((int)(value & 0xFFFFFFFF)));
+                if (float.IsNormal(asFloat))
+                {
+                    return FormatFloat(asFloat);
+                }
+            }
+
+            return value.ToString();
+        }
+
+        public static string PrintStructField(StructField f) => $"\t{f.Name}:\t{f.Type.Name}{(f.InitialValue.HasValue ? $" = {PrintScriptValue(f.InitialValue.Value.AsUInt64)}" : "")}";
 
         public static string PrintStruct(StructType s)
         {
@@ -123,7 +146,7 @@
             return str;
         }
 
-        public static string PrintStatic(Static s) => $"\t{s.Name}:\t{s.Type.Name}{(s.InitialValue != 0 ? $" = {s.InitialValue}" : "")}";
+        public static string PrintStatic(Static s) => $"\t{s.Name}:\t{s.Type.Name}{(s.InitialValue != 0 ? $" = {PrintScriptValue(s.InitialValue)}" : "")}";
 
         public static string PrintStatics(IEnumerable<Static> statics)
         {

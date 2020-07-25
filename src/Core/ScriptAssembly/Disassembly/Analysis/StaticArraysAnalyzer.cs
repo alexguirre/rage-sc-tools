@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using ScTools.GameFiles;
     using ScTools.ScriptAssembly.Types;
 
     /// <summary>
@@ -68,24 +69,33 @@
 
         public void FinalizeAnalysis()
         {
+            ulong GetStaticValue(int offset)
+                => (offset < Disassembly.Statics.Count ? Disassembly.Statics[offset] : Disassembly.Args[offset - Disassembly.Statics.Count]).InitialValue;
+
             List<(uint StaticOffset, uint ArraySize, TypeBase ItemType)> l = new List<(uint, uint, TypeBase)>();
 
             foreach (var (staticOffset, arrayItemSize) in changes)
             {
-                (uint, uint, TypeBase) v = (staticOffset, 0, null);
+                (uint StaticOffset, uint ArraySize, TypeBase ItemType) v = (staticOffset, 0, null);
 
                 if (arrayItemSize > 1)
                 {
-                    v.Item3 = Disassembly.Types.RegisterStruct($"Struct{staticOffset}", Enumerable.Range(0, (int)arrayItemSize).Select(i => new StructField($"f_{i}", AutoType.Instance)));
+                    v.ItemType = Disassembly.Types.RegisterStruct($"Struct{staticOffset}",
+                                                                  Enumerable.Range(0, (int)arrayItemSize)
+                                                                            .Select(i =>
+                                                                            {
+                                                                                var init = GetStaticValue((int)staticOffset + 1 + i);
+                                                                                var initVal = init == 0 ? (ScriptValue?)null : new ScriptValue { AsUInt64 = init };
+                                                                                return new StructField($"f_{i}", AutoType.Instance, initVal);
+                                                                            }));
                 }
                 else
                 {
-                    v.Item3 = AutoType.Instance;
+                    v.ItemType = AutoType.Instance;
                 }
 
-                int i = (int)staticOffset;
-                v.Item2 = (uint)(i < Disassembly.Statics.Count ? Disassembly.Statics[i] : Disassembly.Args[i - Disassembly.Statics.Count]).InitialValue;
-                Debug.Assert(v.Item2 > 0);
+                v.ArraySize = (uint)GetStaticValue((int)staticOffset);
+                Debug.Assert(v.ArraySize > 0);
 
                 l.Add(v);
             }
