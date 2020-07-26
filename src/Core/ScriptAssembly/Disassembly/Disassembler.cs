@@ -46,19 +46,19 @@
             }
 
             new Transformer(disassembled)
-                .With<NopRemover>()
-                .With<NativeSimplifier>()
-                .With<PushStringSimplifier>()
-                .Process();
-
-            // PushStringSimplifier needs to run before PushConstSimplifier because
-            // the string simplifier doesn't check for high-level PUSH_CONST instructions
-            new Transformer(disassembled)
-                .With<PushConstSimplifier>()
-                .Process();
-
-            new Transformer(disassembled)
-                .With<PushConstReducer>()
+                .WithPass()
+                    .With<NopRemover>()
+                    .With<NativeSimplifier>()
+                    .With<PushStringSimplifier>()
+                    .Done()
+                // PushStringSimplifier needs to run before PushConstSimplifier because
+                // the string simplifier doesn't check for high-level PUSH_CONST instructions
+                .WithPass()
+                    .With<PushConstSimplifier>()
+                    .Done()
+                .WithPass()
+                    .With<PushConstReducer>()
+                    .Done()
                 .Process();
 
             return disassembled;
