@@ -6,6 +6,7 @@
     using System.Linq;
     using ScTools.GameFiles;
     using ScTools.ScriptAssembly.Definitions;
+    using ScTools.ScriptAssembly.Types;
 
     public class CodeBuilder : IByteCodeBuilder, IHighLevelCodeBuilder
     {
@@ -112,6 +113,15 @@
             EndInstruction();
         }
 
+        public void EmitHL(HighLevelInstruction.UniqueId instId, ReadOnlySpan<Operand> operands) => EmitHL(HighLevelInstruction.Set[(int)instId], operands);
+
+        public void EmitHL(in HighLevelInstruction instruction, ReadOnlySpan<Operand> operands)
+        {
+            Debug.Assert(InFunction);
+
+            instruction.Assemble(operands, this);
+        }
+
         private void EmitPrologue()
         {
             // every function needs at least 2 locals (return address + function frame number)
@@ -121,7 +131,77 @@
             uint localsSize = (uint)currentFunction.Locals.Sum(l => l.Type.SizeOf) + argsSize + MinLocals;
             Emit(Opcode.ENTER, new[] { new Operand(argsSize), new Operand(localsSize) });
 
-            // TODO: initialize local arrays (offset 0 needs to have the length) and structures (arrays fields and field initializers)
+            // TODO: emit local initialiazer code closer to how original scripts do it to simplify the work of the disassembler
+            uint localOffset = argsSize + MinLocals;
+            foreach (var local in currentFunction.Locals)
+            {
+                EmitLocalInitializer(localOffset, local.Type);
+
+                localOffset += local.Type.SizeOf;
+            }
+        }
+
+        private void EmitLocalInitializer(uint localOffset, TypeBase localType)
+        {
+            switch (localType)
+            {
+                case ArrayType t: EmitLocalArrayInitializer(localOffset, t); break;
+                case StructType t: EmitLocalStructInitializer(localOffset, t); break;
+                case AutoType _: break;
+                default: throw new NotImplementedException();
+            }
+        }
+
+        private void EmitLocalStore(uint localOffset)
+            => Emit(localOffset <= byte.MaxValue ? Opcode.LOCAL_U8_STORE : Opcode.LOCAL_U16_STORE, new[] { new Operand(localOffset) });
+
+        private void EmitLocalArrayInitializer(uint localOffset, ArrayType localType)
+        {
+            // Scripts normally initialize arrays like this:
+            //      LOCAL local
+            //      PUSH_CONST arrayLength
+            //      STORE_REV
+            //      DROP
+            // The following is functionally equivalent
+            EmitHL(HighLevelInstruction.UniqueId.PUSH_CONST, new[] { new Operand(localType.Length) });
+            EmitLocalStore(localOffset);
+
+            // and initialize the items
+            localOffset += 1; // skip length offset
+            uint itemSize = localType.ItemType.SizeOf;
+            for (int i = 0; i < localType.Length; i++, localOffset += itemSize)
+            {
+                EmitLocalInitializer(localOffset, localType.ItemType);
+            }
+        }
+
+        private void EmitLocalStructInitializer(uint localOffset, StructType localType)
+        {
+            // Scripts normally use IOFFSET instruction to access struct fields, here it is easier to pre-calculate the field offset
+            for (int i = 0; i < localType.Fields.Length; i++)
+            {
+                uint fieldOffset = localOffset + localType.Offsets[i];
+                var field = localType.Fields[i];
+
+                switch (field.Type)
+                {
+                    case ArrayType t: EmitLocalArrayInitializer(fieldOffset, t); break;
+                    case StructType t: EmitLocalStructInitializer(fieldOffset, t); break;
+                    case AutoType _ when field.InitialValue.HasValue:
+                    {
+                        var val = field.InitialValue.Value;
+                        Debug.Assert(val.AsUInt32 == val.AsUInt64); // verify that only the lower 4-bytes are used
+
+                        EmitHL(HighLevelInstruction.UniqueId.PUSH_CONST, new[]
+                        {
+                            (val.AsUInt32 == 0 || !float.IsNormal(val.AsFloat)) ? new Operand(val.AsUInt32) : new Operand(val.AsFloat)
+                        });
+                        EmitLocalStore(fieldOffset);
+                    }
+                    break;
+                    default: throw new NotImplementedException();
+                }
+            }
         }
 
         private void EmitEpilogue()

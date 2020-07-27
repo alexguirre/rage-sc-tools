@@ -3,7 +3,6 @@
     using System;
     using System.Collections.Generic;
     using System.Data;
-    using System.IO;
     using System.Linq;
     using Antlr4.Runtime;
     using Antlr4.Runtime.Misc;
@@ -12,7 +11,6 @@
     using ScTools.ScriptAssembly.Definitions;
     using ScTools.ScriptAssembly.Grammar;
     using ScTools.ScriptAssembly.Grammar.Visitors;
-    using ScTools.ScriptAssembly.Types;
 
     public sealed class AssemblerContext
     {
@@ -302,7 +300,7 @@
                                 ref readonly var hlInst = ref HighLevelInstruction.FindByMnemonic(mnemonicHash);
                                 if (hlInst.IsValid)
                                 {
-                                    hlInst.Assemble(statement.Operands.AsSpan(), code);
+                                    code.EmitHL(hlInst, statement.Operands.AsSpan());
                                 }
                                 else
                                 {
