@@ -44,6 +44,10 @@ PROC MAIN()
     PED_INDEX playerPed 
     playerPed = <<1>>
 
+    INT a = 5
+    INT b = 10
+    INT c = a + b * b
+
     WHILE TRUE
         WAIT(0)
 

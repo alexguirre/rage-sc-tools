@@ -12,18 +12,18 @@ topLevelStatement
     ;
 
 statement
-    : variableDeclaration               #variableDeclarationStatement
-    | left=expression '=' right=expression         #assignmentStatement // TODO: more assignment operators (+=, -=, *=, /=, ...)
+    : variableDeclaration                           #variableDeclarationStatement
+    | left=expression '=' right=expression          #assignmentStatement // TODO: more assignment operators (+=, -=, *=, /=, ...)
     
     | K_IF condition=expression EOL
       statementBlock
-      K_ENDIF                           #ifStatement
+      K_ENDIF                                       #ifStatement
     
     | K_WHILE condition=expression EOL
       statementBlock
-      K_ENDWHILE                        #whileStatement
+      K_ENDWHILE                                    #whileStatement
     
-    | procedureCall                     #callStatement
+    | procedureCall                                 #callStatement
     ;
 
 statementBlock
@@ -31,14 +31,14 @@ statementBlock
     ;
 
 expression
-    : K_NOT expression                                                      #notExpression
-    | expression ('+' | '-' | '*' | '/' | '%' | '|' | '&' | '^') expression #binaryExpression
-    | '<<' expression (',' expression)* '>>'                                #aggregateExpression
-    | identifier                                                            #identifierExpression
-    | expression '.' identifier                                             #memberAccessExpression
-    | expression arrayIndexer                                               #arrayAccessExpression
-    | procedureCall                                                         #callExpression
-    | (numeric | string | bool)                                             #literalExpression
+    : K_NOT expression                                                                      #notExpression
+    | left=expression op=('+' | '-' | '*' | '/' | '%' | '|' | '&' | '^') right=expression   #binaryExpression  // TODO: fix operator precedence
+    | '<<' expression (',' expression)* '>>'                                                #aggregateExpression
+    | identifier                                                                            #identifierExpression
+    | expression '.' identifier                                                             #memberAccessExpression
+    | expression arrayIndexer                                                               #arrayAccessExpression
+    | procedureCall                                                                         #callExpression
+    | (numeric | string | bool)                                                             #literalExpression
     ;
 
 procedureCall
@@ -113,6 +113,15 @@ K_ENDWHILE : E N D W H I L E;
 K_STRUCT : S T R U C T;
 K_ENDSTRUCT : E N D S T R U C T;
 K_SCRIPT_NAME : S C R I P T '_' N A M E;
+
+OP_ADD: '+';
+OP_SUBTRACT: '-';
+OP_MULTIPLY: '*';
+OP_DIVIDE: '/';
+OP_MODULO: '%';
+OP_OR: '|';
+OP_AND: '&';
+OP_XOR: '^';
 
 IDENTIFIER
     :   [a-zA-Z_] [a-zA-Z_0-9]*

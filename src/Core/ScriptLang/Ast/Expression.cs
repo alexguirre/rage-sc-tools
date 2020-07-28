@@ -1,6 +1,7 @@
 ﻿#nullable enable
 namespace ScTools.ScriptLang.Ast
 {
+    using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
 
@@ -34,7 +35,20 @@ namespace ScTools.ScriptLang.Ast
         public BinaryExpression(BinaryOperator op, Expression left, Expression right, SourceLocation location) : base(location)
             => (Op, Left, Right) = (op, left, right);
 
-        public override string ToString() => $"{Left} {Op} {Right}";
+        public override string ToString() => $"{Left} {OpToString(Op)} {Right}";
+
+        private static string OpToString(BinaryOperator op) => op switch
+        {
+            BinaryOperator.Add => "+",
+            BinaryOperator.Subtract => "-",
+            BinaryOperator.Multiply => "*",
+            BinaryOperator.Divide => "/",
+            BinaryOperator.Modulo => "%",
+            BinaryOperator.Or => "|",
+            BinaryOperator.And => "&",
+            BinaryOperator.Xor => "^",
+            _ => throw new NotImplementedException()
+        };
     }
 
     public enum BinaryOperator

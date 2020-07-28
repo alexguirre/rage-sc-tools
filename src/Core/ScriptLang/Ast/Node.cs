@@ -14,6 +14,8 @@ namespace ScTools.ScriptLang.Ast
         public int Column { get; }
 
         public SourceLocation(int line, int column) => (Line, Column) = (line, column);
+
+        public override string ToString() => $"({nameof(Line)}: {Line}, {nameof(Column)}: {Column})";
     }
 
     public abstract class Node

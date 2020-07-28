@@ -1,6 +1,7 @@
 ﻿#nullable enable
 namespace ScTools.ScriptLang.Ast
 {
+    using System;
     using System.Linq;
 
     using Antlr4.Runtime;
@@ -73,28 +74,54 @@ namespace ScTools.ScriptLang.Ast
 
         #region Expressions
         public override Node VisitNotExpression([NotNull] ScLangParser.NotExpressionContext context)
-            => PlaceholderExpr(context);
+            => new NotExpression((Expression)context.expression().Accept(this), Source(context));
 
         public override Node VisitBinaryExpression([NotNull] ScLangParser.BinaryExpressionContext context)
-            => PlaceholderExpr(context);
+            => new BinaryExpression(context.op.Type switch
+            {
+                ScLangLexer.OP_ADD => BinaryOperator.Add,
+                ScLangLexer.OP_SUBTRACT => BinaryOperator.Subtract,
+                ScLangLexer.OP_MULTIPLY => BinaryOperator.Multiply,
+                ScLangLexer.OP_DIVIDE => BinaryOperator.Divide,
+                ScLangLexer.OP_MODULO => BinaryOperator.Modulo,
+                ScLangLexer.OP_OR => BinaryOperator.Or,
+                ScLangLexer.OP_AND => BinaryOperator.And,
+                ScLangLexer.OP_XOR => BinaryOperator.Xor,
+                _ => throw new NotImplementedException()
+            },
+            (Expression)context.left.Accept(this),
+            (Expression)context.right.Accept(this),
+            Source(context));
 
         public override Node VisitAggregateExpression([NotNull] ScLangParser.AggregateExpressionContext context)
-            => PlaceholderExpr(context);
+            => new AggregateExpression(context.expression().Select(expr => expr.Accept(this)).Cast<Expression>(), Source(context));
 
         public override Node VisitIdentifierExpression([NotNull] ScLangParser.IdentifierExpressionContext context)
-            => PlaceholderExpr(context);
+            => new IdentifierExpression((Identifier)context.identifier().Accept(this), Source(context));
 
         public override Node VisitMemberAccessExpression([NotNull] ScLangParser.MemberAccessExpressionContext context)
-            => PlaceholderExpr(context);
+            => new MemberAccessExpression((Expression)context.expression().Accept(this),
+                                          (Identifier)context.identifier().Accept(this),
+                                          Source(context));
 
         public override Node VisitArrayAccessExpression([NotNull] ScLangParser.ArrayAccessExpressionContext context)
-            => PlaceholderExpr(context);
+            => new ArrayAccessExpression((Expression)context.expression().Accept(this),
+                                         (ArrayIndexer)context.arrayIndexer().Accept(this),
+                                         Source(context));
 
         public override Node VisitCallExpression([NotNull] ScLangParser.CallExpressionContext context)
-            => PlaceholderExpr(context);
+            => new CallExpression((ProcedureCall)context.procedureCall().Accept(this), Source(context));
 
         public override Node VisitLiteralExpression([NotNull] ScLangParser.LiteralExpressionContext context)
-            => PlaceholderExpr(context);
+            => new LiteralExpression(context switch
+            {
+                var c when c.numeric() != null => LiteralKind.Numeric,
+                var c when c.@string() != null => LiteralKind.String,
+                var c when c.@bool() != null => LiteralKind.Bool,
+                _ => throw new NotImplementedException()
+            },
+            context.GetText(),
+            Source(context));
         #endregion Expressions
 
         #region Misc
