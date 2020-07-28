@@ -25,7 +25,8 @@
 #if DEBUG
             LoadGTA5Keys();
 
-            Test.DoTest();
+            //Test.DoTest();
+            ScriptLang.Test.DoTest();
             return 0;
 #endif
 

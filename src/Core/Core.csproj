@@ -26,7 +26,7 @@
     </Reference>
   </ItemGroup>
 
-  <Target Name="GenerateGrammar" BeforeTargets="BeforeBuild;BeforeRebuild" Inputs="ScriptAssembly/Grammar/ScAsm.g4" Outputs="ScriptAssembly/Grammar/Generated/ScAsmParser.cs">
+  <Target Name="GenerateAsmGrammar" BeforeTargets="BeforeBuild;BeforeRebuild" Inputs="ScriptAssembly/Grammar/ScAsm.g4" Outputs="ScriptAssembly/Grammar/Generated/ScAsmParser.cs">
     <Exec Command="java -jar ../../tools/antlr-4.8-complete.jar -o ScriptAssembly/Grammar/Generated/ -package ScTools.ScriptAssembly.Grammar -visitor -no-listener -Dlanguage=CSharp ScriptAssembly/Grammar/ScAsm.g4" />
     <ItemGroup>
         <Compile Remove="ScriptAssembly/Grammar/Generated/*.cs" /> <!-- Needed in case the files already existed, to avoid "Duplicate 'Compile' items were included..." error -->
@@ -34,9 +34,24 @@
     </ItemGroup>
   </Target>
   
-  <Target Name="CleanGrammar" BeforeTargets="BeforeClean">
+  <Target Name="CleanAsmGrammar" BeforeTargets="BeforeClean">
     <ItemGroup>
       <GrammarFilesToDelete Include="ScriptAssembly/Grammar/Generated/*.*" />
+    </ItemGroup>
+    <Delete Files="@(GrammarFilesToDelete)" />
+  </Target>
+
+  <Target Name="GenerateLangGrammar" BeforeTargets="BeforeBuild;BeforeRebuild" Inputs="ScriptLang/Grammar/ScAsm.g4" Outputs="ScriptLang/Grammar/Generated/ScLangParser.cs">
+    <Exec Command="java -jar ../../tools/antlr-4.8-complete.jar -o ScriptLang/Grammar/Generated/ -package ScTools.ScriptLang.Grammar -visitor -no-listener -Dlanguage=CSharp ScriptLang/Grammar/ScLang.g4" />
+    <ItemGroup>
+        <Compile Remove="ScriptLang/Grammar/Generated/*.cs" /> <!-- Needed in case the files already existed, to avoid "Duplicate 'Compile' items were included..." error -->
+        <Compile Include="ScriptLang/Grammar/Generated/*.cs" />
+    </ItemGroup>
+  </Target>
+  
+  <Target Name="CleanLangGrammar" BeforeTargets="BeforeClean">
+    <ItemGroup>
+      <GrammarFilesToDelete Include="ScriptLang/Grammar/Generated/*.*" />
     </ItemGroup>
     <Delete Files="@(GrammarFilesToDelete)" />
   </Target>
