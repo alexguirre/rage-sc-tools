@@ -21,11 +21,26 @@ namespace ScTools.ScriptLang.Ast
             => Statements = statements.ToImmutableArray();
     }
 
-    // TODO: VariableDeclarationStatement
-    //public sealed class VariableDeclarationStatement : Statement
-    //{
+    public sealed class VariableDeclarationStatement : Statement
+    {
+        public Variable Variable { get; }
+        public Expression? Initializer { get; }
 
-    //}
+        public override IEnumerable<Node> Children
+        {
+            get
+            {
+                yield return Variable;
+                if (Initializer != null)
+                {
+                    yield return Initializer;
+                }
+            }
+        }
+
+        public VariableDeclarationStatement(Variable variable, Expression? initializer, SourceLocation location) : base(location)
+            => (Variable, Initializer) = (variable, initializer);
+    }
 
     public sealed class AssignmentStatement : Statement
     {

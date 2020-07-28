@@ -13,13 +13,13 @@ topLevelStatement
 
 statement
     : variableDeclaration               #variableDeclarationStatement
-    | expression '=' expression         #assignmentStatement // TODO: more assignment operators (+=, -=, *=, /=, ...)
+    | left=expression '=' right=expression         #assignmentStatement // TODO: more assignment operators (+=, -=, *=, /=, ...)
     
-    | K_IF expression EOL
+    | K_IF condition=expression EOL
       statementBlock
       K_ENDIF                           #ifStatement
     
-    | K_WHILE expression EOL
+    | K_WHILE condition=expression EOL
       statementBlock
       K_ENDWHILE                        #whileStatement
     

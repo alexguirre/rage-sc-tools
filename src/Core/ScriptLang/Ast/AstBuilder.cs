@@ -15,7 +15,7 @@ namespace ScTools.ScriptLang.Ast
             public PlaceholderStatement(SourceLocation location) : base(location) { }
         }
 
-        private sealed class PlaceholderExpression : Statement
+        private sealed class PlaceholderExpression : Expression
         {
             public PlaceholderExpression(SourceLocation location) : base(location) { }
         }
@@ -46,19 +46,27 @@ namespace ScTools.ScriptLang.Ast
 
         #region Statements
         public override Node VisitVariableDeclarationStatement([NotNull] ScLangParser.VariableDeclarationStatementContext context)
-            => PlaceholderStmt(context);
+            => new VariableDeclarationStatement((Variable)context.variableDeclaration().variable().Accept(this),
+                                                (Expression?)context.variableDeclaration().expression()?.Accept(this),
+                                                Source(context));
 
         public override Node VisitAssignmentStatement([NotNull] ScLangParser.AssignmentStatementContext context)
-            => PlaceholderStmt(context);
+            => new AssignmentStatement((Expression)context.left.Accept(this),
+                                       (Expression)context.right.Accept(this),
+                                       Source(context));
 
         public override Node VisitIfStatement([NotNull] ScLangParser.IfStatementContext context)
-            => PlaceholderStmt(context);
+            => new IfStatement((Expression)context.condition.Accept(this),
+                               (StatementBlock)context.statementBlock().Accept(this),
+                               Source(context));
 
         public override Node VisitWhileStatement([NotNull] ScLangParser.WhileStatementContext context)
-            => PlaceholderStmt(context);
+            => new WhileStatement((Expression)context.condition.Accept(this),
+                                  (StatementBlock)context.statementBlock().Accept(this),
+                                  Source(context));
 
         public override Node VisitCallStatement([NotNull] ScLangParser.CallStatementContext context)
-            => PlaceholderStmt(context);
+            => new CallStatement((ProcedureCall)context.procedureCall().Accept(this), Source(context));
         #endregion Statements
 
         #region Expressions
@@ -90,6 +98,20 @@ namespace ScTools.ScriptLang.Ast
         #region Misc
         public override Node VisitStatementBlock([NotNull] ScLangParser.StatementBlockContext context)
             => new StatementBlock(context.statement().Select(stmt => stmt.Accept(this)).Cast<Statement>(), Source(context));
+
+        public override Node VisitProcedureCall([NotNull] ScLangParser.ProcedureCallContext context)
+            => new ProcedureCall((Identifier)context.identifier().Accept(this),
+                                 context.expression().Select(expr => expr.Accept(this)).Cast<Expression>(),
+                                 Source(context));
+
+        public override Node VisitVariable([NotNull] ScLangParser.VariableContext context)
+            => new Variable((Type)context.type().Accept(this),
+                            (Identifier)context.identifier().Accept(this),
+                            (ArrayIndexer?)context.arrayIndexer()?.Accept(this),
+                            Source(context));
+
+        public override Node VisitType([NotNull] ScLangParser.TypeContext context)
+            => new Type((Identifier)context.identifier().Accept(this), Source(context));
 
         public override Node VisitIdentifier([NotNull] ScLangParser.IdentifierContext context)
             => new Identifier(context.GetText(), Source(context));
