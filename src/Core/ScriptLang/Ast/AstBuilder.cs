@@ -13,11 +13,13 @@ namespace ScTools.ScriptLang.Ast
         private sealed class PlaceholderStatement : Statement
         {
             public PlaceholderStatement(SourceLocation location) : base(location) { }
+            public override string ToString() => "PlaceholderStmt";
         }
 
         private sealed class PlaceholderExpression : Expression
         {
             public PlaceholderExpression(SourceLocation location) : base(location) { }
+            public override string ToString() => "PlaceholderExpr";
         }
 
         private static SourceLocation Source(ParserRuleContext context) => new SourceLocation(context.Start.Line, context.Start.Column + 1);

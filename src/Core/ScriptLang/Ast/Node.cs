@@ -24,6 +24,16 @@ namespace ScTools.ScriptLang.Ast
         public Node(SourceLocation location) => Location = location;
     }
 
+    public sealed class Identifier : Node
+    {
+        public string Name { get; }
+
+        public Identifier(string name, SourceLocation location) : base(location)
+            => Name = name;
+
+        public override string ToString() => $"{Name}";
+    }
+
     public sealed class ArrayIndexer : Node
     {
         public Expression Expression { get; }
@@ -32,6 +42,8 @@ namespace ScTools.ScriptLang.Ast
 
         public ArrayIndexer(Expression expression, SourceLocation location) : base(location)
             => Expression = expression;
+
+        public override string ToString() => $"[{Expression}]";
     }
 
     public sealed class Type : Node
@@ -42,6 +54,8 @@ namespace ScTools.ScriptLang.Ast
 
         public Type(Identifier name, SourceLocation location) : base(location)
             => Name = name;
+
+        public override string ToString() => $"{Name}";
     }
 
     public sealed class Variable : Node
@@ -65,6 +79,8 @@ namespace ScTools.ScriptLang.Ast
 
         public Variable(Type type, Identifier name, ArrayIndexer? arrayRank, SourceLocation location) : base(location)
             => (Type, Name, ArrayRank) = (type, name, arrayRank);
+
+        public override string ToString() => $"{Type} {Name}{ArrayRank?.ToString() ?? ""}";
     }
 
     public sealed class ProcedureCall : Node
@@ -76,5 +92,7 @@ namespace ScTools.ScriptLang.Ast
 
         public ProcedureCall(Identifier procedure, IEnumerable<Expression> arguments, SourceLocation location) : base(location)
             => (Procedure, Arguments) = (procedure, arguments.ToImmutableArray());
+
+        public override string ToString() => $"{Procedure}({string.Join(", ", Arguments)})";
     }
 }

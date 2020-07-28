@@ -12,5 +12,7 @@ namespace ScTools.ScriptLang.Ast
 
         public Root(IEnumerable<TopLevelStatement> statements, SourceLocation location) : base(location)
             => Statements = statements.ToImmutableArray();
+
+        public override string ToString() => $"{string.Join("\n", Statements)}";
     }
 }

@@ -19,6 +19,8 @@ namespace ScTools.ScriptLang.Ast
 
         public NotExpression(Expression inner, SourceLocation location) : base(location)
             => Inner = inner;
+
+        public override string ToString() => $"NOT {Inner}";
     }
 
     public sealed class BinaryExpression : Expression
@@ -31,6 +33,8 @@ namespace ScTools.ScriptLang.Ast
 
         public BinaryExpression(BinaryOperator op, Expression left, Expression right, SourceLocation location) : base(location)
             => (Op, Left, Right) = (op, left, right);
+
+        public override string ToString() => $"{Left} {Op} {Right}";
     }
 
     public enum BinaryOperator
@@ -53,6 +57,8 @@ namespace ScTools.ScriptLang.Ast
 
         public AggregateExpression(IEnumerable<Expression> expressions, SourceLocation location) : base(location)
             => Expressions = expressions.ToImmutableArray();
+
+        public override string ToString() => $"<<{string.Join(", ", Expressions)}>>";
     }
 
     public sealed class IdentifierExpression : Expression
@@ -63,6 +69,8 @@ namespace ScTools.ScriptLang.Ast
 
         public IdentifierExpression(Identifier identifier, SourceLocation location) : base(location)
             => Identifier = identifier;
+
+        public override string ToString() => $"{Identifier}";
     }
 
     public sealed class MemberAccessExpression : Expression
@@ -74,6 +82,8 @@ namespace ScTools.ScriptLang.Ast
 
         public MemberAccessExpression(Expression expression, Identifier member, SourceLocation location) : base(location)
             => (Expression, Member) = (expression, member);
+
+        public override string ToString() => $"{Expression}.{Member}";
     }
 
     public sealed class ArrayAccessExpression : Expression
@@ -85,6 +95,8 @@ namespace ScTools.ScriptLang.Ast
 
         public ArrayAccessExpression(Expression expression, ArrayIndexer indexer, SourceLocation location) : base(location)
             => (Expression, Indexer) = (expression, indexer);
+
+        public override string ToString() => $"{Expression}{Indexer}";
     }
 
     public sealed class CallExpression : Expression
@@ -95,6 +107,8 @@ namespace ScTools.ScriptLang.Ast
 
         public CallExpression(ProcedureCall call, SourceLocation location) : base(location)
             => Call = call;
+
+        public override string ToString() => $"{Call}";
     }
 
     public sealed class LiteralExpression : Expression
@@ -104,6 +118,8 @@ namespace ScTools.ScriptLang.Ast
 
         public LiteralExpression(LiteralKind kind, string valueText, SourceLocation location) : base(location)
             => (Kind, ValueText) = (kind, valueText);
+
+        public override string ToString() => $"{ValueText}/*{Kind}*/";
     }
 
     public enum LiteralKind

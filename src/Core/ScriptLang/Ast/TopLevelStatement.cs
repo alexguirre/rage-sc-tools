@@ -18,6 +18,8 @@ namespace ScTools.ScriptLang.Ast
 
         public ScriptNameStatement(Identifier name, SourceLocation location) : base(location)
             => Name = name;
+
+        public override string ToString() => $"SCRIPT_NAME {Name}";
     }
 
     public sealed class ProcedureStatement : TopLevelStatement
@@ -29,6 +31,8 @@ namespace ScTools.ScriptLang.Ast
 
         public ProcedureStatement(Identifier name, StatementBlock block, SourceLocation location) : base(location)
             => (Name, Block) = (name, block);
+
+        public override string ToString() => $"PROC {Name}()\n{Block}\nENDPROC";
     }
 
     public sealed class StructStatement : TopLevelStatement
@@ -40,6 +44,8 @@ namespace ScTools.ScriptLang.Ast
 
         public StructStatement(Identifier name, SourceLocation location) : base(location)
             => Name = name;
+
+        public override string ToString() => $"STRUCT {Name}\nENDSTRUCT";
     }
 
     // TODO: StaticFieldStatement
@@ -51,5 +57,7 @@ namespace ScTools.ScriptLang.Ast
 
         public StaticFieldStatement(Identifier name, SourceLocation location) : base(location)
             => Name = name;
+
+        public override string ToString() => $"{Name}";
     }
 }
