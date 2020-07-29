@@ -21,7 +21,7 @@ namespace ScTools.ScriptLang.Ast
         {
             int id = idCounter++;
             ids.Add(node, id);
-            sb.AppendLine($"    node{id} [label=\"{node.GetType().Name} {node.Location}\\n{node.ToString()!.Replace("\n", "\\n")}\"]");
+            sb.AppendLine($"    node{id} [label=\"{node.GetType().Name} {node.Source}\\n{node.ToString()!.Replace("\n", "\\n")}\"]");
 
             foreach (var n in node.Children)
             {

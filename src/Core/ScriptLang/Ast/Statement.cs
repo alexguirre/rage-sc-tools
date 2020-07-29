@@ -6,7 +6,7 @@ namespace ScTools.ScriptLang.Ast
 
     public abstract class Statement : Node
     {
-        public Statement(SourceLocation location) : base(location)
+        public Statement(SourceRange source) : base(source)
         {
         }
     }
@@ -17,7 +17,7 @@ namespace ScTools.ScriptLang.Ast
 
         public override IEnumerable<Node> Children => Statements;
 
-        public StatementBlock(IEnumerable<Statement> statements, SourceLocation location) : base(location)
+        public StatementBlock(IEnumerable<Statement> statements, SourceRange source) : base(source)
             => Statements = statements.ToImmutableArray();
 
         public override string ToString() => $"{string.Join("\n", Statements)}";
@@ -40,7 +40,7 @@ namespace ScTools.ScriptLang.Ast
             }
         }
 
-        public VariableDeclarationStatement(Variable variable, Expression? initializer, SourceLocation location) : base(location)
+        public VariableDeclarationStatement(Variable variable, Expression? initializer, SourceRange source) : base(source)
             => (Variable, Initializer) = (variable, initializer);
 
         public override string ToString() => $"{Variable}" + (Initializer != null ? $" = {Initializer}" : "");
@@ -53,7 +53,7 @@ namespace ScTools.ScriptLang.Ast
 
         public override IEnumerable<Node> Children { get { yield return Left; yield return Right; } }
 
-        public AssignmentStatement(Expression left, Expression right, SourceLocation location) : base(location)
+        public AssignmentStatement(Expression left, Expression right, SourceRange source) : base(source)
             => (Left, Right) = (left, right);
 
         public override string ToString() => $"{Left} = {Right}";
@@ -66,7 +66,7 @@ namespace ScTools.ScriptLang.Ast
 
         public override IEnumerable<Node> Children { get { yield return Condition; yield return Block; } }
 
-        public IfStatement(Expression condition, StatementBlock block, SourceLocation location) : base(location)
+        public IfStatement(Expression condition, StatementBlock block, SourceRange source) : base(source)
             => (Condition, Block) = (condition, block);
 
         public override string ToString() => $"IF {Condition}\n{Block}\nENDIF";
@@ -79,7 +79,7 @@ namespace ScTools.ScriptLang.Ast
 
         public override IEnumerable<Node> Children { get { yield return Condition; yield return Block; } }
 
-        public WhileStatement(Expression condition, StatementBlock block, SourceLocation location) : base(location)
+        public WhileStatement(Expression condition, StatementBlock block, SourceRange source) : base(source)
             => (Condition, Block) = (condition, block);
 
         public override string ToString() => $"WHILE {Condition}\n{Block}\nENDWHILE";
@@ -91,7 +91,7 @@ namespace ScTools.ScriptLang.Ast
 
         public override IEnumerable<Node> Children { get { yield return Call; } }
 
-        public CallStatement(ProcedureCall call, SourceLocation location) : base(location)
+        public CallStatement(ProcedureCall call, SourceRange source) : base(source)
             => Call = call;
 
         public override string ToString() => $"{Call}";

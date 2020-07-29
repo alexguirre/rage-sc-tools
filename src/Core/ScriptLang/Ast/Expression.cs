@@ -7,7 +7,7 @@ namespace ScTools.ScriptLang.Ast
 
     public abstract class Expression : Node
     {
-        public Expression(SourceLocation location) : base(location)
+        public Expression(SourceRange source) : base(source)
         {
         }
     }
@@ -18,7 +18,7 @@ namespace ScTools.ScriptLang.Ast
 
         public override IEnumerable<Node> Children { get { yield return Inner; } }
 
-        public ParenthesizedExpression(Expression inner, SourceLocation location) : base(location)
+        public ParenthesizedExpression(Expression inner, SourceRange source) : base(source)
             => Inner = inner;
 
         public override string ToString() => $"({Inner})";
@@ -30,7 +30,7 @@ namespace ScTools.ScriptLang.Ast
 
         public override IEnumerable<Node> Children { get { yield return Operand; } }
 
-        public NotExpression(Expression operand, SourceLocation location) : base(location)
+        public NotExpression(Expression operand, SourceRange source) : base(source)
             => Operand = operand;
 
         public override string ToString() => $"NOT {Operand}";
@@ -44,7 +44,7 @@ namespace ScTools.ScriptLang.Ast
 
         public override IEnumerable<Node> Children { get { yield return Left; yield return Right; } }
 
-        public BinaryExpression(BinaryOperator op, Expression left, Expression right, SourceLocation location) : base(location)
+        public BinaryExpression(BinaryOperator op, Expression left, Expression right, SourceRange source) : base(source)
             => (Op, Left, Right) = (op, left, right);
 
         public override string ToString() => $"{Left} {OpToString(Op)} {Right}";
@@ -81,7 +81,7 @@ namespace ScTools.ScriptLang.Ast
 
         public override IEnumerable<Node> Children => Expressions;
 
-        public AggregateExpression(IEnumerable<Expression> expressions, SourceLocation location) : base(location)
+        public AggregateExpression(IEnumerable<Expression> expressions, SourceRange source) : base(source)
             => Expressions = expressions.ToImmutableArray();
 
         public override string ToString() => $"<<{string.Join(", ", Expressions)}>>";
@@ -93,7 +93,7 @@ namespace ScTools.ScriptLang.Ast
 
         public override IEnumerable<Node> Children { get { yield return Identifier; } }
 
-        public IdentifierExpression(Identifier identifier, SourceLocation location) : base(location)
+        public IdentifierExpression(Identifier identifier, SourceRange source) : base(source)
             => Identifier = identifier;
 
         public override string ToString() => $"{Identifier}";
@@ -106,7 +106,7 @@ namespace ScTools.ScriptLang.Ast
 
         public override IEnumerable<Node> Children { get { yield return Expression; yield return Member; } }
 
-        public MemberAccessExpression(Expression expression, Identifier member, SourceLocation location) : base(location)
+        public MemberAccessExpression(Expression expression, Identifier member, SourceRange source) : base(source)
             => (Expression, Member) = (expression, member);
 
         public override string ToString() => $"{Expression}.{Member}";
@@ -119,7 +119,7 @@ namespace ScTools.ScriptLang.Ast
 
         public override IEnumerable<Node> Children { get { yield return Expression; yield return Indexer; } }
 
-        public ArrayAccessExpression(Expression expression, ArrayIndexer indexer, SourceLocation location) : base(location)
+        public ArrayAccessExpression(Expression expression, ArrayIndexer indexer, SourceRange source) : base(source)
             => (Expression, Indexer) = (expression, indexer);
 
         public override string ToString() => $"{Expression}{Indexer}";
@@ -131,7 +131,7 @@ namespace ScTools.ScriptLang.Ast
 
         public override IEnumerable<Node> Children { get { yield return Call; } }
 
-        public CallExpression(ProcedureCall call, SourceLocation location) : base(location)
+        public CallExpression(ProcedureCall call, SourceRange source) : base(source)
             => Call = call;
 
         public override string ToString() => $"{Call}";
@@ -142,7 +142,7 @@ namespace ScTools.ScriptLang.Ast
         public LiteralKind Kind { get; }
         public string ValueText { get; }
 
-        public LiteralExpression(LiteralKind kind, string valueText, SourceLocation location) : base(location)
+        public LiteralExpression(LiteralKind kind, string valueText, SourceRange source) : base(source)
             => (Kind, ValueText) = (kind, valueText);
 
         public override string ToString() => $"{ValueText}/*{Kind}*/";

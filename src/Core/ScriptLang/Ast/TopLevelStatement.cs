@@ -5,7 +5,7 @@ namespace ScTools.ScriptLang.Ast
 
     public abstract class TopLevelStatement : Node
     {
-        public TopLevelStatement(SourceLocation location) : base(location)
+        public TopLevelStatement(SourceRange source) : base(source)
         {
         }
     }
@@ -16,7 +16,7 @@ namespace ScTools.ScriptLang.Ast
 
         public override IEnumerable<Node> Children { get { yield return Name; } }
 
-        public ScriptNameStatement(Identifier name, SourceLocation location) : base(location)
+        public ScriptNameStatement(Identifier name, SourceRange source) : base(source)
             => Name = name;
 
         public override string ToString() => $"SCRIPT_NAME {Name}";
@@ -30,7 +30,7 @@ namespace ScTools.ScriptLang.Ast
 
         public override IEnumerable<Node> Children { get { yield return Name; yield return ParameterList; yield return Block; } }
 
-        public ProcedureStatement(Identifier name, ParameterList parameterList, StatementBlock block, SourceLocation location) : base(location)
+        public ProcedureStatement(Identifier name, ParameterList parameterList, StatementBlock block, SourceRange source) : base(source)
             => (Name, ParameterList, Block) = (name, parameterList, block);
 
         public override string ToString() => $"PROC {Name}{ParameterList}\n{Block}\nENDPROC";
@@ -43,7 +43,7 @@ namespace ScTools.ScriptLang.Ast
 
         public override IEnumerable<Node> Children { get { yield return Name; } }
 
-        public StructStatement(Identifier name, SourceLocation location) : base(location)
+        public StructStatement(Identifier name, SourceRange source) : base(source)
             => Name = name;
 
         public override string ToString() => $"STRUCT {Name}\nENDSTRUCT";
@@ -56,7 +56,7 @@ namespace ScTools.ScriptLang.Ast
 
         public override IEnumerable<Node> Children { get { yield return Name; } }
 
-        public StaticFieldStatement(Identifier name, SourceLocation location) : base(location)
+        public StaticFieldStatement(Identifier name, SourceRange source) : base(source)
             => Name = name;
 
         public override string ToString() => $"{Name}";

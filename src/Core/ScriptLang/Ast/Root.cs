@@ -10,7 +10,7 @@ namespace ScTools.ScriptLang.Ast
 
         public override IEnumerable<Node> Children => Statements;
 
-        public Root(IEnumerable<TopLevelStatement> statements, SourceLocation location) : base(location)
+        public Root(IEnumerable<TopLevelStatement> statements, SourceRange source) : base(source)
             => Statements = statements.ToImmutableArray();
 
         public override string ToString() => $"{string.Join("\n", Statements)}";

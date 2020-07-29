@@ -13,17 +13,17 @@ namespace ScTools.ScriptLang.Ast
     {
         private sealed class PlaceholderStatement : Statement
         {
-            public PlaceholderStatement(SourceLocation location) : base(location) { }
+            public PlaceholderStatement(SourceRange source) : base(source) { }
             public override string ToString() => "PlaceholderStmt";
         }
 
         private sealed class PlaceholderExpression : Expression
         {
-            public PlaceholderExpression(SourceLocation location) : base(location) { }
+            public PlaceholderExpression(SourceRange source) : base(source) { }
             public override string ToString() => "PlaceholderExpr";
         }
 
-        private static SourceLocation Source(ParserRuleContext context) => new SourceLocation(context.Start.Line, context.Start.Column + 1);
+        private static SourceRange Source(ParserRuleContext context) => SourceRange.FromTokens(context.Start, context.Stop);
         private static Node PlaceholderStmt(ScLangParser.StatementContext context) => new PlaceholderStatement(Source(context));
         private static Node PlaceholderExpr(ScLangParser.ExpressionContext context) => new PlaceholderExpression(Source(context));
 
