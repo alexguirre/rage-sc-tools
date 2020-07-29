@@ -85,6 +85,18 @@ namespace ScTools.ScriptLang.Ast
         public override string ToString() => $"{Type} {Name}{ArrayRank?.ToString() ?? ""}";
     }
 
+    public sealed class ParameterList : Node
+    {
+        public ImmutableArray<Variable> Parameters { get; }
+
+        public override IEnumerable<Node> Children => Parameters;
+
+        public ParameterList(IEnumerable<Variable> parameters, SourceLocation location) : base(location)
+            => Parameters = parameters.ToImmutableArray();
+
+        public override string ToString() => $"({string.Join(", ", Parameters)})";
+    }
+
     public sealed class ProcedureCall : Node
     {
         public Identifier Procedure { get; }

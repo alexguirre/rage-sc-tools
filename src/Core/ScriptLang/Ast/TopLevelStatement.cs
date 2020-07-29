@@ -25,14 +25,15 @@ namespace ScTools.ScriptLang.Ast
     public sealed class ProcedureStatement : TopLevelStatement
     {
         public Identifier Name { get; }
+        public ParameterList ParameterList { get; }
         public StatementBlock Block { get; }
 
-        public override IEnumerable<Node> Children { get { yield return Name; yield return Block; } }
+        public override IEnumerable<Node> Children { get { yield return Name; yield return ParameterList; yield return Block; } }
 
-        public ProcedureStatement(Identifier name, StatementBlock block, SourceLocation location) : base(location)
-            => (Name, Block) = (name, block);
+        public ProcedureStatement(Identifier name, ParameterList parameterList, StatementBlock block, SourceLocation location) : base(location)
+            => (Name, ParameterList, Block) = (name, parameterList, block);
 
-        public override string ToString() => $"PROC {Name}()\n{Block}\nENDPROC";
+        public override string ToString() => $"PROC {Name}{ParameterList}\n{Block}\nENDPROC";
     }
 
     public sealed class StructStatement : TopLevelStatement

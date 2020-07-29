@@ -36,6 +36,7 @@ namespace ScTools.ScriptLang.Ast
 
         public override Node VisitProcedureStatement([NotNull] ScLangParser.ProcedureStatementContext context)
             => new ProcedureStatement((Identifier)context.procedure().identifier().Accept(this),
+                                      (ParameterList)context.procedure().parameterList().Accept(this),
                                       (StatementBlock)context.procedure().statementBlock().Accept(this),
                                       Source(context));
 
@@ -141,6 +142,9 @@ namespace ScTools.ScriptLang.Ast
                             (Identifier)context.identifier().Accept(this),
                             (ArrayIndexer?)context.arrayIndexer()?.Accept(this),
                             Source(context));
+
+        public override Node VisitParameterList([NotNull] ScLangParser.ParameterListContext context)
+            => new ParameterList(context.variable().Select(v => v.Accept(this)).Cast<Variable>(), Source(context));
 
         public override Node VisitType([NotNull] ScLangParser.TypeContext context)
             => new Type((Identifier)context.identifier().Accept(this), Source(context));

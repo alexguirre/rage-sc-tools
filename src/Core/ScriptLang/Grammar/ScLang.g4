@@ -59,9 +59,13 @@ variable
     ;
 
 procedure
-    : K_PROC identifier '(' ')' EOL
+    : K_PROC identifier parameterList EOL
       statementBlock
       K_ENDPROC
+    ;
+
+parameterList
+    : '(' (variable (',' variable)*)? ')'
     ;
 
 struct
