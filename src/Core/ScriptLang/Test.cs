@@ -47,6 +47,8 @@ PROC MAIN()
     INT a = 5
     INT b = 10
     INT c = a + b * b
+    c = (a + b) * b
+    c = a + (b * b)
 
     WHILE TRUE
         WAIT(0)

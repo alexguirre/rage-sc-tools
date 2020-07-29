@@ -73,6 +73,9 @@ namespace ScTools.ScriptLang.Ast
         #endregion Statements
 
         #region Expressions
+        public override Node VisitParenthesizedExpression([NotNull] ScLangParser.ParenthesizedExpressionContext context)
+            => new ParenthesizedExpression((Expression)context.expression().Accept(this), Source(context));
+        
         public override Node VisitNotExpression([NotNull] ScLangParser.NotExpressionContext context)
             => new NotExpression((Expression)context.expression().Accept(this), Source(context));
 

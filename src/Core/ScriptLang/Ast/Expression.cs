@@ -12,16 +12,28 @@ namespace ScTools.ScriptLang.Ast
         }
     }
 
-    public sealed class NotExpression : Expression
+    public sealed class ParenthesizedExpression : Expression
     {
         public Expression Inner { get; }
 
         public override IEnumerable<Node> Children { get { yield return Inner; } }
 
-        public NotExpression(Expression inner, SourceLocation location) : base(location)
+        public ParenthesizedExpression(Expression inner, SourceLocation location) : base(location)
             => Inner = inner;
 
-        public override string ToString() => $"NOT {Inner}";
+        public override string ToString() => $"({Inner})";
+    }
+
+    public sealed class NotExpression : Expression
+    {
+        public Expression Operand { get; }
+
+        public override IEnumerable<Node> Children { get { yield return Operand; } }
+
+        public NotExpression(Expression operand, SourceLocation location) : base(location)
+            => Operand = operand;
+
+        public override string ToString() => $"NOT {Operand}";
     }
 
     public sealed class BinaryExpression : Expression

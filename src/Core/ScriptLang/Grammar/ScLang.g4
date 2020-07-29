@@ -31,8 +31,13 @@ statementBlock
     ;
 
 expression
-    : K_NOT expression                                                                      #notExpression
-    | left=expression op=('+' | '-' | '*' | '/' | '%' | '|' | '&' | '^') right=expression   #binaryExpression  // TODO: fix operator precedence
+    : '(' expression ')'                                                                    #parenthesizedExpression
+    | K_NOT expression                                                                      #notExpression
+    | left=expression op=('*' | '/' | '%') right=expression                                 #binaryExpression
+    | left=expression op=('+' | '-') right=expression                                       #binaryExpression
+    | left=expression op='&' right=expression                                               #binaryExpression
+    | left=expression op='^' right=expression                                               #binaryExpression
+    | left=expression op='|' right=expression                                               #binaryExpression
     | '<<' expression (',' expression)* '>>'                                                #aggregateExpression
     | identifier                                                                            #identifierExpression
     | expression '.' identifier                                                             #memberAccessExpression
