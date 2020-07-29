@@ -1,10 +1,9 @@
 ﻿namespace ScTools.ScriptLang
 {
     using System;
-    using System.Linq;
+    using System.Collections.Generic;
 
     using Antlr4.Runtime;
-    using Antlr4.Runtime.Misc;
 
     using ScTools.ScriptLang.Ast;
     using ScTools.ScriptLang.Grammar;
@@ -75,6 +74,43 @@ ENDPROC
 
             Console.WriteLine();
             Console.WriteLine(AstDotGenerator.Generate(root));
+            Console.WriteLine();
+            Console.WriteLine("===========================");
+
+            root.Accept(new SimpleVisitorTest());
+        }
+
+        private sealed class SimpleVisitorTest : AstVisitor
+        {
+            private readonly HashSet<string> foundTypes = new HashSet<string>();
+
+            public override void VisitType(Ast.Type node)
+            {
+                string typeName = node.Name.Name;
+                if (foundTypes.Add(typeName))
+                {
+                    Console.WriteLine($"{typeName}\t{node.Source}");
+                }
+            }
+
+            public override void VisitStructStatement(StructStatement node)
+            {
+                string structName = node.Name.Name;
+                if (foundTypes.Add(structName))
+                {
+                    Console.WriteLine($"{structName}\t{node.Source}");
+                }
+
+                DefaultVisit(node);
+            }
+
+            public override void DefaultVisit(Node node)
+            {
+                foreach (var n in node.Children)
+                {
+                    Visit(n);
+                }
+            }
         }
     }
 }

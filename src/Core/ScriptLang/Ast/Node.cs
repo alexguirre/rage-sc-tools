@@ -53,7 +53,7 @@ namespace ScTools.ScriptLang.Ast
             => new SourceRange((start.Line, start.Column + 1), (stop.Line, stop.Column + 1 + Interval.Of(stop.StartIndex, stop.StopIndex).Length));
     }
 
-public abstract class Node
+    public abstract class Node
     {
         public SourceRange Source { get; }
         public virtual IEnumerable<Node> Children => Enumerable.Empty<Node>();
