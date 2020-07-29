@@ -1,0 +1,33 @@
+{
+    "comments": {
+        // symbol used for single line comment
+        "lineComment": "//"
+    },
+    // symbols used as brackets
+    "brackets": [
+        ["STRUCT", "ENDSTRUCT"],
+        ["PROC", "ENDPROC"],
+        ["IF", "ENDIF"],
+        ["WHILE", "ENDWHILE"],
+        ["[", "]"],
+        ["(", ")"]
+    ],
+    // symbols that are auto closed when typing
+    "autoClosingPairs": [
+        ["STRUCT", "ENDSTRUCT"],
+        ["PROC", "ENDPROC"],
+        ["IF", "ENDIF"],
+        ["WHILE", "ENDWHILE"],
+        ["[", "]"],
+        ["(", ")"],
+        ["<<", ">>"],
+        ["\"", "\""]
+    ],
+    // symbols that that can be used to surround a selection
+    "surroundingPairs": [
+        ["[", "]"],
+        ["(", ")"],
+        ["<<", ">>"],
+        ["\"", "\""]
+    ]
+}

@@ -1,1 +1,1 @@
-# scasm-support
+# sclang-support
