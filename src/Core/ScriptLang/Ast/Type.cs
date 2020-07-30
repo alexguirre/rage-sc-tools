@@ -31,4 +31,29 @@ namespace ScTools.ScriptLang.Ast
 
         public override string ToString() => $"{Name}&";
     }
+
+    public sealed class ProcedureRefType : Type
+    {
+        public ParameterList ParameterList { get; }
+
+        public override IEnumerable<Node> Children { get { yield return ParameterList; } }
+
+        public ProcedureRefType(ParameterList parameterList, SourceRange source) : base(source)
+            => ParameterList = parameterList;
+
+        public override string ToString() => $"PROC& {ParameterList}";
+    }
+
+    public sealed class FunctionRefType : Type
+    {
+        public Type ReturnType { get; }
+        public ParameterList ParameterList { get; }
+
+        public override IEnumerable<Node> Children { get { yield return ParameterList; } }
+
+        public FunctionRefType(Type returnType, ParameterList parameterList, SourceRange source) : base(source)
+            => (ReturnType, ParameterList) = (returnType, parameterList);
+
+        public override string ToString() => $"FUNC& {ReturnType}{ParameterList}";
+    }
 }

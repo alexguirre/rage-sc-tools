@@ -85,9 +85,11 @@ arrayIndexer
     ;
 
 type
-    : identifier '&'    #refType
-    | identifier        #basicType
-    ; // TODO: procedure/function reference types
+    : K_PROC '&' parameterList                  #procedureRefType
+    | K_FUNC '&' returnType=type parameterList  #functionRefType
+    | identifier '&'                            #refType
+    | identifier                                #basicType
+    ;
 
 identifier
     : IDENTIFIER

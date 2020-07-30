@@ -34,10 +34,19 @@ STRUCT RECT_DETAILS
     FLOAT H = 0.1
 ENDSTRUCT
 
+STRUCT CALLBACKS
+    PROC& (INT alpha) draw
+    FUNC& INT()       getAlpha
+ENDSTRUCT
+
 RECT_DETAILS myRect
+CALLBACKS myCallbacks
 
 PROC MAIN()
     
+    myCallbacks.draw = DRAW_OTHER_STUFF
+    myCallbacks.getAlpha = GET_ALPHA_VALUE
+
     VEC3 playerPos = <<1.0, 2.0, 3.0>>
     
     VEC2 rectPos = <<0.5, 0.5>>
@@ -63,6 +72,8 @@ PROC MAIN()
         IF b
             a = a + 1
         ENDIF
+
+        myCallbacks.draw(myCallbacks.getAlpha())
     ENDWHILE
 ENDPROC
 
@@ -72,8 +83,12 @@ PROC DRAW_SOMETHING(INT r, INT g, INT b)
 ENDPROC
 
 FUNC INT GET_ALPHA_VALUE()
-    RETURN 255
+    RETURN 200
 ENDFUNC
+
+PROC DRAW_OTHER_STUFF(INT alpha)
+    DRAW_RECT(0.6, 0.6, 0.2, 0.2, 100, 100, 20, alpha, FALSE)
+ENDPROC
 
 PROC RUN_SPLINE_CAM_ON_CHAR(PED_INDEX &TargetChar1, PED_INDEX& TargetChar2)
 ENDPROC

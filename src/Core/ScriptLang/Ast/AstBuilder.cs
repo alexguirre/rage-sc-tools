@@ -144,6 +144,22 @@ namespace ScTools.ScriptLang.Ast
             Source(context));
         #endregion Expressions
 
+        #region Types
+        public override Node VisitBasicType([NotNull] ScLangParser.BasicTypeContext context)
+            => new BasicType((Identifier)context.identifier().Accept(this), Source(context));
+
+        public override Node VisitRefType([NotNull] ScLangParser.RefTypeContext context)
+            => new RefType((Identifier)context.identifier().Accept(this), Source(context));
+
+        public override Node VisitProcedureRefType([NotNull] ScLangParser.ProcedureRefTypeContext context)
+            => new ProcedureRefType((ParameterList)context.parameterList().Accept(this), Source(context));
+
+        public override Node VisitFunctionRefType([NotNull] ScLangParser.FunctionRefTypeContext context)
+            => new FunctionRefType((Type)context.returnType.Accept(this),
+                                   (ParameterList)context.parameterList().Accept(this),
+                                   Source(context));
+        #endregion
+
         #region Misc
         public override Node VisitStatementBlock([NotNull] ScLangParser.StatementBlockContext context)
             => new StatementBlock(context.statement().Select(stmt => stmt.Accept(this)).Cast<Statement>(), Source(context));
@@ -169,12 +185,6 @@ namespace ScTools.ScriptLang.Ast
         public override Node VisitStructFieldList([NotNull] ScLangParser.StructFieldListContext context)
             => new StructFieldList(context.variableDeclarationWithInitializer().Select(v => v.Accept(this)).Cast<VariableDeclarationWithInitializer>(),
                                    Source(context));
-
-        public override Node VisitBasicType([NotNull] ScLangParser.BasicTypeContext context)
-            => new BasicType((Identifier)context.identifier().Accept(this), Source(context));
-        
-        public override Node VisitRefType([NotNull] ScLangParser.RefTypeContext context)
-            => new RefType((Identifier)context.identifier().Accept(this), Source(context));
 
         public override Node VisitIdentifier([NotNull] ScLangParser.IdentifierContext context)
             => new Identifier(context.GetText(), Source(context));

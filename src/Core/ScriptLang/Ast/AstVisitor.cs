@@ -35,10 +35,13 @@ namespace ScTools.ScriptLang.Ast
         public virtual void VisitInvocationExpression(InvocationExpression node) => DefaultVisit(node);
         public virtual void VisitLiteralExpression(LiteralExpression node) => DefaultVisit(node);
 
-        public virtual void VisitIdentifier(Identifier node) => DefaultVisit(node);
-        public virtual void VisitArrayIndexer(ArrayIndexer node) => DefaultVisit(node);
         public virtual void VisitBasicType(BasicType node) => DefaultVisit(node);
         public virtual void VisitRefType(RefType node) => DefaultVisit(node);
+        public virtual void VisitProcedureRefType(ProcedureRefType node) => DefaultVisit(node);
+        public virtual void VisitFunctionRefType(FunctionRefType node) => DefaultVisit(node);
+
+        public virtual void VisitIdentifier(Identifier node) => DefaultVisit(node);
+        public virtual void VisitArrayIndexer(ArrayIndexer node) => DefaultVisit(node);
         public virtual void VisitVariableDeclaration(VariableDeclaration node) => DefaultVisit(node);
         public virtual void VisitVariableDeclarationWithInitializer(VariableDeclarationWithInitializer node) => DefaultVisit(node);
         public virtual void VisitParameterList(ParameterList node) => DefaultVisit(node);
@@ -77,10 +80,13 @@ namespace ScTools.ScriptLang.Ast
         [return: MaybeNull] public virtual TResult VisitInvocationExpression(InvocationExpression node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitLiteralExpression(LiteralExpression node) => DefaultVisit(node);
 
-        [return: MaybeNull] public virtual TResult VisitIdentifier(Identifier node) => DefaultVisit(node);
-        [return: MaybeNull] public virtual TResult VisitArrayIndexer(ArrayIndexer node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitBasicType(BasicType node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitRefType(RefType node) => DefaultVisit(node);
+        [return: MaybeNull] public virtual TResult VisitProcedureRefType(ProcedureRefType node) => DefaultVisit(node);
+        [return: MaybeNull] public virtual TResult VisitFunctionRefType(FunctionRefType node) => DefaultVisit(node);
+
+        [return: MaybeNull] public virtual TResult VisitIdentifier(Identifier node) => DefaultVisit(node);
+        [return: MaybeNull] public virtual TResult VisitArrayIndexer(ArrayIndexer node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitVariableDeclaration(VariableDeclaration node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitVariableDeclarationWithInitializer(VariableDeclarationWithInitializer node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitParameterList(ParameterList node) => DefaultVisit(node);
@@ -120,10 +126,13 @@ namespace ScTools.ScriptLang.Ast
                 case InvocationExpression n: visitor.VisitInvocationExpression(n); break;
                 case LiteralExpression n: visitor.VisitLiteralExpression(n); break;
 
-                case Identifier n: visitor.VisitIdentifier(n); break;
-                case ArrayIndexer n: visitor.VisitArrayIndexer(n); break;
                 case BasicType n: visitor.VisitBasicType(n); break;
                 case RefType n: visitor.VisitRefType(n); break;
+                case ProcedureRefType n: visitor.VisitProcedureRefType(n); break;
+                case FunctionRefType n: visitor.VisitFunctionRefType(n); break;
+
+                case Identifier n: visitor.VisitIdentifier(n); break;
+                case ArrayIndexer n: visitor.VisitArrayIndexer(n); break;
                 case VariableDeclaration n: visitor.VisitVariableDeclaration(n); break;
                 case VariableDeclarationWithInitializer n: visitor.VisitVariableDeclarationWithInitializer(n); break;
                 case ParameterList n: visitor.VisitParameterList(n); break;
@@ -163,10 +172,13 @@ namespace ScTools.ScriptLang.Ast
             InvocationExpression n => visitor.VisitInvocationExpression(n),
             LiteralExpression n => visitor.VisitLiteralExpression(n),
 
+            BasicType n => visitor.VisitBasicType(n),
+            RefType n => visitor.VisitRefType(n),
+            ProcedureRefType n => visitor.VisitProcedureRefType(n),
+            FunctionRefType n => visitor.VisitFunctionRefType(n),
+
             Identifier n => visitor.VisitIdentifier(n),
             ArrayIndexer n => visitor.VisitArrayIndexer(n),
-            BasicType n =>  visitor.VisitBasicType(n),
-            RefType n => visitor.VisitRefType(n),
             VariableDeclaration n => visitor.VisitVariableDeclaration(n),
             VariableDeclarationWithInitializer n => visitor.VisitVariableDeclarationWithInitializer(n),
             ParameterList n => visitor.VisitParameterList(n),
