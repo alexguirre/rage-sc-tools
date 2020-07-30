@@ -62,14 +62,26 @@ namespace ScTools.ScriptLang.Ast
     public sealed class IfStatement : Statement
     {
         public Expression Condition { get; }
-        public StatementBlock Block { get; }
+        public StatementBlock ThenBlock { get; }
+        public StatementBlock? ElseBlock { get; }
 
-        public override IEnumerable<Node> Children { get { yield return Condition; yield return Block; } }
+        public override IEnumerable<Node> Children
+        {
+            get
+            {
+                yield return Condition;
+                yield return ThenBlock;
+                if (ElseBlock != null)
+                {
+                    yield return ElseBlock;
+                }
+            }
+        }
 
-        public IfStatement(Expression condition, StatementBlock block, SourceRange source) : base(source)
-            => (Condition, Block) = (condition, block);
+        public IfStatement(Expression condition, StatementBlock thenBlock, StatementBlock? elseBlock, SourceRange source) : base(source)
+            => (Condition, ThenBlock, ElseBlock) = (condition, thenBlock, elseBlock);
 
-        public override string ToString() => $"IF {Condition}\n{Block}\nENDIF";
+        public override string ToString() => $"IF {Condition}\n{ThenBlock}\n{(ElseBlock != null ? $"ELSE\n{ElseBlock}\n" : "")}ENDIF";
     }
 
     public sealed class WhileStatement : Statement

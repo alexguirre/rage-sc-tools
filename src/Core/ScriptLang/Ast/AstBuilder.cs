@@ -68,7 +68,8 @@ namespace ScTools.ScriptLang.Ast
 
         public override Node VisitIfStatement([NotNull] ScLangParser.IfStatementContext context)
             => new IfStatement((Expression)context.condition.Accept(this),
-                               (StatementBlock)context.statementBlock().Accept(this),
+                               (StatementBlock)context.thenBlock.Accept(this),
+                               (StatementBlock?)context.elseBlock?.Accept(this),
                                Source(context));
 
         public override Node VisitWhileStatement([NotNull] ScLangParser.WhileStatementContext context)

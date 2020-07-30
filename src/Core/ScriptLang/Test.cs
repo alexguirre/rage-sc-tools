@@ -54,6 +54,12 @@ PROC MAIN()
 
         IF a
             DRAW_SOMETHING(0, 0, 255)
+        ELSE
+            DRAW_SOMETHING(255, 0, 0)
+        ENDIF
+
+        IF b
+            a = a + 1
         ENDIF
     ENDWHILE
 ENDPROC

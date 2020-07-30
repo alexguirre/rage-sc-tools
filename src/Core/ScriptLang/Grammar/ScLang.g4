@@ -27,7 +27,9 @@ statement
     | left=expression '=' right=expression                      #assignmentStatement // TODO: more assignment operators (+=, -=, *=, /=, ...)
     
     | K_IF condition=expression EOL
-      statementBlock
+      thenBlock=statementBlock
+      (K_ELSE EOL
+      elseBlock=statementBlock)?
       K_ENDIF                                                   #ifStatement
     
     | K_WHILE condition=expression EOL
@@ -121,6 +123,7 @@ K_TRUE : T R U E;
 K_FALSE : F A L S E;
 K_NOT : N O T;
 K_IF : I F;
+K_ELSE : E L S E;
 K_ENDIF : E N D I F;
 K_WHILE : W H I L E;
 K_ENDWHILE : E N D W H I L E;
