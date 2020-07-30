@@ -39,9 +39,11 @@ namespace ScTools.ScriptLang.Ast
         public virtual void VisitArrayIndexer(ArrayIndexer node) => DefaultVisit(node);
         public virtual void VisitBasicType(BasicType node) => DefaultVisit(node);
         public virtual void VisitRefType(RefType node) => DefaultVisit(node);
-        public virtual void VisitVariable(Variable node) => DefaultVisit(node);
+        public virtual void VisitVariableDeclaration(VariableDeclaration node) => DefaultVisit(node);
+        public virtual void VisitVariableDeclarationWithInitializer(VariableDeclarationWithInitializer node) => DefaultVisit(node);
         public virtual void VisitParameterList(ParameterList node) => DefaultVisit(node);
         public virtual void VisitArgumentList(ArgumentList node) => DefaultVisit(node);
+        public virtual void VisitStructFieldList(StructFieldList node) => DefaultVisit(node);
     }
 
     public abstract class AstVisitor<TResult>
@@ -79,9 +81,11 @@ namespace ScTools.ScriptLang.Ast
         [return: MaybeNull] public virtual TResult VisitArrayIndexer(ArrayIndexer node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitBasicType(BasicType node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitRefType(RefType node) => DefaultVisit(node);
-        [return: MaybeNull] public virtual TResult VisitVariable(Variable node) => DefaultVisit(node);
+        [return: MaybeNull] public virtual TResult VisitVariableDeclaration(VariableDeclaration node) => DefaultVisit(node);
+        [return: MaybeNull] public virtual TResult VisitVariableDeclarationWithInitializer(VariableDeclarationWithInitializer node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitParameterList(ParameterList node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitArgumentList(ArgumentList node) => DefaultVisit(node);
+        [return: MaybeNull] public virtual TResult VisitStructFieldList(StructFieldList node) => DefaultVisit(node);
     }
 
     public static class NodeVisitorExtensions
@@ -120,9 +124,11 @@ namespace ScTools.ScriptLang.Ast
                 case ArrayIndexer n: visitor.VisitArrayIndexer(n); break;
                 case BasicType n: visitor.VisitBasicType(n); break;
                 case RefType n: visitor.VisitRefType(n); break;
-                case Variable n: visitor.VisitVariable(n); break;
+                case VariableDeclaration n: visitor.VisitVariableDeclaration(n); break;
+                case VariableDeclarationWithInitializer n: visitor.VisitVariableDeclarationWithInitializer(n); break;
                 case ParameterList n: visitor.VisitParameterList(n); break;
                 case ArgumentList n: visitor.VisitArgumentList(n); break;
+                case StructFieldList n: visitor.VisitStructFieldList(n); break;
 
                 default: throw new NotImplementedException();
             }
@@ -161,9 +167,11 @@ namespace ScTools.ScriptLang.Ast
             ArrayIndexer n => visitor.VisitArrayIndexer(n),
             BasicType n =>  visitor.VisitBasicType(n),
             RefType n => visitor.VisitRefType(n),
-            Variable n => visitor.VisitVariable(n),
+            VariableDeclaration n => visitor.VisitVariableDeclaration(n),
+            VariableDeclarationWithInitializer n => visitor.VisitVariableDeclarationWithInitializer(n),
             ParameterList n => visitor.VisitParameterList(n),
             ArgumentList n => visitor.VisitArgumentList(n),
+            StructFieldList n => visitor.VisitStructFieldList(n),
 
             _ => throw new NotImplementedException()
         };

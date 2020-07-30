@@ -16,14 +16,14 @@ topLevelStatement
       K_ENDFUNC                                                 #functionStatement
     
     | K_STRUCT identifier EOL
-      (variableDeclaration? EOL)*
+      structFieldList
       K_ENDSTRUCT                                               #structStatement
     
-    | variableDeclaration                                       #staticFieldStatement
+    | variableDeclarationWithInitializer                        #staticFieldStatement
     ;
 
 statement
-    : variableDeclaration                                       #variableDeclarationStatement
+    : variableDeclarationWithInitializer                        #variableDeclarationStatement
     | left=expression '=' right=expression                      #assignmentStatement // TODO: more assignment operators (+=, -=, *=, /=, ...)
     
     | K_IF condition=expression EOL
@@ -60,12 +60,16 @@ expression
     | (numeric | string | bool)                                 #literalExpression
     ;
 
-variableDeclaration
-    : variable ('=' expression)?
+variableDeclarationWithInitializer
+    : decl=variableDeclaration ('=' initializer=expression)?
     ;
 
-variable
+variableDeclaration
     : type identifier arrayIndexer?
+    ;
+
+structFieldList
+    : (variableDeclarationWithInitializer? EOL)*
     ;
 
 argumentList
@@ -73,7 +77,7 @@ argumentList
     ;
 
 parameterList
-    : '(' (variable (',' variable)*)? ')'
+    : '(' (variableDeclaration (',' variableDeclaration)*)? ')'
     ;
 
 arrayIndexer

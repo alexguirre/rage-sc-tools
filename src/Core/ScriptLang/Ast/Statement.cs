@@ -25,25 +25,14 @@ namespace ScTools.ScriptLang.Ast
 
     public sealed class VariableDeclarationStatement : Statement
     {
-        public Variable Variable { get; }
-        public Expression? Initializer { get; }
+        public VariableDeclarationWithInitializer Variable { get; }
 
-        public override IEnumerable<Node> Children
-        {
-            get
-            {
-                yield return Variable;
-                if (Initializer != null)
-                {
-                    yield return Initializer;
-                }
-            }
-        }
+        public override IEnumerable<Node> Children { get { yield return Variable; } }
 
-        public VariableDeclarationStatement(Variable variable, Expression? initializer, SourceRange source) : base(source)
-            => (Variable, Initializer) = (variable, initializer);
+        public VariableDeclarationStatement(VariableDeclarationWithInitializer variable, SourceRange source) : base(source)
+            => Variable = variable;
 
-        public override string ToString() => $"{Variable}" + (Initializer != null ? $" = {Initializer}" : "");
+        public override string ToString() => $"{Variable}";
     }
 
     public sealed class AssignmentStatement : Statement

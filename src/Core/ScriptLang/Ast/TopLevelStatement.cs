@@ -54,26 +54,25 @@ namespace ScTools.ScriptLang.Ast
     public sealed class StructStatement : TopLevelStatement
     {
         public Identifier Name { get; }
-        // TODO: StructStatement fields
+        public StructFieldList FieldList { get; }
 
-        public override IEnumerable<Node> Children { get { yield return Name; } }
+        public override IEnumerable<Node> Children { get { yield return Name; yield return FieldList; } }
 
-        public StructStatement(Identifier name, SourceRange source) : base(source)
-            => Name = name;
+        public StructStatement(Identifier name, StructFieldList fieldList, SourceRange source) : base(source)
+            => (Name, FieldList) = (name, fieldList);
 
-        public override string ToString() => $"STRUCT {Name}\nENDSTRUCT";
+        public override string ToString() => $"STRUCT {Name}\n{FieldList}\nENDSTRUCT";
     }
 
-    // TODO: StaticFieldStatement
     public sealed class StaticFieldStatement : TopLevelStatement
     {
-        public Identifier Name { get; }
+        public VariableDeclarationWithInitializer Variable { get; }
 
-        public override IEnumerable<Node> Children { get { yield return Name; } }
+        public override IEnumerable<Node> Children { get { yield return Variable; } }
 
-        public StaticFieldStatement(Identifier name, SourceRange source) : base(source)
-            => Name = name;
+        public StaticFieldStatement(VariableDeclarationWithInitializer variable, SourceRange source) : base(source)
+            => Variable = variable;
 
-        public override string ToString() => $"{Name}";
+        public override string ToString() => $"{Variable}";
     }
 }

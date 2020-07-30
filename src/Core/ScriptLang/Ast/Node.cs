@@ -35,7 +35,7 @@ namespace ScTools.ScriptLang.Ast
         public override string ToString() => $"[{Expression}]";
     }
 
-    public sealed class Variable : Node
+    public sealed class VariableDeclaration : Node
     {
         public Type Type { get; }
         public Identifier Name { get; }
@@ -54,19 +54,42 @@ namespace ScTools.ScriptLang.Ast
             }
         }
 
-        public Variable(Type type, Identifier name, ArrayIndexer? arrayRank, SourceRange source) : base(source)
+        public VariableDeclaration(Type type, Identifier name, ArrayIndexer? arrayRank, SourceRange source) : base(source)
             => (Type, Name, ArrayRank) = (type, name, arrayRank);
 
         public override string ToString() => $"{Type} {Name}{ArrayRank?.ToString() ?? ""}";
     }
 
+    public sealed class VariableDeclarationWithInitializer : Node
+    {
+        public VariableDeclaration Declaration { get; }
+        public Expression? Initializer { get; }
+
+        public override IEnumerable<Node> Children
+        {
+            get
+            {
+                yield return Declaration;
+                if (Initializer != null)
+                {
+                    yield return Initializer;
+                }
+            }
+        }
+
+        public VariableDeclarationWithInitializer(VariableDeclaration declaration, Expression? initializer, SourceRange source) : base(source)
+            => (Declaration, Initializer) = (declaration, initializer);
+
+        public override string ToString() => Declaration.ToString() + (Initializer != null ? $" = {Initializer}" : "");
+    }
+
     public sealed class ParameterList : Node
     {
-        public ImmutableArray<Variable> Parameters { get; }
+        public ImmutableArray<VariableDeclaration> Parameters { get; }
 
         public override IEnumerable<Node> Children => Parameters;
 
-        public ParameterList(IEnumerable<Variable> parameters, SourceRange source) : base(source)
+        public ParameterList(IEnumerable<VariableDeclaration> parameters, SourceRange source) : base(source)
             => Parameters = parameters.ToImmutableArray();
 
         public override string ToString() => $"({string.Join(", ", Parameters)})";
@@ -82,5 +105,17 @@ namespace ScTools.ScriptLang.Ast
             => Arguments = arguments.ToImmutableArray();
 
         public override string ToString() => $"({string.Join(", ", Arguments)})";
+    }
+
+    public sealed class StructFieldList : Node
+    {
+        public ImmutableArray<VariableDeclarationWithInitializer> Fields { get; }
+
+        public override IEnumerable<Node> Children => Fields;
+
+        public StructFieldList(IEnumerable<VariableDeclarationWithInitializer> fields, SourceRange source) : base(source)
+            => Fields = fields.ToImmutableArray();
+
+        public override string ToString() => $"{string.Join('\n', Fields)}";
     }
 }

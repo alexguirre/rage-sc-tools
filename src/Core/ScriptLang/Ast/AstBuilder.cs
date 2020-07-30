@@ -48,17 +48,18 @@ namespace ScTools.ScriptLang.Ast
                                      Source(context));
 
         public override Node VisitStructStatement([NotNull] ScLangParser.StructStatementContext context)
-            => new StructStatement((Identifier)context.identifier().Accept(this), Source(context));
+            => new StructStatement((Identifier)context.identifier().Accept(this),
+                                   (StructFieldList)context.structFieldList().Accept(this),
+                                   Source(context));
 
         public override Node VisitStaticFieldStatement([NotNull] ScLangParser.StaticFieldStatementContext context)
-            => new StaticFieldStatement((Identifier)context.variableDeclaration().variable().identifier().Accept(this),
+            => new StaticFieldStatement((VariableDeclarationWithInitializer)context.variableDeclarationWithInitializer().Accept(this),
                                         Source(context));
         #endregion Top Level Statements
 
         #region Statements
         public override Node VisitVariableDeclarationStatement([NotNull] ScLangParser.VariableDeclarationStatementContext context)
-            => new VariableDeclarationStatement((Variable)context.variableDeclaration().variable().Accept(this),
-                                                (Expression?)context.variableDeclaration().expression()?.Accept(this),
+            => new VariableDeclarationStatement((VariableDeclarationWithInitializer)context.variableDeclarationWithInitializer().Accept(this),
                                                 Source(context));
 
         public override Node VisitAssignmentStatement([NotNull] ScLangParser.AssignmentStatementContext context)
@@ -147,18 +148,27 @@ namespace ScTools.ScriptLang.Ast
         public override Node VisitStatementBlock([NotNull] ScLangParser.StatementBlockContext context)
             => new StatementBlock(context.statement().Select(stmt => stmt.Accept(this)).Cast<Statement>(), Source(context));
 
-        public override Node VisitVariable([NotNull] ScLangParser.VariableContext context)
-            => new Variable((Type)context.type().Accept(this),
-                            (Identifier)context.identifier().Accept(this),
-                            (ArrayIndexer?)context.arrayIndexer()?.Accept(this),
-                            Source(context));
+        public override Node VisitVariableDeclaration([NotNull] ScLangParser.VariableDeclarationContext context)
+            => new VariableDeclaration((Type)context.type().Accept(this),
+                                       (Identifier)context.identifier().Accept(this),
+                                       (ArrayIndexer?)context.arrayIndexer()?.Accept(this),
+                                       Source(context));
+
+        public override Node VisitVariableDeclarationWithInitializer([NotNull] ScLangParser.VariableDeclarationWithInitializerContext context)
+            => new VariableDeclarationWithInitializer((VariableDeclaration)context.decl.Accept(this),
+                                                      (Expression?)context.initializer?.Accept(this),
+                                                      Source(context));
 
         public override Node VisitParameterList([NotNull] ScLangParser.ParameterListContext context)
-            => new ParameterList(context.variable().Select(v => v.Accept(this)).Cast<Variable>(), Source(context));
+            => new ParameterList(context.variableDeclaration().Select(v => v.Accept(this)).Cast<VariableDeclaration>(), Source(context));
 
         public override Node VisitArgumentList([NotNull] ScLangParser.ArgumentListContext context)
             => new ArgumentList(context.expression().Select(expr => expr.Accept(this)).Cast<Expression>(),
                                 Source(context));
+
+        public override Node VisitStructFieldList([NotNull] ScLangParser.StructFieldListContext context)
+            => new StructFieldList(context.variableDeclarationWithInitializer().Select(v => v.Accept(this)).Cast<VariableDeclarationWithInitializer>(),
+                                   Source(context));
 
         public override Node VisitBasicType([NotNull] ScLangParser.BasicTypeContext context)
             => new BasicType((Identifier)context.identifier().Accept(this), Source(context));
