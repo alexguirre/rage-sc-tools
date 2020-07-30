@@ -5,25 +5,37 @@ script
     ;
 
 topLevelStatement
-    : K_SCRIPT_NAME identifier  #scriptNameStatement
-    | procedure                 #procedureStatement
-    | struct                    #structStatement
-    | variableDeclaration       #staticFieldStatement
+    : K_SCRIPT_NAME identifier                                  #scriptNameStatement
+    
+    | K_PROC identifier parameterList EOL
+      statementBlock
+      K_ENDPROC                                                 #procedureStatement
+    
+    | K_FUNC returnType=type identifier parameterList EOL
+      statementBlock
+      K_ENDFUNC                                                 #functionStatement
+    
+    | K_STRUCT identifier EOL
+      (variableDeclaration? EOL)*
+      K_ENDSTRUCT                                               #structStatement
+    
+    | variableDeclaration                                       #staticFieldStatement
     ;
 
 statement
-    : variableDeclaration                           #variableDeclarationStatement
-    | left=expression '=' right=expression          #assignmentStatement // TODO: more assignment operators (+=, -=, *=, /=, ...)
+    : variableDeclaration                                       #variableDeclarationStatement
+    | left=expression '=' right=expression                      #assignmentStatement // TODO: more assignment operators (+=, -=, *=, /=, ...)
     
     | K_IF condition=expression EOL
       statementBlock
-      K_ENDIF                                       #ifStatement
+      K_ENDIF                                                   #ifStatement
     
     | K_WHILE condition=expression EOL
       statementBlock
-      K_ENDWHILE                                    #whileStatement
+      K_ENDWHILE                                                #whileStatement
     
-    | procedureCall                                 #callStatement
+    | K_RETURN expression                                       #returnStatement
+    | expression argumentList                                   #invocationStatement
     ;
 
 statementBlock
@@ -31,23 +43,19 @@ statementBlock
     ;
 
 expression
-    : '(' expression ')'                                                                    #parenthesizedExpression
-    | K_NOT expression                                                                      #notExpression
-    | left=expression op=('*' | '/' | '%') right=expression                                 #binaryExpression
-    | left=expression op=('+' | '-') right=expression                                       #binaryExpression
-    | left=expression op='&' right=expression                                               #binaryExpression
-    | left=expression op='^' right=expression                                               #binaryExpression
-    | left=expression op='|' right=expression                                               #binaryExpression
-    | '<<' expression (',' expression)* '>>'                                                #aggregateExpression
-    | identifier                                                                            #identifierExpression
-    | expression '.' identifier                                                             #memberAccessExpression
-    | expression arrayIndexer                                                               #arrayAccessExpression
-    | procedureCall                                                                         #callExpression
-    | (numeric | string | bool)                                                             #literalExpression
-    ;
-
-procedureCall
-    : identifier '(' (expression (',' expression)*)? ')'
+    : '(' expression ')'                                        #parenthesizedExpression
+    | K_NOT expression                                          #notExpression
+    | left=expression op=('*' | '/' | '%') right=expression     #binaryExpression
+    | left=expression op=('+' | '-') right=expression           #binaryExpression
+    | left=expression op='&' right=expression                   #binaryExpression
+    | left=expression op='^' right=expression                   #binaryExpression
+    | left=expression op='|' right=expression                   #binaryExpression
+    | '<<' expression (',' expression)* '>>'                    #aggregateExpression
+    | identifier                                                #identifierExpression
+    | expression '.' identifier                                 #memberAccessExpression
+    | expression arrayIndexer                                   #arrayAccessExpression
+    | expression argumentList                                   #invocationExpression
+    | (numeric | string | bool)                                 #literalExpression
     ;
 
 variableDeclaration
@@ -58,20 +66,12 @@ variable
     : type identifier arrayIndexer?
     ;
 
-procedure
-    : K_PROC identifier parameterList EOL
-      statementBlock
-      K_ENDPROC
+argumentList
+    : '(' (expression (',' expression)*)? ')'
     ;
 
 parameterList
     : '(' (variable (',' variable)*)? ')'
-    ;
-
-struct
-    : K_STRUCT identifier EOL
-      (variableDeclaration? EOL)*
-      K_ENDSTRUCT
     ;
 
 arrayIndexer
@@ -112,6 +112,10 @@ bool
 // keywords
 K_PROC : P R O C;
 K_ENDPROC : E N D P R O C;
+K_FUNC : F U N C;
+K_ENDFUNC : E N D F U N C;
+K_STRUCT : S T R U C T;
+K_ENDSTRUCT : E N D S T R U C T;
 K_TRUE : T R U E;
 K_FALSE : F A L S E;
 K_NOT : N O T;
@@ -119,8 +123,7 @@ K_IF : I F;
 K_ENDIF : E N D I F;
 K_WHILE : W H I L E;
 K_ENDWHILE : E N D W H I L E;
-K_STRUCT : S T R U C T;
-K_ENDSTRUCT : E N D S T R U C T;
+K_RETURN : R E T U R N;
 K_SCRIPT_NAME : S C R I P T '_' N A M E;
 
 OP_ADD: '+';

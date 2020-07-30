@@ -19,7 +19,7 @@
 		"keywords": {
 			"patterns": [{
 				"name": "storage.type.struct.sclang",
-				"match": "\\b(PROC|ENDPROC|TRUE|FALSE|NOT|IF|ENDIF|WHILE|ENDWHILE|STRUCT|ENDSTRUCT|SCRIPT_NAME)\\b"
+				"match": "\\b(PROC|ENDPROC|FUNC|ENDFUNC|STRUCT|ENDSTRUCT|TRUE|FALSE|NOT|IF|ENDIF|WHILE|ENDWHILE|RETURN|SCRIPT_NAME)\\b"
 			}]
 		},
 		"strings": {

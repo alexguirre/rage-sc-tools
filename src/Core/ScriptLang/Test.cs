@@ -54,12 +54,20 @@ PROC MAIN()
 
         DRAW_RECT(rectPos.X, rectPos.Y, 0.1, 0.1, 255, 0, 0, 255, FALSE)
         DRAW_SOMETHING(0, 255, 0)
+
+        IF a
+            DRAW_SOMETHING(0, 0, 255)
+        ENDIF
     ENDWHILE
 ENDPROC
 
 PROC DRAW_SOMETHING(INT r, INT g, INT b)
-    DRAW_RECT(0.1, 0.1, 0.2, 0.2, r, g, b, 255, FALSE)
+    DRAW_RECT(0.1, 0.1, 0.2, 0.2, r, g, b, GET_ALPHA_VALUE(), FALSE)
 ENDPROC
+
+FUNC INT GET_ALPHA_VALUE()
+    RETURN 255
+ENDFUNC
 ";
 
         public static void DoTest()

@@ -125,16 +125,17 @@ namespace ScTools.ScriptLang.Ast
         public override string ToString() => $"{Expression}{Indexer}";
     }
 
-    public sealed class CallExpression : Expression
+    public sealed class InvocationExpression : Expression
     {
-        public ProcedureCall Call { get; }
+        public Expression Expression { get; }
+        public ArgumentList ArgumentList { get; }
 
-        public override IEnumerable<Node> Children { get { yield return Call; } }
+        public override IEnumerable<Node> Children { get { yield return Expression; yield return ArgumentList; } }
 
-        public CallExpression(ProcedureCall call, SourceRange source) : base(source)
-            => Call = call;
+        public InvocationExpression(Expression expression, ArgumentList argumentList, SourceRange source) : base(source)
+            => (Expression, ArgumentList) = (expression, argumentList);
 
-        public override string ToString() => $"{Call}";
+        public override string ToString() => $"{Expression}{ArgumentList}";
     }
 
     public sealed class LiteralExpression : Expression

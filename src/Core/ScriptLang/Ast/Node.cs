@@ -132,16 +132,15 @@ namespace ScTools.ScriptLang.Ast
         public override string ToString() => $"({string.Join(", ", Parameters)})";
     }
 
-    public sealed class ProcedureCall : Node
+    public sealed class ArgumentList : Node
     {
-        public Identifier Procedure { get; }
         public ImmutableArray<Expression> Arguments { get; }
 
-        public override IEnumerable<Node> Children => Arguments.Cast<Node>().Prepend(Procedure);
+        public override IEnumerable<Node> Children => Arguments;
 
-        public ProcedureCall(Identifier procedure, IEnumerable<Expression> arguments, SourceRange source) : base(source)
-            => (Procedure, Arguments) = (procedure, arguments.ToImmutableArray());
+        public ArgumentList(IEnumerable<Expression> arguments, SourceRange source) : base(source)
+            => Arguments = arguments.ToImmutableArray();
 
-        public override string ToString() => $"{Procedure}({string.Join(", ", Arguments)})";
+        public override string ToString() => $"({string.Join(", ", Arguments)})";
     }
 }

@@ -85,15 +85,28 @@ namespace ScTools.ScriptLang.Ast
         public override string ToString() => $"WHILE {Condition}\n{Block}\nENDWHILE";
     }
 
-    public sealed class CallStatement : Statement
+    public sealed class ReturnStatement : Statement
     {
-        public ProcedureCall Call { get; }
+        public Expression Expression { get; }
 
-        public override IEnumerable<Node> Children { get { yield return Call; } }
+        public override IEnumerable<Node> Children { get { yield return Expression; } }
 
-        public CallStatement(ProcedureCall call, SourceRange source) : base(source)
-            => Call = call;
+        public ReturnStatement(Expression expression, SourceRange source) : base(source)
+            => Expression = expression;
 
-        public override string ToString() => $"{Call}";
+        public override string ToString() => $"RETURN {Expression}";
+    }
+
+    public sealed class InvocationStatement : Statement
+    {
+        public Expression Expression { get; }
+        public ArgumentList ArgumentList { get; }
+
+        public override IEnumerable<Node> Children { get { yield return Expression; yield return ArgumentList; } }
+
+        public InvocationStatement(Expression expression, ArgumentList argumentList, SourceRange source) : base(source)
+            => (Expression, ArgumentList) = (expression, argumentList);
+
+        public override string ToString() => $"{Expression}{ArgumentList}";
     }
 }
