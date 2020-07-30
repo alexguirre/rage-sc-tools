@@ -36,7 +36,7 @@ statement
       statementBlock
       K_ENDWHILE                                                #whileStatement
     
-    | K_RETURN expression                                       #returnStatement
+    | K_RETURN expression?                                      #returnStatement
     | expression argumentList                                   #invocationStatement
     ;
 

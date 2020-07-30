@@ -88,14 +88,14 @@ namespace ScTools.ScriptLang.Ast
 
     public sealed class ReturnStatement : Statement
     {
-        public Expression Expression { get; }
+        public Expression? Expression { get; }
 
-        public override IEnumerable<Node> Children { get { yield return Expression; } }
+        public override IEnumerable<Node> Children { get { if (Expression != null) { yield return Expression; } } }
 
-        public ReturnStatement(Expression expression, SourceRange source) : base(source)
+        public ReturnStatement(Expression? expression, SourceRange source) : base(source)
             => Expression = expression;
 
-        public override string ToString() => $"RETURN {Expression}";
+        public override string ToString() => $"RETURN{(Expression != null ? $" {Expression}": "")}";
     }
 
     public sealed class InvocationStatement : Statement

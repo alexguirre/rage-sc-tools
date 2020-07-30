@@ -13,6 +13,8 @@
         const string Code = @"
 SCRIPT_NAME test
 
+SCRIPT_NAME test2
+
 STRUCT VEC3
     FLOAT X
     FLOAT Y
@@ -66,6 +68,7 @@ ENDPROC
 
 PROC DRAW_SOMETHING(INT r, INT g, INT b)
     DRAW_RECT(0.1, 0.1, 0.2, 0.2, r, g, b, GET_ALPHA_VALUE(), FALSE)
+    RETURN
 ENDPROC
 
 FUNC INT GET_ALPHA_VALUE()
@@ -92,6 +95,58 @@ ENDPROC
             Console.WriteLine("===========================");
 
             root.Accept(new SimpleVisitorTest());
+
+            Console.WriteLine();
+            Console.WriteLine("===========================");
+
+            Diagnostics d = new Diagnostics();
+            new SimpleVerifier(d, "test.sc", root).Verify();
+
+            foreach (var diagnostic in d.AllDiagnostics)
+            {
+                diagnostic.Print(Console.Out);
+            }
+        }
+
+        private sealed class SimpleVerifier : AstVisitor
+        {
+            private readonly Diagnostics diagnostics;
+            private readonly string filePath;
+            private readonly Root root;
+            private bool foundScriptName;
+
+            public SimpleVerifier(Diagnostics diagnostics, string filePath, Root root)
+                => (this.diagnostics, this.filePath, this.root) = (diagnostics, filePath, root);
+
+            public void Verify()
+            {
+                Visit(root);
+
+                if (!foundScriptName)
+                {
+                    diagnostics.AddWarning(filePath, "Missing SCRIPT_NAME statement", root.Source);
+                }
+            }
+
+            public override void VisitScriptNameStatement(ScriptNameStatement node)
+            {
+                if (foundScriptName)
+                {
+                    diagnostics.AddError(filePath, "SCRIPT_NAME statement is repeated", node.Source);
+                }
+                else
+                {
+                    foundScriptName = true;
+                }
+            }
+
+            public override void DefaultVisit(Node node)
+            {
+                foreach (var n in node.Children)
+                {
+                    Visit(n);
+                }
+            }
         }
 
         private sealed class SimpleVisitorTest : AstVisitor

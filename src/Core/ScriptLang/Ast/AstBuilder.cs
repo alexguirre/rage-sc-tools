@@ -79,7 +79,7 @@ namespace ScTools.ScriptLang.Ast
                                   Source(context));
 
         public override Node VisitReturnStatement([NotNull] ScLangParser.ReturnStatementContext context)
-            => new ReturnStatement((Expression)context.expression().Accept(this), Source(context));
+            => new ReturnStatement((Expression?)context.expression()?.Accept(this), Source(context));
 
         public override Node VisitInvocationStatement([NotNull] ScLangParser.InvocationStatementContext context)
             => new InvocationStatement((Expression)context.expression().Accept(this),
