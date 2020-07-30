@@ -1,4 +1,5 @@
-﻿namespace ScTools.ScriptLang.Ast
+﻿#nullable enable
+namespace ScTools.ScriptLang.Ast
 {
     using System.Collections.Generic;
 
