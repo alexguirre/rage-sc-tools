@@ -79,8 +79,9 @@ arrayIndexer
     ;
 
 type
-    : identifier
-    ;
+    : identifier '&'    #refType
+    | identifier        #basicType
+    ; // TODO: procedure/function reference types
 
 identifier
     : IDENTIFIER

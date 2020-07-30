@@ -39,9 +39,6 @@ PROC MAIN()
     VEC3 playerPos = <<1.0, 2.0, 3.0>>
     
     VEC2 rectPos = <<0.5, 0.5>>
-    
-    PED_INDEX playerPed 
-    playerPed = <<1>>
 
     INT a = 5
     INT b = 10
@@ -68,6 +65,9 @@ ENDPROC
 FUNC INT GET_ALPHA_VALUE()
     RETURN 255
 ENDFUNC
+
+PROC RUN_SPLINE_CAM_ON_CHAR(PED_INDEX &TargetChar1, PED_INDEX& TargetChar2)
+ENDPROC
 ";
 
         public static void DoTest()
@@ -92,23 +92,20 @@ ENDFUNC
         {
             private readonly HashSet<string> foundTypes = new HashSet<string>();
 
-            public override void VisitType(Ast.Type node)
+            private void Check(Identifier id, Node node)
             {
-                string typeName = node.Name.Name;
+                string typeName = id.Name;
                 if (foundTypes.Add(typeName))
                 {
                     Console.WriteLine($"{typeName}\t{node.Source}");
                 }
             }
 
+            public override void VisitBasicType(BasicType node) => Check(node.Name, node);
+            public override void VisitRefType(RefType node) => Check(node.Name, node);
             public override void VisitStructStatement(StructStatement node)
             {
-                string structName = node.Name.Name;
-                if (foundTypes.Add(structName))
-                {
-                    Console.WriteLine($"{structName}\t{node.Source}");
-                }
-
+                Check(node.Name, node);
                 DefaultVisit(node);
             }
 

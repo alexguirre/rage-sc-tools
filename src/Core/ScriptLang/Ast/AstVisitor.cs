@@ -37,7 +37,8 @@ namespace ScTools.ScriptLang.Ast
 
         public virtual void VisitIdentifier(Identifier node) => DefaultVisit(node);
         public virtual void VisitArrayIndexer(ArrayIndexer node) => DefaultVisit(node);
-        public virtual void VisitType(Type node) => DefaultVisit(node);
+        public virtual void VisitBasicType(BasicType node) => DefaultVisit(node);
+        public virtual void VisitRefType(RefType node) => DefaultVisit(node);
         public virtual void VisitVariable(Variable node) => DefaultVisit(node);
         public virtual void VisitParameterList(ParameterList node) => DefaultVisit(node);
         public virtual void VisitArgumentList(ArgumentList node) => DefaultVisit(node);
@@ -76,7 +77,8 @@ namespace ScTools.ScriptLang.Ast
 
         [return: MaybeNull] public virtual TResult VisitIdentifier(Identifier node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitArrayIndexer(ArrayIndexer node) => DefaultVisit(node);
-        [return: MaybeNull] public virtual TResult VisitType(Type node) => DefaultVisit(node);
+        [return: MaybeNull] public virtual TResult VisitBasicType(BasicType node) => DefaultVisit(node);
+        [return: MaybeNull] public virtual TResult VisitRefType(RefType node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitVariable(Variable node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitParameterList(ParameterList node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitArgumentList(ArgumentList node) => DefaultVisit(node);
@@ -116,7 +118,8 @@ namespace ScTools.ScriptLang.Ast
 
                 case Identifier n: visitor.VisitIdentifier(n); break;
                 case ArrayIndexer n: visitor.VisitArrayIndexer(n); break;
-                case Type n: visitor.VisitType(n); break;
+                case BasicType n: visitor.VisitBasicType(n); break;
+                case RefType n: visitor.VisitRefType(n); break;
                 case Variable n: visitor.VisitVariable(n); break;
                 case ParameterList n: visitor.VisitParameterList(n); break;
                 case ArgumentList n: visitor.VisitArgumentList(n); break;
@@ -156,7 +159,8 @@ namespace ScTools.ScriptLang.Ast
 
             Identifier n => visitor.VisitIdentifier(n),
             ArrayIndexer n => visitor.VisitArrayIndexer(n),
-            Type n =>  visitor.VisitType(n),
+            BasicType n =>  visitor.VisitBasicType(n),
+            RefType n => visitor.VisitRefType(n),
             Variable n => visitor.VisitVariable(n),
             ParameterList n => visitor.VisitParameterList(n),
             ArgumentList n => visitor.VisitArgumentList(n),

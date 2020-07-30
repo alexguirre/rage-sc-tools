@@ -83,18 +83,6 @@ namespace ScTools.ScriptLang.Ast
         public override string ToString() => $"[{Expression}]";
     }
 
-    public sealed class Type : Node
-    {
-        public Identifier Name { get; }
-
-        public override IEnumerable<Node> Children { get { yield return Name; } }
-
-        public Type(Identifier name, SourceRange source) : base(source)
-            => Name = name;
-
-        public override string ToString() => $"{Name}";
-    }
-
     public sealed class Variable : Node
     {
         public Type Type { get; }

@@ -159,8 +159,11 @@ namespace ScTools.ScriptLang.Ast
             => new ArgumentList(context.expression().Select(expr => expr.Accept(this)).Cast<Expression>(),
                                 Source(context));
 
-        public override Node VisitType([NotNull] ScLangParser.TypeContext context)
-            => new Type((Identifier)context.identifier().Accept(this), Source(context));
+        public override Node VisitBasicType([NotNull] ScLangParser.BasicTypeContext context)
+            => new BasicType((Identifier)context.identifier().Accept(this), Source(context));
+        
+        public override Node VisitRefType([NotNull] ScLangParser.RefTypeContext context)
+            => new RefType((Identifier)context.identifier().Accept(this), Source(context));
 
         public override Node VisitIdentifier([NotNull] ScLangParser.IdentifierContext context)
             => new Identifier(context.GetText(), Source(context));
