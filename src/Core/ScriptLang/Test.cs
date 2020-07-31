@@ -2,18 +2,18 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
 
     using Antlr4.Runtime;
 
     using ScTools.ScriptLang.Ast;
     using ScTools.ScriptLang.Grammar;
+    using ScTools.ScriptLang.Semantics;
 
     public static class Test
     {
         const string Code = @"
 SCRIPT_NAME test
-
-SCRIPT_NAME test2
 
 STRUCT VEC3
     FLOAT X
@@ -42,6 +42,10 @@ ENDSTRUCT
 RECT_DETAILS myRect
 CALLBACKS myCallbacks
 
+PROC GET_ALPHA_VALUE(INT a)
+    RETURN
+ENDPROC
+
 PROC MAIN()
     
     myCallbacks.draw = DRAW_OTHER_STUFF
@@ -56,8 +60,6 @@ PROC MAIN()
     INT c = a + b * b
     c = (a + b) * b
     c = a + (b * b)
-
-    INT d[10] = 123
 
     WHILE TRUE
         WAIT(0)
@@ -81,15 +83,15 @@ ENDPROC
 
 PROC DRAW_SOMETHING(INT r, INT g, INT b)
     DRAW_RECT(0.1, 0.1, 0.2, 0.2, r, g, b, GET_ALPHA_VALUE(), FALSE)
-    RETURN 5
+    RETURN
 ENDPROC
 
 FUNC INT GET_ALPHA_VALUE()
-    RETURN
+    RETURN 200
 ENDFUNC
 
-PROC DRAW_OTHER_STUFF(INT alpha)
-    DRAW_RECT(0.6, 0.6, 0.2, 0.2, 100, 100, 20, alpha, FALSE)
+PROC DRAW_OTHER_STUFF(INT alpha, INT alpha2, INT alpha)
+    DRAW_RECT(0.6, 0.6, 0.2, 0.2, 100, 100, 20, alpha + alpha2, FALSE)
 ENDPROC
 
 PROC RUN_SPLINE_CAM_ON_CHAR(PED_INDEX &TargetChar1, PED_INDEX& TargetChar2)
@@ -116,9 +118,15 @@ ENDPROC
             Console.WriteLine();
             Console.WriteLine("===========================");
 
+            const string FilePath = "test.sc";
             Diagnostics d = new Diagnostics();
-            d.AddFrom(SyntaxChecker.Check(root, "test.sc"));
+            d.AddFrom(SyntaxChecker.Check(root, FilePath));
 
+            var (scope, scopeDiagnostics) = ScopeBuilder.Explore(root, FilePath);
+            d.AddFrom(scopeDiagnostics);
+
+            Console.WriteLine($"Errors:   {d.HasErrors} ({d.Errors.Count()})");
+            Console.WriteLine($"Warnings: {d.HasWarnings} ({d.Warnings.Count()})");
             foreach (var diagnostic in d.AllDiagnostics)
             {
                 diagnostic.Print(Console.Out);
