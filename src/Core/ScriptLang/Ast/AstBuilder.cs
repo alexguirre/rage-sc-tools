@@ -188,6 +188,9 @@ namespace ScTools.ScriptLang.Ast
 
         public override Node VisitIdentifier([NotNull] ScLangParser.IdentifierContext context)
             => new Identifier(context.GetText(), Source(context));
+
+        public override Node VisitArrayIndexer([NotNull] ScLangParser.ArrayIndexerContext context)
+            => new ArrayIndexer((Expression)context.expression().Accept(this), Source(context));
         #endregion Misc
     }
 }
