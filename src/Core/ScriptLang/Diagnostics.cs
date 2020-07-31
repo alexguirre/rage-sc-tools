@@ -44,5 +44,7 @@ namespace ScTools.ScriptLang
 
         public void AddError(string filePath, string message, SourceRange source) => diagnostics.Add(new ErrorDiagnostic(filePath, message, source));
         public void AddWarning(string filePath, string message, SourceRange source) => diagnostics.Add(new WarningDiagnostic(filePath, message, source));
+
+        public void AddFrom(Diagnostics other) => diagnostics.AddRange(other.diagnostics);
     }
 }

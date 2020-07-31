@@ -57,6 +57,8 @@ PROC MAIN()
     c = (a + b) * b
     c = a + (b * b)
 
+    INT d[10] = 123
+
     WHILE TRUE
         WAIT(0)
 
@@ -79,11 +81,11 @@ ENDPROC
 
 PROC DRAW_SOMETHING(INT r, INT g, INT b)
     DRAW_RECT(0.1, 0.1, 0.2, 0.2, r, g, b, GET_ALPHA_VALUE(), FALSE)
-    RETURN
+    RETURN 5
 ENDPROC
 
 FUNC INT GET_ALPHA_VALUE()
-    RETURN 200
+    RETURN
 ENDFUNC
 
 PROC DRAW_OTHER_STUFF(INT alpha)
@@ -115,52 +117,11 @@ ENDPROC
             Console.WriteLine("===========================");
 
             Diagnostics d = new Diagnostics();
-            new SimpleVerifier(d, "test.sc", root).Verify();
+            d.AddFrom(SyntaxChecker.Check(root, "test.sc"));
 
             foreach (var diagnostic in d.AllDiagnostics)
             {
                 diagnostic.Print(Console.Out);
-            }
-        }
-
-        private sealed class SimpleVerifier : AstVisitor
-        {
-            private readonly Diagnostics diagnostics;
-            private readonly string filePath;
-            private readonly Root root;
-            private bool foundScriptName;
-
-            public SimpleVerifier(Diagnostics diagnostics, string filePath, Root root)
-                => (this.diagnostics, this.filePath, this.root) = (diagnostics, filePath, root);
-
-            public void Verify()
-            {
-                Visit(root);
-
-                if (!foundScriptName)
-                {
-                    diagnostics.AddWarning(filePath, "Missing SCRIPT_NAME statement", root.Source);
-                }
-            }
-
-            public override void VisitScriptNameStatement(ScriptNameStatement node)
-            {
-                if (foundScriptName)
-                {
-                    diagnostics.AddError(filePath, "SCRIPT_NAME statement is repeated", node.Source);
-                }
-                else
-                {
-                    foundScriptName = true;
-                }
-            }
-
-            public override void DefaultVisit(Node node)
-            {
-                foreach (var n in node.Children)
-                {
-                    Visit(n);
-                }
             }
         }
 
