@@ -15,17 +15,10 @@
         const string Code = @"
 SCRIPT_NAME test
 
-STRUCT VEC3
-    FLOAT X
-    FLOAT Y
-    FLOAT Z
-ENDSTRUCT
-
 STRUCT VEC2
     FLOAT X
     FLOAT Y
 ENDSTRUCT
-
 
 STRUCT RECT_DETAILS
     FLOAT X = 0.5
@@ -42,10 +35,6 @@ ENDSTRUCT
 RECT_DETAILS myRect
 CALLBACKS myCallbacks
 
-PROC GET_ALPHA_VALUE(INT a)
-    RETURN
-ENDPROC
-
 PROC MAIN()
     
     myCallbacks.draw = DRAW_OTHER_STUFF
@@ -60,6 +49,9 @@ PROC MAIN()
     INT c = a + b * b
     c = (a + b) * b
     c = a + (b * b)
+
+    INT myVar = 10
+    myVar = myVar + 5 * myVar
 
     WHILE TRUE
         WAIT(0)
@@ -90,11 +82,17 @@ FUNC INT GET_ALPHA_VALUE()
     RETURN 200
 ENDFUNC
 
-PROC DRAW_OTHER_STUFF(INT alpha, INT alpha2, INT alpha)
-    DRAW_RECT(0.6, 0.6, 0.2, 0.2, 100, 100, 20, alpha + alpha2, FALSE)
+PROC DRAW_OTHER_STUFF(INT alpha)
+    DRAW_RECT(0.6, 0.6, 0.2, 0.2, 100, 100, 20, alpha, FALSE)
 ENDPROC
 
 PROC RUN_SPLINE_CAM_ON_CHAR(PED_INDEX &TargetChar1, PED_INDEX& TargetChar2)
+ENDPROC
+
+// tmp procs until there are native command definitions
+PROC DRAW_RECT(FLOAT x, FLOAT y, FLOAT w, FLOAT h, INT r, INT g, INT b, INT a, BOOL unk)
+ENDPROC
+PROC WAIT(INT ms)
 ENDPROC
 ";
 
