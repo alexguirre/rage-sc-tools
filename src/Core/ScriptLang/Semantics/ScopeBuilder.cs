@@ -1,6 +1,7 @@
 ﻿#nullable enable
 namespace ScTools.ScriptLang.Semantics
 {
+    using System;
     using System.Diagnostics;
     using System.Linq;
 
@@ -32,7 +33,8 @@ namespace ScTools.ScriptLang.Semantics
 
             protected void Error(string message, Node node) => Diagnostics.AddError(FilePath, message, node.Source);
             protected void RepeatedSymbol(string name, Node node) => Error($"Symbol '{name}' already exists", node);
-            protected void UnknownSymbol(string name, Node node) => Error($"Symbol '{name}' is unknown", node);
+            protected void UnknownSymbol(string name, Node node) => Error($"Unknown symbol '{name}'", node);
+            protected void UnknownType(string name, Node node) => Error($"Unknown type '{name}'", node);
 
             protected void AddIfNotRepeated(ISymbol symbol, Node node)
             {
@@ -55,17 +57,16 @@ namespace ScTools.ScriptLang.Semantics
             public FirstPass(Root root, string filePath, Diagnostics diagnostics) : base(root, filePath, Scope.CreateRoot(), diagnostics) { }
 
             public override void VisitProcedureStatement(ProcedureStatement node)
-            {
-                var proc = new ProcedureSymbol(node, Scope.CreateNested($"PROC#{node.Name.Name}"));
-                AddIfNotRepeated(proc, node);
-            }
-
+                => AddIfNotRepeated(new ProcedureSymbol(node, Scope.CreateNested($"PROC#{node.Name.Name}")), node);
 
             public override void VisitFunctionStatement(FunctionStatement node)
-            {
-                var func = new FunctionSymbol(node, Scope.CreateNested($"FUNC#{node.Name.Name}"));
-                AddIfNotRepeated(func, node);
-            }
+                => AddIfNotRepeated(new FunctionSymbol(node, Scope.CreateNested($"FUNC#{node.Name.Name}")), node);
+
+            public override void VisitProcedurePrototypeStatement(ProcedurePrototypeStatement node)
+                => AddIfNotRepeated(new ProcedurePrototypeSymbol(node, Scope.CreateNested($"PROTO-PROC#{node.Name.Name}")), node);
+
+            public override void VisitFunctionPrototypeStatement(FunctionPrototypeStatement node)
+                => AddIfNotRepeated(new FunctionPrototypeSymbol(node, Scope.CreateNested($"PROTO-FUNC#{node.Name.Name}")), node);
 
             public override void VisitStructStatement(StructStatement node)
             {
@@ -78,10 +79,7 @@ namespace ScTools.ScriptLang.Semantics
             }
 
             public override void VisitStaticFieldStatement(StaticFieldStatement node)
-            {
-                var sf = new StaticFieldSymbol(node.Variable);
-                AddIfNotRepeated(sf, node);
-            }
+                => AddIfNotRepeated(new StaticFieldSymbol(node.Variable), node);
 
             public override void VisitStructFieldList(StructFieldList node)
             {
@@ -136,6 +134,32 @@ namespace ScTools.ScriptLang.Semantics
                 {
                     ResetIfWhileCounters();
                     Scope = func.Scope;
+                    DefaultVisit(node);
+                    Scope = Scope.Parent!;
+                }
+            }
+
+            public override void VisitProcedurePrototypeStatement(ProcedurePrototypeStatement node)
+            {
+                bool found = Scope.TryFind(node.Name.Name, out var protoSymbol);
+                Debug.Assert(found);
+
+                if (protoSymbol is ProcedurePrototypeSymbol proto)
+                {
+                    Scope = proto.Scope;
+                    DefaultVisit(node);
+                    Scope = Scope.Parent!;
+                }
+            }
+
+            public override void VisitFunctionPrototypeStatement(FunctionPrototypeStatement node)
+            {
+                bool found = Scope.TryFind(node.Name.Name, out var protoSymbol);
+                Debug.Assert(found);
+
+                if (protoSymbol is FunctionPrototypeSymbol proto)
+                {
+                    Scope = proto.Scope;
                     DefaultVisit(node);
                     Scope = Scope.Parent!;
                 }
@@ -202,14 +226,12 @@ namespace ScTools.ScriptLang.Semantics
                 }
             }
 
-            public override void VisitProcedureRefType(ProcedureRefType node)
+            public override void VisitType(Ast.Type node)
             {
-                // empty
-            }
-
-            public override void VisitFunctionRefType(FunctionRefType node)
-            {
-                // empty
+                if (!Scope.TryFind(node.Name.Name, out _))
+                {
+                    UnknownType(node.Name.Name, node);
+                }
             }
 
             public override void DefaultVisit(Node node)

@@ -10,11 +10,14 @@ topLevelStatement
     | K_PROC identifier parameterList EOL
       statementBlock
       K_ENDPROC                                                 #procedureStatement
-    
+
     | K_FUNC returnType=type identifier parameterList EOL
       statementBlock
       K_ENDFUNC                                                 #functionStatement
-    
+
+    | K_PROTO K_PROC identifier parameterList                   #procedurePrototypeStatement
+    | K_PROTO K_FUNC returnType=type identifier parameterList   #functionPrototypeStatement
+
     | K_STRUCT identifier EOL
       structFieldList
       K_ENDSTRUCT                                               #structStatement
@@ -85,10 +88,7 @@ arrayIndexer
     ;
 
 type
-    : K_PROC '&' parameterList                  #procedureRefType
-    | K_FUNC '&' returnType=type parameterList  #functionRefType
-    | identifier '&'                            #refType
-    | identifier                                #basicType
+    : identifier isRef='&'?
     ;
 
 identifier
@@ -125,6 +125,7 @@ K_FUNC : F U N C;
 K_ENDFUNC : E N D F U N C;
 K_STRUCT : S T R U C T;
 K_ENDSTRUCT : E N D S T R U C T;
+K_PROTO : P R O T O;
 K_TRUE : T R U E;
 K_FALSE : F A L S E;
 K_NOT : N O T;

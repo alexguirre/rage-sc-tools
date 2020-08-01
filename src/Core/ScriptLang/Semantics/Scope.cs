@@ -30,6 +30,8 @@ namespace ScTools.ScriptLang.Semantics
                 StaticFieldSymbol _ => IsRoot,
                 ProcedureSymbol _ => IsRoot,
                 FunctionSymbol _ => IsRoot,
+                ProcedurePrototypeSymbol _ => IsRoot,
+                FunctionPrototypeSymbol _ => IsRoot,
                 ParameterSymbol _ => !IsRoot,
                 LocalSymbol _ => !IsRoot,
                 StructFieldSymbol _ => !IsRoot,

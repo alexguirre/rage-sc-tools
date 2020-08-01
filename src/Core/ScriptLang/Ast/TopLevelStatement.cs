@@ -36,6 +36,19 @@ namespace ScTools.ScriptLang.Ast
         public override string ToString() => $"PROC {Name}{ParameterList}\n{Block}\nENDPROC";
     }
 
+    public sealed class ProcedurePrototypeStatement : TopLevelStatement
+    {
+        public Identifier Name { get; }
+        public ParameterList ParameterList { get; }
+
+        public override IEnumerable<Node> Children { get { yield return Name; yield return ParameterList; } }
+
+        public ProcedurePrototypeStatement(Identifier name, ParameterList parameterList, SourceRange source) : base(source)
+            => (Name, ParameterList) = (name, parameterList);
+
+        public override string ToString() => $"PROTO PROC {Name}{ParameterList}";
+    }
+
     public sealed class FunctionStatement : TopLevelStatement
     {
         public Identifier Name { get; }
@@ -49,6 +62,20 @@ namespace ScTools.ScriptLang.Ast
             => (Name, ReturnType, ParameterList, Block) = (name, returnType, parameterList, block);
 
         public override string ToString() => $"FUNC {ReturnType} {Name}{ParameterList}\n{Block}\nENDFUNC";
+    }
+
+    public sealed class FunctionPrototypeStatement : TopLevelStatement
+    {
+        public Identifier Name { get; }
+        public Type ReturnType { get; }
+        public ParameterList ParameterList { get; }
+
+        public override IEnumerable<Node> Children { get { yield return Name; yield return ReturnType; yield return ParameterList; } }
+
+        public FunctionPrototypeStatement(Identifier name, Type returnType, ParameterList parameterList, SourceRange source) : base(source)
+            => (Name, ReturnType, ParameterList) = (name, returnType, parameterList);
+
+        public override string ToString() => $"PROTO FUNC {ReturnType} {Name}{ParameterList}";
     }
 
     public sealed class StructStatement : TopLevelStatement

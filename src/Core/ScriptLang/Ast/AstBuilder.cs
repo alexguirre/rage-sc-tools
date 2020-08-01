@@ -47,6 +47,17 @@ namespace ScTools.ScriptLang.Ast
                                      (StatementBlock)context.statementBlock().Accept(this),
                                      Source(context));
 
+        public override Node VisitProcedurePrototypeStatement([NotNull] ScLangParser.ProcedurePrototypeStatementContext context)
+            => new ProcedurePrototypeStatement((Identifier)context.identifier().Accept(this),
+                                               (ParameterList)context.parameterList().Accept(this),
+                                               Source(context));
+
+        public override Node VisitFunctionPrototypeStatement([NotNull] ScLangParser.FunctionPrototypeStatementContext context)
+            => new FunctionPrototypeStatement((Identifier)context.identifier().Accept(this),
+                                              (Type)context.returnType.Accept(this),
+                                              (ParameterList)context.parameterList().Accept(this),
+                                              Source(context));
+
         public override Node VisitStructStatement([NotNull] ScLangParser.StructStatementContext context)
             => new StructStatement((Identifier)context.identifier().Accept(this),
                                    (StructFieldList)context.structFieldList().Accept(this),
@@ -145,19 +156,10 @@ namespace ScTools.ScriptLang.Ast
         #endregion Expressions
 
         #region Types
-        public override Node VisitBasicType([NotNull] ScLangParser.BasicTypeContext context)
-            => new BasicType((Identifier)context.identifier().Accept(this), Source(context));
-
-        public override Node VisitRefType([NotNull] ScLangParser.RefTypeContext context)
-            => new RefType((Identifier)context.identifier().Accept(this), Source(context));
-
-        public override Node VisitProcedureRefType([NotNull] ScLangParser.ProcedureRefTypeContext context)
-            => new ProcedureRefType((ParameterList)context.parameterList().Accept(this), Source(context));
-
-        public override Node VisitFunctionRefType([NotNull] ScLangParser.FunctionRefTypeContext context)
-            => new FunctionRefType((Type)context.returnType.Accept(this),
-                                   (ParameterList)context.parameterList().Accept(this),
-                                   Source(context));
+        public override Node VisitType([NotNull] ScLangParser.TypeContext context)
+            => new Type((Identifier)context.identifier().Accept(this),
+                        context.isRef != null,
+                        Source(context));
         #endregion
 
         #region Misc

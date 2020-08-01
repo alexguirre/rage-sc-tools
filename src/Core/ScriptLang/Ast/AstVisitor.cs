@@ -14,6 +14,8 @@ namespace ScTools.ScriptLang.Ast
         public virtual void VisitScriptNameStatement(ScriptNameStatement node) => DefaultVisit(node);
         public virtual void VisitProcedureStatement(ProcedureStatement node) => DefaultVisit(node);
         public virtual void VisitFunctionStatement(FunctionStatement node) => DefaultVisit(node);
+        public virtual void VisitProcedurePrototypeStatement(ProcedurePrototypeStatement node) => DefaultVisit(node);
+        public virtual void VisitFunctionPrototypeStatement(FunctionPrototypeStatement node) => DefaultVisit(node);
         public virtual void VisitStructStatement(StructStatement node) => DefaultVisit(node);
         public virtual void VisitStaticFieldStatement(StaticFieldStatement node) => DefaultVisit(node);
 
@@ -35,10 +37,7 @@ namespace ScTools.ScriptLang.Ast
         public virtual void VisitInvocationExpression(InvocationExpression node) => DefaultVisit(node);
         public virtual void VisitLiteralExpression(LiteralExpression node) => DefaultVisit(node);
 
-        public virtual void VisitBasicType(BasicType node) => DefaultVisit(node);
-        public virtual void VisitRefType(RefType node) => DefaultVisit(node);
-        public virtual void VisitProcedureRefType(ProcedureRefType node) => DefaultVisit(node);
-        public virtual void VisitFunctionRefType(FunctionRefType node) => DefaultVisit(node);
+        public virtual void VisitType(Type node) => DefaultVisit(node);
 
         public virtual void VisitIdentifier(Identifier node) => DefaultVisit(node);
         public virtual void VisitArrayIndexer(ArrayIndexer node) => DefaultVisit(node);
@@ -59,6 +58,8 @@ namespace ScTools.ScriptLang.Ast
         [return: MaybeNull] public virtual TResult VisitScriptNameStatement(ScriptNameStatement node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitProcedureStatement(ProcedureStatement node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitFunctionStatement(FunctionStatement node) => DefaultVisit(node);
+        [return: MaybeNull] public virtual TResult VisitProcedurePrototypeStatement(ProcedurePrototypeStatement node) => DefaultVisit(node);
+        [return: MaybeNull] public virtual TResult VisitFunctionPrototypeStatement(FunctionPrototypeStatement node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitStructStatement(StructStatement node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitStaticFieldStatement(StaticFieldStatement node) => DefaultVisit(node);
 
@@ -80,10 +81,7 @@ namespace ScTools.ScriptLang.Ast
         [return: MaybeNull] public virtual TResult VisitInvocationExpression(InvocationExpression node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitLiteralExpression(LiteralExpression node) => DefaultVisit(node);
 
-        [return: MaybeNull] public virtual TResult VisitBasicType(BasicType node) => DefaultVisit(node);
-        [return: MaybeNull] public virtual TResult VisitRefType(RefType node) => DefaultVisit(node);
-        [return: MaybeNull] public virtual TResult VisitProcedureRefType(ProcedureRefType node) => DefaultVisit(node);
-        [return: MaybeNull] public virtual TResult VisitFunctionRefType(FunctionRefType node) => DefaultVisit(node);
+        [return: MaybeNull] public virtual TResult VisitType(Type node) => DefaultVisit(node);
 
         [return: MaybeNull] public virtual TResult VisitIdentifier(Identifier node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitArrayIndexer(ArrayIndexer node) => DefaultVisit(node);
@@ -105,6 +103,8 @@ namespace ScTools.ScriptLang.Ast
                 case ScriptNameStatement n: visitor.VisitScriptNameStatement(n); break;
                 case ProcedureStatement n: visitor.VisitProcedureStatement(n); break;
                 case FunctionStatement n: visitor.VisitFunctionStatement(n); break;
+                case ProcedurePrototypeStatement n: visitor.VisitProcedurePrototypeStatement(n); break;
+                case FunctionPrototypeStatement n: visitor.VisitFunctionPrototypeStatement(n); break;
                 case StructStatement n: visitor.VisitStructStatement(n); break;
                 case StaticFieldStatement n: visitor.VisitStaticFieldStatement(n); break;
                 
@@ -126,10 +126,7 @@ namespace ScTools.ScriptLang.Ast
                 case InvocationExpression n: visitor.VisitInvocationExpression(n); break;
                 case LiteralExpression n: visitor.VisitLiteralExpression(n); break;
 
-                case BasicType n: visitor.VisitBasicType(n); break;
-                case RefType n: visitor.VisitRefType(n); break;
-                case ProcedureRefType n: visitor.VisitProcedureRefType(n); break;
-                case FunctionRefType n: visitor.VisitFunctionRefType(n); break;
+                case Type n: visitor.VisitType(n); break;
 
                 case Identifier n: visitor.VisitIdentifier(n); break;
                 case ArrayIndexer n: visitor.VisitArrayIndexer(n); break;
@@ -151,6 +148,8 @@ namespace ScTools.ScriptLang.Ast
             ScriptNameStatement n => visitor.VisitScriptNameStatement(n),
             ProcedureStatement n => visitor.VisitProcedureStatement(n),
             FunctionStatement n => visitor.VisitFunctionStatement(n),
+            ProcedurePrototypeStatement n => visitor.VisitProcedurePrototypeStatement(n),
+            FunctionPrototypeStatement n => visitor.VisitFunctionPrototypeStatement(n),
             StructStatement n => visitor.VisitStructStatement(n),
             StaticFieldStatement n => visitor.VisitStaticFieldStatement(n),
 
@@ -172,10 +171,7 @@ namespace ScTools.ScriptLang.Ast
             InvocationExpression n => visitor.VisitInvocationExpression(n),
             LiteralExpression n => visitor.VisitLiteralExpression(n),
 
-            BasicType n => visitor.VisitBasicType(n),
-            RefType n => visitor.VisitRefType(n),
-            ProcedureRefType n => visitor.VisitProcedureRefType(n),
-            FunctionRefType n => visitor.VisitFunctionRefType(n),
+            Type n => visitor.VisitType(n),
 
             Identifier n => visitor.VisitIdentifier(n),
             ArrayIndexer n => visitor.VisitArrayIndexer(n),

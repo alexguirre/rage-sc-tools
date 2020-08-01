@@ -27,13 +27,16 @@ STRUCT RECT_DETAILS
     FLOAT H = 0.1
 ENDSTRUCT
 
+PROTO PROC DRAW_CALLBACK(myRectdas alpha)
+PROTO FUNC INT GET_ALPHA_CALLBACK()
+
 STRUCT CALLBACKS
-    PROC& (INT alpha) draw
-    FUNC& INT()       getAlpha
+    DRAW_CALLBACK       draw
+    GET_ALPHA_CALLBACK  getAlpha
 ENDSTRUCT
 
 RECT_DETAILS myRect
-CALLBACKS myCallbacks
+CALLBACKS myCallbacks = <<DRAW_OTHER_STUFF, GET_ALPHA_VALUE>>
 
 PROC MAIN()
     
@@ -129,6 +132,7 @@ ENDPROC
             {
                 diagnostic.Print(Console.Out);
             }
+            ;
         }
 
         private sealed class SimpleVisitorTest : AstVisitor
@@ -144,8 +148,7 @@ ENDPROC
                 }
             }
 
-            public override void VisitBasicType(BasicType node) => Check(node.Name, node);
-            public override void VisitRefType(RefType node) => Check(node.Name, node);
+            public override void VisitType(Ast.Type node) => Check(node.Name, node);
             public override void VisitStructStatement(StructStatement node)
             {
                 Check(node.Name, node);
