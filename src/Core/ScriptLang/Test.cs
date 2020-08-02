@@ -56,6 +56,10 @@ PROC MAIN()
     INT myVar = 10
     myVar = myVar + 5 * myVar
 
+    INT intAdd = 10 + 5
+    FLOAT floatAdd = 10.0 + 5.0
+    FLOAT floatAdd2 = 10.0 + 5
+
     WHILE TRUE
         WAIT(0)
 
@@ -160,6 +164,15 @@ ENDPROC
                 foreach (var n in node.Children)
                 {
                     Visit(n);
+                }
+            }
+
+            public override void VisitBinaryExpression(BinaryExpression node)
+            {
+                if (node.Left is LiteralExpression && node.Right is LiteralExpression)
+                {
+                    var b = TypeOf.Expression(node, out var t);
+                    Console.WriteLine($"expr '{node}' = type '{b}, {t}'");
                 }
             }
         }
