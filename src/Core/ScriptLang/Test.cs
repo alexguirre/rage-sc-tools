@@ -56,9 +56,13 @@ PROC MAIN()
     INT myVar = 10
     myVar = myVar + 5 * myVar
 
-    INT intAdd = 10 + 5
-    FLOAT floatAdd = 10.0 + 5.0
-    FLOAT floatAdd2 = 10.0 + 5
+    INT evalMeInt = 10 + 5
+    INT evalMeInt2 = 13 % 10
+    FLOAT evalMeFloat = 10.0 + 5.0
+    FLOAT evalMeFloat2 = (10.0 + 5 * 5) / 10
+    FLOAT evalMeFloat3 = 10.0 + 5 * (5 / 10)
+    FLOAT evalMeFloat4 = 10.0 + 5 * (5 / 10.0)
+    
 
     WHILE TRUE
         WAIT(0)
@@ -148,7 +152,7 @@ ENDPROC
                 string typeName = id.Name;
                 if (foundTypes.Add(typeName))
                 {
-                    Console.WriteLine($"{typeName}\t{node.Source}");
+                    //Console.WriteLine($"{typeName}\t{node.Source}");
                 }
             }
 
@@ -172,7 +176,15 @@ ENDPROC
                 if (node.Left is LiteralExpression && node.Right is LiteralExpression)
                 {
                     var b = TypeOf.Expression(node, out var t);
-                    Console.WriteLine($"expr '{node}' = type '{b}, {t}'");
+                    //Console.WriteLine($"expr '{node}' = type '{b}, {t}'");
+                }
+            }
+
+            public override void VisitVariableDeclarationStatement(VariableDeclarationStatement node)
+            {
+                if (node.Variable.Initializer != null && node.Variable.Declaration.Name.Name.StartsWith("evalMe"))
+                {
+                    Console.WriteLine($"{node} => eval = {Evaluator.Evaluate(node.Variable.Initializer)}");
                 }
             }
         }
