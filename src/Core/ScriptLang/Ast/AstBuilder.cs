@@ -102,8 +102,15 @@ namespace ScTools.ScriptLang.Ast
         public override Node VisitParenthesizedExpression([NotNull] ScLangParser.ParenthesizedExpressionContext context)
             => new ParenthesizedExpression((Expression)context.expression().Accept(this), Source(context));
         
-        public override Node VisitNotExpression([NotNull] ScLangParser.NotExpressionContext context)
-            => new NotExpression((Expression)context.expression().Accept(this), Source(context));
+        public override Node VisitUnaryExpression([NotNull] ScLangParser.UnaryExpressionContext context)
+            => new UnaryExpression(context.op.Type switch
+            {
+                ScLangLexer.K_NOT => UnaryOperator.Not,
+                ScLangLexer.OP_SUBTRACT => UnaryOperator.Negate,
+                _ => throw new NotImplementedException()
+            },
+            (Expression)context.expression().Accept(this),
+            Source(context));
 
         public override Node VisitBinaryExpression([NotNull] ScLangParser.BinaryExpressionContext context)
             => new BinaryExpression(context.op.Type switch

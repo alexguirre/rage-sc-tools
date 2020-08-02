@@ -49,7 +49,7 @@ statementBlock
 
 expression
     : '(' expression ')'                                        #parenthesizedExpression
-    | K_NOT expression                                          #notExpression
+    | op=(K_NOT | '-') expression                               #unaryExpression
     | left=expression op=('*' | '/' | '%') right=expression     #binaryExpression
     | left=expression op=('+' | '-') right=expression           #binaryExpression
     | left=expression op='&' right=expression                   #binaryExpression

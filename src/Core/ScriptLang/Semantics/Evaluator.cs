@@ -28,10 +28,27 @@ namespace ScTools.ScriptLang.Semantics
             => expr switch
             {
                 LiteralExpression e => EvaluateLiteral(e),
+                UnaryExpression e => EvaluateUnary(e),
                 BinaryExpression e => EvaluateBinary(e),
                 ParenthesizedExpression e => Evaluate(e.Inner),
                 _ => null,
             };
+
+        private static Result? EvaluateUnary(UnaryExpression expr)
+        {
+            var innerResult = Evaluate(expr.Operand);
+
+            if (!innerResult.HasValue)
+            {
+                return null;
+            }
+
+            var inner = innerResult.Value;
+
+            return inner.IsInt ?
+                    new Result(CalculateInt(expr.Op, inner.IntValue)) :
+                    new Result(CalculateFloat(expr.Op, inner.FloatValue));
+        }
 
         private static Result? EvaluateBinary(BinaryExpression expr)
         {
@@ -51,6 +68,13 @@ namespace ScTools.ScriptLang.Semantics
                     new Result(CalculateFloat(expr.Op, left.FloatValue, right.FloatValue));
         }
 
+        private static float CalculateFloat(UnaryOperator op, float value)
+            => op switch
+            {
+                UnaryOperator.Negate => -value,
+                _ => throw new NotImplementedException(),
+            };
+
         private static float CalculateFloat(BinaryOperator op, float left, float right)
             => op switch
             {
@@ -59,6 +83,14 @@ namespace ScTools.ScriptLang.Semantics
                 BinaryOperator.Multiply => left * right,
                 BinaryOperator.Divide => left / right,
                 BinaryOperator.Modulo => left % right,
+                _ => throw new NotImplementedException(),
+            };
+
+        private static int CalculateInt(UnaryOperator op, int value)
+            => op switch
+            {
+                UnaryOperator.Not => value == 0 ? 1 : 0,
+                UnaryOperator.Negate => -value,
                 _ => throw new NotImplementedException(),
             };
 

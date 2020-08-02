@@ -63,6 +63,7 @@ PROC MAIN()
     FLOAT evalMeFloat3 = 10.0 + 5 * (5 / 10)
     FLOAT evalMeFloat4 = 10.0 + 5 * (5 / 10.0)
     
+    INT evalMeNegInt = 10 + -5
 
     WHILE TRUE
         WAIT(0)
@@ -118,9 +119,10 @@ ENDPROC
             Root root = (Root)parser.script().Accept(new AstBuilder());
 
             Console.WriteLine();
-            Console.WriteLine(AstDotGenerator.Generate(root));
-            Console.WriteLine();
-            Console.WriteLine("===========================");
+            //Console.WriteLine();
+            //Console.WriteLine(AstDotGenerator.Generate(root));
+            //Console.WriteLine();
+            //Console.WriteLine("===========================");
 
             root.Accept(new SimpleVisitorTest());
 

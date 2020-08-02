@@ -24,16 +24,30 @@ namespace ScTools.ScriptLang.Ast
         public override string ToString() => $"({Inner})";
     }
 
-    public sealed class NotExpression : Expression
+    public sealed class UnaryExpression : Expression
     {
+        public UnaryOperator Op { get; }
         public Expression Operand { get; }
 
         public override IEnumerable<Node> Children { get { yield return Operand; } }
 
-        public NotExpression(Expression operand, SourceRange source) : base(source)
-            => Operand = operand;
+        public UnaryExpression(UnaryOperator op, Expression operand, SourceRange source) : base(source)
+            => (Op, Operand) = (op, operand);
 
-        public override string ToString() => $"NOT {Operand}";
+        public override string ToString() => $"{OpToString(Op)}{Operand}";
+
+        private static string OpToString(UnaryOperator op) => op switch
+        {
+            UnaryOperator.Not => "NOT ",
+            UnaryOperator.Negate => "-",
+            _ => throw new NotImplementedException()
+        };
+    }
+
+    public enum UnaryOperator
+    {
+        Not,
+        Negate,
     }
 
     public sealed class BinaryExpression : Expression

@@ -28,7 +28,7 @@ namespace ScTools.ScriptLang.Ast
         public virtual void VisitInvocationStatement(InvocationStatement node) => DefaultVisit(node);
 
         public virtual void VisitParenthesizedExpression(ParenthesizedExpression node) => DefaultVisit(node);
-        public virtual void VisitNotExpression(NotExpression node) => DefaultVisit(node);
+        public virtual void VisitUnaryExpression(UnaryExpression node) => DefaultVisit(node);
         public virtual void VisitBinaryExpression(BinaryExpression node) => DefaultVisit(node);
         public virtual void VisitAggregateExpression(AggregateExpression node) => DefaultVisit(node);
         public virtual void VisitIdentifierExpression(IdentifierExpression node) => DefaultVisit(node);
@@ -72,7 +72,7 @@ namespace ScTools.ScriptLang.Ast
         [return: MaybeNull] public virtual TResult VisitInvocationStatement(InvocationStatement node) => DefaultVisit(node);
 
         [return: MaybeNull] public virtual TResult VisitParenthesizedExpression(ParenthesizedExpression node) => DefaultVisit(node);
-        [return: MaybeNull] public virtual TResult VisitNotExpression(NotExpression node) => DefaultVisit(node);
+        [return: MaybeNull] public virtual TResult VisitUnaryExpression(UnaryExpression node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitBinaryExpression(BinaryExpression node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitAggregateExpression(AggregateExpression node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitIdentifierExpression(IdentifierExpression node) => DefaultVisit(node);
@@ -117,7 +117,7 @@ namespace ScTools.ScriptLang.Ast
                 case InvocationStatement n: visitor.VisitInvocationStatement(n); break;
                 
                 case ParenthesizedExpression n: visitor.VisitParenthesizedExpression(n); break;
-                case NotExpression n: visitor.VisitNotExpression(n); break;
+                case UnaryExpression n: visitor.VisitUnaryExpression(n); break;
                 case BinaryExpression n: visitor.VisitBinaryExpression(n); break;
                 case AggregateExpression n: visitor.VisitAggregateExpression(n); break;
                 case IdentifierExpression n: visitor.VisitIdentifierExpression(n); break;
@@ -162,7 +162,7 @@ namespace ScTools.ScriptLang.Ast
             InvocationStatement n => visitor.VisitInvocationStatement(n),
 
             ParenthesizedExpression n => visitor.VisitParenthesizedExpression(n),
-            NotExpression n => visitor.VisitNotExpression(n),
+            UnaryExpression n => visitor.VisitUnaryExpression(n),
             BinaryExpression n => visitor.VisitBinaryExpression(n),
             AggregateExpression n => visitor.VisitAggregateExpression(n),
             IdentifierExpression n => visitor.VisitIdentifierExpression(n),
