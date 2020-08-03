@@ -10,9 +10,9 @@ namespace ScTools.ScriptLang.Semantics
 
     public sealed class ScopeBuilder
     {
-        public static (Scope RootScope, Diagnostics Diagnostics) Explore(Root root, string filePath)
+        public static (Scope RootScope, DiagnosticsReport Diagnostics) Explore(Root root, string filePath)
         {
-            var d = new Diagnostics();
+            var d = new DiagnosticsReport();
             var v1 = new FirstPass(root, filePath, d);
             root.Accept(v1);
             var v2 = new SecondPass(root, filePath, v1.RootScope, d);
@@ -25,10 +25,10 @@ namespace ScTools.ScriptLang.Semantics
             public Root Root { get; }
             public string FilePath { get; }
             public Scope RootScope { get; }
-            public Diagnostics Diagnostics { get; }
+            public DiagnosticsReport Diagnostics { get; }
             protected Scope Scope { get; set; }
 
-            public Pass(Root root, string filePath, Scope rootScope, Diagnostics diagnostics)
+            public Pass(Root root, string filePath, Scope rootScope, DiagnosticsReport diagnostics)
                 => (Root, FilePath, RootScope, Scope, Diagnostics) = (root, filePath, rootScope, rootScope, diagnostics);
 
             protected void Error(string message, Node node) => Diagnostics.AddError(FilePath, message, node.Source);
@@ -54,7 +54,7 @@ namespace ScTools.ScriptLang.Semantics
         /// </summary>
         private sealed class FirstPass : Pass
         {
-            public FirstPass(Root root, string filePath, Diagnostics diagnostics) : base(root, filePath, Scope.CreateRoot(), diagnostics) { }
+            public FirstPass(Root root, string filePath, DiagnosticsReport diagnostics) : base(root, filePath, Scope.CreateRoot(), diagnostics) { }
 
             public override void VisitProcedureStatement(ProcedureStatement node)
                 => AddIfNotRepeated(new ProcedureSymbol(node, Scope.CreateNested($"PROC#{node.Name.Name}")), node);
@@ -106,7 +106,7 @@ namespace ScTools.ScriptLang.Semantics
             private int ifCounter = 0;
             private int whileCounter = 0;
 
-            public SecondPass(Root root, string filePath, Scope rootScope, Diagnostics diagnostics) : base(root, filePath, rootScope, diagnostics) { }
+            public SecondPass(Root root, string filePath, Scope rootScope, DiagnosticsReport diagnostics) : base(root, filePath, rootScope, diagnostics) { }
 
             private void ResetIfWhileCounters() => (ifCounter, whileCounter) = (0, 0);
 

@@ -130,7 +130,7 @@ ENDPROC
             Console.WriteLine("===========================");
 
             const string FilePath = "test.sc";
-            Diagnostics d = new Diagnostics();
+            DiagnosticsReport d = new DiagnosticsReport();
             d.AddFrom(SyntaxChecker.Check(root, FilePath));
 
             var (scope, scopeDiagnostics) = ScopeBuilder.Explore(root, FilePath);

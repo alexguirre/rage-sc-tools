@@ -31,7 +31,7 @@ namespace ScTools.ScriptLang
         public override void Print(TextWriter dest) => dest.WriteLine($"{FilePath}:{Source.Start.Line}:{Source.Start.Column}: warning: {Message}");
     }
 
-    public sealed class Diagnostics
+    public sealed class DiagnosticsReport
     {
         private readonly List<Diagnostic> diagnostics = new List<Diagnostic>();
 
@@ -42,9 +42,10 @@ namespace ScTools.ScriptLang
         public IEnumerable<ErrorDiagnostic> Errors => diagnostics.Where(d => d is ErrorDiagnostic).Cast<ErrorDiagnostic>();
         public IEnumerable<WarningDiagnostic> Warnings => diagnostics.Where(d => d is WarningDiagnostic).Cast<WarningDiagnostic>();
 
-        public void AddError(string filePath, string message, SourceRange source) => diagnostics.Add(new ErrorDiagnostic(filePath, message, source));
-        public void AddWarning(string filePath, string message, SourceRange source) => diagnostics.Add(new WarningDiagnostic(filePath, message, source));
+        public void Add(Diagnostic diagnostic) => diagnostics.Add(diagnostic);
+        public void AddError(string filePath, string message, SourceRange source) => Add(new ErrorDiagnostic(filePath, message, source));
+        public void AddWarning(string filePath, string message, SourceRange source) => Add(new WarningDiagnostic(filePath, message, source));
 
-        public void AddFrom(Diagnostics other) => diagnostics.AddRange(other.diagnostics);
+        public void AddFrom(DiagnosticsReport other) => diagnostics.AddRange(other.diagnostics);
     }
 }
