@@ -36,7 +36,7 @@ namespace ScTools.ScriptLang.Ast
 
         public override string ToString() => $"{OpToString(Op)}{Operand}";
 
-        private static string OpToString(UnaryOperator op) => op switch
+        public static string OpToString(UnaryOperator op) => op switch
         {
             UnaryOperator.Not => "NOT ",
             UnaryOperator.Negate => "-",
@@ -63,7 +63,7 @@ namespace ScTools.ScriptLang.Ast
 
         public override string ToString() => $"{Left} {OpToString(Op)} {Right}";
 
-        private static string OpToString(BinaryOperator op) => op switch
+        public static string OpToString(BinaryOperator op) => op switch
         {
             BinaryOperator.Add => "+",
             BinaryOperator.Subtract => "-",

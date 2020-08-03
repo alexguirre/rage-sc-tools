@@ -65,7 +65,16 @@ PROC MAIN()
     
     INT evalMeNegInt = 10 + -5
 
+    FLOAT var1 = 10 + 5
+    FLOAT exprMeVar2 = var1 + 5
+
+    FLOAT exprMeVar5 = 5 + 10 + 15 * (var1 / exprMeVar2)
+
     WHILE TRUE
+
+        FLOAT var3 = 10 + 5
+        FLOAT exprMeVar4 = var3 + 5
+
         WAIT(0)
 
         DRAW_RECT(rectPos.X, rectPos.Y, 0.1, 0.1, 255, 0, 0, 255, FALSE)
@@ -124,17 +133,16 @@ ENDPROC
             //Console.WriteLine();
             //Console.WriteLine("===========================");
 
-            root.Accept(new SimpleVisitorTest());
-
-            Console.WriteLine();
-            Console.WriteLine("===========================");
-
             const string FilePath = "test.sc";
             DiagnosticsReport d = new DiagnosticsReport();
             d.AddFrom(SyntaxChecker.Check(root, FilePath));
 
             var (scope, scopeDiagnostics) = ScopeBuilder.Explore(root, FilePath);
             d.AddFrom(scopeDiagnostics);
+
+            Console.WriteLine("===========================");
+            root.Accept(new SimpleVisitorTest { Scope = scope, Diagnostics = d });
+            Console.WriteLine("===========================");
 
             Console.WriteLine($"Errors:   {d.HasErrors} ({d.Errors.Count()})");
             Console.WriteLine($"Warnings: {d.HasWarnings} ({d.Warnings.Count()})");
@@ -148,6 +156,8 @@ ENDPROC
         private sealed class SimpleVisitorTest : AstVisitor
         {
             private readonly HashSet<string> foundTypes = new HashSet<string>();
+            public Scope Scope { get; set; }
+            public DiagnosticsReport Diagnostics { get; set; }
 
             private void Check(Identifier id, Node node)
             {
@@ -173,20 +183,27 @@ ENDPROC
                 }
             }
 
-            public override void VisitBinaryExpression(BinaryExpression node)
+            public override void VisitProcedureStatement(ProcedureStatement node)
             {
-                if (node.Left is LiteralExpression && node.Right is LiteralExpression)
-                {
-                    var b = TypeOf.Expression(node, out var t);
-                    //Console.WriteLine($"expr '{node}' = type '{b}, {t}'");
-                }
+                // TODO: need some way to associate an AST node with an scope
+                Scope = Scope.Children.First(s => s.DebugName.EndsWith("#"+node.Name.Name));
+                DefaultVisit(node);
+                Scope = Scope.Parent;
             }
 
             public override void VisitVariableDeclarationStatement(VariableDeclarationStatement node)
             {
-                if (node.Variable.Initializer != null && node.Variable.Declaration.Name.Name.StartsWith("evalMe"))
+                if (node.Variable.Initializer != null)
                 {
-                    Console.WriteLine($"{node} => eval = {Evaluator.Evaluate(node.Variable.Initializer)}");
+                    if (node.Variable.Declaration.Name.Name.StartsWith("evalMe"))
+                    {
+                        Console.WriteLine($"{node} => eval = {Evaluator.Evaluate(node.Variable.Initializer)}");
+                    }
+                    else if (node.Variable.Declaration.Name.Name.StartsWith("exprMe"))
+                    {
+                        var b = TypeOf.Expression(node.Variable.Initializer, Scope, out var t, Diagnostics);
+                        Console.WriteLine($"expr '{node.Variable.Initializer}' = type '{b}, {t}'");
+                    }
                 }
             }
         }
