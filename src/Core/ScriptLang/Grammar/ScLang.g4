@@ -88,7 +88,17 @@ arrayIndexer
     ;
 
 type
-    : identifier isRef='&'?
+    : typeName isRef='&'?
+    ;
+
+typeName
+    : K_BOOL
+    | K_INT
+    | K_FLOAT
+    | K_VEC3
+    | K_TEXT_LABEL
+    | K_STRING
+    | identifier
     ;
 
 identifier
@@ -136,6 +146,12 @@ K_WHILE : W H I L E;
 K_ENDWHILE : E N D W H I L E;
 K_RETURN : R E T U R N;
 K_SCRIPT_NAME : S C R I P T '_' N A M E;
+K_BOOL : B O O L;
+K_INT : I N T;
+K_FLOAT : F L O A T;
+K_VEC3 : V E C '3';
+K_TEXT_LABEL : T E X T '_' L A B E L DIGIT+;
+K_STRING : S T R I N G;
 
 OP_ADD: '+';
 OP_SUBTRACT: '-';

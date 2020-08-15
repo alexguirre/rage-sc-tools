@@ -164,7 +164,7 @@ namespace ScTools.ScriptLang.Ast
 
         #region Types
         public override Node VisitType([NotNull] ScLangParser.TypeContext context)
-            => new Type((Identifier)context.identifier().Accept(this),
+            => new Type((Identifier)context.typeName().Accept(this),
                         context.isRef != null,
                         Source(context));
         #endregion
@@ -196,6 +196,9 @@ namespace ScTools.ScriptLang.Ast
                                    Source(context));
 
         public override Node VisitIdentifier([NotNull] ScLangParser.IdentifierContext context)
+            => new Identifier(context.GetText(), Source(context));
+
+        public override Node VisitTypeName([NotNull] ScLangParser.TypeNameContext context)
             => new Identifier(context.GetText(), Source(context));
 
         public override Node VisitArrayIndexer([NotNull] ScLangParser.ArrayIndexerContext context)
