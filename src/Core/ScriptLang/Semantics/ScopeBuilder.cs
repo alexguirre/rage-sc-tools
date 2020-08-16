@@ -78,8 +78,8 @@ namespace ScTools.ScriptLang.Semantics
                 Scope = Scope.Parent!;
             }
 
-            public override void VisitStaticFieldStatement(StaticFieldStatement node)
-                => AddIfNotRepeated(new StaticFieldSymbol(node.Variable), node);
+            public override void VisitStaticVariableStatement(StaticVariableStatement node)
+                => AddIfNotRepeated(new StaticVariableSymbol(node.Variable), node);
 
             public override void VisitStructFieldList(StructFieldList node)
             {

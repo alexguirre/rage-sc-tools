@@ -63,9 +63,9 @@ namespace ScTools.ScriptLang.Ast
                                    (StructFieldList)context.structFieldList().Accept(this),
                                    Source(context));
 
-        public override Node VisitStaticFieldStatement([NotNull] ScLangParser.StaticFieldStatementContext context)
-            => new StaticFieldStatement((VariableDeclarationWithInitializer)context.variableDeclarationWithInitializer().Accept(this),
-                                        Source(context));
+        public override Node VisitStaticVariableStatement([NotNull] ScLangParser.StaticVariableStatementContext context)
+            => new StaticVariableStatement((VariableDeclarationWithInitializer)context.variableDeclarationWithInitializer().Accept(this),
+                                           Source(context));
         #endregion Top Level Statements
 
         #region Statements

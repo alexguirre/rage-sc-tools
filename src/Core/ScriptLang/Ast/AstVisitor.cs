@@ -17,7 +17,7 @@ namespace ScTools.ScriptLang.Ast
         public virtual void VisitProcedurePrototypeStatement(ProcedurePrototypeStatement node) => DefaultVisit(node);
         public virtual void VisitFunctionPrototypeStatement(FunctionPrototypeStatement node) => DefaultVisit(node);
         public virtual void VisitStructStatement(StructStatement node) => DefaultVisit(node);
-        public virtual void VisitStaticFieldStatement(StaticFieldStatement node) => DefaultVisit(node);
+        public virtual void VisitStaticVariableStatement(StaticVariableStatement node) => DefaultVisit(node);
 
         public virtual void VisitStatementBlock(StatementBlock node) => DefaultVisit(node);
         public virtual void VisitVariableDeclarationStatement(VariableDeclarationStatement node) => DefaultVisit(node);
@@ -61,7 +61,7 @@ namespace ScTools.ScriptLang.Ast
         [return: MaybeNull] public virtual TResult VisitProcedurePrototypeStatement(ProcedurePrototypeStatement node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitFunctionPrototypeStatement(FunctionPrototypeStatement node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitStructStatement(StructStatement node) => DefaultVisit(node);
-        [return: MaybeNull] public virtual TResult VisitStaticFieldStatement(StaticFieldStatement node) => DefaultVisit(node);
+        [return: MaybeNull] public virtual TResult VisitStaticVariableStatement(StaticVariableStatement node) => DefaultVisit(node);
 
         [return: MaybeNull] public virtual TResult VisitStatementBlock(StatementBlock node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitVariableDeclarationStatement(VariableDeclarationStatement node) => DefaultVisit(node);
@@ -106,7 +106,7 @@ namespace ScTools.ScriptLang.Ast
                 case ProcedurePrototypeStatement n: visitor.VisitProcedurePrototypeStatement(n); break;
                 case FunctionPrototypeStatement n: visitor.VisitFunctionPrototypeStatement(n); break;
                 case StructStatement n: visitor.VisitStructStatement(n); break;
-                case StaticFieldStatement n: visitor.VisitStaticFieldStatement(n); break;
+                case StaticVariableStatement n: visitor.VisitStaticVariableStatement(n); break;
                 
                 case StatementBlock n: visitor.VisitStatementBlock(n); break;
                 case VariableDeclarationStatement n: visitor.VisitVariableDeclarationStatement(n); break;
@@ -151,7 +151,7 @@ namespace ScTools.ScriptLang.Ast
             ProcedurePrototypeStatement n => visitor.VisitProcedurePrototypeStatement(n),
             FunctionPrototypeStatement n => visitor.VisitFunctionPrototypeStatement(n),
             StructStatement n => visitor.VisitStructStatement(n),
-            StaticFieldStatement n => visitor.VisitStaticFieldStatement(n),
+            StaticVariableStatement n => visitor.VisitStaticVariableStatement(n),
 
             StatementBlock n => visitor.VisitStatementBlock(n),
             VariableDeclarationStatement n => visitor.VisitVariableDeclarationStatement(n),

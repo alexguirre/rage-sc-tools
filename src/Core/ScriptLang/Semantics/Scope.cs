@@ -27,7 +27,7 @@ namespace ScTools.ScriptLang.Semantics
             {
                 PrimitiveSymbol _ => IsRoot,
                 StructSymbol _ => IsRoot,
-                StaticFieldSymbol _ => IsRoot,
+                StaticVariableSymbol _ => IsRoot,
                 ProcedureSymbol _ => IsRoot,
                 FunctionSymbol _ => IsRoot,
                 ProcedurePrototypeSymbol _ => IsRoot,

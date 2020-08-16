@@ -66,7 +66,7 @@ namespace ScTools.ScriptLang.Semantics
             {
                 LocalSymbol s => s.AstNode.Declaration,
                 ParameterSymbol s => s.AstNode,
-                StaticFieldSymbol s => s.AstNode.Declaration,
+                StaticVariableSymbol s => s.AstNode.Declaration,
                 _ => throw new NotImplementedException()
             };
 

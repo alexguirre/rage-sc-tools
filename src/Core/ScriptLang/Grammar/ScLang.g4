@@ -22,7 +22,7 @@ topLevelStatement
       structFieldList
       K_ENDSTRUCT                                               #structStatement
     
-    | variableDeclarationWithInitializer                        #staticFieldStatement
+    | variableDeclarationWithInitializer                        #staticVariableStatement
     ;
 
 statement

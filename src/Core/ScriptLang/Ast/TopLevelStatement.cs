@@ -91,13 +91,13 @@ namespace ScTools.ScriptLang.Ast
         public override string ToString() => $"STRUCT {Name}\n{FieldList}\nENDSTRUCT";
     }
 
-    public sealed class StaticFieldStatement : TopLevelStatement
+    public sealed class StaticVariableStatement : TopLevelStatement
     {
         public VariableDeclarationWithInitializer Variable { get; }
 
         public override IEnumerable<Node> Children { get { yield return Variable; } }
 
-        public StaticFieldStatement(VariableDeclarationWithInitializer variable, SourceRange source) : base(source)
+        public StaticVariableStatement(VariableDeclarationWithInitializer variable, SourceRange source) : base(source)
             => Variable = variable;
 
         public override string ToString() => $"{Variable}";
