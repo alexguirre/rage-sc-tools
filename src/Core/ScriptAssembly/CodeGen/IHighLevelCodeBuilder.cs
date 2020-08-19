@@ -9,7 +9,7 @@
     public interface IHighLevelCodeBuilder
     {
         public CodeGenOptions Options { get; }
-        public NativeDB NativeDB { get; }
+        public NativeDBOld NativeDB { get; }
         public Registry Symbols { get; }
 
         /// <summary>

@@ -480,7 +480,7 @@
         #endregion // IByteCodeBuilder Implementation
 
         #region IHighLevelCodeBuilder Implementation
-        NativeDB IHighLevelCodeBuilder.NativeDB => context.NativeDB;
+        NativeDBOld IHighLevelCodeBuilder.NativeDB => context.NativeDB;
         CodeGenOptions IHighLevelCodeBuilder.Options => context.CodeGenOptions;
         Registry IHighLevelCodeBuilder.Symbols => context.Symbols;
 

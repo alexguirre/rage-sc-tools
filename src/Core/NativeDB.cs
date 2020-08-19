@@ -1,231 +1,332 @@
-﻿namespace ScTools
+﻿#nullable enable
+namespace ScTools
 {
     using System;
-    using System.Net;
-    using System.Threading.Tasks;
-    using System.Text.Json;
-    using System.Linq;
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.IO;
+    using System.IO.Compression;
+    using System.Linq;
+    using System.Net;
+    using System.Text.Json;
+    using System.Threading.Tasks;
 
-    public readonly struct NativeCommand : IEquatable<NativeCommand>
+    public readonly struct NativeCommandParameter
+    {
+        public string Type { get; }
+        public string Name { get; }
+
+        public NativeCommandParameter(string type, string name) => (Type, Name) = (type, name);
+    }
+
+    public readonly struct NativeCommandDefinition : IEquatable<NativeCommandDefinition>
     {
         public ulong Hash { get; }
-        public ulong CurrentHash { get; }
         public string Name { get; }
-        public byte ParameterCount { get; }
-        public byte ReturnValueCount { get; }
+        public uint Build { get; }
+        public ImmutableArray<NativeCommandParameter> Parameters { get; }
+        public string ReturnType { get; }
 
-        public NativeCommand(ulong hash, ulong currentHash, string name, byte parameterCount, byte returnValueCount)
-        {
-            Hash = hash;
-            CurrentHash = currentHash;
-            Name = name;
-            ParameterCount = parameterCount;
-            ReturnValueCount = returnValueCount;
-        }
+        public NativeCommandDefinition(ulong hash, string name, uint build, IEnumerable<NativeCommandParameter> parameters, string returnType)
+            => (Hash, Name, Build, Parameters, ReturnType) = (hash, name, build, parameters.ToImmutableArray(), returnType);
 
-        public override int GetHashCode() => (Hash, CurrentHash, ParameterCount, ReturnValueCount, Name).GetHashCode();
+        public override int GetHashCode() => (Hash, Name, Parameters, ReturnType).GetHashCode();
 
-        public override bool Equals(object obj) => obj is NativeCommand n && Equals(n);
-        public bool Equals(NativeCommand other) => Equals(in other);
-        public bool Equals(in NativeCommand other)
+        public override bool Equals(object? obj) => obj is NativeCommandDefinition n && Equals(n);
+        public bool Equals(NativeCommandDefinition other) => Equals(in other);
+        public bool Equals(in NativeCommandDefinition other)
             => Hash == other.Hash &&
-               CurrentHash == other.CurrentHash &&
-               ParameterCount == other.ParameterCount &&
-               ReturnValueCount == other.ReturnValueCount &&
+               Parameters.Equals(other.Parameters) &&
+               ReturnType == other.ReturnType &&
                Name == other.Name;
 
-        public static bool operator ==(in NativeCommand a, in NativeCommand b) => a.Equals(in b);
-        public static bool operator !=(in NativeCommand a, in NativeCommand b) => !a.Equals(in b);
+        public static bool operator ==(in NativeCommandDefinition a, in NativeCommandDefinition b) => a.Equals(in b);
+        public static bool operator !=(in NativeCommandDefinition a, in NativeCommandDefinition b) => !a.Equals(in b);
+    }
+
+    public enum GameBuild
+    {
+        // the value refers to the column index of that version in the translationTable
+        b323_335 = 0,
+        b350 = 1,
+        b372 = 2,
+        b393 = 3,
+        b463 = 4,
+        b505 = 5,
+        b573 = 6,
+        b617 = 7,
+        b678 = 8,
+        b757 = 9,
+        b791 = 10,
+        b877 = 11,
+        b944 = 12,
+        b1011_1032 = 13,
+        b1103 = 14,
+        b1180 = 15,
+        b1290 = 16,
+        b1365 = 17,
+        b1493 = 18,
+        b1604 = 19,
+        b1737 = 20,
+        b1868 = 21,
+        b2060 = 22,
     }
 
     public sealed class NativeDB
     {
-        public const uint HeaderMagic = 0x2042444E; // 'NDB '
+        private readonly ulong[,] translationTable;
+        private readonly Dictionary<ulong, ImmutableArray<int>> hashToRows;
+        private readonly ImmutableArray<NativeCommandDefinition> commands;
 
-        public ImmutableArray<NativeCommand> Natives { get; }
+        private NativeDB(ulong[,] translationTable, Dictionary<ulong, ImmutableArray<int>> hashToRows, ImmutableArray<NativeCommandDefinition> commands)
+            => (this.translationTable, this.hashToRows, this.commands) = (translationTable, hashToRows, commands);
 
-        private NativeDB(IEnumerable<NativeCommand> natives)
+        public ulong TranslateHash(ulong origHash, GameBuild build)
         {
-            Natives = natives.ToImmutableArray();
-        }
-
-        public void Save(BinaryWriter writer)
-        {
-            writer.Write(HeaderMagic);
-            writer.Write(Natives.Length);
-            foreach (ref readonly var native in Natives.AsSpan())
+            if (!hashToRows.TryGetValue(origHash, out var rows))
             {
-                writer.Write(native.Hash);
-                writer.Write(native.CurrentHash);
-                writer.Write(native.ParameterCount);
-                writer.Write(native.ReturnValueCount);
-                writer.Write(native.Name);
-            }
-        }
-
-        public static NativeDB Load(BinaryReader reader)
-        {
-            if (reader.BaseStream.Length < sizeof(uint) * 2)
-            {
-                throw new InvalidDataException("Incorrect size");
+                return 0;
             }
 
-            var magic = reader.ReadUInt32();
-
-            if (magic != HeaderMagic)
+            foreach (int row in rows)
             {
-                throw new InvalidDataException("Incorrect header");
-            }
-
-            var nativeCount = reader.ReadInt32();
-            var natives = new NativeCommand[nativeCount];
-            try
-            {
-                for (int i = 0; i < nativeCount; i++)
+                var hash = translationTable[row, (int)build];
+                if (hash != 0)
                 {
-                    var hash = reader.ReadUInt64();
-                    var currentHash = reader.ReadUInt64();
-                    var paramCount = reader.ReadByte();
-                    var returnValueCount = reader.ReadByte();
-                    var name = reader.ReadString();
-
-                    natives[i] = new NativeCommand(hash, currentHash, name, paramCount, returnValueCount);
+                    return hash;
                 }
             }
-            catch (EndOfStreamException e)
-            {
-                throw new InvalidDataException("Incorrect native count", e);
-            }
 
-            return new NativeDB(natives);
+            return 0;
         }
 
-        public static async Task<NativeDB> Fetch(Uri crossMapUrl, Uri nativeDbUrl)
+        public void ForEachCommand(ForEachCommandCallback cb)
         {
-            using var crossMapClient = new WebClient();
-            var crossMapTask = crossMapClient.DownloadStringTaskAsync(crossMapUrl).ContinueWith(t => ParseCrossMap(t.Result));
+            for (int i = 0; i < commands.Length; i++)
+            {
+                cb(in commands.ItemRef(i));
+            }
+        }
 
+        public delegate void ForEachCommandCallback(in NativeCommandDefinition cmd);
+
+        public string ToJson()
+        {
+            var model = new JsonModel
+            {
+                TranslationTable = ToJaggedArray(translationTable),
+                HashToRows = hashToRows.Select(kvp => new JsonModel.HashToRowsEntry { Hash = kvp.Key, Rows = kvp.Value.ToArray() }).ToArray(),
+                Commands = commands.Select(cmd => new JsonModel.Command
+                {
+                    Hash = cmd.Hash,
+                    Name = cmd.Name,
+                    Build = cmd.Build,
+                    Parameters = cmd.Parameters.Select(p => new JsonModel.Param
+                    {
+                        Type = p.Type,
+                        Name = p.Name,
+                    }).ToArray(),
+                    ReturnType = cmd.ReturnType,
+                }).ToArray(),
+            };
+
+            return JsonSerializer.Serialize(model, new JsonSerializerOptions { WriteIndented = true });
+        }
+
+        public static NativeDB FromJson(string json)
+        {
+            var model = JsonSerializer.Deserialize<JsonModel>(json);
+
+            return new NativeDB(To2DArray(model.TranslationTable),
+                                model.HashToRows.ToDictionary(e => e.Hash, e => e.Rows.ToImmutableArray()),
+                                model.Commands.Select(cmd => new NativeCommandDefinition(
+                                                                cmd.Hash,
+                                                                cmd.Name,
+                                                                cmd.Build,
+                                                                cmd.Parameters.Select(p => new NativeCommandParameter(p.Type, p.Name)),
+                                                                cmd.ReturnType))
+                                              .ToImmutableArray());
+        }
+
+        private sealed class JsonModel
+        {
+            public ulong[][] TranslationTable { get; set; }
+            public HashToRowsEntry[] HashToRows { get; set; }
+            public Command[] Commands { get; set; }
+
+            public sealed class HashToRowsEntry
+            {
+                public ulong Hash { get; set; }
+                public int[] Rows { get; set; }
+            }
+
+            public sealed class Command
+            {
+                public ulong Hash { get; set; }
+                public string Name { get; set; }
+                public uint Build { get; set; }
+                public Param[] Parameters { get; set; }
+                public string ReturnType { get; set; }
+            }
+
+            public sealed class Param
+            {
+                public string Type { get; set; }
+                public string Name { get; set; }
+            }
+        }
+
+        private static ulong[][] ToJaggedArray(ulong[,] array2d)
+        {
+            var arr = new ulong[array2d.GetLength(0)][];
+            for (int i = 0; i < arr.Length; i++)
+            {
+                arr[i] = new ulong[array2d.GetLength(1)];
+                for (int j = 0; j < arr[i].Length; j++)
+                {
+                    arr[i][j] = array2d[i, j];
+                }
+            }
+            return arr;
+        }
+
+        private static ulong[,] To2DArray(ulong[][] jaggedArray)
+        {
+            var arr = new ulong[jaggedArray.Length, jaggedArray[0].Length];
+            for (int i = 0; i < jaggedArray.Length; i++)
+            {
+                for (int j = 0; j < jaggedArray[0].Length; j++)
+                {
+                    arr[i, j] = jaggedArray[i][j];
+                }
+            }
+            return arr;
+        }
+
+        public static async Task<NativeDB> Fetch(Uri nativeDbUrl, string shvZipFilePath)
+        {
             using var nativeDbClient = new WebClient();
             var nativeDbTask = nativeDbClient.DownloadStringTaskAsync(nativeDbUrl).ContinueWith(t => ParseNativeDb(t.Result));
 
-            var crossMap = await crossMapTask;
+            var crossMapTask = File.ReadAllBytesAsync(shvZipFilePath).ContinueWith(t => ExtractCrossMapFromSHVZip(t.Result));
+
+            var (translationTable, hashToRows) = await crossMapTask;
             var natives = await nativeDbTask;
 
-            return new NativeDB(natives.Select(n => new NativeCommand(n.Hash, crossMap.GetValueOrDefault(n.Hash, n.Hash), n.Name, n.ParameterCount, n.ReturnValueCount)));
+            return new NativeDB(translationTable, hashToRows.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToImmutableArray()), natives);
         }
 
-        private static Dictionary<ulong, ulong> ParseCrossMap(string crossMapStr)
-        {
-            static bool IsNewLine(char c) => c == '\r' || c == '\n';
-
-            static bool NextLine(ref ReadOnlySpan<char> text, out ReadOnlySpan<char> line)
-            {
-                if (text.Length == 0)
-                {
-                    line = default;
-                    return false;
-                }
-
-                line = text;
-
-                int length = 0;
-                while (length < text.Length && !IsNewLine(text[length])) { length++; } // skip until we find a new line
-                line = line[0..length];
-
-                while (length < text.Length && IsNewLine(text[length])) { length++; } // in case we found "\r\n" or empty lines, skip
-                text = text[length..];
-
-                return true;
-            }
-
-            List<ulong[]> crossmap = new List<ulong[]>();
-            List<ulong> currHashes = new List<ulong>();
-            ReadOnlySpan<char> s = crossMapStr;
-            int lineNumber = 1;
-            while (NextLine(ref s, out var line))
-            {
-                line = line[4..^4]; // remove '{ { ' and '} },'
-
-                bool allZeros = true;
-                int hashStart = 0;
-                int hashLength = -1;
-                while (hashStart < line.Length)
-                {
-                    var remaining = line[hashStart..];
-                    hashLength = remaining.IndexOf(", ".AsSpan());
-                    hashLength = hashLength == -1 ? remaining.Length : hashLength;
-
-                    var hashStr = line[hashStart..(hashStart + hashLength)];
-                    var hash = ulong.Parse(hashStr[2..], System.Globalization.NumberStyles.HexNumber);
-
-                    if (hash != 0)
-                    {
-                        allZeros = false;
-                    }
-
-                    currHashes.Add(hash);
-
-                    hashStart += hashLength + 2;
-                }
-
-                if (crossmap.Count > 0 && currHashes.Count != crossmap[0].Length)
-                {
-                    throw new FormatException($"Incorrect number of hashes in line {lineNumber}");
-                }
-
-                if (!allZeros)
-                {
-                    crossmap.Add(currHashes.ToArray());
-                }
-                currHashes.Clear();
-
-                lineNumber++;
-            }
-
-            return crossmap.Aggregate(new Dictionary<ulong, ulong>(), (dict, hashes) =>
-            {
-                var originalHash = hashes.First(h => h != 0);
-                var currentHash = hashes.Last();
-                if (currentHash == 0)
-                {
-                    currentHash = originalHash;
-                }
-
-                dict.TryAdd(originalHash, currentHash);
-                return dict;
-            });
-        }
-
-        private static NativeCommand[] ParseNativeDb(string jsonStr)
+        private static ImmutableArray<NativeCommandDefinition> ParseNativeDb(string jsonStr)
         {
             using var json = JsonDocument.Parse(jsonStr);
 
             var nativeCount = json.RootElement.EnumerateObject().Sum(ns => ns.Value.EnumerateObject().Count());
-            var natives = new NativeCommand[nativeCount];
+            var natives = ImmutableArray.CreateBuilder<NativeCommandDefinition>(nativeCount);
 
-            int i = 0;
             foreach (var ns in json.RootElement.EnumerateObject())
             {
                 foreach (var native in ns.Value.EnumerateObject())
                 {
                     var hash = ulong.Parse(native.Name.AsSpan()[2..], System.Globalization.NumberStyles.HexNumber);
                     var name = native.Value.GetProperty("name").GetString();
-                    byte paramCount = (byte)native.Value.GetProperty("params").GetArrayLength();
-                    byte returnValueCount = native.Value.GetProperty("return_type").GetString() switch
-                    {
-                        "void" => 0,
-                        "Vector3" => 3,
-                        _ => 1
-                    };
+                    var build = uint.Parse(native.Value.GetProperty("build").GetString());
+                    var parameters = native.Value.GetProperty("params")
+                                                 .EnumerateArray()
+                                                 .Select(p => new NativeCommandParameter(p.GetProperty("type").GetString(),
+                                                                                         p.GetProperty("name").GetString()));
+                    var returnType = native.Value.GetProperty("return_type").GetString();
 
-                    natives[i++] = new NativeCommand(hash, 0, name, paramCount, returnValueCount);
+                    natives.Add(new NativeCommandDefinition(hash, name, build, parameters, returnType));
                 }
             }
 
-            return natives;
+            return natives.MoveToImmutable();
+        }
+
+        private static (ulong[,] TranslationTable, Dictionary<ulong, List<int>> HashToRows) ExtractCrossMapFromSHVZip(byte[] zipFile)
+        {
+            byte[] dllFile;
+
+            using (var zip = new ZipArchive(new MemoryStream(zipFile, writable: false), ZipArchiveMode.Read, leaveOpen: false))
+            using (var ms = new MemoryStream())
+            {
+                zip.GetEntry("bin/ScriptHookV.dll").Open().CopyTo(ms);
+                dllFile = ms.ToArray();
+            }
+
+            return ExtractCrossMapFromSHV(dllFile);
+        }
+
+        private static (ulong[,] TranslationTable, Dictionary<ulong, List<int>> HashToRows) ExtractCrossMapFromSHV(Span<byte> dllFile)
+        {
+            const int Base = 0x400; // TODO: the offset of the .text section could change
+            var code = dllFile[Base..];
+
+            // 33 D2 4D 8B C2 8B CA 49 39 38
+            int addr = FindPattern(code, new byte[] { 0x33, 0xD2, 0x4D, 0x8B, 0xC2, 0x8B, 0xCA, 0x49, 0x39, 0x38 });
+
+            Console.WriteLine($"FindPattern => {addr}    0x{addr:X}");
+
+            if (addr == -1)
+            {
+                return (new ulong[0,0], new Dictionary<ulong, List<int>>());
+            }
+
+            int translationTableRVA = (int)ReadUInt32(code, addr - 4);
+            int translationTableAddr = addr + translationTableRVA - 0xC00; // TODO: where does 0xC00 come from?
+
+            uint tableEntrySize = ReadUInt32(code, addr + 0x11);
+            uint versionCount = tableEntrySize / sizeof(ulong);
+            uint nativeCount = ReadUInt32(code, addr + 0x1A);
+
+            Console.WriteLine($"{translationTableAddr:X8}");
+            Console.WriteLine($"{tableEntrySize:X8}");
+            Console.WriteLine($"{versionCount}");
+            Console.WriteLine($"{nativeCount}");
+
+            var table = new ulong[nativeCount, versionCount];
+            var hashToRows = new Dictionary<ulong, List<int>>((int)nativeCount);
+            for (int i = 0; i < nativeCount; i++)
+            {
+                ulong origHash = 0;
+                for (int k = 0; k < versionCount; k++)
+                {
+                    var hash = ReadUInt64(code, translationTableAddr + k * sizeof(ulong) + i * (int)tableEntrySize);
+
+                    table[i, k] = hash;
+
+                    if (origHash == 0 && hash != 0)
+                    {
+                        origHash = hash;
+                    }
+                }
+
+                if (!hashToRows.TryGetValue(origHash, out var indices))
+                {
+                    indices = new List<int>(1);
+                    hashToRows.Add(origHash, indices);
+                }
+
+                indices.Add(i);
+            }
+
+            return (table, hashToRows);
+
+            static uint ReadUInt32(Span<byte> data, int offset) => BitConverter.ToUInt32(data[offset..(offset + sizeof(uint))]);
+            static ulong ReadUInt64(Span<byte> data, int offset) => BitConverter.ToUInt64(data[offset..(offset + sizeof(ulong))]);
+
+            static int FindPattern(Span<byte> data, Span<byte> pattern)
+            {
+                for (int i = 0; i < data.Length - pattern.Length; i++)
+                {
+                    if (data[i..(i + pattern.Length)].SequenceEqual(pattern))
+                    {
+                        return i;
+                    }
+                }
+
+                return -1;
+            }
         }
     }
 }

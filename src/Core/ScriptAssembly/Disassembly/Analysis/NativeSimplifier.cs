@@ -12,13 +12,13 @@
     /// </summary>
     public sealed class NativeSimplifier : BaseLocationVisitor
     {
-        private readonly NativeDB nativeDB;
+        private readonly NativeDBOld nativeDB;
 
         public NativeSimplifier()
         {
             // TODO: load nativeDB outside NativeSimplifier
             using var reader = new BinaryReader(File.OpenRead("natives.scndb"));
-            nativeDB = NativeDB.Load(reader);
+            nativeDB = NativeDBOld.Load(reader);
         }
 
         public override Location VisitInstruction(InstructionLocation loc, VisitContext context)
