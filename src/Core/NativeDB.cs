@@ -8,6 +8,7 @@ namespace ScTools
     using System.IO.Compression;
     using System.Linq;
     using System.Net;
+    using System.Text;
     using System.Text.Json;
     using System.Threading.Tasks;
 
@@ -174,6 +175,56 @@ namespace ScTools
                 public string Type { get; set; }
                 public string Name { get; set; }
             }
+        }
+
+        /// <summary>
+        /// JSON for https://github.com/gottfriedleibniz/GTA-V-Script-Decompiler
+        /// </summary>
+        public string ToDecompilerJson()
+        {
+            using var output = new MemoryStream();
+            using var json = new Utf8JsonWriter(output, new JsonWriterOptions { Indented = true });
+            json.WriteStartObject();
+            {
+                json.WriteStartObject("ALL");
+                {
+                    ForEachCommand((in NativeCommandDefinition cmd) =>
+                    {
+                        json.WriteStartObject($"0x{cmd.Hash:X16}");
+                        {
+                            json.WriteString("name", cmd.Name);
+                            json.WriteString("jhash", "");
+                            json.WriteString("comment", "");
+                            json.WriteStartArray("params");
+                            foreach (var p in cmd.Parameters)
+                            {
+                                json.WriteStartObject();
+                                {
+                                    json.WriteString("type", p.Type);
+                                    json.WriteString("name", p.Name);
+                                }
+                                json.WriteEndObject();
+                            }
+                            json.WriteEndArray();
+                            json.WriteString("return_type", cmd.ReturnType);
+                            json.WriteStartArray("hashes");
+                            int versions = translationTable.GetLength(1);
+                            for (int i = 0; i < versions; i++)
+                            {
+                                var h = TranslateHash(cmd.Hash, (GameBuild)i);
+                                json.WriteStringValue($"0x{h:X16}");
+                            }
+                            json.WriteEndArray();
+                            json.WriteString("build", cmd.Build.ToString());
+                        }
+                        json.WriteEndObject();
+                    });
+                }
+                json.WriteEndObject();
+            }
+            json.WriteEndObject();
+            json.Flush();
+            return Encoding.UTF8.GetString(output.GetBuffer());
         }
 
         private static ulong[][] ToJaggedArray(ulong[,] array2d)

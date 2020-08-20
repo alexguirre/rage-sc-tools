@@ -32,6 +32,8 @@
                 Console.WriteLine($"{cmd.Name}\t0x{cmd.Hash:X16} -> 0x{db.TranslateHash(cmd.Hash, GameBuild.b2060):X16}");
             });
 
+            File.WriteAllText("decompiler_natives.json", db.ToDecompilerJson());
+
             return 0;
 #if DEBUG
             LoadGTA5Keys();
