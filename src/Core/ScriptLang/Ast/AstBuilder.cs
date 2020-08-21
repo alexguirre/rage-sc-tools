@@ -132,6 +132,9 @@ namespace ScTools.ScriptLang.Ast
         public override Node VisitAggregateExpression([NotNull] ScLangParser.AggregateExpressionContext context)
             => new AggregateExpression(context.expression().Select(expr => expr.Accept(this)).Cast<Expression>(), Source(context));
 
+        public override Node VisitIdentifierExpression([NotNull] ScLangParser.IdentifierExpressionContext context)
+            => new IdentifierExpression(context.identifier().GetText(), Source(context));
+
         public override Node VisitMemberAccessExpression([NotNull] ScLangParser.MemberAccessExpressionContext context)
             => new MemberAccessExpression((Expression)context.expression().Accept(this),
                                           context.identifier().GetText(),
