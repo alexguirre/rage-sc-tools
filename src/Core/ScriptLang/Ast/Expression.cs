@@ -12,18 +12,6 @@ namespace ScTools.ScriptLang.Ast
         }
     }
 
-    public sealed class ParenthesizedExpression : Expression
-    {
-        public Expression Inner { get; }
-
-        public override IEnumerable<Node> Children { get { yield return Inner; } }
-
-        public ParenthesizedExpression(Expression inner, SourceRange source) : base(source)
-            => Inner = inner;
-
-        public override string ToString() => $"({Inner})";
-    }
-
     public sealed class UnaryExpression : Expression
     {
         public UnaryOperator Op { get; }
@@ -61,7 +49,7 @@ namespace ScTools.ScriptLang.Ast
         public BinaryExpression(BinaryOperator op, Expression left, Expression right, SourceRange source) : base(source)
             => (Op, Left, Right) = (op, left, right);
 
-        public override string ToString() => $"{Left} {OpToString(Op)} {Right}";
+        public override string ToString() => $"({Left} {OpToString(Op)} {Right})";
 
         public static string OpToString(BinaryOperator op) => op switch
         {

@@ -100,7 +100,7 @@ namespace ScTools.ScriptLang.Ast
 
         #region Expressions
         public override Node VisitParenthesizedExpression([NotNull] ScLangParser.ParenthesizedExpressionContext context)
-            => new ParenthesizedExpression((Expression)context.expression().Accept(this), Source(context));
+            => context.expression().Accept(this);
         
         public override Node VisitUnaryExpression([NotNull] ScLangParser.UnaryExpressionContext context)
             => new UnaryExpression(context.op.Type switch

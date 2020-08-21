@@ -27,7 +27,6 @@ namespace ScTools.ScriptLang.Ast
         public virtual void VisitReturnStatement(ReturnStatement node) => DefaultVisit(node);
         public virtual void VisitInvocationStatement(InvocationStatement node) => DefaultVisit(node);
 
-        public virtual void VisitParenthesizedExpression(ParenthesizedExpression node) => DefaultVisit(node);
         public virtual void VisitUnaryExpression(UnaryExpression node) => DefaultVisit(node);
         public virtual void VisitBinaryExpression(BinaryExpression node) => DefaultVisit(node);
         public virtual void VisitAggregateExpression(AggregateExpression node) => DefaultVisit(node);
@@ -71,7 +70,6 @@ namespace ScTools.ScriptLang.Ast
         [return: MaybeNull] public virtual TResult VisitReturnStatement(ReturnStatement node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitInvocationStatement(InvocationStatement node) => DefaultVisit(node);
 
-        [return: MaybeNull] public virtual TResult VisitParenthesizedExpression(ParenthesizedExpression node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitUnaryExpression(UnaryExpression node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitBinaryExpression(BinaryExpression node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitAggregateExpression(AggregateExpression node) => DefaultVisit(node);
@@ -99,7 +97,7 @@ namespace ScTools.ScriptLang.Ast
             switch (node)
             {
                 case Root n: visitor.VisitRoot(n); break;
-                
+
                 case ScriptNameStatement n: visitor.VisitScriptNameStatement(n); break;
                 case ProcedureStatement n: visitor.VisitProcedureStatement(n); break;
                 case FunctionStatement n: visitor.VisitFunctionStatement(n); break;
@@ -107,7 +105,7 @@ namespace ScTools.ScriptLang.Ast
                 case FunctionPrototypeStatement n: visitor.VisitFunctionPrototypeStatement(n); break;
                 case StructStatement n: visitor.VisitStructStatement(n); break;
                 case StaticVariableStatement n: visitor.VisitStaticVariableStatement(n); break;
-                
+
                 case StatementBlock n: visitor.VisitStatementBlock(n); break;
                 case VariableDeclarationStatement n: visitor.VisitVariableDeclarationStatement(n); break;
                 case AssignmentStatement n: visitor.VisitAssignmentStatement(n); break;
@@ -115,8 +113,7 @@ namespace ScTools.ScriptLang.Ast
                 case WhileStatement n: visitor.VisitWhileStatement(n); break;
                 case ReturnStatement n: visitor.VisitReturnStatement(n); break;
                 case InvocationStatement n: visitor.VisitInvocationStatement(n); break;
-                
-                case ParenthesizedExpression n: visitor.VisitParenthesizedExpression(n); break;
+
                 case UnaryExpression n: visitor.VisitUnaryExpression(n); break;
                 case BinaryExpression n: visitor.VisitBinaryExpression(n); break;
                 case AggregateExpression n: visitor.VisitAggregateExpression(n); break;
@@ -161,7 +158,6 @@ namespace ScTools.ScriptLang.Ast
             ReturnStatement n => visitor.VisitReturnStatement(n),
             InvocationStatement n => visitor.VisitInvocationStatement(n),
 
-            ParenthesizedExpression n => visitor.VisitParenthesizedExpression(n),
             UnaryExpression n => visitor.VisitUnaryExpression(n),
             BinaryExpression n => visitor.VisitBinaryExpression(n),
             AggregateExpression n => visitor.VisitAggregateExpression(n),

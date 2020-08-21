@@ -34,7 +34,7 @@ CALLBACKS myCallbacks = <<DRAW_OTHER_STUFF, GET_ALPHA_VALUE>>
 PROC MAIN()
     VEC2 pos = <<0.5, 0.5>>
     INT a = 10
-    INT b = 5 + a
+    INT b = 5 + a * 2
 
     WHILE TRUE
         WAIT(0)
@@ -71,10 +71,10 @@ ENDPROC
             Root root = (Root)parser.script().Accept(new AstBuilder());
 
             Console.WriteLine();
-            //Console.WriteLine();
-            //Console.WriteLine(AstDotGenerator.Generate(root));
-            //Console.WriteLine();
-            //Console.WriteLine("===========================");
+            Console.WriteLine();
+            Console.WriteLine(AstDotGenerator.Generate(root));
+            Console.WriteLine();
+            Console.WriteLine("===========================");
 
             const string FilePath = "test.sc";
             DiagnosticsReport d = new DiagnosticsReport();

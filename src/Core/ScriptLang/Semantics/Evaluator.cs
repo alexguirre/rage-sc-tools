@@ -30,7 +30,6 @@ namespace ScTools.ScriptLang.Semantics
                 LiteralExpression e => EvaluateLiteral(e),
                 UnaryExpression e => EvaluateUnary(e),
                 BinaryExpression e => EvaluateBinary(e),
-                ParenthesizedExpression e => Evaluate(e.Inner),
                 _ => null,
             };
 
