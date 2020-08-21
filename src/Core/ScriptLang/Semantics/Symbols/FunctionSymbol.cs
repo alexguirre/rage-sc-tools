@@ -1,22 +1,16 @@
 ﻿#nullable enable
 namespace ScTools.ScriptLang.Semantics.Symbols
 {
-    using System.Diagnostics;
-
-    using ScTools.ScriptLang.Ast;
-
-    public sealed class FunctionSymbol : ISymbol
+    public class FunctionSymbol : ISymbol
     {
-        public FunctionStatement AstNode { get; }
-        public string Name => AstNode.Name.Name;
-        public Scope Scope { get; }
+        public string Name { get; }
+        public FunctionType Type { get; set; }
+        public int LocalArgsSize { get; set; } = -1;
+        public int LocalsSize { get; set; } = -1;
 
-        public FunctionSymbol(FunctionStatement astNode, Scope scope)
-        {
-            Debug.Assert(!scope.IsRoot);
+        public bool AreLocalsAllocated => LocalArgsSize != -1 && LocalsSize != -1;
 
-            AstNode = astNode;
-            Scope = scope;
-        }
+        public FunctionSymbol(string name, FunctionType type)
+            => (Name, Type) = (name, type);
     }
 }

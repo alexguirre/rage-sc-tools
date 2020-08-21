@@ -25,16 +25,16 @@
             //var db = NativeDB.Fetch(new Uri("https://raw.githubusercontent.com/alloc8or/gta5-nativedb-data/master/natives.json"), "ScriptHookV_1.0.2060.0.zip").Result;
             //File.WriteAllText("nativedb.json", db.ToJson());
 
-            var db = NativeDB.FromJson(File.ReadAllText("nativedb.json"));
+            //var db = NativeDB.FromJson(File.ReadAllText("nativedb.json"));
 
-            db.ForEachCommand((in NativeCommandDefinition cmd) =>
-            {
-                Console.WriteLine($"{cmd.Name}\t0x{cmd.Hash:X16} -> 0x{db.TranslateHash(cmd.Hash, GameBuild.b2060):X16}");
-            });
+            //db.ForEachCommand((in NativeCommandDefinition cmd) =>
+            //{
+            //    Console.WriteLine($"{cmd.Name}\t0x{cmd.Hash:X16} -> 0x{db.TranslateHash(cmd.Hash, GameBuild.b2060):X16}");
+            //});
 
-            File.WriteAllText("decompiler_natives.json", db.ToDecompilerJson());
+            //File.WriteAllText("decompiler_natives.json", db.ToDecompilerJson());
 
-            return 0;
+            //return 0;
 #if DEBUG
             LoadGTA5Keys();
 
