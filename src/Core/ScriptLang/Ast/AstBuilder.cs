@@ -32,34 +32,34 @@ namespace ScTools.ScriptLang.Ast
 
         #region Top Level Statements
         public override Node VisitScriptNameStatement([NotNull] ScLangParser.ScriptNameStatementContext context)
-            => new ScriptNameStatement((Identifier)context.identifier().Accept(this), Source(context));
+            => new ScriptNameStatement(context.identifier().GetText(), Source(context));
 
         public override Node VisitProcedureStatement([NotNull] ScLangParser.ProcedureStatementContext context)
-            => new ProcedureStatement((Identifier)context.identifier().Accept(this),
+            => new ProcedureStatement(context.identifier().GetText(),
                                       (ParameterList)context.parameterList().Accept(this),
                                       (StatementBlock)context.statementBlock().Accept(this),
                                       Source(context));
 
         public override Node VisitFunctionStatement([NotNull] ScLangParser.FunctionStatementContext context)
-            => new FunctionStatement((Identifier)context.identifier().Accept(this),
+            => new FunctionStatement(context.identifier().GetText(),
                                      (Type)context.returnType.Accept(this),
                                      (ParameterList)context.parameterList().Accept(this),
                                      (StatementBlock)context.statementBlock().Accept(this),
                                      Source(context));
 
         public override Node VisitProcedurePrototypeStatement([NotNull] ScLangParser.ProcedurePrototypeStatementContext context)
-            => new ProcedurePrototypeStatement((Identifier)context.identifier().Accept(this),
+            => new ProcedurePrototypeStatement(context.identifier().GetText(),
                                                (ParameterList)context.parameterList().Accept(this),
                                                Source(context));
 
         public override Node VisitFunctionPrototypeStatement([NotNull] ScLangParser.FunctionPrototypeStatementContext context)
-            => new FunctionPrototypeStatement((Identifier)context.identifier().Accept(this),
+            => new FunctionPrototypeStatement(context.identifier().GetText(),
                                               (Type)context.returnType.Accept(this),
                                               (ParameterList)context.parameterList().Accept(this),
                                               Source(context));
 
         public override Node VisitStructStatement([NotNull] ScLangParser.StructStatementContext context)
-            => new StructStatement((Identifier)context.identifier().Accept(this),
+            => new StructStatement(context.identifier().GetText(),
                                    (StructFieldList)context.structFieldList().Accept(this),
                                    Source(context));
 
@@ -132,12 +132,9 @@ namespace ScTools.ScriptLang.Ast
         public override Node VisitAggregateExpression([NotNull] ScLangParser.AggregateExpressionContext context)
             => new AggregateExpression(context.expression().Select(expr => expr.Accept(this)).Cast<Expression>(), Source(context));
 
-        public override Node VisitIdentifierExpression([NotNull] ScLangParser.IdentifierExpressionContext context)
-            => new IdentifierExpression((Identifier)context.identifier().Accept(this), Source(context));
-
         public override Node VisitMemberAccessExpression([NotNull] ScLangParser.MemberAccessExpressionContext context)
             => new MemberAccessExpression((Expression)context.expression().Accept(this),
-                                          (Identifier)context.identifier().Accept(this),
+                                          context.identifier().GetText(),
                                           Source(context));
 
         public override Node VisitArrayAccessExpression([NotNull] ScLangParser.ArrayAccessExpressionContext context)
@@ -164,7 +161,7 @@ namespace ScTools.ScriptLang.Ast
 
         #region Types
         public override Node VisitType([NotNull] ScLangParser.TypeContext context)
-            => new Type((Identifier)context.typeName().Accept(this),
+            => new Type(context.typeName().GetText(),
                         context.isRef != null,
                         Source(context));
         #endregion
@@ -175,7 +172,7 @@ namespace ScTools.ScriptLang.Ast
 
         public override Node VisitVariableDeclaration([NotNull] ScLangParser.VariableDeclarationContext context)
             => new VariableDeclaration((Type)context.type().Accept(this),
-                                       (Identifier)context.identifier().Accept(this),
+                                       context.identifier().GetText(),
                                        (ArrayIndexer?)context.arrayIndexer()?.Accept(this),
                                        Source(context));
 
@@ -194,12 +191,6 @@ namespace ScTools.ScriptLang.Ast
         public override Node VisitStructFieldList([NotNull] ScLangParser.StructFieldListContext context)
             => new StructFieldList(context.variableDeclarationWithInitializer().Select(v => v.Accept(this)).Cast<VariableDeclarationWithInitializer>(),
                                    Source(context));
-
-        public override Node VisitIdentifier([NotNull] ScLangParser.IdentifierContext context)
-            => new Identifier(context.GetText(), Source(context));
-
-        public override Node VisitTypeName([NotNull] ScLangParser.TypeNameContext context)
-            => new Identifier(context.GetText(), Source(context));
 
         public override Node VisitArrayIndexer([NotNull] ScLangParser.ArrayIndexerContext context)
             => new ArrayIndexer((Expression)context.expression().Accept(this), Source(context));

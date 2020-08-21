@@ -136,47 +136,47 @@ namespace ScTools.ScriptLang.Semantics
 
             private FunctionType CreateUnresolvedFunctionType(Ast.Type? returnType, IEnumerable<VariableDeclaration> parameters)
             {
-                var r = returnType != null ? new UnresolvedType(returnType.Name.Name) : null;
-                return new FunctionType(r, parameters.Select(p => new UnresolvedType(p.Type.Name.Name)));
+                var r = returnType != null ? new UnresolvedType(returnType.Name) : null;
+                return new FunctionType(r, parameters.Select(p => new UnresolvedType(p.Type.Name)));
             }
 
             public override void VisitFunctionStatement(FunctionStatement node)
             {
-                Symbols.Add(new FunctionSymbol(node.Name.Name, CreateUnresolvedFunctionType(node.ReturnType, node.ParameterList.Parameters)));
+                Symbols.Add(new FunctionSymbol(node.Name, CreateUnresolvedFunctionType(node.ReturnType, node.ParameterList.Parameters)));
             }
 
             public override void VisitProcedureStatement(ProcedureStatement node)
             {
-                Symbols.Add(new FunctionSymbol(node.Name.Name, CreateUnresolvedFunctionType(null, node.ParameterList.Parameters)));
+                Symbols.Add(new FunctionSymbol(node.Name, CreateUnresolvedFunctionType(null, node.ParameterList.Parameters)));
             }
 
             public override void VisitFunctionPrototypeStatement(FunctionPrototypeStatement node)
             {
                 var func = CreateUnresolvedFunctionType(node.ReturnType, node.ParameterList.Parameters);
 
-                Symbols.Add(new TypeSymbol(node.Name.Name, func));
+                Symbols.Add(new TypeSymbol(node.Name, func));
             }
 
             public override void VisitProcedurePrototypeStatement(ProcedurePrototypeStatement node)
             {
                 var func = CreateUnresolvedFunctionType(null, node.ParameterList.Parameters);
 
-                Symbols.Add(new TypeSymbol(node.Name.Name, func));
+                Symbols.Add(new TypeSymbol(node.Name, func));
             }
 
             public override void VisitStaticVariableStatement(StaticVariableStatement node)
             {
                 // TODO: allocate static variables
-                Symbols.Add(new VariableSymbol(node.Variable.Declaration.Name.Name,
-                                               new UnresolvedType(node.Variable.Declaration.Type.Name.Name),
+                Symbols.Add(new VariableSymbol(node.Variable.Declaration.Name,
+                                               new UnresolvedType(node.Variable.Declaration.Type.Name),
                                                VariableKind.Static));
             }
 
             public override void VisitStructStatement(StructStatement node)
             {
-                var struc = new StructType(node.Name.Name, node.FieldList.Fields.Select(f => new Field(new UnresolvedType(f.Declaration.Type.Name.Name), f.Declaration.Name.Name)));
+                var struc = new StructType(node.Name, node.FieldList.Fields.Select(f => new Field(new UnresolvedType(f.Declaration.Type.Name), f.Declaration.Name)));
 
-                Symbols.Add(new TypeSymbol(node.Name.Name, struc));
+                Symbols.Add(new TypeSymbol(node.Name, struc));
             }
 
             public override void DefaultVisit(Node node)
@@ -205,7 +205,7 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitFunctionStatement(FunctionStatement node)
             {
-                var funcSymbol = Symbols.Lookup(node.Name.Name) as FunctionSymbol;
+                var funcSymbol = Symbols.Lookup(node.Name) as FunctionSymbol;
                 Debug.Assert(funcSymbol != null);
 
                 VisitFunc(funcSymbol, node.ParameterList, node.Block);
@@ -213,7 +213,7 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitProcedureStatement(ProcedureStatement node)
             {
-                var funcSymbol = Symbols.Lookup(node.Name.Name) as FunctionSymbol;
+                var funcSymbol = Symbols.Lookup(node.Name) as FunctionSymbol;
                 Debug.Assert(funcSymbol != null);
 
                 VisitFunc(funcSymbol, node.ParameterList, node.Block);
@@ -251,8 +251,8 @@ namespace ScTools.ScriptLang.Semantics
             {
                 foreach (var p in node.Parameters)
                 {
-                    var v = new VariableSymbol(p.Name.Name,
-                                               TypeOf(p.Type.Name.Name),
+                    var v = new VariableSymbol(p.Name,
+                                               TypeOf(p.Type.Name),
                                                VariableKind.LocalArgument)
                             {
                                 Location = funcAllocLocation,
@@ -267,8 +267,8 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitVariableDeclarationStatement(VariableDeclarationStatement node)
             {
-                var v = new VariableSymbol(node.Variable.Declaration.Name.Name,
-                                           TypeOf(node.Variable.Declaration.Type.Name.Name),
+                var v = new VariableSymbol(node.Variable.Declaration.Name,
+                                           TypeOf(node.Variable.Declaration.Type.Name),
                                            VariableKind.Local)
                 {
                     Location = funcAllocLocation,

@@ -13,16 +13,6 @@ namespace ScTools.ScriptLang.Ast
         public Node(SourceRange source) => Source = source;
     }
 
-    public sealed class Identifier : Node
-    {
-        public string Name { get; }
-
-        public Identifier(string name, SourceRange source) : base(source)
-            => Name = name;
-
-        public override string ToString() => $"{Name}";
-    }
-
     public sealed class ArrayIndexer : Node
     {
         public Expression Expression { get; }
@@ -38,7 +28,7 @@ namespace ScTools.ScriptLang.Ast
     public sealed class VariableDeclaration : Node
     {
         public Type Type { get; }
-        public Identifier Name { get; }
+        public string Name { get; }
         public ArrayIndexer? ArrayRank { get; }
 
         public override IEnumerable<Node> Children
@@ -46,7 +36,6 @@ namespace ScTools.ScriptLang.Ast
             get
             {
                 yield return Type;
-                yield return Name;
                 if (ArrayRank != null)
                 {
                     yield return ArrayRank;
@@ -54,7 +43,7 @@ namespace ScTools.ScriptLang.Ast
             }
         }
 
-        public VariableDeclaration(Type type, Identifier name, ArrayIndexer? arrayRank, SourceRange source) : base(source)
+        public VariableDeclaration(Type type, string name, ArrayIndexer? arrayRank, SourceRange source) : base(source)
             => (Type, Name, ArrayRank) = (type, name, arrayRank);
 
         public override string ToString() => $"{Type} {Name}{ArrayRank?.ToString() ?? ""}";

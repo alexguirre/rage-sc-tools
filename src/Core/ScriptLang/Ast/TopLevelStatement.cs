@@ -12,11 +12,9 @@ namespace ScTools.ScriptLang.Ast
 
     public sealed class ScriptNameStatement : TopLevelStatement
     {
-        public Identifier Name { get; }
+        public string Name { get; }
 
-        public override IEnumerable<Node> Children { get { yield return Name; } }
-
-        public ScriptNameStatement(Identifier name, SourceRange source) : base(source)
+        public ScriptNameStatement(string name, SourceRange source) : base(source)
             => Name = name;
 
         public override string ToString() => $"SCRIPT_NAME {Name}";
@@ -24,13 +22,13 @@ namespace ScTools.ScriptLang.Ast
 
     public sealed class ProcedureStatement : TopLevelStatement
     {
-        public Identifier Name { get; }
+        public string Name { get; }
         public ParameterList ParameterList { get; }
         public StatementBlock Block { get; }
 
-        public override IEnumerable<Node> Children { get { yield return Name; yield return ParameterList; yield return Block; } }
+        public override IEnumerable<Node> Children { get { yield return ParameterList; yield return Block; } }
 
-        public ProcedureStatement(Identifier name, ParameterList parameterList, StatementBlock block, SourceRange source) : base(source)
+        public ProcedureStatement(string name, ParameterList parameterList, StatementBlock block, SourceRange source) : base(source)
             => (Name, ParameterList, Block) = (name, parameterList, block);
 
         public override string ToString() => $"PROC {Name}{ParameterList}\n{Block}\nENDPROC";
@@ -38,12 +36,12 @@ namespace ScTools.ScriptLang.Ast
 
     public sealed class ProcedurePrototypeStatement : TopLevelStatement
     {
-        public Identifier Name { get; }
+        public string Name { get; }
         public ParameterList ParameterList { get; }
 
-        public override IEnumerable<Node> Children { get { yield return Name; yield return ParameterList; } }
+        public override IEnumerable<Node> Children { get { yield return ParameterList; } }
 
-        public ProcedurePrototypeStatement(Identifier name, ParameterList parameterList, SourceRange source) : base(source)
+        public ProcedurePrototypeStatement(string name, ParameterList parameterList, SourceRange source) : base(source)
             => (Name, ParameterList) = (name, parameterList);
 
         public override string ToString() => $"PROTO PROC {Name}{ParameterList}";
@@ -51,14 +49,14 @@ namespace ScTools.ScriptLang.Ast
 
     public sealed class FunctionStatement : TopLevelStatement
     {
-        public Identifier Name { get; }
+        public string Name { get; }
         public Type ReturnType { get; }
         public ParameterList ParameterList { get; }
         public StatementBlock Block { get; }
 
-        public override IEnumerable<Node> Children { get { yield return Name; yield return ReturnType; yield return ParameterList; yield return Block; } }
+        public override IEnumerable<Node> Children { get { yield return ReturnType; yield return ParameterList; yield return Block; } }
 
-        public FunctionStatement(Identifier name, Type returnType, ParameterList parameterList, StatementBlock block, SourceRange source) : base(source)
+        public FunctionStatement(string name, Type returnType, ParameterList parameterList, StatementBlock block, SourceRange source) : base(source)
             => (Name, ReturnType, ParameterList, Block) = (name, returnType, parameterList, block);
 
         public override string ToString() => $"FUNC {ReturnType} {Name}{ParameterList}\n{Block}\nENDFUNC";
@@ -66,13 +64,13 @@ namespace ScTools.ScriptLang.Ast
 
     public sealed class FunctionPrototypeStatement : TopLevelStatement
     {
-        public Identifier Name { get; }
+        public string Name { get; }
         public Type ReturnType { get; }
         public ParameterList ParameterList { get; }
 
-        public override IEnumerable<Node> Children { get { yield return Name; yield return ReturnType; yield return ParameterList; } }
+        public override IEnumerable<Node> Children { get { yield return ReturnType; yield return ParameterList; } }
 
-        public FunctionPrototypeStatement(Identifier name, Type returnType, ParameterList parameterList, SourceRange source) : base(source)
+        public FunctionPrototypeStatement(string name, Type returnType, ParameterList parameterList, SourceRange source) : base(source)
             => (Name, ReturnType, ParameterList) = (name, returnType, parameterList);
 
         public override string ToString() => $"PROTO FUNC {ReturnType} {Name}{ParameterList}";
@@ -80,12 +78,12 @@ namespace ScTools.ScriptLang.Ast
 
     public sealed class StructStatement : TopLevelStatement
     {
-        public Identifier Name { get; }
+        public string Name { get; }
         public StructFieldList FieldList { get; }
 
-        public override IEnumerable<Node> Children { get { yield return Name; yield return FieldList; } }
+        public override IEnumerable<Node> Children { get { yield return FieldList; } }
 
-        public StructStatement(Identifier name, StructFieldList fieldList, SourceRange source) : base(source)
+        public StructStatement(string name, StructFieldList fieldList, SourceRange source) : base(source)
             => (Name, FieldList) = (name, fieldList);
 
         public override string ToString() => $"STRUCT {Name}\n{FieldList}\nENDSTRUCT";

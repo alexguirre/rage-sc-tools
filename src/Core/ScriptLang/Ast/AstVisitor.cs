@@ -38,7 +38,6 @@ namespace ScTools.ScriptLang.Ast
 
         public virtual void VisitType(Type node) => DefaultVisit(node);
 
-        public virtual void VisitIdentifier(Identifier node) => DefaultVisit(node);
         public virtual void VisitArrayIndexer(ArrayIndexer node) => DefaultVisit(node);
         public virtual void VisitVariableDeclaration(VariableDeclaration node) => DefaultVisit(node);
         public virtual void VisitVariableDeclarationWithInitializer(VariableDeclarationWithInitializer node) => DefaultVisit(node);
@@ -81,7 +80,6 @@ namespace ScTools.ScriptLang.Ast
 
         [return: MaybeNull] public virtual TResult VisitType(Type node) => DefaultVisit(node);
 
-        [return: MaybeNull] public virtual TResult VisitIdentifier(Identifier node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitArrayIndexer(ArrayIndexer node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitVariableDeclaration(VariableDeclaration node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitVariableDeclarationWithInitializer(VariableDeclarationWithInitializer node) => DefaultVisit(node);
@@ -125,7 +123,6 @@ namespace ScTools.ScriptLang.Ast
 
                 case Type n: visitor.VisitType(n); break;
 
-                case Identifier n: visitor.VisitIdentifier(n); break;
                 case ArrayIndexer n: visitor.VisitArrayIndexer(n); break;
                 case VariableDeclaration n: visitor.VisitVariableDeclaration(n); break;
                 case VariableDeclarationWithInitializer n: visitor.VisitVariableDeclarationWithInitializer(n); break;
@@ -169,7 +166,6 @@ namespace ScTools.ScriptLang.Ast
 
             Type n => visitor.VisitType(n),
 
-            Identifier n => visitor.VisitIdentifier(n),
             ArrayIndexer n => visitor.VisitArrayIndexer(n),
             VariableDeclaration n => visitor.VisitVariableDeclaration(n),
             VariableDeclarationWithInitializer n => visitor.VisitVariableDeclarationWithInitializer(n),

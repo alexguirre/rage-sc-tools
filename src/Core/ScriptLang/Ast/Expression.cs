@@ -91,11 +91,9 @@ namespace ScTools.ScriptLang.Ast
 
     public sealed class IdentifierExpression : Expression
     {
-        public Identifier Identifier { get; }
+        public string Identifier { get; }
 
-        public override IEnumerable<Node> Children { get { yield return Identifier; } }
-
-        public IdentifierExpression(Identifier identifier, SourceRange source) : base(source)
+        public IdentifierExpression(string identifier, SourceRange source) : base(source)
             => Identifier = identifier;
 
         public override string ToString() => $"{Identifier}";
@@ -104,11 +102,11 @@ namespace ScTools.ScriptLang.Ast
     public sealed class MemberAccessExpression : Expression
     {
         public Expression Expression { get; }
-        public Identifier Member { get; }
+        public string Member { get; }
 
-        public override IEnumerable<Node> Children { get { yield return Expression; yield return Member; } }
+        public override IEnumerable<Node> Children { get { yield return Expression; } }
 
-        public MemberAccessExpression(Expression expression, Identifier member, SourceRange source) : base(source)
+        public MemberAccessExpression(Expression expression, string member, SourceRange source) : base(source)
             => (Expression, Member) = (expression, member);
 
         public override string ToString() => $"{Expression}.{Member}";

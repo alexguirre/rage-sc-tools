@@ -5,12 +5,10 @@ namespace ScTools.ScriptLang.Ast
 
     public sealed class Type : Node
     {
-        public Identifier Name { get; }
+        public string Name { get; }
         public bool IsReference { get; }
 
-        public override IEnumerable<Node> Children { get { yield return Name; } }
-
-        public Type(Identifier name, bool isReference, SourceRange source) : base(source)
+        public Type(string name, bool isReference, SourceRange source) : base(source)
             => (Name, IsReference) = (name, isReference);
 
         public override string ToString() => $"{Name}{(IsReference ? "&" : "")}";
