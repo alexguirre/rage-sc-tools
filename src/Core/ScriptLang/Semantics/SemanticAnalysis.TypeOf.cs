@@ -134,7 +134,20 @@ namespace ScTools.ScriptLang.Semantics
                 return field.Type;
             }
 
-            // TODO: VisitAggregateExpression
+            public override Type? VisitAggregateExpression(AggregateExpression node)
+            {
+                var fields = node.Expressions.Select((expr, i) => (Type: expr.Accept(this), Index: i));
+
+                if (fields.All(f => f.Type != null))
+                {
+                    return new StructType(null, fields.Select(f => new Field(f.Type!, $"_item{f.Index}")));
+                }
+                else
+                {
+                    return null;
+                }
+            }
+
             // TODO: VisitArrayAccessExpression
 
             public override Type? DefaultVisit(Node node) => throw new InvalidOperationException($"Unsupported AST node {node.GetType().Name}");

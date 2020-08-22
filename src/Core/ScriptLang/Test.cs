@@ -34,7 +34,7 @@ INT someStaticValue
 FLOAT otherStaticValue
 
 PROC MAIN()
-    VEC2 pos// = <<0.5, 0.5>>
+    VEC2 pos = <<0.5, 0.5>>
     pos.x = 0.5
     pos.y = 0.5
     INT a = 10
