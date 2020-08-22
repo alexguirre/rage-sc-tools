@@ -21,7 +21,11 @@ namespace ScTools.ScriptLang.Semantics
 
             protected override void OnEnd()
             {
-                ResolveTypes();
+                bool allResolved = ResolveTypes();
+                if (allResolved)
+                {
+                    AllocateStaticVars();
+                }
             }
 
             // returns whether all types where resolved
@@ -109,6 +113,24 @@ namespace ScTools.ScriptLang.Semantics
                 }
             }
 
+            private void AllocateStaticVars()
+            {
+                Debug.Assert(Symbols.Parent == null, $"{nameof(AllocateStaticVars)} must be called from the global scope");
+
+                int location = 0;
+                foreach (var s in Symbols.Symbols.Where(sym => sym is VariableSymbol { Kind: VariableKind.Static })
+                                                 .Cast<VariableSymbol>()
+                                                 .Reverse()) // reverse to allocate in the order they are declared, the symbol table enumerates them from bottom to top
+                {
+                    Debug.Assert(!s.IsAllocated);
+
+                    s.Location = location;
+                    location += s.Type.SizeOf;
+                }
+
+                // TODO: return total size of static vars
+            }
+
             private FunctionType CreateUnresolvedFunctionType(Ast.Type? returnType, IEnumerable<VariableDeclaration> parameters)
             {
                 var r = returnType != null ? new UnresolvedType(returnType.Name) : null;
@@ -143,7 +165,6 @@ namespace ScTools.ScriptLang.Semantics
             {
                 Debug.Assert(node.Variable.Initializer == null, "Static initializers are not supported");
 
-                // TODO: allocate static variables
                 Symbols.Add(new VariableSymbol(node.Variable.Declaration.Name,
                                                node.Source,
                                                new UnresolvedType(node.Variable.Declaration.Type.Name),

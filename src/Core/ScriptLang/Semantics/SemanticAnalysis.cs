@@ -13,7 +13,7 @@ namespace ScTools.ScriptLang.Semantics
             AddBuiltIns(symbols);
             new FirstPass(diagnostics, filePath, symbols).Run(root);
             new SecondPass(diagnostics, filePath, symbols).Run(root);
-
+            
             return (diagnostics, symbols);
         }
 

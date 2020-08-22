@@ -3,6 +3,7 @@ namespace ScTools.ScriptLang.Semantics
 {
     using System;
     using System.Diagnostics;
+    using System.Linq;
 
     using ScTools.ScriptLang.Ast;
     using ScTools.ScriptLang.Semantics.Symbols;
@@ -22,6 +23,15 @@ namespace ScTools.ScriptLang.Semantics
             public SecondPass(DiagnosticsReport diagnostics, string filePath, SymbolTable symbols)
                 : base(diagnostics, filePath, symbols)
             { }
+
+            protected override void OnEnd()
+            {
+                Debug.Assert(Symbols.Parent == null);
+                Debug.Assert(Symbols.Symbols.Where(sym => sym is VariableSymbol)
+                                            .Cast<VariableSymbol>()
+                                            .All(s => s.Kind == VariableKind.Static),
+                             "All variables in global scope must be static");
+            }
 
             public override void VisitFunctionStatement(FunctionStatement node)
             {
@@ -53,6 +63,16 @@ namespace ScTools.ScriptLang.Semantics
 
                 func.LocalArgsSize = funcLocalArgsSize;
                 func.LocalsSize = funcLocalsSize;
+            }
+
+            public override void VisitProcedurePrototypeStatement(ProcedurePrototypeStatement node)
+            {
+                // empty to avoid visiting its ParameterList
+            }
+
+            public override void VisitFunctionPrototypeStatement(FunctionPrototypeStatement node)
+            {
+                // empty to avoid visiting its ParameterList
             }
 
             public override void VisitParameterList(ParameterList node)

@@ -16,11 +16,6 @@ namespace ScTools.ScriptLang.Semantics
 
         public IEnumerable<ISymbol> Symbols => symbols;
 
-        /// <summary>
-        /// Returns the symbols in this scope and all the children scopes.
-        /// </summary>
-        public IEnumerable<ISymbol> AllSymbols => Symbols.Concat(Children.SelectMany(c => c.Table.AllSymbols));
-
         public SymbolTable(SymbolTable? parent = null)
         {
             Parent = parent;

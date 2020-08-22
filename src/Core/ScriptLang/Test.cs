@@ -30,6 +30,8 @@ STRUCT CALLBACKS
 ENDSTRUCT
 
 CALLBACKS myCallbacks// = <<DRAW_OTHER_STUFF, GET_ALPHA_VALUE>>
+INT someStaticValue
+FLOAT otherStaticValue
 
 PROC MAIN()
     VEC2 pos// = <<0.5, 0.5>>
