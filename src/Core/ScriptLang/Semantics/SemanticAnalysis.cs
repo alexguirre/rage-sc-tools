@@ -16,12 +16,8 @@ namespace ScTools.ScriptLang.Semantics
             var diagnostics = new DiagnosticsReport();
             var symbols = new SymbolTable();
             AddBuiltIns(symbols);
-            var pass1 = new FirstPass(diagnostics, filePath, symbols);
-            root.Accept(pass1);
-            bool allTypesInGlobalScopeResolved = pass1.ResolveTypes();
-
-            var pass2 = new SecondPass(diagnostics, filePath, symbols);
-            root.Accept(pass2);
+            new FirstPass(diagnostics, filePath, symbols).Run(root);
+            new SecondPass(diagnostics, filePath, symbols).Run(root);
 
             return (diagnostics, symbols);
         }
@@ -39,20 +35,54 @@ namespace ScTools.ScriptLang.Semantics
                                                                                     new Field(fl, "z"))));
         }
 
-        /// <summary>
-        /// Register global symbols (structs, static variable, procedures and functions)
-        /// </summary>
-        private sealed class FirstPass : AstVisitor
+        private abstract class Pass : AstVisitor
         {
             public DiagnosticsReport Diagnostics { get; set; }
             public string FilePath { get; set; }
             public SymbolTable Symbols { get; set; }
 
-            public FirstPass(DiagnosticsReport diagnostics, string filePath, SymbolTable symbols)
+            public Pass(DiagnosticsReport diagnostics, string filePath, SymbolTable symbols)
                 => (Diagnostics, FilePath, Symbols) = (diagnostics, filePath, symbols);
 
+            public void Run(Root root)
+            {
+                root.Accept(this);
+                OnEnd();
+            }
+
+            protected virtual void OnEnd() { }
+
+            protected Type TryResolveType(string typeName, SourceRange source)
+            {
+                var unresolved = new UnresolvedType(typeName);
+                var resolved = unresolved.Resolve(Symbols);
+                if (resolved == null)
+                {
+                    Diagnostics.AddError(FilePath, $"Unknown type '{typeName}'", source);
+                }
+
+                return resolved ?? unresolved;
+            }
+
+            protected Type? TypeOf(Expression expr) => expr.Accept(new TypeOf(Diagnostics, FilePath, Symbols));
+        }
+
+        /// <summary>
+        /// Register global symbols (structs, static variable, procedures and functions)
+        /// </summary>
+        private sealed class FirstPass : Pass
+        {
+            public FirstPass(DiagnosticsReport diagnostics, string filePath, SymbolTable symbols)
+                : base(diagnostics, filePath, symbols)
+            { }
+
+            protected override void OnEnd()
+            {
+                ResolveTypes();
+            }
+
             // returns whether all types where resolved
-            public bool ResolveTypes()
+            private bool ResolveTypes()
             {
                 bool anyUnresolved = false;
 
@@ -194,21 +224,18 @@ namespace ScTools.ScriptLang.Semantics
         }
 
         /// <summary>
-        /// Register local symbols inside procedures/functions and check expression.
+        /// Register local symbols inside procedures/functions and check that expressions types are correct.
         /// </summary>
-        private sealed class SecondPass : AstVisitor
+        private sealed class SecondPass : Pass
         {
-            public DiagnosticsReport Diagnostics { get; set; }
-            public string FilePath { get; set; }
-            public SymbolTable Symbols { get; set; }
-
             private FunctionSymbol? func = null;
             private int funcLocalsSize = 0;
             private int funcLocalArgsSize = 0; 
             private int funcAllocLocation = 0;
 
             public SecondPass(DiagnosticsReport diagnostics, string filePath, SymbolTable symbols)
-                => (Diagnostics, FilePath, Symbols) = (diagnostics, filePath, symbols);
+                : base(diagnostics, filePath, symbols)
+            { }
 
             public override void VisitFunctionStatement(FunctionStatement node)
             {
@@ -242,27 +269,13 @@ namespace ScTools.ScriptLang.Semantics
                 func.LocalsSize = funcLocalsSize;
             }
 
-            private Type TypeOf(string typeName, SourceRange source)
-            {
-                var unresolved = new UnresolvedType(typeName);
-                var resolved = unresolved.Resolve(Symbols);
-                if (resolved == null)
-                {
-                    Diagnostics.AddError(FilePath, $"Unknown type '{typeName}'", source);
-                }
-
-                return resolved ?? unresolved;
-            }
-
-            private Type? TypeOf(Expression expr) => expr.Accept(new TypeOf(Diagnostics, FilePath, Symbols));
-
             public override void VisitParameterList(ParameterList node)
             {
                 foreach (var p in node.Parameters)
                 {
                     var v = new VariableSymbol(p.Name,
                                                p.Source,
-                                               TypeOf(p.Type.Name, p.Type.Source),
+                                               TryResolveType(p.Type.Name, p.Type.Source),
                                                VariableKind.LocalArgument)
                             {
                                 Location = funcAllocLocation,
@@ -279,7 +292,7 @@ namespace ScTools.ScriptLang.Semantics
             {
                 var v = new VariableSymbol(node.Variable.Declaration.Name,
                                            node.Source,
-                                           TypeOf(node.Variable.Declaration.Type.Name, node.Variable.Declaration.Type.Source),
+                                           TryResolveType(node.Variable.Declaration.Type.Name, node.Variable.Declaration.Type.Source),
                                            VariableKind.Local)
                 {
                     Location = funcAllocLocation,
@@ -288,7 +301,7 @@ namespace ScTools.ScriptLang.Semantics
                 if (node.Variable.Initializer != null)
                 {
                     var initializerType = TypeOf(node.Variable.Initializer);
-                    if (initializerType != v.Type)
+                    if (initializerType != null && initializerType != v.Type)
                     {
                         Diagnostics.AddError(FilePath, $"Mismatched initializer type and type of variable '{v.Name}'", node.Variable.Initializer.Source);
                     }
@@ -368,7 +381,6 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitInvocationStatement(InvocationStatement node)
             {
-                Console.WriteLine($"{node.Expression}");
                 // TODO: very similar to TypeOf.VisitInvocationExpression, refactor
                 var callableType = TypeOf(node.Expression);
                 if (!(callableType is FunctionType f))
@@ -471,6 +483,7 @@ namespace ScTools.ScriptLang.Semantics
                 // TODO: allow some conversions (e.g. INT -> FLOAT, aggregate -> struct)
                 if (left != right)
                 {
+                    diagnostics.AddError(filePath, $"Mismatched type in binary operation '{BinaryExpression.OpToString(node.Op)}'", node.Source);
                     return null;
                 }
 
