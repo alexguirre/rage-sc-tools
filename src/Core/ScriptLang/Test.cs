@@ -58,6 +58,10 @@ PROC DRAW_RECT(FLOAT x, FLOAT y, FLOAT w, FLOAT h, INT r, INT g, INT b, INT a, B
 ENDPROC
 PROC WAIT(INT ms)
 ENDPROC
+
+STRUCT AAAA
+    AAAA a
+ENDSTRUCT
 ";
 
         public static void DoTest()
@@ -80,7 +84,7 @@ ENDPROC
             DiagnosticsReport d = new DiagnosticsReport();
             d.AddFrom(SyntaxChecker.Check(root, FilePath));
 
-            var (diagnostics, symbols) = SemanticAnalysis.Visit(root);
+            var (diagnostics, symbols) = SemanticAnalysis.Visit(root, FilePath);
             d.AddFrom(diagnostics);
 
             Console.WriteLine("===========================");

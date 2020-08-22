@@ -6,9 +6,10 @@ namespace ScTools.ScriptLang.Semantics.Symbols
     public class TypeSymbol : ISymbol
     {
         public string Name { get; }
+        public SourceRange Source { get; }
         public Type Type { get; }
 
-        public TypeSymbol(string name, Type type)
+        public TypeSymbol(string name, SourceRange source, Type type)
         {
             if (type is UnresolvedType)
             {
@@ -16,6 +17,7 @@ namespace ScTools.ScriptLang.Semantics.Symbols
             }
 
             Name = name;
+            Source = source;
             Type = type;
         }
     }

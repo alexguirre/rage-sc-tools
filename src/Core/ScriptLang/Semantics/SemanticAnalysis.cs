@@ -11,16 +11,16 @@ namespace ScTools.ScriptLang.Semantics
 
     public static class SemanticAnalysis
     {
-        public static (DiagnosticsReport, SymbolTable) Visit(Root root)
+        public static (DiagnosticsReport, SymbolTable) Visit(Root root, string filePath)
         {
             var diagnostics = new DiagnosticsReport();
             var symbols = new SymbolTable();
             AddBuiltIns(symbols);
-            var pass1 = new FirstPass(diagnostics, symbols);
+            var pass1 = new FirstPass(diagnostics, filePath, symbols);
             root.Accept(pass1);
             bool allTypesInGlobalScopeResolved = pass1.ResolveTypes();
 
-            var pass2 = new SecondPass(diagnostics, symbols);
+            var pass2 = new SecondPass(diagnostics, filePath, symbols);
             root.Accept(pass2);
 
             return (diagnostics, symbols);
@@ -29,14 +29,14 @@ namespace ScTools.ScriptLang.Semantics
         private static void AddBuiltIns(SymbolTable symbols)
         {
             var fl = new BasicType(BasicTypeCode.Float);
-            symbols.Add(new TypeSymbol("INT", new BasicType(BasicTypeCode.Int)));
-            symbols.Add(new TypeSymbol("FLOAT", fl));
-            symbols.Add(new TypeSymbol("BOOL", new BasicType(BasicTypeCode.Bool)));
-            symbols.Add(new TypeSymbol("STRING", new BasicType(BasicTypeCode.String)));
-            symbols.Add(new TypeSymbol("VEC3", new StructType("VEC3",
-                                                              new Field(fl, "x"),
-                                                              new Field(fl, "y"),
-                                                              new Field(fl, "z"))));
+            symbols.Add(new TypeSymbol("INT", SourceRange.Unknown, new BasicType(BasicTypeCode.Int)));
+            symbols.Add(new TypeSymbol("FLOAT", SourceRange.Unknown, fl));
+            symbols.Add(new TypeSymbol("BOOL", SourceRange.Unknown, new BasicType(BasicTypeCode.Bool)));
+            symbols.Add(new TypeSymbol("STRING", SourceRange.Unknown, new BasicType(BasicTypeCode.String)));
+            symbols.Add(new TypeSymbol("VEC3", SourceRange.Unknown, new StructType("VEC3",
+                                                                                    new Field(fl, "x"),
+                                                                                    new Field(fl, "y"),
+                                                                                    new Field(fl, "z"))));
         }
 
         /// <summary>
@@ -45,10 +45,11 @@ namespace ScTools.ScriptLang.Semantics
         private sealed class FirstPass : AstVisitor
         {
             public DiagnosticsReport Diagnostics { get; set; }
+            public string FilePath { get; set; }
             public SymbolTable Symbols { get; set; }
 
-            public FirstPass(DiagnosticsReport diagnostics, SymbolTable symbols)
-                => (Diagnostics, Symbols) = (diagnostics, symbols);
+            public FirstPass(DiagnosticsReport diagnostics, string filePath, SymbolTable symbols)
+                => (Diagnostics, FilePath, Symbols) = (diagnostics, filePath, symbols);
 
             // returns whether all types where resolved
             public bool ResolveTypes()
@@ -59,24 +60,25 @@ namespace ScTools.ScriptLang.Semantics
                 {
                     switch (symbol)
                     {
-                        case VariableSymbol s: s.Type = Resolve(s.Type); break;
-                        case FunctionSymbol s: ResolveFunc(s.Type); break;
-                        case TypeSymbol s when s.Type is StructType struc: ResolveStruct(struc); break;
-                        case TypeSymbol s when s.Type is FunctionType func: ResolveFunc(func); break;
+                        case VariableSymbol s: s.Type = Resolve(s.Type, s.Source); break;
+                        case FunctionSymbol s: ResolveFunc(s.Type, s.Source); break;
+                        case TypeSymbol s when s.Type is StructType struc: ResolveStruct(struc, s.Source); break;
+                        case TypeSymbol s when s.Type is FunctionType func: ResolveFunc(func, s.Source); break;
                     }
                 }
 
                 return !anyUnresolved;
 
-                void ResolveStruct(StructType struc)
+                void ResolveStruct(StructType struc, SourceRange source)
                 {
+                    // TODO: be more specific with SourceRange for structs fields
                     for (int i = 0; i < struc.Fields.Count; i++)
                     {
                         var f = struc.Fields[i];
-                        var newType = Resolve(f.Type);
+                        var newType = Resolve(f.Type, source);
                         if (IsCyclic(newType, struc))
                         {
-                            Diagnostics.AddError("REPLACEME.sc", $"Circular type reference in '{struc.Name}'", SourceRange.Unknown);
+                            Diagnostics.AddError(FilePath, $"Circular type reference in '{struc.Name}'", source);
                             anyUnresolved |= true;
                         }
                         else
@@ -100,28 +102,28 @@ namespace ScTools.ScriptLang.Semantics
                     }
                 }
 
-                void ResolveFunc(FunctionType func)
+                void ResolveFunc(FunctionType func, SourceRange source)
                 {
+                    // TODO: be more specific with SourceRange for funcs return type and parameters
                     if (func.ReturnType != null)
                     {
-                        func.ReturnType = Resolve(func.ReturnType);
+                        func.ReturnType = Resolve(func.ReturnType, source);
                     }
  
                     for (int i = 0; i < func.Parameters.Count; i++)
                     {
-                        func.Parameters[i] = Resolve(func.Parameters[i]);
+                        func.Parameters[i] = Resolve(func.Parameters[i], source);
                     }
                 }
 
-                Type Resolve(Type t)
+                Type Resolve(Type t, SourceRange source)
                 {
                     if (t is UnresolvedType u)
                     {
                         var newType = u.Resolve(Symbols);
                         if (newType == null)
                         {
-                            // TODO: include file path and source range in unknown type error
-                            Diagnostics.AddError("REPLACEME.sc", $"Unknown type '{u.TypeName}'", SourceRange.Unknown);
+                            Diagnostics.AddError(FilePath, $"Unknown type '{u.TypeName}'", source);
                             anyUnresolved |= true;
                         }
                         else
@@ -142,32 +144,33 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitFunctionStatement(FunctionStatement node)
             {
-                Symbols.Add(new FunctionSymbol(node.Name, CreateUnresolvedFunctionType(node.ReturnType, node.ParameterList.Parameters)));
+                Symbols.Add(new FunctionSymbol(node.Name, node.Source, CreateUnresolvedFunctionType(node.ReturnType, node.ParameterList.Parameters)));
             }
 
             public override void VisitProcedureStatement(ProcedureStatement node)
             {
-                Symbols.Add(new FunctionSymbol(node.Name, CreateUnresolvedFunctionType(null, node.ParameterList.Parameters)));
+                Symbols.Add(new FunctionSymbol(node.Name, node.Source, CreateUnresolvedFunctionType(null, node.ParameterList.Parameters)));
             }
 
             public override void VisitFunctionPrototypeStatement(FunctionPrototypeStatement node)
             {
                 var func = CreateUnresolvedFunctionType(node.ReturnType, node.ParameterList.Parameters);
 
-                Symbols.Add(new TypeSymbol(node.Name, func));
+                Symbols.Add(new TypeSymbol(node.Name, node.Source, func));
             }
 
             public override void VisitProcedurePrototypeStatement(ProcedurePrototypeStatement node)
             {
                 var func = CreateUnresolvedFunctionType(null, node.ParameterList.Parameters);
 
-                Symbols.Add(new TypeSymbol(node.Name, func));
+                Symbols.Add(new TypeSymbol(node.Name, node.Source, func));
             }
 
             public override void VisitStaticVariableStatement(StaticVariableStatement node)
             {
                 // TODO: allocate static variables
                 Symbols.Add(new VariableSymbol(node.Variable.Declaration.Name,
+                                               node.Source,
                                                new UnresolvedType(node.Variable.Declaration.Type.Name),
                                                VariableKind.Static));
             }
@@ -176,7 +179,7 @@ namespace ScTools.ScriptLang.Semantics
             {
                 var struc = new StructType(node.Name, node.FieldList.Fields.Select(f => new Field(new UnresolvedType(f.Declaration.Type.Name), f.Declaration.Name)));
 
-                Symbols.Add(new TypeSymbol(node.Name, struc));
+                Symbols.Add(new TypeSymbol(node.Name, node.Source, struc));
             }
 
             public override void DefaultVisit(Node node)
@@ -189,19 +192,20 @@ namespace ScTools.ScriptLang.Semantics
         }
 
         /// <summary>
-        /// Register local symbols inside procedures/functions.
+        /// Register local symbols inside procedures/functions and check expression.
         /// </summary>
         private sealed class SecondPass : AstVisitor
         {
             public DiagnosticsReport Diagnostics { get; set; }
+            public string FilePath { get; set; }
             public SymbolTable Symbols { get; set; }
 
             private int funcLocalsSize = 0;
             private int funcLocalArgsSize = 0; 
             private int funcAllocLocation = 0;
 
-            public SecondPass(DiagnosticsReport diagnostics, SymbolTable symbols)
-                => (Diagnostics, Symbols) = (diagnostics, symbols);
+            public SecondPass(DiagnosticsReport diagnostics, string filePath, SymbolTable symbols)
+                => (Diagnostics, FilePath, Symbols) = (diagnostics, filePath, symbols);
 
             public override void VisitFunctionStatement(FunctionStatement node)
             {
@@ -234,14 +238,13 @@ namespace ScTools.ScriptLang.Semantics
                 func.LocalsSize = funcLocalsSize;
             }
 
-            private Type TypeOf(string typeName)
+            private Type TypeOf(string typeName, SourceRange source)
             {
                 var unresolved = new UnresolvedType(typeName);
                 var resolved = unresolved.Resolve(Symbols);
                 if (resolved == null)
                 {
-                    // TODO: include file path and source range in unknown type error
-                    Diagnostics.AddError("REPLACEME.sc", $"Unknown type '{typeName}'", SourceRange.Unknown);
+                    Diagnostics.AddError(FilePath, $"Unknown type '{typeName}'", source);
                 }
 
                 return resolved ?? unresolved;
@@ -252,7 +255,8 @@ namespace ScTools.ScriptLang.Semantics
                 foreach (var p in node.Parameters)
                 {
                     var v = new VariableSymbol(p.Name,
-                                               TypeOf(p.Type.Name),
+                                               p.Source,
+                                               TypeOf(p.Type.Name, p.Type.Source),
                                                VariableKind.LocalArgument)
                             {
                                 Location = funcAllocLocation,
@@ -268,7 +272,8 @@ namespace ScTools.ScriptLang.Semantics
             public override void VisitVariableDeclarationStatement(VariableDeclarationStatement node)
             {
                 var v = new VariableSymbol(node.Variable.Declaration.Name,
-                                           TypeOf(node.Variable.Declaration.Type.Name),
+                                           node.Source,
+                                           TypeOf(node.Variable.Declaration.Type.Name, node.Variable.Declaration.Type.Source),
                                            VariableKind.Local)
                 {
                     Location = funcAllocLocation,

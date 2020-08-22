@@ -131,5 +131,6 @@ namespace ScTools.ScriptLang.Semantics
     public interface ISymbol
     {
         public string Name { get; }
+        public SourceRange Source { get; }
     }
 }
