@@ -29,12 +29,14 @@ STRUCT CALLBACKS
     GET_ALPHA_CALLBACK  getAlpha
 ENDSTRUCT
 
-CALLBACKS myCallbacks = <<DRAW_OTHER_STUFF, GET_ALPHA_VALUE>>
+CALLBACKS myCallbacks// = <<DRAW_OTHER_STUFF, GET_ALPHA_VALUE>>
 
 PROC MAIN()
-    VEC2 pos = <<0.5, 0.5>>
+    VEC2 pos// = <<0.5, 0.5>>
+    pos.x = 0.5
+    pos.y = 0.5
     INT a = 10
-    INT b = 5 + a * 2
+    INT b = 5 + -a * 2
 
     WHILE TRUE
         WAIT(0)
@@ -42,6 +44,10 @@ PROC MAIN()
         DRAW_RECT(pos.x, pos.y, 0.1, 0.1, 255, 0, 0, 255, FALSE)
 
         myCallbacks.draw(myCallbacks.getAlpha())
+
+        IF NOT TRUE
+
+        ENDIF
     ENDWHILE
 ENDPROC
 
@@ -58,10 +64,6 @@ PROC DRAW_RECT(FLOAT x, FLOAT y, FLOAT w, FLOAT h, INT r, INT g, INT b, INT a, B
 ENDPROC
 PROC WAIT(INT ms)
 ENDPROC
-
-STRUCT AAAA
-    AAAA a
-ENDSTRUCT
 ";
 
         public static void DoTest()

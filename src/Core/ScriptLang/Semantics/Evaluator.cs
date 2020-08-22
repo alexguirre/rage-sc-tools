@@ -110,11 +110,8 @@ namespace ScTools.ScriptLang.Semantics
         private static Result? EvaluateLiteral(LiteralExpression expr)
             => expr.Kind switch
             {
-                LiteralKind.Numeric => int.TryParse(expr.ValueText, out int intVal) ?
-                                            new Result(intVal) :
-                                            float.TryParse(expr.ValueText, out float floatVal) ?
-                                                new Result(floatVal) :
-                                                (Result?)null,
+                LiteralKind.Int => int.TryParse(expr.ValueText, out int intVal) ? new Result(intVal) : (Result?)null,
+                LiteralKind.Float => float.TryParse(expr.ValueText, out float floatVal) ? new Result(floatVal) : (Result?)null,
                 _ => null,
             };
     }

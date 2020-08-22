@@ -168,6 +168,8 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitStaticVariableStatement(StaticVariableStatement node)
             {
+                Debug.Assert(node.Variable.Initializer == null, "Static initializers are not supported");
+
                 // TODO: allocate static variables
                 Symbols.Add(new VariableSymbol(node.Variable.Declaration.Name,
                                                node.Source,
@@ -200,6 +202,7 @@ namespace ScTools.ScriptLang.Semantics
             public string FilePath { get; set; }
             public SymbolTable Symbols { get; set; }
 
+            private FunctionSymbol? func = null;
             private int funcLocalsSize = 0;
             private int funcLocalArgsSize = 0; 
             private int funcAllocLocation = 0;
@@ -225,6 +228,7 @@ namespace ScTools.ScriptLang.Semantics
 
             private void VisitFunc(FunctionSymbol func, ParameterList parameters, StatementBlock block)
             {
+                this.func = func;
                 funcLocalsSize = 0;
                 funcLocalArgsSize = 0;
                 funcAllocLocation = 0;
@@ -249,6 +253,8 @@ namespace ScTools.ScriptLang.Semantics
 
                 return resolved ?? unresolved;
             }
+
+            private Type? TypeOf(Expression expr) => expr.Accept(new TypeOf(Diagnostics, FilePath, Symbols));
 
             public override void VisitParameterList(ParameterList node)
             {
@@ -278,15 +284,45 @@ namespace ScTools.ScriptLang.Semantics
                 {
                     Location = funcAllocLocation,
                 };
+
+                if (node.Variable.Initializer != null)
+                {
+                    var initializerType = TypeOf(node.Variable.Initializer);
+                    if (initializerType != v.Type)
+                    {
+                        Diagnostics.AddError(FilePath, $"Mismatched initializer type and type of variable '{v.Name}'", node.Variable.Initializer.Source);
+                    }
+                }
+
                 int size = v.Type.SizeOf;
                 funcAllocLocation += size;
                 funcLocalsSize += size;
                 Symbols.Add(v);
             }
 
+            public override void VisitAssignmentStatement(AssignmentStatement node)
+            {
+                var destType = TypeOf(node.Left);
+                var srcType = TypeOf(node.Right);
+            
+                if (destType == null || srcType == null)
+                {
+                    return;
+                }
+
+                if (destType != srcType)
+                {
+                    Diagnostics.AddError(FilePath, "Mismatched types in assigment", node.Source);
+                }
+            }
+
             public override void VisitIfStatement(IfStatement node)
             {
-                node.Condition.Accept(this);
+                var conditionType = TypeOf(node.Condition);
+                if (!(conditionType is BasicType { TypeCode: BasicTypeCode.Bool }))
+                {
+                    Diagnostics.AddError(FilePath, $"IF statement condition requires BOOL type", node.Condition.Source);
+                }
 
                 Symbols = Symbols.EnterScope(node.ThenBlock);
                 node.ThenBlock.Accept(this);
@@ -302,11 +338,66 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitWhileStatement(WhileStatement node)
             {
-                node.Condition.Accept(this);
+                var conditionType = TypeOf(node.Condition);
+                if (!(conditionType is BasicType { TypeCode: BasicTypeCode.Bool }))
+                {
+                    Diagnostics.AddError(FilePath, $"WHILE statement condition requires BOOL type", node.Condition.Source);
+                }
 
                 Symbols = Symbols.EnterScope(node.Block);
                 node.Block.Accept(this);
                 Symbols = Symbols.ExitScope();
+            }
+
+            public override void VisitReturnStatement(ReturnStatement node)
+            {
+                Debug.Assert(func != null);
+
+                if (node.Expression == null)
+                {
+                    // if this is a function, the missing expression should have been reported by SyntaxChecker
+                    return;
+                }
+
+                var returnType = TypeOf(node.Expression);
+                if (returnType != func.Type.ReturnType)
+                {
+                    Diagnostics.AddError(FilePath, $"Returned type does not match the specified function return type", node.Expression.Source);
+                }
+            }
+
+            public override void VisitInvocationStatement(InvocationStatement node)
+            {
+                Console.WriteLine($"{node.Expression}");
+                // TODO: very similar to TypeOf.VisitInvocationExpression, refactor
+                var callableType = TypeOf(node.Expression);
+                if (!(callableType is FunctionType f))
+                {
+                    if (callableType != null)
+                    {
+                        Diagnostics.AddError(FilePath, $"Cannot call '{node.Expression}', it is not a procedure or a function", node.Expression.Source);
+                    }
+                    return;
+                }
+
+                int expected = f.Parameters.Count;
+                int found = node.ArgumentList.Arguments.Length;
+                if (found != expected)
+                {
+                    Diagnostics.AddError(FilePath, $"Mismatched number of arguments. Expected {expected}, found {found}", node.ArgumentList.Source);
+                }
+
+                int argCount = Math.Min(expected, found);
+                for (int i = 0; i < argCount; i++)
+                {
+                    var expectedType = f.Parameters[i];
+                    var foundType = TypeOf(node.ArgumentList.Arguments[i]);
+
+                    if (expectedType != foundType)
+                    {
+                        Diagnostics.AddError(FilePath, $"Mismatched type of argument #{i}", node.ArgumentList.Arguments[i].Source);
+                    }
+                }
             }
 
             public override void DefaultVisit(Node node)
@@ -316,6 +407,136 @@ namespace ScTools.ScriptLang.Semantics
                     n.Accept(this);
                 }
             }
+        }
+
+        private sealed class TypeOf : AstVisitor<Type?>
+        {
+            private readonly DiagnosticsReport diagnostics;
+            private readonly string filePath;
+            private readonly SymbolTable symbols;
+
+            public TypeOf(DiagnosticsReport diagnostics, string filePath, SymbolTable symbols)
+                => (this.diagnostics, this.filePath, this.symbols) = (diagnostics, filePath, symbols);
+
+            public override Type? VisitIdentifierExpression(IdentifierExpression node)
+            {
+                var symbol = symbols.Lookup(node.Identifier);
+                if (symbol == null)
+                {
+                    diagnostics.AddError(filePath, $"Unknown symbol '{node.Identifier}'", node.Source);
+                    return null;
+                }
+
+                if (symbol is VariableSymbol v)
+                {
+                    return v.Type;
+                }
+                else if (symbol is FunctionSymbol f)
+                {
+                    return f.Type;
+                }
+
+                diagnostics.AddError(filePath, $"Identifier '{node.Identifier}' must refer to a variable, procedure or function", node.Source);
+                return null;
+            }
+
+            public override Type? VisitLiteralExpression(LiteralExpression node)
+                => node.Kind switch
+                {
+                    LiteralKind.Int => (symbols.Lookup("INT") as TypeSymbol)!.Type,
+                    LiteralKind.Float => (symbols.Lookup("FLOAT") as TypeSymbol)!.Type,
+                    LiteralKind.Bool => (symbols.Lookup("BOOL") as TypeSymbol)!.Type,
+                    LiteralKind.String => (symbols.Lookup("STRING") as TypeSymbol)!.Type,
+                    _ => null,
+                };
+
+            public override Type? VisitUnaryExpression(UnaryExpression node)
+                => node.Operand.Accept(this);
+
+            public override Type? VisitBinaryExpression(BinaryExpression node)
+            {
+                var left = node.Left.Accept(this);
+                var right = node.Right.Accept(this);
+
+                if (left == null)
+                {
+                    return null;
+                }
+
+                if (right == null)
+                {
+                    return null;
+                }
+
+                // TODO: allow some conversions (e.g. INT -> FLOAT, aggregate -> struct)
+                if (left != right)
+                {
+                    return null;
+                }
+
+                return left;
+            }
+
+            public override Type? VisitInvocationExpression(InvocationExpression node)
+            {
+                var callableType = node.Expression.Accept(this);
+                if (!(callableType is FunctionType f))
+                {
+                    if (callableType != null)
+                    {
+                        diagnostics.AddError(filePath, $"Cannot call '{node.Expression}', it is not a procedure or a function", node.Expression.Source);
+                    }
+                    return null;
+                }
+
+                int expected = f.Parameters.Count;
+                int found = node.ArgumentList.Arguments.Length;
+                if (found != expected)
+                {
+                    diagnostics.AddError(filePath, $"Mismatched number of arguments. Expected {expected}, found {found}", node.ArgumentList.Source);
+                }
+
+                int argCount = Math.Min(expected, found);
+                for (int i = 0; i < argCount; i++)
+                {
+                    var expectedType = f.Parameters[i];
+                    var foundType = node.ArgumentList.Arguments[i].Accept(this);
+
+                    if (expectedType != foundType)
+                    {
+                        diagnostics.AddError(filePath, $"Mismatched type of argument #{i}", node.ArgumentList.Arguments[i].Source);
+                    }
+                }
+
+                return f.ReturnType;
+            }
+
+            public override Type? VisitMemberAccessExpression(MemberAccessExpression node)
+            {
+                var type = node.Expression.Accept(this);
+                if (!(type is StructType struc))
+                {
+                    if (type != null)
+                    {
+                        diagnostics.AddError(filePath, "Only structs have members", node.Expression.Source);
+                    }
+                    return null;
+                }
+
+                var field = struc.Fields.SingleOrDefault(f => f.Name == node.Member);
+                if (field == default)
+                {
+                    diagnostics.AddError(filePath, $"Unknown field '{struc.Name}.{node.Member}'", node.Source);
+                    return null;
+                }
+
+                return field.Type;
+            }
+
+            // TODO: VisitAggregateExpression
+            // TODO: VisitArrayAccessExpression
+
+            public override Type? DefaultVisit(Node node) => throw new InvalidOperationException($"Unsupported AST node {node.GetType().Name}");
         }
     }
 }

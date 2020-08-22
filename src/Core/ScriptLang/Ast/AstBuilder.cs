@@ -153,7 +153,8 @@ namespace ScTools.ScriptLang.Ast
         public override Node VisitLiteralExpression([NotNull] ScLangParser.LiteralExpressionContext context)
             => new LiteralExpression(context switch
             {
-                var c when c.numeric() != null => LiteralKind.Numeric,
+                var c when c.integer() != null => LiteralKind.Int,
+                var c when c.@float() != null => LiteralKind.Float,
                 var c when c.@string() != null => LiteralKind.String,
                 var c when c.@bool() != null => LiteralKind.Bool,
                 _ => throw new NotImplementedException()

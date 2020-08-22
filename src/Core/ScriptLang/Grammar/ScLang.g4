@@ -60,7 +60,7 @@ expression
     | expression '.' identifier                                 #memberAccessExpression
     | expression arrayIndexer                                   #arrayAccessExpression
     | expression argumentList                                   #invocationExpression
-    | (numeric | string | bool)                                 #literalExpression
+    | (integer | float | string | bool)                         #literalExpression
     ;
 
 variableDeclarationWithInitializer
@@ -103,11 +103,6 @@ typeName
 
 identifier
     : IDENTIFIER
-    ;
-
-numeric
-    : integer
-    | float
     ;
 
 integer

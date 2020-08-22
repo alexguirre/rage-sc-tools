@@ -151,7 +151,8 @@ namespace ScTools.ScriptLang.Ast
 
     public enum LiteralKind
     {
-        Numeric,
+        Int,
+        Float,
         String,
         Bool,
     }
