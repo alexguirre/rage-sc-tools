@@ -46,7 +46,11 @@ namespace ScTools.ScriptLang
         public override int GetHashCode() => (Start, End).GetHashCode();
         public override bool Equals(object? obj) => obj is SourceLocation l && Equals(l);
 
-        public static SourceRange FromTokens(IToken start, IToken stop)
-            => new SourceRange((start.Line, start.Column + 1), (stop.Line, stop.Column + 1 + Interval.Of(stop.StartIndex, stop.StopIndex).Length));
+        public static SourceRange FromTokens(IToken start, IToken? stop)
+        {
+            stop ??= start;
+            return new SourceRange((start.Line, start.Column + 1),
+                                   (stop.Line, stop.Column + 1 + Interval.Of(stop.StartIndex, stop.StopIndex).Length));
+        }
     }
 }

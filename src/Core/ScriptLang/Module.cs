@@ -1,10 +1,8 @@
 ﻿#nullable enable
 namespace ScTools.ScriptLang
 {
-    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
-    using System.Linq;
 
     using Antlr4.Runtime;
 
@@ -31,9 +29,20 @@ namespace ScTools.ScriptLang
             FilePath = filePath;
 
             Ast = Parse(input);
-            DoSyntaxCheck();
-            (SymbolTable, StaticVarsTotalSize) = DoSemanticAnalysis();
-            CompiledScript = Diagnostics.HasErrors ? CreateEmptyScript() : Compile();
+            if (Diagnostics.HasErrors)
+            {
+                // create empty defaults in case of parsing errors
+                SymbolTable = new SymbolTable();
+                StaticVarsTotalSize = -1;
+                CompiledScript = CreateEmptyScript();
+            }
+            else
+            {
+                DoSyntaxCheck();
+                (SymbolTable, StaticVarsTotalSize) = DoSemanticAnalysis();
+                CompiledScript = Diagnostics.HasErrors ? CreateEmptyScript() :
+                                                         Compile();
+            }
         }
 
         public string GetAstDotGraph() => AstDotGenerator.Generate(Ast);
@@ -43,8 +52,12 @@ namespace ScTools.ScriptLang
             AntlrInputStream inputStream = new AntlrInputStream(input);
 
             ScLangLexer lexer = new ScLangLexer(inputStream);
+            lexer.RemoveErrorListeners();
+            lexer.AddErrorListener(new SyntaxErrorListener<int>(this));
             CommonTokenStream tokens = new CommonTokenStream(lexer);
             ScLangParser parser = new ScLangParser(tokens);
+            parser.RemoveErrorListeners();
+            parser.AddErrorListener(new SyntaxErrorListener<IToken>(this));
             return (Root)parser.script().Accept(new AstBuilder());
         }
 
@@ -85,5 +98,25 @@ namespace ScTools.ScriptLang
 
         public static Module Compile(TextReader input, string filePath = "tmp.sc")
             => new Module(input, filePath);
+
+
+        /// <summary>
+        /// Adds syntax errors to diagnostics report.
+        /// </summary>
+        private sealed class SyntaxErrorListener<TSymbol> : IAntlrErrorListener<TSymbol>
+        {
+            private readonly Module mod;
+
+            public SyntaxErrorListener(Module mod) => this.mod = mod;
+
+            public void SyntaxError(TextWriter output, IRecognizer recognizer, TSymbol offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
+            {
+                var source = offendingSymbol is IToken t ?
+                                SourceRange.FromTokens(t, null) :
+                                new SourceRange(new SourceLocation(line, charPositionInLine),
+                                                new SourceLocation(line, charPositionInLine));
+                mod.Diagnostics.AddError(mod.FilePath, msg, source);
+            }
+        }
     }
 }
