@@ -28,6 +28,16 @@ namespace ScTools.ScriptLang.Semantics
                 {
                     AllocateStaticVars();
                 }
+
+                var main = Symbols.Lookup(FunctionSymbol.MainName) as FunctionSymbol;
+                if (main == null)
+                {
+                    Diagnostics.AddError(FilePath, $"Missing '{FunctionSymbol.MainName}' procedure", SourceRange.Unknown);
+                }
+                else if (!main.IsMain)
+                {
+                    Diagnostics.AddError(FilePath, $"Incorrect signature for '{FunctionSymbol.MainName}' procedure, expected 'PROC {FunctionSymbol.MainName}()'", main.Source);
+                }
             }
 
             // returns whether all types where resolved
