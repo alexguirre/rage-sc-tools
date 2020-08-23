@@ -6,15 +6,16 @@ namespace ScTools.ScriptLang.Semantics
 
     public static partial class SemanticAnalysis
     {
-        public static (DiagnosticsReport, SymbolTable) Visit(Root root, string filePath)
+        public static (DiagnosticsReport, SymbolTable, int StaticVarsTotalSize) Visit(Root root, string filePath)
         {
             var diagnostics = new DiagnosticsReport();
             var symbols = new SymbolTable();
             AddBuiltIns(symbols);
-            new FirstPass(diagnostics, filePath, symbols).Run(root);
+            var pass1 = new FirstPass(diagnostics, filePath, symbols);
+            pass1.Run(root);
             new SecondPass(diagnostics, filePath, symbols).Run(root);
             
-            return (diagnostics, symbols);
+            return (diagnostics, symbols, pass1.StaticVarsTotalSize);
         }
 
         private static void AddBuiltIns(SymbolTable symbols)

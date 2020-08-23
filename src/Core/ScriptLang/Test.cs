@@ -1,13 +1,9 @@
 ﻿namespace ScTools.ScriptLang
 {
     using System;
-    using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
 
-    using Antlr4.Runtime;
-
-    using ScTools.ScriptLang.Ast;
-    using ScTools.ScriptLang.Grammar;
     using ScTools.ScriptLang.Semantics;
     using ScTools.ScriptLang.Semantics.Symbols;
 
@@ -35,8 +31,7 @@ FLOAT otherStaticValue
 
 PROC MAIN()
     VEC2 pos = <<0.5, 0.5>>
-    pos.x = 0.5
-    pos.y = 0.5
+    pos.y = 0.75
     INT a = 10
     INT b = 5 + -a * 2
 
@@ -70,29 +65,11 @@ ENDPROC
 
         public static void DoTest()
         {
-            AntlrInputStream inputStream = new AntlrInputStream(Code);
+            using var reader = new StringReader(Code);
+            var module = Module.Compile(reader);
 
-            ScLangLexer lexer = new ScLangLexer(inputStream);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            ScLangParser parser = new ScLangParser(tokens);
-
-            Root root = (Root)parser.script().Accept(new AstBuilder());
-
-            Console.WriteLine();
-            Console.WriteLine();
-            Console.WriteLine(AstDotGenerator.Generate(root));
-            Console.WriteLine();
-            Console.WriteLine("===========================");
-
-            const string FilePath = "test.sc";
-            DiagnosticsReport d = new DiagnosticsReport();
-            d.AddFrom(SyntaxChecker.Check(root, FilePath));
-
-            var (diagnostics, symbols) = SemanticAnalysis.Visit(root, FilePath);
-            d.AddFrom(diagnostics);
-
-            Console.WriteLine("===========================");
-            
+            var d = module.Diagnostics;
+            var symbols = module.SymbolTable;
             Console.WriteLine($"Errors:   {d.HasErrors} ({d.Errors.Count()})");
             Console.WriteLine($"Warnings: {d.HasWarnings} ({d.Warnings.Count()})");
             foreach (var diagnostic in d.AllDiagnostics)

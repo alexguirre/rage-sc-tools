@@ -15,6 +15,8 @@ namespace ScTools.ScriptLang.Semantics
         /// </summary>
         private sealed class FirstPass : Pass
         {
+            public int StaticVarsTotalSize { get; private set; } = -1;
+
             public FirstPass(DiagnosticsReport diagnostics, string filePath, SymbolTable symbols)
                 : base(diagnostics, filePath, symbols)
             { }
@@ -128,7 +130,7 @@ namespace ScTools.ScriptLang.Semantics
                     location += s.Type.SizeOf;
                 }
 
-                // TODO: return total size of static vars
+                StaticVarsTotalSize = location;
             }
 
             private FunctionType CreateUnresolvedFunctionType(Ast.Type? returnType, IEnumerable<VariableDeclaration> parameters)
