@@ -8,8 +8,10 @@ namespace ScTools.ScriptLang
 
     using ScTools.GameFiles;
     using ScTools.ScriptLang.Ast;
+    using ScTools.ScriptLang.CodeGen;
     using ScTools.ScriptLang.Grammar;
     using ScTools.ScriptLang.Semantics;
+    using ScTools.ScriptLang.Semantics.Symbols;
 
     public sealed class Module
     {
@@ -77,6 +79,34 @@ namespace ScTools.ScriptLang
         {
             Debug.Assert(!Diagnostics.HasErrors);
             var sc = CreateEmptyScript();
+            sc.StaticsCount = (uint)StaticVarsTotalSize;
+            sc.Statics = new ScriptValue[StaticVarsTotalSize];
+
+            var code = new ByteCodeBuilder();
+            foreach (var topStmt in Ast.Statements)
+            {
+                switch (topStmt)
+                {
+                    case ScriptNameStatement s:
+                        sc.Name = s.Name;
+                        sc.NameHash = s.Name.ToHash();
+                        break;
+                    case FunctionStatement _:
+                    case ProcedureStatement _:
+                        var name = (topStmt as FunctionStatement)?.Name ??
+                                   (topStmt as ProcedureStatement)!.Name;
+                        Debug.Assert(name != null);
+
+                        var func = SymbolTable.Lookup(name) as FunctionSymbol;
+                        Debug.Assert(func != null);
+
+                        code.BeginFunction(func.Name);
+
+                        code.EndFunction();
+                        break;
+                }
+            }
+
             // TODO
             return sc;
         }

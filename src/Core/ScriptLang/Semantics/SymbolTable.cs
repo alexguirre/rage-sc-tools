@@ -94,6 +94,8 @@ namespace ScTools.ScriptLang.Semantics
             return null;
         }
 
+        public SymbolTable GetScope(object key) => FindScope(key) ?? throw new ArgumentException("No scope with the specified key", nameof(key));
+
         /// <summary>
         /// Creates a new scope.
         /// </summary>

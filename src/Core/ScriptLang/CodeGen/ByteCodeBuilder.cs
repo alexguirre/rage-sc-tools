@@ -49,6 +49,7 @@ namespace ScTools.ScriptLang.CodeGen
             currentFunction = null;
         }
 
+        public void Emit(Opcode opcode) => Emit(opcode.Instruction(), Array.Empty<Operand>());
         public void Emit(Opcode opcode, ReadOnlySpan<Operand> operands) => Emit(opcode.Instruction(), operands);
 
         public void Emit(in Instruction instruction, ReadOnlySpan<Operand> operands)

@@ -15,6 +15,7 @@ namespace ScTools.ScriptLang.Semantics
         /// </summary>
         private sealed class SecondPass : Pass
         {
+
             private FunctionSymbol? func = null;
             private int funcLocalsSize = 0;
             private int funcLocalArgsSize = 0; 
