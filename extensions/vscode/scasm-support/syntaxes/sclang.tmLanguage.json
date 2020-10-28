@@ -1,0 +1,63 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "ScLang",
+	"patterns": [
+		{
+			"include": "#keywords"
+		},
+		{
+			"include": "#strings"
+		},
+		{
+			"include": "#numbers"
+		},
+		{
+			"include": "#comments"
+		}
+	],
+	"repository": {
+		"keywords": {
+			"patterns": [{
+				"name": "storage.type.struct.sclang",
+				"match": "\\b(PROC|ENDPROC|FUNC|ENDFUNC|STRUCT|ENDSTRUCT|PROTO|TRUE|FALSE|NOT|IF|ELSE|ENDIF|WHILE|ENDWHILE|RETURN|SCRIPT_NAME|BOOL|INT|FLOAT|VEC3|STRING|TEXT_LABEL8|TEXT_LABEL16|TEXT_LABEL24|TEXT_LABEL32|TEXT_LABEL40|TEXT_LABEL48|TEXT_LABEL56|TEXT_LABEL64|TEXT_LABEL128|TEXT_LABEL256|TEXT_LABEL512)\\b"
+			}]
+		},
+		"strings": {
+			"name": "string.quoted.double.sclang",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": [
+				{
+					"name": "constant.character.escape.sclang",
+					"match": "\\\\."
+				}
+			]
+		},
+		"numbers": {
+			"patterns": [
+				{
+					"name": "constant.numeric.float.sclang",
+					"match": "\\b[0-9]+\\.[0-9]+\\b"
+				},
+				{
+					"name": "constant.numeric.integer.decimal.sclang",
+					"match": "\\b[0-9]+\\b"
+				},
+				{
+					"name": "constant.numeric.integer.hex.sclang",
+					"match": "\\b0x[0-9a-fA-F]+\\b"
+				}
+			]
+		},
+		"comments": {
+			"patterns": [
+				{
+					"begin": "//",
+					"end": "\\n",
+					"name": "comment.line.sclang"
+				}
+			]
+		}
+	},
+	"scopeName": "source.sclang"
+}

@@ -17,7 +17,7 @@
         private readonly Script sc;
         private bool nameSet = false;
 
-        public NativeDB NativeDB { get; }
+        public NativeDBOld NativeDB { get; }
         public CodeBuilder Code { get; }
         public CodeGenOptions CodeGenOptions { get; }
         public StringPagesBuilder Strings { get; } = new StringPagesBuilder();
@@ -26,7 +26,7 @@
         public ScriptValue[] StaticValues => sc.Statics;
         public Registry Symbols { get; } = new Registry();
 
-        public AssemblerContext(Script sc, NativeDB nativeDB, CodeGenOptions codeGenOptions)
+        public AssemblerContext(Script sc, NativeDBOld nativeDB, CodeGenOptions codeGenOptions)
         {
             this.sc = sc ?? throw new ArgumentNullException(nameof(sc));
             Code = new CodeBuilder(this);
@@ -188,7 +188,7 @@
 
     public static class Assembler
     {
-        public static Script Assemble(string input, NativeDB nativeDB, CodeGenOptions codeGenOptions)
+        public static Script Assemble(string input, NativeDBOld nativeDB, CodeGenOptions codeGenOptions)
         {
             AntlrInputStream inputStream = new AntlrInputStream(input);
 
@@ -201,10 +201,10 @@
 
         private sealed class ScriptVisitor : ScAsmBaseVisitor<Script>
         {
-            private readonly NativeDB nativeDB;
+            private readonly NativeDBOld nativeDB;
             private readonly CodeGenOptions codeGenOptions;
 
-            public ScriptVisitor(NativeDB nativeDB, CodeGenOptions codeGenOptions)
+            public ScriptVisitor(NativeDBOld nativeDB, CodeGenOptions codeGenOptions)
             {
                 this.nativeDB = nativeDB;
                 this.codeGenOptions = codeGenOptions;

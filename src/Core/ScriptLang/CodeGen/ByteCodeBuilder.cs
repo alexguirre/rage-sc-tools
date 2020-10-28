@@ -1,27 +1,29 @@
-﻿namespace ScTools.ScriptAssembly.CodeGen
+﻿#nullable enable
+namespace ScTools.ScriptLang.CodeGen
 {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Linq;
-    using ScTools.GameFiles;
-    using ScTools.ScriptAssembly.Definitions;
-    using ScTools.ScriptAssembly.Types;
 
-    public class CodeBuilder : IByteCodeBuilder, IHighLevelCodeBuilder
+    using ScTools.GameFiles;
+    using ScTools.ScriptAssembly;
+    using ScTools.ScriptAssembly.CodeGen;
+
+    // TODO: ByteCodeBuilder is very similar to ScriptAssembly.CodeGen.CodeBuilder, refactor
+    public sealed class ByteCodeBuilder : IByteCodeBuilder
     {
         private readonly List<byte[]> pages = new List<byte[]>(); // bytecode pages so far
         private uint length = 0; // byte count of all the code
-        
+
         // bytes of the current instruction
         private readonly List<byte> buffer = new List<byte>();
 
-        private FunctionDefinition currentFunction = null;
-        private string currentLabel = null;
-        
+        private string? currentFunction = null;
+        private string? currentLabel = null;
+
         // functions addresses and labels
         private readonly Dictionary<string, (uint IP, Dictionary<string, uint> Labels)> functions = new Dictionary<string, (uint, Dictionary<string, uint>)>();
-        
+
         // addresses that need fixup
         private readonly List<(string TargetFunctionName, uint IP)> functionTargets = new List<(string, uint)>();
         private readonly List<(string FunctionName, string TargetLabel, uint IP)> labelTargets = new List<(string, string, uint)>();
@@ -31,77 +33,23 @@
         private bool inInstruction = false;
         private bool InFunction => currentFunction != null;
 
-        private readonly AssemblerContext context;
-
-        public CodeBuilder(AssemblerContext context)
-        {
-            this.context = context ?? throw new ArgumentNullException(nameof(context));
-        }
-
-        public void BeginFunction(FunctionDefinition function)
+        public void BeginFunction(string function)
         {
             Debug.Assert(!InFunction);
 
-            currentFunction = function ?? throw new ArgumentNullException(nameof(currentFunction));
-            currentLabel = function.Name;
-            functions.Add(function.Name, (length, new Dictionary<string, uint>()));
-
-            if (!currentFunction.Naked)
-            {
-                EmitPrologue();
-            }
+            currentFunction = function;
+            currentLabel = function;
+            functions.Add(function, (length, new Dictionary<string, uint>()));
         }
 
         public void EndFunction()
         {
             Debug.Assert(InFunction);
 
-            if (!currentFunction.Naked)
-            {
-                EmitEpilogue();
-            }
-
             currentFunction = null;
         }
 
-        private uint LocalOffset(string name)
-        {
-            Debug.Assert(InFunction);
-
-            if (currentFunction.Naked)
-            {
-                throw new InvalidOperationException("Named locals are not available in naked functions");
-            }
-
-            uint offset = 0;
-
-            // look in function args
-            for (int i = 0; i < currentFunction.Args.Length; i++)
-            {
-                if (currentFunction.Args[i].Name == name)
-                {
-                    return offset;
-                }
-
-                offset += currentFunction.Args[i].Type.SizeOf;
-            }
-
-            offset += 2; // see MinLocals in EmitPrologue
-
-            // look in function locals
-            for (int i = 0; i < currentFunction.Locals.Length; i++)
-            {
-                if (currentFunction.Locals[i].Name == name)
-                {
-                    return offset;
-                }
-
-                offset += currentFunction.Locals[i].Type.SizeOf;
-            }
-
-            throw new ArgumentException($"Unknown local '{name}'");
-        }
-
+        public void Emit(Opcode opcode) => Emit(opcode.Instruction(), Array.Empty<Operand>());
         public void Emit(Opcode opcode, ReadOnlySpan<Operand> operands) => Emit(opcode.Instruction(), operands);
 
         public void Emit(in Instruction instruction, ReadOnlySpan<Operand> operands)
@@ -113,104 +61,6 @@
             EndInstruction();
         }
 
-        public void EmitHL(HighLevelInstruction.UniqueId instId, ReadOnlySpan<Operand> operands) => EmitHL(HighLevelInstruction.Set[(int)instId], operands);
-
-        public void EmitHL(in HighLevelInstruction instruction, ReadOnlySpan<Operand> operands)
-        {
-            Debug.Assert(InFunction);
-
-            instruction.Assemble(operands, this);
-        }
-
-        private void EmitPrologue()
-        {
-            // every function needs at least 2 locals (return address + function frame number)
-            const uint MinLocals = 2;
-
-            uint argsSize = (uint)currentFunction.Args.Sum(a => a.Type.SizeOf);
-            uint localsSize = (uint)currentFunction.Locals.Sum(l => l.Type.SizeOf) + argsSize + MinLocals;
-            Emit(Opcode.ENTER, new[] { new Operand(argsSize), new Operand(localsSize) });
-
-            // TODO: emit local initialiazer code closer to how original scripts do it to simplify the work of the disassembler
-            uint localOffset = argsSize + MinLocals;
-            foreach (var local in currentFunction.Locals)
-            {
-                EmitLocalInitializer(localOffset, local.Type);
-
-                localOffset += local.Type.SizeOf;
-            }
-        }
-
-        private void EmitLocalInitializer(uint localOffset, TypeBase localType)
-        {
-            switch (localType)
-            {
-                case ArrayType t: EmitLocalArrayInitializer(localOffset, t); break;
-                case StructType t: EmitLocalStructInitializer(localOffset, t); break;
-                case AutoType _: break;
-                default: throw new NotImplementedException();
-            }
-        }
-
-        private void EmitLocalStore(uint localOffset)
-            => Emit(localOffset <= byte.MaxValue ? Opcode.LOCAL_U8_STORE : Opcode.LOCAL_U16_STORE, new[] { new Operand(localOffset) });
-
-        private void EmitLocalArrayInitializer(uint localOffset, ArrayType localType)
-        {
-            // Scripts normally initialize arrays like this:
-            //      LOCAL local
-            //      PUSH_CONST arrayLength
-            //      STORE_REV
-            //      DROP
-            // The following is functionally equivalent
-            EmitHL(HighLevelInstruction.UniqueId.PUSH_CONST, new[] { new Operand(localType.Length) });
-            EmitLocalStore(localOffset);
-
-            // and initialize the items
-            localOffset += 1; // skip length offset
-            uint itemSize = localType.ItemType.SizeOf;
-            for (int i = 0; i < localType.Length; i++, localOffset += itemSize)
-            {
-                EmitLocalInitializer(localOffset, localType.ItemType);
-            }
-        }
-
-        private void EmitLocalStructInitializer(uint localOffset, StructType localType)
-        {
-            // Scripts normally use IOFFSET instruction to access struct fields, here it is easier to pre-calculate the field offset
-            for (int i = 0; i < localType.Fields.Length; i++)
-            {
-                uint fieldOffset = localOffset + localType.Offsets[i];
-                var field = localType.Fields[i];
-
-                switch (field.Type)
-                {
-                    case ArrayType t: EmitLocalArrayInitializer(fieldOffset, t); break;
-                    case StructType t: EmitLocalStructInitializer(fieldOffset, t); break;
-                    case AutoType _ when field.InitialValue.HasValue:
-                    {
-                        var val = field.InitialValue.Value;
-                        Debug.Assert(val.AsUInt32 == val.AsUInt64); // verify that only the lower 4-bytes are used
-
-                        EmitHL(HighLevelInstruction.UniqueId.PUSH_CONST, new[]
-                        {
-                            (val.AsUInt32 == 0 || !float.IsNormal(val.AsFloat)) ? new Operand(val.AsUInt32) : new Operand(val.AsFloat)
-                        });
-                        EmitLocalStore(fieldOffset);
-                    }
-                    break;
-                    default: throw new NotImplementedException();
-                }
-            }
-        }
-
-        private void EmitEpilogue()
-        {
-            uint argsSize = (uint)currentFunction.Args.Sum(a => a.Type.SizeOf);
-            uint returnSize = currentFunction.ReturnType?.SizeOf ?? 0;
-            Emit(Opcode.LEAVE, new[] { new Operand(argsSize), new Operand(returnSize) });
-        }
-
         public void AddLabel(string label)
         {
             Debug.Assert(InFunction);
@@ -220,7 +70,7 @@
                 throw new ArgumentException("Empty label", nameof(label));
             }
 
-            if (!functions[currentFunction.Name].Labels.TryAdd(label, length))
+            if (!functions[currentFunction!].Labels.TryAdd(label, length))
             {
                 throw new InvalidOperationException($"Label '{label}' is repeated");
             }
@@ -313,7 +163,7 @@
             }
 
             labelTargetsInCurrentInstruction.Add(labelTargets.Count);
-            labelTargets.Add((currentFunction.Name, label, length + (uint)buffer.Count));
+            labelTargets.Add((currentFunction!, label, length + (uint)buffer.Count));
             buffer.Add(0);
             buffer.Add(0);
 
@@ -465,8 +315,8 @@
         private byte[] NewPage(uint size = Script.MaxPageLength) => new byte[size];
 
         #region IByteCodeBuilder Implementation
-        string IByteCodeBuilder.Label => currentLabel;
-        CodeGenOptions IByteCodeBuilder.Options => context.CodeGenOptions;
+        string? IByteCodeBuilder.Label => currentLabel;
+        CodeGenOptions IByteCodeBuilder.Options => new CodeGenOptions(includeFunctionNames: true);
 
         void IByteCodeBuilder.Opcode(Opcode v) => InstructionU8((byte)v);
         void IByteCodeBuilder.U8(byte v) => InstructionU8(v);
@@ -478,19 +328,5 @@
         void IByteCodeBuilder.LabelTarget(string label) => InstructionLabelTarget(label);
         void IByteCodeBuilder.FunctionTarget(string function) => InstructionFunctionTarget(function);
         #endregion // IByteCodeBuilder Implementation
-
-        #region IHighLevelCodeBuilder Implementation
-        NativeDBOld IHighLevelCodeBuilder.NativeDB => context.NativeDB;
-        CodeGenOptions IHighLevelCodeBuilder.Options => context.CodeGenOptions;
-        Registry IHighLevelCodeBuilder.Symbols => context.Symbols;
-
-        void IHighLevelCodeBuilder.Emit(Opcode opcode, ReadOnlySpan<Operand> operands) => Emit(opcode, operands);
-
-        uint IHighLevelCodeBuilder.AddOrGetString(string str) => context.AddOrGetString(str);
-        ushort IHighLevelCodeBuilder.AddOrGetNative(ulong hash) => context.AddOrGetNative(hash);
-
-        uint IHighLevelCodeBuilder.GetStaticOffset(string name) => context.GetStaticOffset(name);
-        uint IHighLevelCodeBuilder.GetLocalOffset(string name) => LocalOffset(name);
-        #endregion // IHighLevelCodeBuilder Implementation
     }
 }

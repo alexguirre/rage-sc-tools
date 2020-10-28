@@ -17,6 +17,7 @@
 # ANTLR
 .antlr/
 src/Core/ScriptAssembly/Grammar/Generated/
+src/Core/ScriptLang/Grammar/Generated/
 
 # Build results
 [Dd]ebug/

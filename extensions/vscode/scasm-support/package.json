@@ -1,7 +1,7 @@
 {
-    "name": "scasm-support",
-    "displayName": "ScAsm Support",
-    "description": "Language support for ScAsm",
+    "name": "sclang-support",
+    "displayName": "ScLang Support",
+    "description": "Language support for ScLang/ScAsm",
     "version": "0.0.1",
     "engines": {
         "vscode": "^1.46.0"
@@ -10,16 +10,31 @@
         "Programming Languages"
     ],
     "contributes": {
-        "languages": [{
-            "id": "scasm",
-            "aliases": ["ScAsm", "scasm"],
-            "extensions": [".scasm"],
-            "configuration": "./language-configuration.json"
-        }],
-        "grammars": [{
-            "language": "scasm",
-            "scopeName": "source.scasm",
-            "path": "./syntaxes/scasm.tmLanguage.json"
-        }]
+        "languages": [
+            {
+                "id": "scasm",
+                "aliases": ["ScAsm", "scasm"],
+                "extensions": [".scasm"],
+                "configuration": "./scasm-configuration.json"
+            },
+            {
+                "id": "sclang",
+                "aliases": ["ScLang", "sclang"],
+                "extensions": [".sc"],
+                "configuration": "./sclang-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "scasm",
+                "scopeName": "source.scasm",
+                "path": "./syntaxes/scasm.tmLanguage.json"
+            },
+            {
+                "language": "sclang",
+                "scopeName": "source.sclang",
+                "path": "./syntaxes/sclang.tmLanguage.json"
+            }
+        ]
     }
 }
