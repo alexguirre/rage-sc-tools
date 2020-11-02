@@ -2,8 +2,10 @@
 namespace ScTools.ScriptLang.Semantics.Binding
 {
     using System.Collections.Generic;
-    using System.Collections.Immutable;
+    using System.Diagnostics;
 
+    using ScTools.ScriptAssembly;
+    using ScTools.ScriptLang.CodeGen;
     using ScTools.ScriptLang.Semantics.Symbols;
 
     public sealed class BoundFunction : BoundNode
@@ -14,6 +16,21 @@ namespace ScTools.ScriptLang.Semantics.Binding
         public BoundFunction(FunctionSymbol function)
         {
             Function = function;
+        }
+
+        public void Emit(ByteCodeBuilder code)
+        {
+            code.BeginFunction(Function.Name);
+            code.EmitPrologue(this.Function);
+            // TODO: missing local variables initializers
+
+            foreach (var stmt in Body)
+            {
+                stmt.Emit(code, this);
+            }
+
+            code.EmitEpilogue(this.Function);
+            code.EndFunction();
         }
     }
 }

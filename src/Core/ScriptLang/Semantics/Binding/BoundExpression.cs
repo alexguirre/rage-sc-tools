@@ -1,46 +1,32 @@
 ﻿#nullable enable
 namespace ScTools.ScriptLang.Semantics.Binding
 {
-    using System.Collections;
+    using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Diagnostics;
-    using System.Runtime.InteropServices.ComTypes;
 
+    using ScTools.ScriptAssembly;
+    using ScTools.ScriptLang.CodeGen;
     using ScTools.ScriptLang.Semantics.Symbols;
 
-    public enum BoundExpressionFlags
-    {
-        None = 0,
-        /// <summary>
-        /// Can be used as the RHS of an assignment statement.
-        /// </summary>
-        RValue = 1 << 0,
-        /// <summary>
-        /// Can be used as the LHS of an assignment statement.
-        /// </summary>
-        Assignable = 1 << 1,
-        /// <summary>
-        /// Can be used as the callee of an invocation.
-        /// </summary>
-        Callable = 1 << 2,
-    }
+    using Opcode = ScTools.ScriptAssembly.Opcode;
+    using Type = ScTools.ScriptLang.Semantics.Type;
 
     public abstract class BoundExpression : BoundNode
     {
         public Type Type { get; }
-        public abstract BoundExpressionFlags Flags { get; }
-        public bool IsRValue => Flags.HasFlag(BoundExpressionFlags.RValue);
-        public bool IsAssignable => Flags.HasFlag(BoundExpressionFlags.Assignable);
 
 
         public BoundExpression(Type type) => Type = type;
+
+        public abstract void EmitLoad(ByteCodeBuilder code);
+        public abstract void EmitStore(ByteCodeBuilder code);
+        public abstract void EmitCall(ByteCodeBuilder code);
     }
 
     public sealed class BoundBinaryExpression : BoundExpression
     {
-        public override BoundExpressionFlags Flags => BoundExpressionFlags.RValue;
-
         public BoundExpression Left { get; }
         public BoundExpression Right { get; }
         public Ast.BinaryOperator Op { get; }
@@ -53,44 +39,100 @@ namespace ScTools.ScriptLang.Semantics.Binding
             Right = right;
             Op = op;
         }
+
+        public override void EmitLoad(ByteCodeBuilder code)
+        {
+            Left.EmitLoad(code);
+            Right.EmitLoad(code);
+            var isFloat = Type is BasicType { TypeCode: BasicTypeCode.Float };
+            switch (Op)
+            {
+                case Ast.BinaryOperator.Add:
+                    code.Emit(isFloat ? Opcode.FADD : Opcode.IADD);
+                    break;
+                case Ast.BinaryOperator.Subtract:
+                    code.Emit(isFloat ? Opcode.FSUB : Opcode.ISUB);
+                    break;
+                case Ast.BinaryOperator.Multiply:
+                    code.Emit(isFloat ? Opcode.FMUL : Opcode.IMUL);
+                    break;
+                case Ast.BinaryOperator.Divide:
+                    code.Emit(isFloat ? Opcode.FDIV : Opcode.IDIV);
+                    break;
+                case Ast.BinaryOperator.Modulo:
+                    code.Emit(isFloat ? Opcode.FMOD : Opcode.IMOD);
+                    break;
+                case Ast.BinaryOperator.Or:
+                    code.Emit(Opcode.IOR);
+                    break;
+                case Ast.BinaryOperator.And:
+                    code.Emit(Opcode.IAND);
+                    break;
+                case Ast.BinaryOperator.Xor:
+                    code.Emit(Opcode.IXOR);
+                    break;
+            }
+        }
+
+        public override void EmitStore(ByteCodeBuilder code) => throw new NotSupportedException();
+        public override void EmitCall(ByteCodeBuilder code) => throw new NotSupportedException();
     }
 
     public sealed class BoundVariableExpression : BoundExpression
     {
-        public override BoundExpressionFlags Flags { get; }
-
         public VariableSymbol Var { get; }
 
         public BoundVariableExpression(VariableSymbol variable)
             : base(variable.Type)
         {
             Var = variable;
-            Flags = BoundExpressionFlags.RValue | BoundExpressionFlags.Assignable;
-            if (Type is FunctionType)
-            {
-                Flags |= BoundExpressionFlags.Callable;
-            }
+        }
+
+        public override void EmitLoad(ByteCodeBuilder code)
+        {
+            Debug.Assert(Var.IsLocal, "EmitLoad for static variables not implemented");
+            Debug.Assert(Type.SizeOf == 1, "EmitLoad for variable with size of type > 1 not implemented");
+
+            code.EmitLocalLoad(Var.Location);
+        }
+
+        public override void EmitStore(ByteCodeBuilder code)
+        {
+            Debug.Assert(Var.IsLocal, "EmitStore for static variables not implemented");
+            Debug.Assert(Type.SizeOf == 1, "EmitStore for variable with size of type > 1 not implemented");
+
+            code.EmitLocalStore(Var.Location);
+        }
+
+        public override void EmitCall(ByteCodeBuilder code)
+        {
+            Debug.Assert(Type is FunctionType, "Only function types can be called");
+
+            throw new NotImplementedException();
         }
     }
 
     public sealed class BoundFunctionExpression : BoundExpression
     {
-        public override BoundExpressionFlags Flags { get; }
-
         public FunctionSymbol Function { get; }
 
         public BoundFunctionExpression(FunctionSymbol function)
             : base(function.Type)
         {
             Function = function;
-            Flags = BoundExpressionFlags.RValue | BoundExpressionFlags.Callable;
+        }
+
+        public override void EmitLoad(ByteCodeBuilder code) => throw new NotSupportedException();
+        public override void EmitStore(ByteCodeBuilder code) => throw new NotSupportedException();
+
+        public override void EmitCall(ByteCodeBuilder code)
+        {
+            code.Emit(Opcode.CALL, new[] { new Operand(Function.Name, OperandType.Identifier) });
         }
     }
 
     public sealed class BoundInvocationExpression : BoundExpression
     {
-        public override BoundExpressionFlags Flags { get; }
-
         public BoundExpression Callee { get; }
         public ImmutableArray<BoundExpression> Arguments { get; }
 
@@ -101,20 +143,26 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
             Callee = callee;
             Arguments = arguments.ToImmutableArray();
-            
-            Flags = BoundExpressionFlags.RValue;
-            if (Type is FunctionType)
-            {
-                Flags |= BoundExpressionFlags.Callable;
-            }
         }
+
+
+        public override void EmitLoad(ByteCodeBuilder code)
+        {
+            foreach (var arg in Arguments)
+            {
+                arg.EmitLoad(code);
+            }
+            Callee.EmitCall(code);
+        }
+
+        public override void EmitStore(ByteCodeBuilder code) => throw new NotSupportedException();
+        public override void EmitCall(ByteCodeBuilder code) => throw new NotSupportedException();
     }
 
     public sealed class BoundFloatLiteralExpression : BoundExpression
     {
         private static readonly Type FloatType = new BasicType(BasicTypeCode.Float);
 
-        public override BoundExpressionFlags Flags => BoundExpressionFlags.RValue;
         public float Value { get; }
 
         public BoundFloatLiteralExpression(float value)
@@ -122,13 +170,16 @@ namespace ScTools.ScriptLang.Semantics.Binding
         {
             Value = value;
         }
+
+        public override void EmitLoad(ByteCodeBuilder code) => code.EmitPushFloat(Value);
+        public override void EmitStore(ByteCodeBuilder code) => throw new NotSupportedException();
+        public override void EmitCall(ByteCodeBuilder code) => throw new NotSupportedException();
     }
 
     public sealed class BoundIntLiteralExpression : BoundExpression
     {
         private static readonly Type IntType = new BasicType(BasicTypeCode.Int);
 
-        public override BoundExpressionFlags Flags => BoundExpressionFlags.RValue;
         public int Value { get; }
 
         public BoundIntLiteralExpression(int value)
@@ -136,5 +187,9 @@ namespace ScTools.ScriptLang.Semantics.Binding
         {
             Value = value;
         }
+
+        public override void EmitLoad(ByteCodeBuilder code) => code.EmitPushInt(Value);
+        public override void EmitStore(ByteCodeBuilder code) => throw new NotSupportedException();
+        public override void EmitCall(ByteCodeBuilder code) => throw new NotSupportedException();
     }
 }

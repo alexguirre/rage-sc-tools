@@ -11,13 +11,14 @@ namespace ScTools.ScriptLang
     using ScTools.ScriptLang.CodeGen;
     using ScTools.ScriptLang.Grammar;
     using ScTools.ScriptLang.Semantics;
+    using ScTools.ScriptLang.Semantics.Binding;
     using ScTools.ScriptLang.Semantics.Symbols;
 
     public sealed class Module
     {
         public Root Ast { get; }
         public SymbolTable SymbolTable { get; }
-        public int StaticVarsTotalSize { get; }
+        public BoundModule BoundModule { get; }
         public DiagnosticsReport Diagnostics { get; }
         /// <summary>
         /// Gets the file path included in diagnostics messages.
@@ -35,13 +36,13 @@ namespace ScTools.ScriptLang
             {
                 // create empty defaults in case of parsing errors
                 SymbolTable = new SymbolTable();
-                StaticVarsTotalSize = -1;
+                BoundModule = new BoundModule();
                 CompiledScript = CreateEmptyScript();
             }
             else
             {
                 DoSyntaxCheck();
-                (SymbolTable, StaticVarsTotalSize) = DoSemanticAnalysis();
+                (SymbolTable, BoundModule) = DoSemanticAnalysis();
                 CompiledScript = Diagnostics.HasErrors ? CreateEmptyScript() :
                                                          Compile();
             }
@@ -68,47 +69,17 @@ namespace ScTools.ScriptLang
             Diagnostics.AddFrom(SyntaxChecker.Check(Ast, FilePath));
         }
 
-        private (SymbolTable, int StaticVarsTotalSize) DoSemanticAnalysis()
+        private (SymbolTable, BoundModule) DoSemanticAnalysis()
         {
-            var (diagnostics, symbols, staticsTotalSize) = SemanticAnalysis.Visit(Ast, FilePath);
+            var (diagnostics, symbols, boundModule) = SemanticAnalysis.Visit(Ast, FilePath);
             Diagnostics.AddFrom(diagnostics);
-            return (symbols, staticsTotalSize);
+            return (symbols, boundModule);
         }
 
         private Script Compile()
         {
             Debug.Assert(!Diagnostics.HasErrors);
-            var sc = CreateEmptyScript();
-            sc.StaticsCount = (uint)StaticVarsTotalSize;
-            sc.Statics = new ScriptValue[StaticVarsTotalSize];
-
-            var code = new ByteCodeBuilder();
-            foreach (var topStmt in Ast.Statements)
-            {
-                switch (topStmt)
-                {
-                    case ScriptNameStatement s:
-                        sc.Name = s.Name;
-                        sc.NameHash = s.Name.ToHash();
-                        break;
-                    case FunctionStatement _:
-                    case ProcedureStatement _:
-                        var name = (topStmt as FunctionStatement)?.Name ??
-                                   (topStmt as ProcedureStatement)!.Name;
-                        Debug.Assert(name != null);
-
-                        var func = SymbolTable.Lookup(name) as FunctionSymbol;
-                        Debug.Assert(func != null);
-
-                        code.BeginFunction(func.Name);
-
-                        code.EndFunction();
-                        break;
-                }
-            }
-
-            // TODO
-            return sc;
+            return BoundModule.Assemble();
         }
 
         private static Script CreateEmptyScript()

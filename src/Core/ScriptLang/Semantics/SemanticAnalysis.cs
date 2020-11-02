@@ -2,11 +2,12 @@
 namespace ScTools.ScriptLang.Semantics
 {
     using ScTools.ScriptLang.Ast;
+    using ScTools.ScriptLang.Semantics.Binding;
     using ScTools.ScriptLang.Semantics.Symbols;
 
     public static partial class SemanticAnalysis
     {
-        public static (DiagnosticsReport, SymbolTable, int StaticVarsTotalSize) Visit(Root root, string filePath)
+        public static (DiagnosticsReport, SymbolTable, BoundModule) Visit(Root root, string filePath)
         {
             var diagnostics = new DiagnosticsReport();
             var symbols = new SymbolTable();
@@ -14,8 +15,11 @@ namespace ScTools.ScriptLang.Semantics
             var pass1 = new FirstPass(diagnostics, filePath, symbols);
             pass1.Run(root);
             new SecondPass(diagnostics, filePath, symbols).Run(root);
-            
-            return (diagnostics, symbols, pass1.StaticVarsTotalSize);
+
+            var binderPass = new Binder(diagnostics, filePath, symbols, pass1.StaticVarsTotalSize);
+            binderPass.Run(root);
+
+            return (diagnostics, symbols, binderPass.Module);
         }
 
         private static void AddBuiltIns(SymbolTable symbols)
