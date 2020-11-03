@@ -72,7 +72,9 @@ namespace ScTools.ScriptLang.Semantics.Binding
         {
             var elseLabel = id + "-else";
             var exitLabel = id + "-exit";
-            
+
+            // TODO: use IEQ_JZ, INE_JZ, IGT_JZ, IGE_JZ, ILT_JZ and ILE_JZ when possible
+
             // if
             Condition.EmitLoad(code);
             code.EmitJumpIfZero(elseLabel);

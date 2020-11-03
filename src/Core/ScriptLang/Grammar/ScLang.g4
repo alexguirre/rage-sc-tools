@@ -51,19 +51,21 @@ statementBlock
     ;
 
 expression
-    : '(' expression ')'                                        #parenthesizedExpression
-    | expression argumentList                                   #invocationExpression
-    | expression arrayIndexer                                   #arrayAccessExpression
-    | op=(K_NOT | '-') expression                               #unaryExpression
-    | left=expression op=('*' | '/' | '%') right=expression     #binaryExpression
-    | left=expression op=('+' | '-') right=expression           #binaryExpression
-    | left=expression op='&' right=expression                   #binaryExpression
-    | left=expression op='^' right=expression                   #binaryExpression
-    | left=expression op='|' right=expression                   #binaryExpression
-    | '<<' expression (',' expression)* '>>'                    #aggregateExpression
-    | identifier                                                #identifierExpression
-    | expression '.' identifier                                 #memberAccessExpression
-    | (integer | float | string | bool)                         #literalExpression
+    : '(' expression ')'                                            #parenthesizedExpression
+    | expression argumentList                                       #invocationExpression
+    | expression arrayIndexer                                       #arrayAccessExpression
+    | op=(K_NOT | '-') expression                                   #unaryExpression
+    | left=expression op=('*' | '/' | '%') right=expression         #binaryExpression
+    | left=expression op=('+' | '-') right=expression               #binaryExpression
+    | left=expression op='&' right=expression                       #binaryExpression
+    | left=expression op='^' right=expression                       #binaryExpression
+    | left=expression op='|' right=expression                       #binaryExpression
+    | left=expression op=('<' | '>' | '<=' | '>=') right=expression #binaryExpression
+    | left=expression op=('==' | '!=') right=expression             #binaryExpression
+    | '<<' expression (',' expression)* '>>'                        #aggregateExpression
+    | identifier                                                    #identifierExpression
+    | expression '.' identifier                                     #memberAccessExpression
+    | (integer | float | string | bool)                             #literalExpression
     ;
 
 variableDeclarationWithInitializer
@@ -160,6 +162,12 @@ OP_MODULO: '%';
 OP_OR: '|';
 OP_AND: '&';
 OP_XOR: '^';
+OP_EQUAL: '==';
+OP_NOT_EQUAL: '!=';
+OP_GREATER: '>';
+OP_GREATER_OR_EQUAL: '>=';
+OP_LESS: '<';
+OP_LESS_OR_EQUAL: '<=';
 
 IDENTIFIER
     :   [a-zA-Z_] [a-zA-Z_0-9]*

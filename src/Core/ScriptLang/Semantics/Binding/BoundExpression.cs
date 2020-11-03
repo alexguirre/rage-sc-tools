@@ -32,7 +32,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
         public Ast.BinaryOperator Op { get; }
 
         public BoundBinaryExpression(BoundExpression left, BoundExpression right, Ast.BinaryOperator op)
-            : base(left.Type)
+            : base(Ast.BinaryExpression.OpIsComparison(op) ? new BasicType(BasicTypeCode.Bool) : left.Type)
         {
             Debug.Assert(left.Type == right.Type);
             Left = left;
@@ -71,6 +71,25 @@ namespace ScTools.ScriptLang.Semantics.Binding
                 case Ast.BinaryOperator.Xor:
                     code.Emit(Opcode.IXOR);
                     break;
+                case Ast.BinaryOperator.Equal:
+                    code.Emit(isFloat ? Opcode.FEQ : Opcode.IEQ);
+                    break;
+                case Ast.BinaryOperator.NotEqual:
+                    code.Emit(isFloat ? Opcode.FNE : Opcode.INE);
+                    break;
+                case Ast.BinaryOperator.Greater:
+                    code.Emit(isFloat ? Opcode.FGT : Opcode.IGT);
+                    break;
+                case Ast.BinaryOperator.GreaterOrEqual:
+                    code.Emit(isFloat ? Opcode.FGE : Opcode.IGE);
+                    break;
+                case Ast.BinaryOperator.Less:
+                    code.Emit(isFloat ? Opcode.FLT : Opcode.ILT);
+                    break;
+                case Ast.BinaryOperator.LessOrEqual:
+                    code.Emit(isFloat ? Opcode.FLE : Opcode.ILE);
+                    break;
+                default: throw new NotImplementedException();
             }
         }
 

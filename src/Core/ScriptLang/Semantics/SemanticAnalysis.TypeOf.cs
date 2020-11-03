@@ -75,6 +75,11 @@ namespace ScTools.ScriptLang.Semantics
                     return null;
                 }
 
+                if (BinaryExpression.OpIsComparison(node.Op))
+                {
+                    return (symbols.Lookup("BOOL") as TypeSymbol)!.Type;
+                }
+
                 return left;
             }
 

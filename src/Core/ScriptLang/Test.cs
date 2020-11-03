@@ -74,53 +74,53 @@ NATIVE PROC ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(STRING text)
 NATIVE PROC ADD_TEXT_COMPONENT_INTEGER(INT value)
 NATIVE FUNC FLOAT TIMESTEP()
 
-BOOL c // = TRUE <-- initializers not supported
+// TODO: support static variables initializers
+INT fib0 // = 0
+INT fib1 // = 1
+INT curr_index
+INT curr_value
+INT last_time
 
 PROC MAIN()
-    INT a = 10
-    INT b = 5
-    c = TRUE
-    BOOL d = FALSE
+    fib0 = 0
+    fib1 = 1
+    curr_index = 0
+    curr_value = 0
+    last_time = 0
 
-    b = ADD(GET_VALUE(), ADD(a, b))
-
-    GET_VALUE()
-
-    FLOAT y = 0.0
-
-    WHILE c
+    last_time = GET_GAME_TIMER()
+    WHILE TRUE
         WAIT(0)
 
         BEGIN_TEXT_COMMAND_DISPLAY_TEXT(""STRING"")
-        ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(""Some\nstring"")
-        END_TEXT_COMMAND_DISPLAY_TEXT(0.5, y, 0)
+        ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(""Fibonacci"")
+        END_TEXT_COMMAND_DISPLAY_TEXT(0.5, 0.175, 0)
 
-        y = (y + (0.5 * TIMESTEP())) % 1.0
+        BEGIN_TEXT_COMMAND_DISPLAY_TEXT(""NUMBER"")
+        ADD_TEXT_COMPONENT_INTEGER(curr_value)
+        END_TEXT_COMMAND_DISPLAY_TEXT(0.5, 0.25, 0)
 
-        IF c
-            BEGIN_TEXT_COMMAND_DISPLAY_TEXT(""STRING"")
-            ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(""The var is TRUE"")
-            END_TEXT_COMMAND_DISPLAY_TEXT(0.5, 0.5, 0)
-        ELSE
-            BEGIN_TEXT_COMMAND_DISPLAY_TEXT(""STRING"")
-            ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(""The var is FALSE"")
-            END_TEXT_COMMAND_DISPLAY_TEXT(0.5, 0.5, 0)
+        IF GET_GAME_TIMER() - last_time >= 2000
+            curr_value = NEXT_FIB()
+            last_time = GET_GAME_TIMER()
         ENDIF
 
-        IF d
-            BEGIN_TEXT_COMMAND_DISPLAY_TEXT(""STRING"")
-            ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(""The other var is TRUE"")
-            END_TEXT_COMMAND_DISPLAY_TEXT(0.5, 0.75, 0)
-        ENDIF
     ENDWHILE
 ENDPROC
 
-FUNC INT ADD(INT a, INT b)
-    RETURN a + b
-ENDFUNC
+FUNC INT NEXT_FIB()
+    INT result
 
-FUNC INT GET_VALUE()
-    RETURN 4
+    IF curr_index < 1
+        result = 0
+    ELSE
+        result = fib0 + fib1
+        fib0 = fib1
+        fib1 = result
+    ENDIF
+
+    curr_index = curr_index + 1
+    RETURN result
 ENDFUNC
 ";
 

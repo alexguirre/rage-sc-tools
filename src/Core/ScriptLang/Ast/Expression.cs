@@ -62,8 +62,28 @@ namespace ScTools.ScriptLang.Ast
             BinaryOperator.Or => "|",
             BinaryOperator.And => "&",
             BinaryOperator.Xor => "^",
+            BinaryOperator.Equal => "==",
+            BinaryOperator.NotEqual => "!=",
+            BinaryOperator.Greater => ">",
+            BinaryOperator.GreaterOrEqual => ">=",
+            BinaryOperator.Less => "<",
+            BinaryOperator.LessOrEqual => "<=",
             _ => throw new NotImplementedException()
         };
+
+        public static bool OpIsComparison(BinaryOperator op)
+        {
+            switch (op)
+            {
+                case BinaryOperator.Equal:
+                case BinaryOperator.NotEqual:
+                case BinaryOperator.Greater:
+                case BinaryOperator.GreaterOrEqual:
+                case BinaryOperator.Less:
+                case BinaryOperator.LessOrEqual: return true;
+                default: return false;
+            }
+        }
     }
 
     public enum BinaryOperator
@@ -75,7 +95,14 @@ namespace ScTools.ScriptLang.Ast
         Modulo,
         Or,
         And,
-        Xor
+        Xor,
+
+        Equal,
+        NotEqual,
+        Greater,
+        GreaterOrEqual,
+        Less,
+        LessOrEqual,
     }
 
     public sealed class AggregateExpression : Expression
