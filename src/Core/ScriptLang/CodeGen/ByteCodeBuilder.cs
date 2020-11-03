@@ -202,6 +202,8 @@ namespace ScTools.ScriptLang.CodeGen
             return (ushort)index;
         }
 
+        public void EmitJumpIfZero(string label) => Emit(Opcode.JZ, new[] { new Operand(label, OperandType.Identifier) });
+
         public void EmitPrologue(FunctionSymbol function)
         {
             // every function needs at least 2 locals (return address + function frame number)

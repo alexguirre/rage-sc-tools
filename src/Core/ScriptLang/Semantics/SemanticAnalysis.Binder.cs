@@ -2,6 +2,7 @@
 namespace ScTools.ScriptLang.Semantics
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
 
@@ -14,7 +15,7 @@ namespace ScTools.ScriptLang.Semantics
         private sealed class Binder : Pass
         {
             public BoundModule Module { get; } = new BoundModule();
-            private BoundFunction? func = null;
+            private IList<BoundStatement>? stmts = null; // statements of the current block
 
             public Binder(DiagnosticsReport diagnostics, string filePath, SymbolTable symbols, int staticVarsTotalSize)
                 : base(diagnostics, filePath, symbols)
@@ -49,17 +50,18 @@ namespace ScTools.ScriptLang.Semantics
 
             private void VisitFunc(FunctionSymbol func, StatementBlock block)
             {
-                this.func = new BoundFunction(func);
+                var boundFunc = new BoundFunction(func);
+                Module.Functions.Add(boundFunc);
+                stmts = boundFunc.Body;
                 Symbols = Symbols.GetScope(block)!;
                 block.Accept(this);
                 Symbols = Symbols.ExitScope();
-                Module.Functions.Add(this.func);
-                this.func = null;
+                stmts = null;
             }
 
             public override void VisitAssignmentStatement(AssignmentStatement node)
             {
-                func!.Body.Add(new BoundAssignmentStatement(
+                stmts!.Add(new BoundAssignmentStatement(
                     Bind(node.Left)!,
                     Bind(node.Right)!
                 ));
@@ -67,7 +69,21 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitIfStatement(IfStatement node)
             {
-                throw new NotImplementedException();
+                var boundIf = new BoundIfStatement(Bind(node.Condition)!);
+                stmts!.Add(boundIf);
+
+                var prevBlock = stmts;
+
+                stmts = boundIf.Then;
+                VisitStatementBlock(node.ThenBlock);
+
+                if (node.ElseBlock != null)
+                {
+                    stmts = boundIf.Else;
+                    VisitStatementBlock(node.ElseBlock);
+                }
+
+                stmts = prevBlock;
             }
 
             public override void VisitWhileStatement(WhileStatement node)
@@ -77,14 +93,14 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitReturnStatement(ReturnStatement node)
             {
-                func!.Body.Add(new BoundReturnStatement(
+                stmts!.Add(new BoundReturnStatement(
                     Bind(node.Expression)
                 ));
             }
 
             public override void VisitInvocationStatement(InvocationStatement node)
             {
-                func!.Body.Add(new BoundInvocationStatement(
+                stmts!.Add(new BoundInvocationStatement(
                     Bind(node.Expression)!,
                     node.ArgumentList.Arguments.Select(a => Bind(a)!)
                 ));
@@ -95,7 +111,7 @@ namespace ScTools.ScriptLang.Semantics
                 var varSymbol = Symbols.Lookup(node.Variable.Declaration.Name) as VariableSymbol;
                 Debug.Assert(varSymbol != null);
 
-                func!.Body.Add(new BoundVariableDeclarationStatement(
+                stmts!.Add(new BoundVariableDeclarationStatement(
                     varSymbol,
                     Bind(node.Variable.Initializer)
                 ));

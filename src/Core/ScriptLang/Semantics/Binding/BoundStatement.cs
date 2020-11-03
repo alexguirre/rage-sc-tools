@@ -1,6 +1,7 @@
 ﻿#nullable enable
 namespace ScTools.ScriptLang.Semantics.Binding
 {
+    using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Diagnostics;
@@ -46,6 +47,40 @@ namespace ScTools.ScriptLang.Semantics.Binding
         {
             Right.EmitLoad(code);
             Left.EmitStore(code);
+        }
+    }
+
+    public sealed class BoundIfStatement : BoundStatement
+    {
+        public BoundExpression Condition { get; }
+        public IList<BoundStatement> Then { get; } = new List<BoundStatement>();
+        public IList<BoundStatement> Else { get; } = new List<BoundStatement>();
+
+        private readonly string id; // unique ID used for labels
+
+        public BoundIfStatement(BoundExpression condition)
+            => (Condition, id) = (condition, Guid.NewGuid().ToString());
+
+        public override void Emit(ByteCodeBuilder code, BoundFunction parent)
+        {
+            var elseLabel = id;
+            
+            // if
+            Condition.EmitLoad(code);
+            code.EmitJumpIfZero(elseLabel);
+            
+            // then
+            foreach (var stmt in Then)
+            {
+                stmt.Emit(code, parent);
+            }
+
+            // else
+            code.AddLabel(elseLabel);
+            foreach (var stmt in Else)
+            {
+                stmt.Emit(code, parent);
+            }
         }
     }
 
