@@ -75,6 +75,8 @@ NATIVE PROC ADD_TEXT_COMPONENT_INTEGER(INT value)
 PROC MAIN()
     INT a = 10
     INT b = 5
+    BOOL c = TRUE
+    BOOL d = FALSE
 
     b = ADD(GET_VALUE(), ADD(a, b))
 

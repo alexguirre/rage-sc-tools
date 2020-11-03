@@ -192,7 +192,7 @@ namespace ScTools.ScriptLang.Semantics
                         case LiteralKind.String:
                             return new BoundStringLiteralExpression(node.ValueText.Trim('"').Unescape());
                         case LiteralKind.Bool:
-                            throw new NotImplementedException();
+                            return new BoundBoolLiteralExpression(node.ValueText.ToUpperInvariant() == "TRUE");
                         default:
                             throw new NotSupportedException();
                     }

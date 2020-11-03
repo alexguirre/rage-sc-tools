@@ -216,4 +216,21 @@ namespace ScTools.ScriptLang.Semantics.Binding
         public override void EmitStore(ByteCodeBuilder code) => throw new NotSupportedException();
         public override void EmitCall(ByteCodeBuilder code) => throw new NotSupportedException();
     }
+
+    public sealed class BoundBoolLiteralExpression : BoundExpression
+    {
+        private static readonly Type BoolType = new BasicType(BasicTypeCode.Bool);
+
+        public bool Value { get; }
+
+        public BoundBoolLiteralExpression(bool value)
+            : base(BoolType)
+        {
+            Value = value;
+        }
+
+        public override void EmitLoad(ByteCodeBuilder code) => code.EmitPushInt(Value ? 1 : 0);
+        public override void EmitStore(ByteCodeBuilder code) => throw new NotSupportedException();
+        public override void EmitCall(ByteCodeBuilder code) => throw new NotSupportedException();
+    }
 }
