@@ -4,6 +4,7 @@ namespace ScTools.ScriptLang.Ast
     using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
+    using System.Diagnostics;
 
     public abstract class Expression : Node
     {
@@ -142,6 +143,11 @@ namespace ScTools.ScriptLang.Ast
     {
         public LiteralKind Kind { get; }
         public string ValueText { get; }
+
+        public int IntValue { get { Debug.Assert(Kind == LiteralKind.Int); return int.Parse(ValueText); } }
+        public float FloatValue { get { Debug.Assert(Kind == LiteralKind.Float); return float.Parse(ValueText); } }
+        public string StringValue { get { Debug.Assert(Kind == LiteralKind.String); return ValueText.Trim('"').Unescape(); } }
+        public bool BoolValue { get { Debug.Assert(Kind == LiteralKind.Bool); return ValueText.ToUpperInvariant() == "TRUE"; } }
 
         public LiteralExpression(LiteralKind kind, string valueText, SourceRange source) : base(source)
             => (Kind, ValueText) = (kind, valueText);

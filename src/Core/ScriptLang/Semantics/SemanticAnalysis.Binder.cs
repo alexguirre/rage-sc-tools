@@ -206,21 +206,14 @@ namespace ScTools.ScriptLang.Semantics
                 }
 
                 public override BoundExpression VisitLiteralExpression(LiteralExpression node)
-                {
-                    switch (node.Kind)
+                    => node.Kind switch
                     {
-                        case LiteralKind.Int:
-                            return new BoundIntLiteralExpression(int.Parse(node.ValueText));
-                        case LiteralKind.Float:
-                            return new BoundFloatLiteralExpression(float.Parse(node.ValueText));
-                        case LiteralKind.String:
-                            return new BoundStringLiteralExpression(node.ValueText.Trim('"').Unescape());
-                        case LiteralKind.Bool:
-                            return new BoundBoolLiteralExpression(node.ValueText.ToUpperInvariant() == "TRUE");
-                        default:
-                            throw new NotSupportedException();
-                    }
-                }
+                        LiteralKind.Int => new BoundIntLiteralExpression(node.IntValue),
+                        LiteralKind.Float => new BoundFloatLiteralExpression(node.FloatValue),
+                        LiteralKind.String => new BoundStringLiteralExpression(node.StringValue),
+                        LiteralKind.Bool => new BoundBoolLiteralExpression(node.BoolValue),
+                        _ => throw new NotSupportedException(),
+                    };
 
                 public override BoundExpression VisitAggregateExpression(AggregateExpression node) => throw new NotImplementedException();
                 public override BoundExpression VisitArrayAccessExpression(ArrayAccessExpression node) => throw new NotImplementedException();
