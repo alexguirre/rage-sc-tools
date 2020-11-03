@@ -63,7 +63,8 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
         public override void Emit(ByteCodeBuilder code, BoundFunction parent)
         {
-            var elseLabel = id;
+            var elseLabel = id + "-else";
+            var exitLabel = id + "-exit";
             
             // if
             Condition.EmitLoad(code);
@@ -74,6 +75,12 @@ namespace ScTools.ScriptLang.Semantics.Binding
             {
                 stmt.Emit(code, parent);
             }
+            if (Else.Count > 0)
+            {
+                // if the then block was executed and there is an else block, skip it
+                code.EmitJump(exitLabel);
+            }
+
 
             // else
             code.AddLabel(elseLabel);
@@ -81,6 +88,8 @@ namespace ScTools.ScriptLang.Semantics.Binding
             {
                 stmt.Emit(code, parent);
             }
+
+            code.AddLabel(exitLabel);
         }
     }
 
