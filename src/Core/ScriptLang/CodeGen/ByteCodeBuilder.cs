@@ -202,6 +202,7 @@ namespace ScTools.ScriptLang.CodeGen
             return (ushort)index;
         }
 
+        public void EmitJump(string label) => Emit(Opcode.J, new[] { new Operand(label, OperandType.Identifier) });
         public void EmitJumpIfZero(string label) => Emit(Opcode.JZ, new[] { new Operand(label, OperandType.Identifier) });
 
         public void EmitPrologue(FunctionSymbol function)

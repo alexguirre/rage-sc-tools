@@ -56,10 +56,10 @@ namespace ScTools.ScriptLang.Semantics.Binding
         public IList<BoundStatement> Then { get; } = new List<BoundStatement>();
         public IList<BoundStatement> Else { get; } = new List<BoundStatement>();
 
-        private readonly string id; // unique ID used for labels
+        private readonly string id = Guid.NewGuid().ToString(); // unique ID used for labels
 
         public BoundIfStatement(BoundExpression condition)
-            => (Condition, id) = (condition, Guid.NewGuid().ToString());
+            => Condition = condition;
 
         public override void Emit(ByteCodeBuilder code, BoundFunction parent)
         {
@@ -81,6 +81,35 @@ namespace ScTools.ScriptLang.Semantics.Binding
             {
                 stmt.Emit(code, parent);
             }
+        }
+    }
+
+    public sealed class BoundWhileStatement : BoundStatement
+    {
+        public BoundExpression Condition { get; }
+        public IList<BoundStatement> Block { get; } = new List<BoundStatement>();
+
+        private readonly string id = Guid.NewGuid().ToString(); // unique ID used for labels
+
+        public BoundWhileStatement(BoundExpression condition)
+            => Condition = condition;
+
+        public override void Emit(ByteCodeBuilder code, BoundFunction parent)
+        {
+            var beginLabel = id + "-begin";
+            var exitLabel = id + "-exit";
+
+            code.AddLabel(beginLabel);
+            Condition.EmitLoad(code);
+            code.EmitJumpIfZero(exitLabel);
+
+            foreach (var stmt in Block)
+            {
+                stmt.Emit(code, parent);
+            }
+            code.EmitJump(beginLabel);
+
+            code.AddLabel(exitLabel);
         }
     }
 

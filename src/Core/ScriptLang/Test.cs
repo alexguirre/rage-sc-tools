@@ -4,6 +4,7 @@
     using System.IO;
     using System.Linq;
 
+    using ScTools.GameFiles;
     using ScTools.ScriptLang.Semantics;
     using ScTools.ScriptLang.Semantics.Symbols;
 
@@ -63,7 +64,7 @@
         //ENDPROC
         //";
         const string Code = @"
-SCRIPT_NAME test
+SCRIPT_NAME test_script
 
 NATIVE PROC WAIT(INT ms)
 NATIVE FUNC INT GET_GAME_TIMER()
@@ -82,27 +83,29 @@ PROC MAIN()
 
     GET_VALUE()
 
-    WAIT(GET_GAME_TIMER() - b)
+    WHILE c
+        WAIT(0)
 
-    BEGIN_TEXT_COMMAND_DISPLAY_TEXT(""STRING"")
-    ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(""Some\nstring"")
-    END_TEXT_COMMAND_DISPLAY_TEXT(0.5, 0.25, 0)
+        BEGIN_TEXT_COMMAND_DISPLAY_TEXT(""STRING"")
+        ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(""Some\nstring"")
+        END_TEXT_COMMAND_DISPLAY_TEXT(0.5, 0.25, 0)
 
-    IF c
-        BEGIN_TEXT_COMMAND_DISPLAY_TEXT(""STRING"")
-        ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(""The var is TRUE"")
-        END_TEXT_COMMAND_DISPLAY_TEXT(0.5, 0.5, 0)
-    ELSE
-        BEGIN_TEXT_COMMAND_DISPLAY_TEXT(""STRING"")
-        ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(""The var is FALSE"")
-        END_TEXT_COMMAND_DISPLAY_TEXT(0.5, 0.5, 0)
-    ENDIF
+        IF c
+            BEGIN_TEXT_COMMAND_DISPLAY_TEXT(""STRING"")
+            ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(""The var is TRUE"")
+            END_TEXT_COMMAND_DISPLAY_TEXT(0.5, 0.5, 0)
+        ELSE
+            BEGIN_TEXT_COMMAND_DISPLAY_TEXT(""STRING"")
+            ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(""The var is FALSE"")
+            END_TEXT_COMMAND_DISPLAY_TEXT(0.5, 0.5, 0)
+        ENDIF
 
-    IF d
-        BEGIN_TEXT_COMMAND_DISPLAY_TEXT(""STRING"")
-        ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(""The other var is TRUE"")
-        END_TEXT_COMMAND_DISPLAY_TEXT(0.5, 0.75, 0)
-    ENDIF
+        IF d
+            BEGIN_TEXT_COMMAND_DISPLAY_TEXT(""STRING"")
+            ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(""The other var is TRUE"")
+            END_TEXT_COMMAND_DISPLAY_TEXT(0.5, 0.75, 0)
+        ENDIF
+    ENDWHILE
 ENDPROC
 
 FUNC INT ADD(INT a, INT b)
@@ -144,6 +147,17 @@ ENDFUNC
 
             Console.WriteLine();
             new Dumper(module.CompiledScript).Dump(Console.Out, true, true, true, true, true);
+
+            YscFile ysc = new YscFile();
+            ysc.Script = module.CompiledScript;
+
+            string outputPath = "test_script.ysc";
+            byte[] data = ysc.Save(Path.GetFileName(outputPath));
+            File.WriteAllBytes(outputPath, data);
+
+            outputPath = Path.ChangeExtension(outputPath, "unencrypted.ysc");
+            data = ysc.Save();
+            File.WriteAllBytes(outputPath, data);
             ;
         }
     }

@@ -88,7 +88,15 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitWhileStatement(WhileStatement node)
             {
-                throw new NotImplementedException();
+                var boundWhile = new BoundWhileStatement(Bind(node.Condition)!);
+                stmts!.Add(boundWhile);
+
+                var prevBlock = stmts;
+
+                stmts = boundWhile.Block;
+                VisitStatementBlock(node.Block);
+
+                stmts = prevBlock;
             }
 
             public override void VisitReturnStatement(ReturnStatement node)
