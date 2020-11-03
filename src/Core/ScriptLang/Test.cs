@@ -81,6 +81,10 @@ PROC MAIN()
     GET_VALUE()
 
     WAIT(GET_GAME_TIMER() - b)
+
+    BEGIN_TEXT_COMMAND_DISPLAY_TEXT(""STRING"")
+    ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(""Some\nstring"")
+    END_TEXT_COMMAND_DISPLAY_TEXT(0.5, 0.5, 0)
 ENDPROC
 
 FUNC INT ADD(INT a, INT b)
@@ -94,9 +98,9 @@ ENDFUNC
 
         public static void DoTest()
         {
-            NativeDB.Fetch(new Uri("https://raw.githubusercontent.com/alloc8or/gta5-nativedb-data/master/natives.json"), "ScriptHookV_1.0.2060.1.zip")
-                .ContinueWith(t => File.WriteAllText("nativedb.json", t.Result.ToJson()))
-                .Wait();
+            //NativeDB.Fetch(new Uri("https://raw.githubusercontent.com/alloc8or/gta5-nativedb-data/master/natives.json"), "ScriptHookV_1.0.2060.1.zip")
+            //    .ContinueWith(t => File.WriteAllText("nativedb.json", t.Result.ToJson()))
+            //    .Wait();
 
             var nativeDB = NativeDB.FromJson(File.ReadAllText("nativedb.json"));
 

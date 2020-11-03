@@ -6,9 +6,6 @@ namespace ScTools.ScriptLang.CodeGen
     using System.Diagnostics;
     using System.Linq;
 
-    using CodeWalker.GameFiles;
-    using CodeWalker.World;
-
     using ScTools.GameFiles;
     using ScTools.ScriptAssembly;
     using ScTools.ScriptAssembly.CodeGen;
@@ -19,6 +16,7 @@ namespace ScTools.ScriptLang.CodeGen
     {
         private readonly NativeDB? nativeDB;
         private readonly IList<ulong> nativeHashes = new List<ulong>(); // hashes are already translated
+        private readonly StringPagesBuilder strings = new StringPagesBuilder();
 
         private readonly List<byte[]> pages = new List<byte[]>(); // bytecode pages so far
         private uint length = 0; // byte count of all the code
@@ -96,6 +94,29 @@ namespace ScTools.ScriptLang.CodeGen
             Emit(inst.Item1, inst.Item2);
         }
 
+        public void EmitPushUInt(uint v)
+        {
+            // same as EmitPushInt but without allowing negative values with PUSH_CONST_S16
+            var inst = v switch
+            {
+                0xFFFFFFFF /* -1 */ => (Opcode.PUSH_CONST_M1, Array.Empty<Operand>()),
+                0 => (Opcode.PUSH_CONST_0, Array.Empty<Operand>()),
+                1 => (Opcode.PUSH_CONST_1, Array.Empty<Operand>()),
+                2 => (Opcode.PUSH_CONST_2, Array.Empty<Operand>()),
+                3 => (Opcode.PUSH_CONST_3, Array.Empty<Operand>()),
+                4 => (Opcode.PUSH_CONST_4, Array.Empty<Operand>()),
+                5 => (Opcode.PUSH_CONST_5, Array.Empty<Operand>()),
+                6 => (Opcode.PUSH_CONST_6, Array.Empty<Operand>()),
+                7 => (Opcode.PUSH_CONST_7, Array.Empty<Operand>()),
+                _ when v <= byte.MaxValue => (Opcode.PUSH_CONST_U8, new[] { new Operand(v) }),
+                _ when v <= short.MaxValue => (Opcode.PUSH_CONST_S16, new[] { new Operand(v) }),
+                _ when v <= 0x00FFFFFF => (Opcode.PUSH_CONST_U24, new[] { new Operand(v) }),
+                _ => (Opcode.PUSH_CONST_U32, new[] { new Operand(v) }),
+            };
+
+            Emit(inst.Item1, inst.Item2);
+        }
+
         public void EmitPushFloat(float v)
         {
             var inst = v switch
@@ -113,6 +134,13 @@ namespace ScTools.ScriptLang.CodeGen
             };
 
             Emit(inst.Item1, inst.Item2);
+        }
+
+        public void EmitPushString(string v)
+        {
+            uint strId = strings.AddOrGet(v);
+            EmitPushUInt(strId);
+            Emit(Opcode.STRING, ReadOnlySpan<Operand>.Empty);
         }
 
         private void EmitLocal(int location, Opcode opcodeU8, Opcode opcodeU16)
@@ -444,6 +472,10 @@ namespace ScTools.ScriptLang.CodeGen
         private void AddPage() => pages.Add(NewPage());
         private byte[] NewPage(uint size = Script.MaxPageLength) => new byte[size];
 
+
+        public ScriptPage<byte>[] GetStringsPages(out uint stringsLength)
+            => strings.ToPages(out stringsLength);
+        
         public ulong[] GetUsedNativesEncoded()
         {
             static ulong RotateHash(ulong hash, int index, uint codeLength)

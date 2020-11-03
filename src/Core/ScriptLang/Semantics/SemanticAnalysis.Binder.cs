@@ -190,6 +190,7 @@ namespace ScTools.ScriptLang.Semantics
                         case LiteralKind.Float:
                             return new BoundFloatLiteralExpression(float.Parse(node.ValueText));
                         case LiteralKind.String:
+                            return new BoundStringLiteralExpression(node.ValueText.Trim('"').Unescape());
                         case LiteralKind.Bool:
                             throw new NotImplementedException();
                         default:

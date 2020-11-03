@@ -41,11 +41,11 @@ namespace ScTools.ScriptLang.Semantics.Binding
             };
             sc.CodeLength = codeLength;
 
-            //sc.StringsPages = new ScriptPageArray<byte>
-            //{
-            //    Items = Strings.ToPages(out uint stringsLength),
-            //};
-            //sc.StringsLength = stringsLength;
+            sc.StringsPages = new ScriptPageArray<byte>
+            {
+                Items = code.GetStringsPages(out uint stringsLength),
+            };
+            sc.StringsLength = stringsLength;
 
             sc.Natives = code.GetUsedNativesEncoded();
             sc.NativesCount = (uint)sc.Natives.Length;
