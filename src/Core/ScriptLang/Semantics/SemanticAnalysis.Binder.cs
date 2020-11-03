@@ -90,6 +90,17 @@ namespace ScTools.ScriptLang.Semantics
                 ));
             }
 
+            public override void VisitVariableDeclarationStatement(VariableDeclarationStatement node) 
+            {
+                var varSymbol = Symbols.Lookup(node.Variable.Declaration.Name) as VariableSymbol;
+                Debug.Assert(varSymbol != null);
+
+                func!.Body.Add(new BoundVariableDeclarationStatement(
+                    varSymbol,
+                    Bind(node.Variable.Initializer)
+                ));
+            }
+
             public override void VisitArgumentList(ArgumentList node) => throw new NotSupportedException();
             public override void VisitArrayIndexer(ArrayIndexer node) => throw new NotSupportedException();
 
@@ -110,7 +121,6 @@ namespace ScTools.ScriptLang.Semantics
             public override void VisitProcedureNativeStatement(ProcedureNativeStatement node) { /* empty */ }
             public override void VisitFunctionNativeStatement(FunctionNativeStatement node) { /* empty */ }
             public override void VisitParameterList(ParameterList node) { /* empty */ }
-            public override void VisitVariableDeclarationStatement(VariableDeclarationStatement node) { /* empty */ }
             public override void VisitStaticVariableStatement(StaticVariableStatement node) { /* empty */ }
             public override void VisitStructFieldList(StructFieldList node) { /* empty */ }
             public override void VisitStructStatement(StructStatement node) { /* empty */ }

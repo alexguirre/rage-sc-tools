@@ -6,10 +6,32 @@ namespace ScTools.ScriptLang.Semantics.Binding
     using System.Diagnostics;
 
     using ScTools.ScriptLang.CodeGen;
+    using ScTools.ScriptLang.Semantics.Symbols;
 
     public abstract class BoundStatement : BoundNode
     {
         public abstract void Emit(ByteCodeBuilder code, BoundFunction parent);
+    }
+
+    public sealed class BoundVariableDeclarationStatement : BoundStatement
+    {
+        public VariableSymbol Var { get; }
+        public BoundExpression? Initializer { get; }
+
+        public BoundVariableDeclarationStatement(VariableSymbol var, BoundExpression? initializer)
+            => (Var, Initializer) = (var, initializer);
+
+        public override void Emit(ByteCodeBuilder code, BoundFunction parent)
+        {
+            Debug.Assert(Var.IsLocal, "Emit for static variables not implemented");
+            Debug.Assert(Var.Type.SizeOf == 1, "Emit for variable with size of type > 1 not implemented");
+
+            if (Initializer != null)
+            {
+                Initializer.EmitLoad(code);
+                code.EmitLocalStore(Var.Location);
+            }
+        }
     }
 
     public sealed class BoundAssignmentStatement : BoundStatement
