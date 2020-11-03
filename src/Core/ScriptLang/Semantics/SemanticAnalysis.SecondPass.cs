@@ -76,6 +76,16 @@ namespace ScTools.ScriptLang.Semantics
                 // empty to avoid visiting its ParameterList
             }
 
+            public override void VisitProcedureNativeStatement(ProcedureNativeStatement node)
+            {
+                // empty to avoid visiting its ParameterList
+            }
+
+            public override void VisitFunctionNativeStatement(FunctionNativeStatement node)
+            {
+                // empty to avoid visiting its ParameterList
+            }
+
             public override void VisitParameterList(ParameterList node)
             {
                 foreach (var p in node.Parameters)

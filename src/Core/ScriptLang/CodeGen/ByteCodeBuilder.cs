@@ -4,6 +4,10 @@ namespace ScTools.ScriptLang.CodeGen
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
+
+    using CodeWalker.GameFiles;
+    using CodeWalker.World;
 
     using ScTools.GameFiles;
     using ScTools.ScriptAssembly;
@@ -13,6 +17,9 @@ namespace ScTools.ScriptLang.CodeGen
     // TODO: ByteCodeBuilder is very similar to ScriptAssembly.CodeGen.CodeBuilder, refactor
     public sealed class ByteCodeBuilder : IByteCodeBuilder
     {
+        private readonly NativeDB? nativeDB;
+        private readonly IList<ulong> nativeHashes = new List<ulong>(); // hashes are already translated
+
         private readonly List<byte[]> pages = new List<byte[]>(); // bytecode pages so far
         private uint length = 0; // byte count of all the code
 
@@ -33,6 +40,11 @@ namespace ScTools.ScriptLang.CodeGen
 
         private bool inInstruction = false;
         private bool InFunction => currentFunction != null;
+
+        public ByteCodeBuilder(NativeDB? nativeDB)
+        {
+            this.nativeDB = nativeDB;
+        }
 
         public void BeginFunction(string function)
         {
@@ -119,6 +131,48 @@ namespace ScTools.ScriptLang.CodeGen
         public void EmitLocalAddr(int location) => EmitLocal(location, Opcode.LOCAL_U8, Opcode.LOCAL_U16);
         public void EmitLocalLoad(int location) => EmitLocal(location, Opcode.LOCAL_U8_LOAD, Opcode.LOCAL_U16_LOAD);
         public void EmitLocalStore(int location) => EmitLocal(location, Opcode.LOCAL_U8_STORE, Opcode.LOCAL_U16_STORE);
+
+        public void EmitCall(FunctionSymbol function) => Emit(Opcode.CALL, new[] { new Operand(function.Name, OperandType.Identifier) });
+
+        public void EmitNative(FunctionSymbol function)
+        {
+            Debug.Assert(nativeDB != null);
+            Debug.Assert(function.IsNative);
+
+            var hash = nativeDB.FindOriginalHash(function.Name) ?? throw new InvalidOperationException($"Unknown native '{function.Name}'");
+            var translatedHash = nativeDB.TranslateHash(hash, GameBuild.Latest);
+            if (translatedHash == 0)
+            {
+                throw new InvalidOperationException($"Unknown native hash '{hash:X16}' ('{function.Name}')");
+            }
+
+            byte paramCount = (byte)function.Type.Parameters.Sum(p => p.SizeOf);
+            byte returnValueCount = (byte)(function.Type.ReturnType?.SizeOf ?? 0);
+            ushort idx = IndexOfNative(translatedHash);
+            Emit(Opcode.NATIVE, new[] { new Operand(paramCount), new Operand(returnValueCount), new Operand(idx) });
+
+        }
+
+        private ushort IndexOfNative(ulong translatedHash)
+        {
+            for (int i = 0; i < nativeHashes.Count; i++)
+            {
+                if (nativeHashes[i] == translatedHash)
+                {
+                    return (ushort)i;
+                }
+            }
+
+            var index = nativeHashes.Count;
+            nativeHashes.Add(translatedHash);
+
+            if (nativeHashes.Count > ushort.MaxValue)
+            {
+                throw new InvalidOperationException("Too many natives");
+            }
+
+            return (ushort)index;
+        }
 
         public void EmitPrologue(FunctionSymbol function)
         {
@@ -389,6 +443,17 @@ namespace ScTools.ScriptLang.CodeGen
 
         private void AddPage() => pages.Add(NewPage());
         private byte[] NewPage(uint size = Script.MaxPageLength) => new byte[size];
+
+        public ulong[] GetUsedNativesEncoded()
+        {
+            static ulong RotateHash(ulong hash, int index, uint codeLength)
+            {
+                byte rotate = (byte)(((uint)index + codeLength) & 0x3F);
+                return hash >> rotate | hash << (64 - rotate);
+            }
+
+            return nativeHashes.Select((h, i) => RotateHash(h, i, length)).ToArray();
+        }
 
         #region IByteCodeBuilder Implementation
         string? IByteCodeBuilder.Label => currentLabel;

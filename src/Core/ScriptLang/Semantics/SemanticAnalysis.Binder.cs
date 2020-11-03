@@ -107,6 +107,8 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitProcedurePrototypeStatement(ProcedurePrototypeStatement node) { /* empty */ }
             public override void VisitFunctionPrototypeStatement(FunctionPrototypeStatement node) { /* empty */ }
+            public override void VisitProcedureNativeStatement(ProcedureNativeStatement node) { /* empty */ }
+            public override void VisitFunctionNativeStatement(FunctionNativeStatement node) { /* empty */ }
             public override void VisitParameterList(ParameterList node) { /* empty */ }
             public override void VisitVariableDeclarationStatement(VariableDeclarationStatement node) { /* empty */ }
             public override void VisitStaticVariableStatement(StaticVariableStatement node) { /* empty */ }

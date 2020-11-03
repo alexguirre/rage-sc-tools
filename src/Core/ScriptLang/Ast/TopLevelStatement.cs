@@ -47,6 +47,19 @@ namespace ScTools.ScriptLang.Ast
         public override string ToString() => $"PROTO PROC {Name}{ParameterList}";
     }
 
+    public sealed class ProcedureNativeStatement : TopLevelStatement
+    {
+        public string Name { get; }
+        public ParameterList ParameterList { get; }
+
+        public override IEnumerable<Node> Children { get { yield return ParameterList; } }
+
+        public ProcedureNativeStatement(string name, ParameterList parameterList, SourceRange source) : base(source)
+            => (Name, ParameterList) = (name, parameterList);
+
+        public override string ToString() => $"NATIVE PROC {Name}{ParameterList}";
+    }
+
     public sealed class FunctionStatement : TopLevelStatement
     {
         public string Name { get; }
@@ -74,6 +87,20 @@ namespace ScTools.ScriptLang.Ast
             => (Name, ReturnType, ParameterList) = (name, returnType, parameterList);
 
         public override string ToString() => $"PROTO FUNC {ReturnType} {Name}{ParameterList}";
+    }
+
+    public sealed class FunctionNativeStatement : TopLevelStatement
+    {
+        public string Name { get; }
+        public Type ReturnType { get; }
+        public ParameterList ParameterList { get; }
+
+        public override IEnumerable<Node> Children { get { yield return ReturnType; yield return ParameterList; } }
+
+        public FunctionNativeStatement(string name, Type returnType, ParameterList parameterList, SourceRange source) : base(source)
+            => (Name, ReturnType, ParameterList) = (name, returnType, parameterList);
+
+        public override string ToString() => $"NATIVE FUNC {ReturnType} {Name}{ParameterList}";
     }
 
     public sealed class StructStatement : TopLevelStatement

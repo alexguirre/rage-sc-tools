@@ -12,7 +12,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
         public int StaticVarsTotalSize { get; set; } = 0;
         public IList<BoundFunction> Functions { get; } = new List<BoundFunction>();
 
-        public Script Assemble()
+        public Script Assemble(NativeDB? nativeDB)
         {
             var sc = new Script
             {
@@ -28,7 +28,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
             };
 
 
-            var code = new ByteCodeBuilder();
+            var code = new ByteCodeBuilder(nativeDB);
             foreach (var func in Functions)
             {
                 func.Emit(code);
@@ -47,14 +47,8 @@ namespace ScTools.ScriptLang.Semantics.Binding
             //};
             //sc.StringsLength = stringsLength;
 
-            //static ulong RotateHash(ulong hash, int index, uint codeLength)
-            //{
-            //    byte rotate = (byte)(((uint)index + codeLength) & 0x3F);
-            //    return hash >> rotate | hash << (64 - rotate);
-            //}
-
-            //sc.Natives = NativeHashes.Select((h, i) => RotateHash(h, i, codeLength)).ToArray();
-            //sc.NativesCount = (uint)sc.Natives.Length;
+            sc.Natives = code.GetUsedNativesEncoded();
+            sc.NativesCount = (uint)sc.Natives.Length;
 
             return sc;
         }

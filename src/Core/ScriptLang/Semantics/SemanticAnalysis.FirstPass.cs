@@ -151,12 +151,12 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitFunctionStatement(FunctionStatement node)
             {
-                Symbols.Add(new FunctionSymbol(node.Name, node.Source, CreateUnresolvedFunctionType(node.ReturnType, node.ParameterList.Parameters)));
+                Symbols.Add(new FunctionSymbol(node.Name, node.Source, CreateUnresolvedFunctionType(node.ReturnType, node.ParameterList.Parameters), isNative: false));
             }
 
             public override void VisitProcedureStatement(ProcedureStatement node)
             {
-                Symbols.Add(new FunctionSymbol(node.Name, node.Source, CreateUnresolvedFunctionType(null, node.ParameterList.Parameters)));
+                Symbols.Add(new FunctionSymbol(node.Name, node.Source, CreateUnresolvedFunctionType(null, node.ParameterList.Parameters), isNative: false));
             }
 
             public override void VisitFunctionPrototypeStatement(FunctionPrototypeStatement node)
@@ -171,6 +171,18 @@ namespace ScTools.ScriptLang.Semantics
                 var func = CreateUnresolvedFunctionType(null, node.ParameterList.Parameters);
 
                 Symbols.Add(new TypeSymbol(node.Name, node.Source, func));
+            }
+
+            public override void VisitFunctionNativeStatement(FunctionNativeStatement node)
+            {
+                // TODO: check that native exists, if not report it in diagnostics
+                Symbols.Add(new FunctionSymbol(node.Name, node.Source, CreateUnresolvedFunctionType(node.ReturnType, node.ParameterList.Parameters), isNative: true));
+            }
+
+            public override void VisitProcedureNativeStatement(ProcedureNativeStatement node)
+            {
+                // TODO: check that native exists, if not report it in diagnostics
+                Symbols.Add(new FunctionSymbol(node.Name, node.Source, CreateUnresolvedFunctionType(null, node.ParameterList.Parameters), isNative: true));
             }
 
             public override void VisitStaticVariableStatement(StaticVariableStatement node)

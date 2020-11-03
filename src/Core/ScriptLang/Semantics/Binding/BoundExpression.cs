@@ -127,7 +127,14 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
         public override void EmitCall(ByteCodeBuilder code)
         {
-            code.Emit(Opcode.CALL, new[] { new Operand(Function.Name, OperandType.Identifier) });
+            if (Function.IsNative)
+            {
+                code.EmitNative(Function);
+            }
+            else
+            {
+                code.EmitCall(Function);
+            }
         }
     }
 

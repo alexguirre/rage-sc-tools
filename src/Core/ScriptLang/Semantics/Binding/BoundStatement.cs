@@ -34,7 +34,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
         public BoundInvocationStatement(BoundExpression callee, IEnumerable<BoundExpression> arguments)
         {
-            Debug.Assert(callee.Type is FunctionType f && f.ReturnType != null);
+            Debug.Assert(callee.Type is FunctionType f);
 
             Callee = callee;
             Arguments = arguments.ToImmutableArray();

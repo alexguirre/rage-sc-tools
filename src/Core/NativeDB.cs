@@ -71,6 +71,8 @@ namespace ScTools
         b1737 = 20,
         b1868 = 21,
         b2060 = 22,
+
+        Latest = b2060,
     }
 
     public sealed class NativeDB
@@ -99,6 +101,19 @@ namespace ScTools
             }
 
             return 0;
+        }
+
+        public ulong? FindOriginalHash(string name)
+        {
+            foreach (var def in commands)
+            {
+                if (def.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+                {
+                    return def.Hash;
+                }
+            }
+
+            return null;
         }
 
         public void ForEachCommand(ForEachCommandCallback cb)

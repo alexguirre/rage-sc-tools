@@ -58,6 +58,17 @@ namespace ScTools.ScriptLang.Ast
                                               (ParameterList)context.parameterList().Accept(this),
                                               Source(context));
 
+        public override Node VisitProcedureNativeStatement([NotNull] ScLangParser.ProcedureNativeStatementContext context)
+            => new ProcedureNativeStatement(context.identifier().GetText(),
+                                            (ParameterList)context.parameterList().Accept(this),
+                                            Source(context));
+
+        public override Node VisitFunctionNativeStatement([NotNull] ScLangParser.FunctionNativeStatementContext context)
+            => new FunctionNativeStatement(context.identifier().GetText(),
+                                           (Type)context.returnType.Accept(this),
+                                           (ParameterList)context.parameterList().Accept(this),
+                                           Source(context));
+
         public override Node VisitStructStatement([NotNull] ScLangParser.StructStatementContext context)
             => new StructStatement(context.identifier().GetText(),
                                    (StructFieldList)context.structFieldList().Accept(this),

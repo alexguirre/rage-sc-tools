@@ -26,7 +26,7 @@ namespace ScTools.ScriptLang
         public string FilePath { get; }
         public Script CompiledScript { get; }
 
-        private Module(TextReader input, string filePath)
+        private Module(TextReader input, string filePath, NativeDB? nativeDB)
         {
             Diagnostics = new DiagnosticsReport();
             FilePath = filePath;
@@ -44,7 +44,7 @@ namespace ScTools.ScriptLang
                 DoSyntaxCheck();
                 (SymbolTable, BoundModule) = DoSemanticAnalysis();
                 CompiledScript = Diagnostics.HasErrors ? CreateEmptyScript() :
-                                                         Compile();
+                                                         Compile(nativeDB);
             }
         }
 
@@ -76,10 +76,10 @@ namespace ScTools.ScriptLang
             return (symbols, boundModule);
         }
 
-        private Script Compile()
+        private Script Compile(NativeDB? nativeDB)
         {
             Debug.Assert(!Diagnostics.HasErrors);
-            return BoundModule.Assemble();
+            return BoundModule.Assemble(nativeDB);
         }
 
         private static Script CreateEmptyScript()
@@ -97,8 +97,8 @@ namespace ScTools.ScriptLang
 
         private const string EmptyScriptName = "unknown";
 
-        public static Module Compile(TextReader input, string filePath = "tmp.sc")
-            => new Module(input, filePath);
+        public static Module Compile(TextReader input, string filePath = "tmp.sc", NativeDB? nativeDB = null)
+            => new Module(input, filePath, nativeDB);
 
 
         /// <summary>

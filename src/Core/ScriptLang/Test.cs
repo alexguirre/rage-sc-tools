@@ -65,15 +65,27 @@
         const string Code = @"
 SCRIPT_NAME test
 
+NATIVE PROC WAIT(INT ms)
+NATIVE FUNC INT GET_GAME_TIMER()
+NATIVE PROC BEGIN_TEXT_COMMAND_DISPLAY_TEXT(STRING text)
+NATIVE PROC END_TEXT_COMMAND_DISPLAY_TEXT(FLOAT x, FLOAT y, INT p2)
+NATIVE PROC ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(STRING text)
+NATIVE PROC ADD_TEXT_COMPONENT_INTEGER(INT value)
+
 PROC MAIN()
     INT a = 10
     INT b = 5
 
-    a = a + b
-    b = GET_VALUE() + a
+    b = ADD(GET_VALUE(), ADD(a, b))
 
     GET_VALUE()
+
+    WAIT(GET_GAME_TIMER() - b)
 ENDPROC
+
+FUNC INT ADD(INT a, INT b)
+    RETURN a + b
+ENDFUNC
 
 FUNC INT GET_VALUE()
     RETURN 4
@@ -82,8 +94,14 @@ ENDFUNC
 
         public static void DoTest()
         {
+            NativeDB.Fetch(new Uri("https://raw.githubusercontent.com/alloc8or/gta5-nativedb-data/master/natives.json"), "ScriptHookV_1.0.2060.1.zip")
+                .ContinueWith(t => File.WriteAllText("nativedb.json", t.Result.ToJson()))
+                .Wait();
+
+            var nativeDB = NativeDB.FromJson(File.ReadAllText("nativedb.json"));
+
             using var reader = new StringReader(Code);
-            var module = Module.Compile(reader);
+            var module = Module.Compile(reader, nativeDB: nativeDB);
 
             var d = module.Diagnostics;
             var symbols = module.SymbolTable;

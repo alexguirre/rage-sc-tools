@@ -18,6 +18,9 @@ topLevelStatement
     | K_PROTO K_PROC identifier parameterList                   #procedurePrototypeStatement
     | K_PROTO K_FUNC returnType=type identifier parameterList   #functionPrototypeStatement
 
+    | K_NATIVE K_PROC identifier parameterList                   #procedureNativeStatement
+    | K_NATIVE K_FUNC returnType=type identifier parameterList   #functionNativeStatement
+
     | K_STRUCT identifier EOL
       structFieldList
       K_ENDSTRUCT                                               #structStatement
@@ -131,6 +134,7 @@ K_ENDFUNC : E N D F U N C;
 K_STRUCT : S T R U C T;
 K_ENDSTRUCT : E N D S T R U C T;
 K_PROTO : P R O T O;
+K_NATIVE : N A T I V E;
 K_TRUE : T R U E;
 K_FALSE : F A L S E;
 K_NOT : N O T;
