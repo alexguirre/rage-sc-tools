@@ -95,7 +95,7 @@ PROC MAIN()
         ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(""Some\nstring"")
         END_TEXT_COMMAND_DISPLAY_TEXT(0.5, y, 0)
 
-        y = (y + (0.5 * (TIMESTEP()))) % 1.0
+        y = (y + (0.5 * TIMESTEP())) % 1.0
 
         IF c
             BEGIN_TEXT_COMMAND_DISPLAY_TEXT(""STRING"")

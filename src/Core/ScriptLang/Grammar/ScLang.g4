@@ -52,6 +52,8 @@ statementBlock
 
 expression
     : '(' expression ')'                                        #parenthesizedExpression
+    | expression argumentList                                   #invocationExpression
+    | expression arrayIndexer                                   #arrayAccessExpression
     | op=(K_NOT | '-') expression                               #unaryExpression
     | left=expression op=('*' | '/' | '%') right=expression     #binaryExpression
     | left=expression op=('+' | '-') right=expression           #binaryExpression
@@ -61,8 +63,6 @@ expression
     | '<<' expression (',' expression)* '>>'                    #aggregateExpression
     | identifier                                                #identifierExpression
     | expression '.' identifier                                 #memberAccessExpression
-    | expression arrayIndexer                                   #arrayAccessExpression
-    | expression argumentList                                   #invocationExpression
     | (integer | float | string | bool)                         #literalExpression
     ;
 
