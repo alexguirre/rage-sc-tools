@@ -90,18 +90,38 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
         public override void EmitLoad(ByteCodeBuilder code)
         {
-            Debug.Assert(Var.IsLocal, "EmitLoad for static variables not implemented");
             Debug.Assert(Type.SizeOf == 1, "EmitLoad for variable with size of type > 1 not implemented");
 
-            code.EmitLocalLoad(Var.Location);
+            if (Var.IsLocal)
+            {
+                code.EmitLocalLoad(Var.Location);
+            }
+            else if (Var.IsStatic)
+            {
+                code.EmitStaticLoad(Var.Location);
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
         }
 
         public override void EmitStore(ByteCodeBuilder code)
         {
-            Debug.Assert(Var.IsLocal, "EmitStore for static variables not implemented");
             Debug.Assert(Type.SizeOf == 1, "EmitStore for variable with size of type > 1 not implemented");
 
-            code.EmitLocalStore(Var.Location);
+            if (Var.IsLocal)
+            {
+                code.EmitLocalStore(Var.Location);
+            }
+            else if (Var.IsStatic)
+            {
+                code.EmitStaticStore(Var.Location);
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
         }
 
         public override void EmitCall(ByteCodeBuilder code)

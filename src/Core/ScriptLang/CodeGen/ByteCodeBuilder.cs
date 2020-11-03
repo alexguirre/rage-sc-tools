@@ -143,22 +143,29 @@ namespace ScTools.ScriptLang.CodeGen
             Emit(Opcode.STRING, ReadOnlySpan<Operand>.Empty);
         }
 
-        private void EmitLocal(int location, Opcode opcodeU8, Opcode opcodeU16)
+        private void EmitVarInst(int location, Opcode opcodeU8, Opcode opcodeU16, bool local)
         {
             var v = unchecked((uint)location);
             var inst = v switch
             {
                 var l when l >= 0 && l <= 0x00FF => (opcodeU8, new[] { new Operand(v) }),
                 var l when l >= 0 && l <= 0xFFFF => (opcodeU16, new[] { new Operand(v) }),
-                _ => throw new InvalidOperationException($"Local at '{location}' out of bounds")
+                _ => throw new InvalidOperationException($"{(local ? "Local" : "Static")} at '{location}' out of bounds")
             };
 
             Emit(inst.Item1, inst.Item2);
         }
 
+        private void EmitLocal(int location, Opcode opcodeU8, Opcode opcodeU16) => EmitVarInst(location, opcodeU8, opcodeU16, true);
+        private void EmitStatic(int location, Opcode opcodeU8, Opcode opcodeU16) => EmitVarInst(location, opcodeU8, opcodeU16, false);
+
         public void EmitLocalAddr(int location) => EmitLocal(location, Opcode.LOCAL_U8, Opcode.LOCAL_U16);
         public void EmitLocalLoad(int location) => EmitLocal(location, Opcode.LOCAL_U8_LOAD, Opcode.LOCAL_U16_LOAD);
         public void EmitLocalStore(int location) => EmitLocal(location, Opcode.LOCAL_U8_STORE, Opcode.LOCAL_U16_STORE);
+
+        public void EmitStaticAddr(int location) => EmitStatic(location, Opcode.STATIC_U8, Opcode.STATIC_U16);
+        public void EmitStaticLoad(int location) => EmitStatic(location, Opcode.STATIC_U8_LOAD, Opcode.STATIC_U16_LOAD);
+        public void EmitStaticStore(int location) => EmitStatic(location, Opcode.STATIC_U8_STORE, Opcode.STATIC_U16_STORE);
 
         public void EmitCall(FunctionSymbol function) => Emit(Opcode.CALL, new[] { new Operand(function.Name, OperandType.Identifier) });
 

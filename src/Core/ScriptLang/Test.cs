@@ -72,23 +72,30 @@ NATIVE PROC BEGIN_TEXT_COMMAND_DISPLAY_TEXT(STRING text)
 NATIVE PROC END_TEXT_COMMAND_DISPLAY_TEXT(FLOAT x, FLOAT y, INT p2)
 NATIVE PROC ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(STRING text)
 NATIVE PROC ADD_TEXT_COMPONENT_INTEGER(INT value)
+NATIVE FUNC FLOAT TIMESTEP()
+
+BOOL c // = TRUE <-- initializers not supported
 
 PROC MAIN()
     INT a = 10
     INT b = 5
-    BOOL c = TRUE
+    c = TRUE
     BOOL d = FALSE
 
     b = ADD(GET_VALUE(), ADD(a, b))
 
     GET_VALUE()
 
+    FLOAT y = 0.0
+
     WHILE c
         WAIT(0)
 
         BEGIN_TEXT_COMMAND_DISPLAY_TEXT(""STRING"")
         ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(""Some\nstring"")
-        END_TEXT_COMMAND_DISPLAY_TEXT(0.5, 0.25, 0)
+        END_TEXT_COMMAND_DISPLAY_TEXT(0.5, y, 0)
+
+        y = (y + (0.5 * (TIMESTEP()))) % 1.0
 
         IF c
             BEGIN_TEXT_COMMAND_DISPLAY_TEXT(""STRING"")
@@ -148,8 +155,10 @@ ENDFUNC
             Console.WriteLine();
             new Dumper(module.CompiledScript).Dump(Console.Out, true, true, true, true, true);
 
-            YscFile ysc = new YscFile();
-            ysc.Script = module.CompiledScript;
+            YscFile ysc = new YscFile
+            {
+                Script = module.CompiledScript
+            };
 
             string outputPath = "test_script.ysc";
             byte[] data = ysc.Save(Path.GetFileName(outputPath));

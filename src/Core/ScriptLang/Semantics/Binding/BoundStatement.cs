@@ -20,11 +20,18 @@ namespace ScTools.ScriptLang.Semantics.Binding
         public BoundExpression? Initializer { get; }
 
         public BoundVariableDeclarationStatement(VariableSymbol var, BoundExpression? initializer)
-            => (Var, Initializer) = (var, initializer);
+        {
+            if (var.Kind != VariableKind.Local)
+            {
+                throw new ArgumentException("Only local variables can have variable declaration statements");
+            }
+
+            Var = var;
+            Initializer = initializer;
+        }
 
         public override void Emit(ByteCodeBuilder code, BoundFunction parent)
         {
-            Debug.Assert(Var.IsLocal, "Emit for static variables not implemented");
             Debug.Assert(Var.Type.SizeOf == 1, "Emit for variable with size of type > 1 not implemented");
 
             if (Initializer != null)

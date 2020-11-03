@@ -11,7 +11,8 @@ namespace ScTools.ScriptLang.Semantics.Symbols
 
         public bool IsAllocated => Location != -1;
 
-        public bool IsLocal => Kind != VariableKind.Static;
+        public bool IsLocal => Kind == VariableKind.Local || Kind == VariableKind.LocalArgument;
+        public bool IsStatic => Kind == VariableKind.Static;
 
         public VariableSymbol(string name, SourceRange source, Type type, VariableKind kind)
             => (Name, Source, Type, Kind) = (name, source, type, kind);

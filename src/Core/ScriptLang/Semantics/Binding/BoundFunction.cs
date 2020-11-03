@@ -2,9 +2,7 @@
 namespace ScTools.ScriptLang.Semantics.Binding
 {
     using System.Collections.Generic;
-    using System.Diagnostics;
 
-    using ScTools.ScriptAssembly;
     using ScTools.ScriptLang.CodeGen;
     using ScTools.ScriptLang.Semantics.Symbols;
 
@@ -22,7 +20,6 @@ namespace ScTools.ScriptLang.Semantics.Binding
         {
             code.BeginFunction(Function.Name);
             code.EmitPrologue(this.Function);
-            // TODO: missing local variables initializers
 
             foreach (var stmt in Body)
             {
