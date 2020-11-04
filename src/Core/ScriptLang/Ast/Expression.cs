@@ -68,6 +68,8 @@ namespace ScTools.ScriptLang.Ast
             BinaryOperator.GreaterOrEqual => ">=",
             BinaryOperator.Less => "<",
             BinaryOperator.LessOrEqual => "<=",
+            BinaryOperator.LogicalAnd => "AND",
+            BinaryOperator.LogicalOr => "OR",
             _ => throw new NotImplementedException()
         };
 
@@ -103,6 +105,9 @@ namespace ScTools.ScriptLang.Ast
         GreaterOrEqual,
         Less,
         LessOrEqual,
+
+        LogicalAnd,
+        LogicalOr,
     }
 
     public sealed class AggregateExpression : Expression

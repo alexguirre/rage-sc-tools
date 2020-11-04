@@ -62,6 +62,8 @@ expression
     | left=expression op='|' right=expression                       #binaryExpression
     | left=expression op=('<' | '>' | '<=' | '>=') right=expression #binaryExpression
     | left=expression op=('==' | '!=') right=expression             #binaryExpression
+    | left=expression op=K_AND right=expression                     #binaryExpression
+    | left=expression op=K_OR right=expression                      #binaryExpression
     | '<<' expression (',' expression)* '>>'                        #aggregateExpression
     | identifier                                                    #identifierExpression
     | expression '.' identifier                                     #memberAccessExpression
@@ -140,6 +142,8 @@ K_NATIVE : N A T I V E;
 K_TRUE : T R U E;
 K_FALSE : F A L S E;
 K_NOT : N O T;
+K_AND : A N D;
+K_OR : O R;
 K_IF : I F;
 K_ELSE : E L S E;
 K_ENDIF : E N D I F;

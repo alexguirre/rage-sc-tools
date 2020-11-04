@@ -42,54 +42,79 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
         public override void EmitLoad(ByteCodeBuilder code)
         {
-            Left.EmitLoad(code);
-            Right.EmitLoad(code);
-            var isFloat = Type is BasicType { TypeCode: BasicTypeCode.Float };
-            switch (Op)
+            var operandsType = Left.Type;
+            if (operandsType is BasicType { TypeCode: BasicTypeCode.Float } ||
+                operandsType is BasicType { TypeCode: BasicTypeCode.Int })
             {
-                case Ast.BinaryOperator.Add:
-                    code.Emit(isFloat ? Opcode.FADD : Opcode.IADD);
-                    break;
-                case Ast.BinaryOperator.Subtract:
-                    code.Emit(isFloat ? Opcode.FSUB : Opcode.ISUB);
-                    break;
-                case Ast.BinaryOperator.Multiply:
-                    code.Emit(isFloat ? Opcode.FMUL : Opcode.IMUL);
-                    break;
-                case Ast.BinaryOperator.Divide:
-                    code.Emit(isFloat ? Opcode.FDIV : Opcode.IDIV);
-                    break;
-                case Ast.BinaryOperator.Modulo:
-                    code.Emit(isFloat ? Opcode.FMOD : Opcode.IMOD);
-                    break;
-                case Ast.BinaryOperator.Or:
-                    code.Emit(Opcode.IOR);
-                    break;
-                case Ast.BinaryOperator.And:
-                    code.Emit(Opcode.IAND);
-                    break;
-                case Ast.BinaryOperator.Xor:
-                    code.Emit(Opcode.IXOR);
-                    break;
-                case Ast.BinaryOperator.Equal:
-                    code.Emit(isFloat ? Opcode.FEQ : Opcode.IEQ);
-                    break;
-                case Ast.BinaryOperator.NotEqual:
-                    code.Emit(isFloat ? Opcode.FNE : Opcode.INE);
-                    break;
-                case Ast.BinaryOperator.Greater:
-                    code.Emit(isFloat ? Opcode.FGT : Opcode.IGT);
-                    break;
-                case Ast.BinaryOperator.GreaterOrEqual:
-                    code.Emit(isFloat ? Opcode.FGE : Opcode.IGE);
-                    break;
-                case Ast.BinaryOperator.Less:
-                    code.Emit(isFloat ? Opcode.FLT : Opcode.ILT);
-                    break;
-                case Ast.BinaryOperator.LessOrEqual:
-                    code.Emit(isFloat ? Opcode.FLE : Opcode.ILE);
-                    break;
-                default: throw new NotImplementedException();
+                Left.EmitLoad(code);
+                Right.EmitLoad(code);
+                var isFloat = Type is BasicType { TypeCode: BasicTypeCode.Float };
+                switch (Op)
+                {
+                    case Ast.BinaryOperator.Add:
+                        code.Emit(isFloat ? Opcode.FADD : Opcode.IADD);
+                        break;
+                    case Ast.BinaryOperator.Subtract:
+                        code.Emit(isFloat ? Opcode.FSUB : Opcode.ISUB);
+                        break;
+                    case Ast.BinaryOperator.Multiply:
+                        code.Emit(isFloat ? Opcode.FMUL : Opcode.IMUL);
+                        break;
+                    case Ast.BinaryOperator.Divide:
+                        code.Emit(isFloat ? Opcode.FDIV : Opcode.IDIV);
+                        break;
+                    case Ast.BinaryOperator.Modulo:
+                        code.Emit(isFloat ? Opcode.FMOD : Opcode.IMOD);
+                        break;
+                    case Ast.BinaryOperator.Or:
+                        code.Emit(Opcode.IOR);
+                        break;
+                    case Ast.BinaryOperator.And:
+                        code.Emit(Opcode.IAND);
+                        break;
+                    case Ast.BinaryOperator.Xor:
+                        code.Emit(Opcode.IXOR);
+                        break;
+                    case Ast.BinaryOperator.Equal:
+                        code.Emit(isFloat ? Opcode.FEQ : Opcode.IEQ);
+                        break;
+                    case Ast.BinaryOperator.NotEqual:
+                        code.Emit(isFloat ? Opcode.FNE : Opcode.INE);
+                        break;
+                    case Ast.BinaryOperator.Greater:
+                        code.Emit(isFloat ? Opcode.FGT : Opcode.IGT);
+                        break;
+                    case Ast.BinaryOperator.GreaterOrEqual:
+                        code.Emit(isFloat ? Opcode.FGE : Opcode.IGE);
+                        break;
+                    case Ast.BinaryOperator.Less:
+                        code.Emit(isFloat ? Opcode.FLT : Opcode.ILT);
+                        break;
+                    case Ast.BinaryOperator.LessOrEqual:
+                        code.Emit(isFloat ? Opcode.FLE : Opcode.ILE);
+                        break;
+                    default: throw new NotImplementedException();
+                }
+            }
+            else if (operandsType is BasicType { TypeCode: BasicTypeCode.Bool })
+            {
+                // TODO: implement short-circuiting for AND/OR operators
+                Left.EmitLoad(code);
+                Right.EmitLoad(code);
+                switch (Op)
+                {
+                    case Ast.BinaryOperator.LogicalAnd:
+                        code.Emit(Opcode.IAND);
+                        break;
+                    case Ast.BinaryOperator.LogicalOr:
+                        code.Emit(Opcode.IOR);
+                        break;
+                    default: throw new NotImplementedException();
+                }
+            }
+            else
+            {
+                throw new NotSupportedException();
             }
         }
 

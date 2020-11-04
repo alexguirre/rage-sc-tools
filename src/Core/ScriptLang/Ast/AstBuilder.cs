@@ -140,6 +140,8 @@ namespace ScTools.ScriptLang.Ast
                 ScLangLexer.OP_GREATER_OR_EQUAL => BinaryOperator.GreaterOrEqual,
                 ScLangLexer.OP_LESS => BinaryOperator.Less,
                 ScLangLexer.OP_LESS_OR_EQUAL => BinaryOperator.LessOrEqual,
+                ScLangLexer.K_AND => BinaryOperator.LogicalAnd,
+                ScLangLexer.K_OR => BinaryOperator.LogicalOr,
                 _ => throw new NotImplementedException()
             },
             (Expression)context.left.Accept(this),
