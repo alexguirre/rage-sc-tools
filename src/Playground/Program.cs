@@ -46,21 +46,25 @@ NATIVE PROC ADD_TEXT_COMPONENT_INTEGER(INT value)
 NATIVE FUNC FLOAT TIMESTEP()
 NATIVE FUNC BOOL IS_CONTROL_PRESSED(INT padIndex, INT control)
 
+STRUCT SCRIPT_DATA
+    INT fib0 // = 0
+    INT fib1 // = 1
+    INT curr_index
+    INT curr_value
+    INT last_time
+ENDSTRUCT
+
 // TODO: support static variables initializers
-INT fib0 // = 0
-INT fib1 // = 1
-INT curr_index
-INT curr_value
-INT last_time
+SCRIPT_DATA data
 
 PROC MAIN()
-    fib0 = 0
-    fib1 = 1
-    curr_index = 0
-    curr_value = 0
-    last_time = 0
+    data.fib0 = 0
+    data.fib1 = 1
+    data.curr_index = 0
+    data.curr_value = 0
+    data.last_time = 0
 
-    last_time = GET_GAME_TIMER()
+    data.last_time = GET_GAME_TIMER()
     WHILE TRUE
         WAIT(0)
 
@@ -71,13 +75,13 @@ PROC MAIN()
             END_TEXT_COMMAND_DISPLAY_TEXT(0.5, 0.175, 0)
 
             BEGIN_TEXT_COMMAND_DISPLAY_TEXT(""NUMBER"")
-            ADD_TEXT_COMPONENT_INTEGER(-curr_value)
+            ADD_TEXT_COMPONENT_INTEGER(-data.curr_value)
             END_TEXT_COMMAND_DISPLAY_TEXT(0.5, 0.25, 0)
         ENDIF
 
-        IF GET_GAME_TIMER() - last_time >= 2000
-            curr_value = NEXT_FIB()
-            last_time = GET_GAME_TIMER()
+        IF GET_GAME_TIMER() - data.last_time >= 2000
+            data.curr_value = NEXT_FIB()
+            data.last_time = GET_GAME_TIMER()
         ENDIF
 
     ENDWHILE
@@ -86,15 +90,15 @@ ENDPROC
 FUNC INT NEXT_FIB()
     INT result
 
-    IF curr_index < 1
+    IF data.curr_index < 1
         result = 0
     ELSE
-        result = fib0 + fib1
-        fib0 = fib1
-        fib1 = result
+        result = data.fib0 + data.fib1
+        data.fib0 = data.fib1
+        data.fib1 = result
     ENDIF
 
-    curr_index = curr_index + 1
+    data.curr_index = data.curr_index + 1
     RETURN result
 ENDFUNC
 ";
@@ -109,6 +113,7 @@ ENDFUNC
 
             using var reader = new StringReader(Code);
             var module = Module.Compile(reader, nativeDB: nativeDB);
+            File.WriteAllText("test_script.ast.txt", module.GetAstDotGraph());
 
             var d = module.Diagnostics;
             var symbols = module.SymbolTable;

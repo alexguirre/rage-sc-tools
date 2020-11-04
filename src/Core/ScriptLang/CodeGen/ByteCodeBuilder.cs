@@ -167,6 +167,24 @@ namespace ScTools.ScriptLang.CodeGen
         public void EmitStaticLoad(int location) => EmitStatic(location, Opcode.STATIC_U8_LOAD, Opcode.STATIC_U16_LOAD);
         public void EmitStaticStore(int location) => EmitStatic(location, Opcode.STATIC_U8_STORE, Opcode.STATIC_U16_STORE);
 
+        private void EmitOffsetInst(int offset, Opcode opcodeU8, Opcode opcodeS16)
+        {
+            var v = unchecked((uint)offset);
+            var inst = v switch
+            {
+                var l when l <= byte.MaxValue => (opcodeU8, new[] { new Operand(v) }),
+                var l when l <= short.MaxValue => (opcodeS16, new[] { new Operand(v) }),
+                // TODO: use IOFFSET for offsets bigger than short.MaxValue
+                _ => throw new InvalidOperationException($"{offset} out of bounds")
+            };
+
+            Emit(inst.Item1, inst.Item2);
+        }
+
+        public void EmitOffsetAddr(int offset) => EmitOffsetInst(offset, Opcode.IOFFSET_U8, Opcode.IOFFSET_S16);
+        public void EmitOffsetLoad(int offset) => EmitOffsetInst(offset, Opcode.IOFFSET_U8_LOAD, Opcode.IOFFSET_S16_LOAD);
+        public void EmitOffsetStore(int offset) => EmitOffsetInst(offset, Opcode.IOFFSET_U8_STORE, Opcode.IOFFSET_S16_STORE);
+
         public void EmitCall(FunctionSymbol function) => Emit(Opcode.CALL, new[] { new Operand(function.Name, OperandType.Identifier) });
 
         public void EmitNative(FunctionSymbol function)

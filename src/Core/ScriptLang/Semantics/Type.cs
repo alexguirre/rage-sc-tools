@@ -3,6 +3,7 @@ namespace ScTools.ScriptLang.Semantics
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
 
     using ScTools.ScriptLang.Semantics.Symbols;
@@ -56,6 +57,50 @@ namespace ScTools.ScriptLang.Semantics
             => (Name, Fields) = (name, new List<Field>(fields));
 
         public StructType(string? name, params Field[] fields) : this(name, (IEnumerable<Field>)fields) { }
+
+        public bool HasField(string name)
+        {
+            foreach (var f in Fields)
+            {
+                if (f.Name == name)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public Type TypeOfField(string name)
+        {
+            foreach (var f in Fields)
+            {
+                if (f.Name == name)
+                {
+                    return f.Type;
+                }
+            }
+
+            throw new ArgumentException($"No field with name '{name}' exists in struct '{Name}'");
+        }
+
+        public int OffsetOfField(string name)
+        {
+            int offset = 0;
+            foreach (var f in Fields)
+            {
+                if (f.Name == name)
+                {
+                    return offset;
+                }
+                else
+                {
+                    offset += f.Type.SizeOf;
+                }
+            }
+
+            throw new ArgumentException($"No field with name '{name}' exists in struct '{Name}'");
+        }
 
         public override bool Equals(Type? other)
         {

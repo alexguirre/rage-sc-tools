@@ -44,10 +44,19 @@ namespace ScTools.ScriptLang.Semantics
             public Pass(DiagnosticsReport diagnostics, string filePath, SymbolTable symbols)
                 => (Diagnostics, FilePath, Symbols) = (diagnostics, filePath, symbols);
 
-            public void Run(Root root)
+            public bool Run(Root root)
             {
-                root.Accept(this);
-                OnEnd();
+                try
+                {
+                    root.Accept(this);
+                    OnEnd();
+                    return true;
+                }
+                catch (System.Exception e)
+                {
+                    Diagnostics.AddError(FilePath, $"Unhandled exception: {e}", SourceRange.Unknown);
+                    return false;
+                }
             }
 
             protected virtual void OnEnd() { }

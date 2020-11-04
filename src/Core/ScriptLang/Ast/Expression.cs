@@ -184,7 +184,7 @@ namespace ScTools.ScriptLang.Ast
         public LiteralExpression(LiteralKind kind, string valueText, SourceRange source) : base(source)
             => (Kind, ValueText) = (kind, valueText);
 
-        public override string ToString() => $"{ValueText}/*{Kind}*/";
+        public override string ToString() => $"{ValueText}";
     }
 
     public enum LiteralKind

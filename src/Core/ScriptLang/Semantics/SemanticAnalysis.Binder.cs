@@ -160,16 +160,19 @@ namespace ScTools.ScriptLang.Semantics
                 }
             }
 
-            private BoundExpression? Bind(Expression? expr) => expr?.Accept(new ExpressionBinder(Symbols));
+            private BoundExpression? Bind(Expression? expr) => expr?.Accept(new ExpressionBinder(Symbols, Diagnostics, FilePath));
 
 
             private sealed class ExpressionBinder : AstVisitor<BoundExpression>
             {
                 private SymbolTable Symbols { get; }
+                private DiagnosticsReport Diagnostics { get; }
+                private string FilePath { get; }
 
-                public ExpressionBinder(SymbolTable symbols) => Symbols = symbols;
+                public ExpressionBinder(SymbolTable symbols, DiagnosticsReport diagnostics, string filePath)
+                    => (Symbols, Diagnostics, FilePath) = (symbols, diagnostics, filePath);
 
-                private BoundExpression? Bind(Expression? expr) => expr?.Accept(new ExpressionBinder(Symbols));
+                private BoundExpression? Bind(Expression? expr) => expr?.Accept(this);
 
                 public override BoundExpression VisitUnaryExpression(UnaryExpression node)
                     => new BoundUnaryExpression(
@@ -186,25 +189,26 @@ namespace ScTools.ScriptLang.Semantics
 
                 public override BoundExpression VisitIdentifierExpression(IdentifierExpression node)
                 {
-                    var symbol = Symbols.Lookup(node.Identifier);
-                    if (symbol is FunctionSymbol fn)
+                    switch (Symbols.Lookup(node.Identifier))
                     {
-                        return new BoundFunctionExpression(fn);
-                    }
-                    else if (symbol is VariableSymbol v)
-                    {
-                        return new BoundVariableExpression(v);
-                    }
-                    else
-                    {
-                        throw new NotSupportedException();
-                    }
+                        case FunctionSymbol fn: return new BoundFunctionExpression(fn);
+                        case VariableSymbol v: return new BoundVariableExpression(v);
+                        case null:
+                            Diagnostics.AddError(FilePath, $"Unknown symbol '{node.Identifier}'", node.Source);
+                            return new BoundUnknownSymbolExpression(node.Identifier);
+                        default: throw new NotSupportedException();
+                    };
                 }
-
                 public override BoundExpression VisitInvocationExpression(InvocationExpression node)
                     => new BoundInvocationExpression(
                         Bind(node.Expression)!,
                         node.ArgumentList.Arguments.Select(a => Bind(a)!)
+                    );
+
+                public override BoundExpression VisitMemberAccessExpression(MemberAccessExpression node)
+                    => new BoundMemberAccessExpression(
+                        Bind(node.Expression)!,
+                        node.Member
                     );
 
                 public override BoundExpression VisitLiteralExpression(LiteralExpression node)
@@ -219,7 +223,6 @@ namespace ScTools.ScriptLang.Semantics
 
                 public override BoundExpression VisitAggregateExpression(AggregateExpression node) => throw new NotImplementedException();
                 public override BoundExpression VisitArrayAccessExpression(ArrayAccessExpression node) => throw new NotImplementedException();
-                public override BoundExpression VisitMemberAccessExpression(MemberAccessExpression node) => throw new NotImplementedException();
             }
         }
     }
