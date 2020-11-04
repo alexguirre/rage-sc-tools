@@ -22,27 +22,6 @@
         {
             Thread.CurrentThread.CurrentCulture = CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 
-            //var db = NativeDB.Fetch(new Uri("https://raw.githubusercontent.com/alloc8or/gta5-nativedb-data/master/natives.json"), "ScriptHookV_1.0.2060.0.zip").Result;
-            //File.WriteAllText("nativedb.json", db.ToJson());
-
-            //var db = NativeDB.FromJson(File.ReadAllText("nativedb.json"));
-
-            //db.ForEachCommand((in NativeCommandDefinition cmd) =>
-            //{
-            //    Console.WriteLine($"{cmd.Name}\t0x{cmd.Hash:X16} -> 0x{db.TranslateHash(cmd.Hash, GameBuild.b2060):X16}");
-            //});
-
-            //File.WriteAllText("decompiler_natives.json", db.ToDecompilerJson());
-
-            //return 0;
-#if DEBUG
-            LoadGTA5Keys();
-
-            //Test.DoTest();
-            ScriptLang.Test.DoTest();
-            return 0;
-#endif
-
             var rootCmd = new RootCommand("Tool for working with Grand Theft Auto V script files (.ysc).");
 
             Command dump = new Command("dump")

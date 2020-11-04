@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <AssemblyName>playground</AssemblyName>
+    <RootNamespace>ScTools.Playground</RootNamespace>
+    <LangVersion>8.0</LangVersion>
+    <Platforms>x64</Platforms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Core\Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="CodeWalker.Core">
+      <HintPath>..\..\dependencies\CodeWalker.Core.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>
