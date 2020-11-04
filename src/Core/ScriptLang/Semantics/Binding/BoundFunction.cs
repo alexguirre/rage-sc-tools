@@ -2,6 +2,7 @@
 namespace ScTools.ScriptLang.Semantics.Binding
 {
     using System.Collections.Generic;
+    using System.Linq;
 
     using ScTools.ScriptLang.CodeGen;
     using ScTools.ScriptLang.Semantics.Symbols;
@@ -26,7 +27,11 @@ namespace ScTools.ScriptLang.Semantics.Binding
                 stmt.Emit(code, this);
             }
 
-            code.EmitEpilogue(this.Function);
+            // if the last statement is a return we can omit this epilogue
+            if (!(Body.LastOrDefault() is BoundReturnStatement))
+            {
+                code.EmitEpilogue(this.Function);
+            }
             code.EndFunction();
         }
     }
