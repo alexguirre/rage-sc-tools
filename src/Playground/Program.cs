@@ -65,13 +65,13 @@ PROC MAIN()
         WAIT(0)
 
         // reload                        context                      context secondary
-        IF IS_CONTROL_PRESSED(0, 45) AND IS_CONTROL_PRESSED(0, 51) OR IS_CONTROL_PRESSED(0, 52)
+        IF IS_CONTROL_PRESSED(0, 45) AND NOT IS_CONTROL_PRESSED(0, 51) OR IS_CONTROL_PRESSED(0, 52)
             BEGIN_TEXT_COMMAND_DISPLAY_TEXT(""STRING"")
             ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(""Fibonacci"")
             END_TEXT_COMMAND_DISPLAY_TEXT(0.5, 0.175, 0)
 
             BEGIN_TEXT_COMMAND_DISPLAY_TEXT(""NUMBER"")
-            ADD_TEXT_COMPONENT_INTEGER(curr_value)
+            ADD_TEXT_COMPONENT_INTEGER(-curr_value)
             END_TEXT_COMMAND_DISPLAY_TEXT(0.5, 0.25, 0)
         ENDIF
 

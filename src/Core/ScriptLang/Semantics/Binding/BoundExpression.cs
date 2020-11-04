@@ -25,6 +25,54 @@ namespace ScTools.ScriptLang.Semantics.Binding
         public abstract void EmitCall(ByteCodeBuilder code);
     }
 
+    public sealed class BoundUnaryExpression : BoundExpression
+    {
+        public BoundExpression Operand { get; }
+        public Ast.UnaryOperator Op { get; }
+
+        public BoundUnaryExpression(BoundExpression operand, Ast.UnaryOperator op)
+            : base(operand.Type)
+        {
+            Operand = operand;
+            Op = op;
+        }
+
+        public override void EmitLoad(ByteCodeBuilder code)
+        {
+            if (Operand.Type is BasicType { TypeCode: BasicTypeCode.Float } ||
+                Operand.Type is BasicType { TypeCode: BasicTypeCode.Int })
+            {
+                Operand.EmitLoad(code);
+                var isFloat = Type is BasicType { TypeCode: BasicTypeCode.Float };
+                switch (Op)
+                {
+                    case Ast.UnaryOperator.Negate:
+                        code.Emit(isFloat ? Opcode.FNEG : Opcode.INEG);
+                        break;
+                    default: throw new NotImplementedException();
+                }
+            }
+            else if (Operand.Type is BasicType { TypeCode: BasicTypeCode.Bool })
+            {
+                Operand.EmitLoad(code);
+                switch (Op)
+                {
+                    case Ast.UnaryOperator.Not:
+                        code.Emit(Opcode.INOT);
+                        break;
+                    default: throw new NotImplementedException();
+                }
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+        }
+
+        public override void EmitStore(ByteCodeBuilder code) => throw new NotSupportedException();
+        public override void EmitCall(ByteCodeBuilder code) => throw new NotSupportedException();
+    }
+
     public sealed class BoundBinaryExpression : BoundExpression
     {
         public BoundExpression Left { get; }

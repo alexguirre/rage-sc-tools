@@ -171,14 +171,18 @@ namespace ScTools.ScriptLang.Semantics
 
                 private BoundExpression? Bind(Expression? expr) => expr?.Accept(new ExpressionBinder(Symbols));
 
+                public override BoundExpression VisitUnaryExpression(UnaryExpression node)
+                    => new BoundUnaryExpression(
+                        Bind(node.Operand)!,
+                        node.Op
+                    );
+
                 public override BoundExpression VisitBinaryExpression(BinaryExpression node)
-                {
-                    return new BoundBinaryExpression(
+                    => new BoundBinaryExpression(
                         Bind(node.Left)!,
                         Bind(node.Right)!,
                         node.Op
                     );
-                }
 
                 public override BoundExpression VisitIdentifierExpression(IdentifierExpression node)
                 {
@@ -198,12 +202,10 @@ namespace ScTools.ScriptLang.Semantics
                 }
 
                 public override BoundExpression VisitInvocationExpression(InvocationExpression node)
-                {
-                    return new BoundInvocationExpression(
+                    => new BoundInvocationExpression(
                         Bind(node.Expression)!,
                         node.ArgumentList.Arguments.Select(a => Bind(a)!)
                     );
-                }
 
                 public override BoundExpression VisitLiteralExpression(LiteralExpression node)
                     => node.Kind switch
@@ -218,7 +220,6 @@ namespace ScTools.ScriptLang.Semantics
                 public override BoundExpression VisitAggregateExpression(AggregateExpression node) => throw new NotImplementedException();
                 public override BoundExpression VisitArrayAccessExpression(ArrayAccessExpression node) => throw new NotImplementedException();
                 public override BoundExpression VisitMemberAccessExpression(MemberAccessExpression node) => throw new NotImplementedException();
-                public override BoundExpression VisitUnaryExpression(UnaryExpression node) => throw new NotImplementedException();
             }
         }
     }
