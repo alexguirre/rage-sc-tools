@@ -197,15 +197,13 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
         public override void EmitLoad(ByteCodeBuilder code)
         {
-            Debug.Assert(Type?.SizeOf == 1, "EmitLoad for variable with size of type > 1 not implemented");
-
             if (Var.IsLocal)
             {
-                code.EmitLocalLoad(Var.Location);
+                code.EmitLocalLoadN(Var.Location, Var.Type.SizeOf);
             }
             else if (Var.IsStatic)
             {
-                code.EmitStaticLoad(Var.Location);
+                code.EmitStaticLoadN(Var.Location, Var.Type.SizeOf);
             }
             else
             {
@@ -215,15 +213,13 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
         public override void EmitStore(ByteCodeBuilder code)
         {
-            Debug.Assert(Type?.SizeOf == 1, "EmitStore for variable with size of type > 1 not implemented");
-
             if (Var.IsLocal)
             {
-                code.EmitLocalStore(Var.Location);
+                code.EmitLocalStoreN(Var.Location, Var.Type.SizeOf);
             }
             else if (Var.IsStatic)
             {
-                code.EmitStaticStore(Var.Location);
+                code.EmitStaticStoreN(Var.Location, Var.Type.SizeOf);
             }
             else
             {

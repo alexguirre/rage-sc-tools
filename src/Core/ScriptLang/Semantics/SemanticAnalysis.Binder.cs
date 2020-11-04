@@ -23,40 +23,19 @@ namespace ScTools.ScriptLang.Semantics
                 Module.StaticVarsTotalSize = staticVarsTotalSize;
             }
 
-            protected override void OnEnd()
+            public override void VisitScriptNameStatement(ScriptNameStatement node) => Module.Name = node.Name;
+
+            public override void VisitFunctionStatement(FunctionStatement node) => VisitFunc(node.Name, node.Block);
+            public override void VisitProcedureStatement(ProcedureStatement node) => VisitFunc(node.Name, node.Block);
+
+            private void VisitFunc(string name, StatementBlock block)
             {
-            }
+                var func = Symbols.Lookup(name) as FunctionSymbol;
+                Debug.Assert(func != null);
 
-            public override void VisitScriptNameStatement(ScriptNameStatement node)
-            {
-                Module.Name = node.Name;
-            }
-
-            public override void VisitFunctionStatement(FunctionStatement node)
-            {
-                var funcSymbol = Symbols.Lookup(node.Name) as FunctionSymbol;
-                Debug.Assert(funcSymbol != null);
-
-                VisitFunc(funcSymbol, node.Block);
-            }
-
-            public override void VisitProcedureStatement(ProcedureStatement node)
-            {
-                var funcSymbol = Symbols.Lookup(node.Name) as FunctionSymbol;
-                Debug.Assert(funcSymbol != null);
-
-                VisitFunc(funcSymbol, node.Block);
-            }
-
-            private void VisitFunc(FunctionSymbol func, StatementBlock block)
-            {
                 var boundFunc = new BoundFunction(func);
                 Module.Functions.Add(boundFunc);
-                stmts = boundFunc.Body;
-                Symbols = Symbols.GetScope(block)!;
-                block.Accept(this);
-                Symbols = Symbols.ExitScope();
-                stmts = null;
+                VisitScope(block, boundFunc.Body);
             }
 
             public override void VisitAssignmentStatement(AssignmentStatement node)
@@ -72,18 +51,12 @@ namespace ScTools.ScriptLang.Semantics
                 var boundIf = new BoundIfStatement(Bind(node.Condition)!);
                 stmts!.Add(boundIf);
 
-                var prevBlock = stmts;
-
-                stmts = boundIf.Then;
-                VisitStatementBlock(node.ThenBlock);
+                VisitScope(node.ThenBlock, boundIf.Then);
 
                 if (node.ElseBlock != null)
                 {
-                    stmts = boundIf.Else;
-                    VisitStatementBlock(node.ElseBlock);
+                    VisitScope(node.ElseBlock, boundIf.Else);
                 }
-
-                stmts = prevBlock;
             }
 
             public override void VisitWhileStatement(WhileStatement node)
@@ -91,12 +64,7 @@ namespace ScTools.ScriptLang.Semantics
                 var boundWhile = new BoundWhileStatement(Bind(node.Condition)!);
                 stmts!.Add(boundWhile);
 
-                var prevBlock = stmts;
-
-                stmts = boundWhile.Block;
-                VisitStatementBlock(node.Block);
-
-                stmts = prevBlock;
+                VisitScope(node.Block, boundWhile.Block);
             }
 
             public override void VisitReturnStatement(ReturnStatement node)
@@ -158,6 +126,16 @@ namespace ScTools.ScriptLang.Semantics
                 {
                     n.Accept(this);
                 }
+            }
+
+            private void VisitScope(StatementBlock block, IList<BoundStatement> destStmts)
+            {
+                var prevStmts = stmts;
+                stmts = destStmts;
+                Symbols = Symbols.GetScope(block);
+                VisitStatementBlock(block);
+                Symbols = Symbols.ExitScope();
+                stmts = prevStmts;
             }
 
             private BoundExpression? Bind(Expression? expr) => expr?.Accept(new ExpressionBinder(Symbols, Diagnostics, FilePath));

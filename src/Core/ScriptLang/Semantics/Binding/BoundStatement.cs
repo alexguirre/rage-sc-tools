@@ -32,12 +32,10 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
         public override void Emit(ByteCodeBuilder code, BoundFunction parent)
         {
-            Debug.Assert(Var.Type.SizeOf == 1, "Emit for variable with size of type > 1 not implemented");
-
             if (Initializer != null)
             {
                 Initializer.EmitLoad(code);
-                code.EmitLocalStore(Var.Location);
+                code.EmitLocalStoreN(Var.Location, Var.Type.SizeOf);
             }
         }
     }

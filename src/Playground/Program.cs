@@ -43,64 +43,43 @@ NATIVE PROC BEGIN_TEXT_COMMAND_DISPLAY_TEXT(STRING text)
 NATIVE PROC END_TEXT_COMMAND_DISPLAY_TEXT(FLOAT x, FLOAT y, INT p2)
 NATIVE PROC ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(STRING text)
 NATIVE PROC ADD_TEXT_COMPONENT_INTEGER(INT value)
+NATIVE PROC ADD_TEXT_COMPONENT_FLOAT(FLOAT value, INT decimalPlaces)
 NATIVE FUNC FLOAT TIMESTEP()
 NATIVE FUNC BOOL IS_CONTROL_PRESSED(INT padIndex, INT control)
-
-STRUCT SCRIPT_DATA
-    INT fib0 // = 0
-    INT fib1 // = 1
-    INT curr_index
-    INT curr_value
-    INT last_time
-ENDSTRUCT
-
-// TODO: support static variables initializers
-SCRIPT_DATA data
+NATIVE FUNC FLOAT VMAG(VEC3 v)
+NATIVE FUNC FLOAT VMAG2(VEC3 v)
+NATIVE FUNC FLOAT VDIST(VEC3 v1, VEC3 v2)
+NATIVE FUNC FLOAT VDIST2(VEC3 v1, VEC3 v2)
+NATIVE FUNC VEC3 GET_GAMEPLAY_CAM_COORD()
 
 PROC MAIN()
-    data.fib0 = 0
-    data.fib1 = 1
-    data.curr_index = 0
-    data.curr_value = 0
-    data.last_time = 0
-
-    data.last_time = GET_GAME_TIMER()
     WHILE TRUE
         WAIT(0)
 
-        // reload                        context                      context secondary
-        IF IS_CONTROL_PRESSED(0, 45) AND NOT IS_CONTROL_PRESSED(0, 51) OR IS_CONTROL_PRESSED(0, 52)
-            BEGIN_TEXT_COMMAND_DISPLAY_TEXT(""STRING"")
-            ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(""Fibonacci"")
-            END_TEXT_COMMAND_DISPLAY_TEXT(0.5, 0.175, 0)
+        VEC3 pos = GET_GAMEPLAY_CAM_COORD()
+        FLOAT dist = VMAG(pos)
 
-            BEGIN_TEXT_COMMAND_DISPLAY_TEXT(""NUMBER"")
-            ADD_TEXT_COMPONENT_INTEGER(-data.curr_value)
-            END_TEXT_COMMAND_DISPLAY_TEXT(0.5, 0.25, 0)
-        ENDIF
+        DRAW_STRING(0.5, 0.05, ""Gameplay Cam Position"")
+        DRAW_FLOAT(0.25, 0.15, pos.x)
+        DRAW_FLOAT(0.5, 0.15, pos.y)
+        DRAW_FLOAT(0.75, 0.15, pos.z)
 
-        IF GET_GAME_TIMER() - data.last_time >= 2000
-            data.curr_value = NEXT_FIB()
-            data.last_time = GET_GAME_TIMER()
-        ENDIF
-
+        DRAW_STRING(0.5, 0.35, ""Length"")
+        DRAW_FLOAT(0.5, 0.4, dist)
     ENDWHILE
 ENDPROC
 
-FUNC INT NEXT_FIB()
-    INT result
+PROC DRAW_STRING(FLOAT x, FLOAT y, STRING v)
+    BEGIN_TEXT_COMMAND_DISPLAY_TEXT(""STRING"")
+    ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(v)
+    END_TEXT_COMMAND_DISPLAY_TEXT(x, y, 0)
+ENDPROC
 
-    IF data.curr_index < 1
-        result = 0
-    ELSE
-        result = data.fib0 + data.fib1
-        data.fib0 = data.fib1
-        data.fib1 = result
-    ENDIF
-
-    data.curr_index = data.curr_index + 1
-    RETURN result
-ENDFUNC
+PROC DRAW_FLOAT(FLOAT x, FLOAT y, FLOAT v)
+    BEGIN_TEXT_COMMAND_DISPLAY_TEXT(""NUMBER"")
+    ADD_TEXT_COMPONENT_FLOAT(v, 2)
+    END_TEXT_COMMAND_DISPLAY_TEXT(x, y, 0)
+ENDPROC
 ";
 
         public static void DoTest()

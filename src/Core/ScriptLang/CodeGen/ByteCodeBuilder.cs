@@ -163,9 +163,65 @@ namespace ScTools.ScriptLang.CodeGen
         public void EmitLocalLoad(int location) => EmitLocal(location, Opcode.LOCAL_U8_LOAD, Opcode.LOCAL_U16_LOAD);
         public void EmitLocalStore(int location) => EmitLocal(location, Opcode.LOCAL_U8_STORE, Opcode.LOCAL_U16_STORE);
 
+        public void EmitLocalStoreN(int location, int n)
+        {
+            if (n == 1)
+            {
+                EmitLocalStore(location);
+            }
+            else
+            {
+                EmitPushUInt(unchecked((uint)n));
+                EmitLocalAddr(location);
+                Emit(Opcode.STORE_N, ReadOnlySpan<Operand>.Empty);
+            }
+        }
+
+        public void EmitLocalLoadN(int location, int n)
+        {
+            if (n == 1)
+            {
+                EmitLocalLoad(location);
+            }
+            else
+            {
+                EmitPushUInt(unchecked((uint)n));
+                EmitLocalAddr(location);
+                Emit(Opcode.LOAD_N, ReadOnlySpan<Operand>.Empty);
+            }
+        }
+
         public void EmitStaticAddr(int location) => EmitStatic(location, Opcode.STATIC_U8, Opcode.STATIC_U16);
         public void EmitStaticLoad(int location) => EmitStatic(location, Opcode.STATIC_U8_LOAD, Opcode.STATIC_U16_LOAD);
         public void EmitStaticStore(int location) => EmitStatic(location, Opcode.STATIC_U8_STORE, Opcode.STATIC_U16_STORE);
+
+        public void EmitStaticStoreN(int location, int n)
+        {
+            if (n == 1)
+            {
+                EmitStaticStore(location);
+            }
+            else
+            {
+                EmitPushUInt(unchecked((uint)n));
+                EmitStaticAddr(location);
+                Emit(Opcode.STORE_N, ReadOnlySpan<Operand>.Empty);
+            }
+        }
+
+        public void EmitStaticLoadN(int location, int n)
+        {
+            if (n == 1)
+            {
+                EmitStaticLoad(location);
+            }
+            else
+            {
+                EmitPushUInt(unchecked((uint)n));
+                EmitStaticAddr(location);
+                Emit(Opcode.LOAD_N, ReadOnlySpan<Operand>.Empty);
+            }
+        }
 
         private void EmitOffsetInst(int offset, Opcode opcodeU8, Opcode opcodeS16)
         {
