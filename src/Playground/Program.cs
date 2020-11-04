@@ -1,4 +1,4 @@
-﻿namespace Playground
+﻿namespace ScTools.Playground
 {
     using System;
     using System.Globalization;
@@ -20,6 +20,7 @@
         {
             Thread.CurrentThread.CurrentCulture = CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
             LoadGTA5Keys();
+            DoTest();
         }
 
         private static void LoadGTA5Keys()
