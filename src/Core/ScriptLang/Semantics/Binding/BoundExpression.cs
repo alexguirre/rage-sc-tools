@@ -5,6 +5,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Diagnostics;
+    using System.Linq;
 
     using ScTools.ScriptLang.CodeGen;
     using ScTools.ScriptLang.Semantics.Symbols;
@@ -351,6 +352,29 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
             throw new NotImplementedException();
         }
+    }
+
+    public sealed class BoundAggregateExpression : BoundExpression
+    {
+        public ImmutableArray<BoundExpression> Expressions { get; }
+
+        public BoundAggregateExpression(IEnumerable<BoundExpression> expressions)
+        {
+            Expressions = expressions.ToImmutableArray();
+            Type = StructType.NewAggregate(Expressions.Select(e => e.Type!));
+        }
+
+        public override void EmitLoad(ByteCodeBuilder code)
+        {
+            foreach (var expr in Expressions)
+            {
+                expr.EmitLoad(code);
+            }
+        }
+
+        public override void EmitStore(ByteCodeBuilder code) => throw new NotSupportedException();
+        public override void EmitAddr(ByteCodeBuilder code) => throw new NotSupportedException();
+        public override void EmitCall(ByteCodeBuilder code) => throw new NotSupportedException();
     }
 
     public sealed class BoundFloatLiteralExpression : BoundExpression

@@ -118,7 +118,7 @@ namespace ScTools.ScriptLang.Semantics
                 if (node.Variable.Initializer != null)
                 {
                     var initializerType = TypeOf(node.Variable.Initializer);
-                    if (initializerType != null && initializerType != v.Type)
+                    if (initializerType == null || !Type.AreEquivalent(v.Type, initializerType))
                     {
                         Diagnostics.AddError(FilePath, $"Mismatched initializer type and type of variable '{v.Name}'", node.Variable.Initializer.Source);
                     }
@@ -140,7 +140,7 @@ namespace ScTools.ScriptLang.Semantics
                     return;
                 }
 
-                if (destType != srcType)
+                if (!Type.AreEquivalent(destType, srcType))
                 {
                     Diagnostics.AddError(FilePath, "Mismatched types in assigment", node.Source);
                 }
@@ -190,7 +190,7 @@ namespace ScTools.ScriptLang.Semantics
                 }
 
                 var returnType = TypeOf(node.Expression);
-                if (returnType != func.Type.ReturnType)
+                if (returnType == null || !Type.AreEquivalent(func.Type.ReturnType!, returnType))
                 {
                     Diagnostics.AddError(FilePath, $"Returned type does not match the specified function return type", node.Expression.Source);
                 }
@@ -222,7 +222,7 @@ namespace ScTools.ScriptLang.Semantics
                     var expectedType = f.Parameters[i];
                     var foundType = TypeOf(node.ArgumentList.Arguments[i]);
 
-                    if (expectedType != foundType)
+                    if (foundType == null || !Type.AreEquivalent(expectedType, foundType))
                     {
                         Diagnostics.AddError(FilePath, $"Mismatched type of argument #{i}", node.ArgumentList.Arguments[i].Source);
                     }

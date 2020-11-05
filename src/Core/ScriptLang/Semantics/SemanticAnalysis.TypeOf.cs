@@ -108,7 +108,7 @@ namespace ScTools.ScriptLang.Semantics
                     var expectedType = f.Parameters[i];
                     var foundType = node.ArgumentList.Arguments[i].Accept(this);
 
-                    if (expectedType != foundType)
+                    if (foundType == null || !Type.AreEquivalent(expectedType, foundType))
                     {
                         diagnostics.AddError(filePath, $"Mismatched type of argument #{i}", node.ArgumentList.Arguments[i].Source);
                     }
@@ -141,11 +141,11 @@ namespace ScTools.ScriptLang.Semantics
 
             public override Type? VisitAggregateExpression(AggregateExpression node)
             {
-                var fields = node.Expressions.Select((expr, i) => (Type: expr.Accept(this), Index: i));
+                var fieldTypes = node.Expressions.Select(expr => expr.Accept(this)!);
 
-                if (fields.All(f => f.Type != null))
+                if (fieldTypes.All(t => t != null))
                 {
-                    return new StructType(null, fields.Select(f => new Field(f.Type!, $"_item{f.Index}")));
+                    return StructType.NewAggregate(fieldTypes);
                 }
                 else
                 {

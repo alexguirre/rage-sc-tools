@@ -52,12 +52,20 @@ NATIVE FUNC FLOAT VDIST(VEC3 v1, VEC3 v2)
 NATIVE FUNC FLOAT VDIST2(VEC3 v1, VEC3 v2)
 NATIVE FUNC VEC3 GET_GAMEPLAY_CAM_COORD()
 
+STRUCT SPAWNPOINT
+    FLOAT heading
+    VEC3 position
+ENDSTRUCT
+
 PROC MAIN()
+    SPAWNPOINT sp = <<45.0, <<100.0, 200.0, 50.0>>>>
+    SPAWNPOINT sp2 = <<sp.heading, GET_POS()>>
+
     WHILE TRUE
         WAIT(0)
 
         VEC3 pos = GET_GAMEPLAY_CAM_COORD()
-        FLOAT dist = VMAG(pos)
+        FLOAT dist = VDIST(pos, <<100.0, 100.0, 60.0>>)
 
         DRAW_STRING(0.5, 0.05, ""Gameplay Cam Position"")
         DRAW_FLOAT(0.25, 0.15, pos.x)
@@ -68,6 +76,10 @@ PROC MAIN()
         DRAW_FLOAT(0.5, 0.4, dist)
     ENDWHILE
 ENDPROC
+
+FUNC VEC3 GET_POS()
+    RETURN <<100.0, 100.0, 60.0>>
+ENDFUNC
 
 PROC DRAW_STRING(FLOAT x, FLOAT y, STRING v)
     BEGIN_TEXT_COMMAND_DISPLAY_TEXT(""STRING"")

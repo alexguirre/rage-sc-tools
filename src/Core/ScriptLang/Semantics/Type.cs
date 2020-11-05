@@ -23,6 +23,24 @@ namespace ScTools.ScriptLang.Semantics
 
         public static bool operator ==(Type? lhs, Type? rhs) => ReferenceEquals(lhs, rhs) || (lhs?.Equals(rhs) ?? false);
         public static bool operator !=(Type? lhs, Type? rhs) => !(lhs == rhs);
+
+        /// <summary>
+        /// Checks whether <paramref name="dest"/> and <paramref name="src"/> are the same type;
+        /// or, if both are <see cref="StructType"/>, whether <paramref name="src"/> is an aggregate type with the same field layout as <paramref name="dest"/>.
+        /// </summary>
+        public static bool AreEquivalent(Type dest, Type src)
+        {
+            bool areEquivalent = dest == src;
+
+            if (!areEquivalent &&
+                (src is StructType srcStructType && dest is StructType destStructType))
+            {
+                bool srcIsAggregate = srcStructType.Name == null;
+                areEquivalent = srcIsAggregate && srcStructType.HasSameFieldLayout(destStructType);
+            }
+
+            return areEquivalent;
+        }
     }
 
     public sealed class BasicType : Type
@@ -102,6 +120,34 @@ namespace ScTools.ScriptLang.Semantics
             throw new ArgumentException($"No field with name '{name}' exists in struct '{Name}'");
         }
 
+        public bool Equals(Type? other, bool ignoreNames)
+        {
+            if (!(other is StructType s))
+            {
+                return false;
+            }
+
+            if (s.Name != Name)
+            {
+                return false;
+            }
+
+            if (s.Fields.Count != Fields.Count)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < Fields.Count; i++)
+            {
+                if (s.Fields[i] != Fields[i])
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         public override bool Equals(Type? other)
         {
             if (!(other is StructType s))
@@ -130,6 +176,39 @@ namespace ScTools.ScriptLang.Semantics
             return true;
         }
 
+        public bool HasSameFieldLayout(StructType other)
+        {
+            if (other.Fields.Count != Fields.Count)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < Fields.Count; i++)
+            {
+                if (!SameTypeIgnoreFieldNames(other.Fields[i].Type, Fields[i].Type))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+
+            static bool SameTypeIgnoreFieldNames(Type left, Type right)
+            {
+                if (left == right)
+                {
+                    return true;
+                }
+
+                if (left is StructType leftStruct && right is StructType rightStruct)
+                {
+                    return leftStruct.HasSameFieldLayout(rightStruct);
+                }
+
+                return false;
+            }
+        }
+
         protected override int DoGetHashCode()
         {
             HashCode h = default;
@@ -139,6 +218,9 @@ namespace ScTools.ScriptLang.Semantics
             }
             return h.ToHashCode();
         }
+
+        public static Type NewAggregate(IEnumerable<Type> fieldTypes)
+            => new StructType(null, fieldTypes.Select((t, i) => new Field(t, $"_item{i}")));
     }
 
     public readonly struct Field : IEquatable<Field>

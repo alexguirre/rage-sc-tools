@@ -189,6 +189,11 @@ namespace ScTools.ScriptLang.Semantics
                         node.Member
                     );
 
+                public override BoundExpression VisitAggregateExpression(AggregateExpression node)
+                    => new BoundAggregateExpression(
+                        node.Expressions.Select(Bind)!
+                    );
+                
                 public override BoundExpression VisitLiteralExpression(LiteralExpression node)
                     => node.Kind switch
                     {
@@ -199,7 +204,6 @@ namespace ScTools.ScriptLang.Semantics
                         _ => throw new NotSupportedException(),
                     };
 
-                public override BoundExpression VisitAggregateExpression(AggregateExpression node) => throw new NotImplementedException();
                 public override BoundExpression VisitArrayAccessExpression(ArrayAccessExpression node) => throw new NotImplementedException();
             }
         }
