@@ -2,117 +2,186 @@
 namespace ScTools.ScriptLang.Semantics
 {
     using System;
+    using System.Diagnostics;
 
+    using ScTools.GameFiles;
     using ScTools.ScriptLang.Ast;
+    using ScTools.ScriptLang.Semantics.Binding;
 
     /// <summary>
-    /// Evaluates int or float expressions.
+    /// Evaluates constant expressions.
     /// </summary>
     public static class Evaluator
     {
-        public readonly struct Result
+        public static ScriptValue[] Evaluate(BoundExpression expr)
         {
-            public bool IsInt => !IsFloat;
-            public bool IsFloat { get; }
-            public int IntValue { get; }
-            public float FloatValue { get; }
-
-            public Result(int value) => (IntValue, IsFloat, FloatValue) = (value, false, value);
-            public Result(float value) => (IntValue, IsFloat, FloatValue) = ((int)value, true, value);
-
-            public override string ToString()
-                => IsInt ? $"{{ Int: {IntValue} }}" : $"{{ Float: {FloatValue} }}";
-        }
-
-        public static Result? Evaluate(Expression expr)
-            => expr switch
+            if (!expr.IsConstant)
             {
-                LiteralExpression e => EvaluateLiteral(e),
-                UnaryExpression e => EvaluateUnary(e),
-                BinaryExpression e => EvaluateBinary(e),
-                _ => null,
-            };
-
-        private static Result? EvaluateUnary(UnaryExpression expr)
-        {
-            var innerResult = Evaluate(expr.Operand);
-
-            if (!innerResult.HasValue)
-            {
-                return null;
+                throw new ArgumentException("Expression is not constant", nameof(expr));
             }
 
-            var inner = innerResult.Value;
-
-            return inner.IsInt ?
-                    new Result(CalculateInt(expr.Op, inner.IntValue)) :
-                    new Result(CalculateFloat(expr.Op, inner.FloatValue));
-        }
-
-        private static Result? EvaluateBinary(BinaryExpression expr)
-        {
-            var leftResult = Evaluate(expr.Left);
-            var rightResult = Evaluate(expr.Right);
-
-            if (!leftResult.HasValue || !rightResult.HasValue)
+            if (expr.Type == null)
             {
-                return null;
+                throw new ArgumentException("Expression has invalid type", nameof(expr));
             }
 
-            var left = leftResult.Value;
-            var right = rightResult.Value;
-
-            return left.IsInt && right.IsInt ?
-                    new Result(CalculateInt(expr.Op, left.IntValue, right.IntValue)) :
-                    new Result(CalculateFloat(expr.Op, left.FloatValue, right.FloatValue));
+            var result = new ScriptValue[expr.Type.SizeOf];
+            Evaluate(result, expr);
+            return result;
         }
 
-        private static float CalculateFloat(UnaryOperator op, float value)
-            => op switch
+        private static void Evaluate(Span<ScriptValue> dest, BoundExpression expr)
+        {
+            Debug.Assert(dest.Length == expr.Type!.SizeOf);
+            switch (expr)
             {
-                UnaryOperator.Negate => -value,
-                _ => throw new NotImplementedException(),
-            };
+                case BoundIntLiteralExpression x: EvaluateIntLiteral(dest, x); break;
+                case BoundFloatLiteralExpression x: EvaluateFloatLiteral(dest, x); break;
+                case BoundBoolLiteralExpression x: EvaluateBoolLiteral(dest, x); break;
+                case BoundAggregateExpression x: EvaluateAggregate(dest, x); break;
+                case BoundUnaryExpression x: EvaluateUnary(dest, x); break;
+                case BoundBinaryExpression x: EvaluateBinary(dest, x); break;
+                default: throw new NotImplementedException();
+            }
+        }
 
-        private static float CalculateFloat(BinaryOperator op, float left, float right)
-            => op switch
-            {
-                BinaryOperator.Add => left + right,
-                BinaryOperator.Subtract => left - right,
-                BinaryOperator.Multiply => left * right,
-                BinaryOperator.Divide => left / right,
-                BinaryOperator.Modulo => left % right,
-                _ => throw new NotImplementedException(),
-            };
+        private static void EvaluateIntLiteral(Span<ScriptValue> dest, BoundIntLiteralExpression expr)
+        {
+            dest[0].AsInt32 = expr.Value;
+        }
 
-        private static int CalculateInt(UnaryOperator op, int value)
-            => op switch
-            {
-                UnaryOperator.Not => value == 0 ? 1 : 0,
-                UnaryOperator.Negate => -value,
-                _ => throw new NotImplementedException(),
-            };
+        private static void EvaluateFloatLiteral(Span<ScriptValue> dest, BoundFloatLiteralExpression expr)
+        {
+            dest[0].AsFloat = expr.Value;
+        }
 
-        private static int CalculateInt(BinaryOperator op, int left, int right)
-            => op switch
-            {
-                BinaryOperator.Add => left + right,
-                BinaryOperator.Subtract => left - right,
-                BinaryOperator.Multiply => left * right,
-                BinaryOperator.Divide => left / right,
-                BinaryOperator.Modulo => left % right,
-                BinaryOperator.Or => left | right,
-                BinaryOperator.And => left & right,
-                BinaryOperator.Xor => left ^ right,
-                _ => throw new NotImplementedException(),
-            };
+        private static void EvaluateBoolLiteral(Span<ScriptValue> dest, BoundBoolLiteralExpression expr)
+        {
+            dest[0].AsInt64 = expr.Value ? 1 : 0;
+        }
 
-        private static Result? EvaluateLiteral(LiteralExpression expr)
-            => expr.Kind switch
+        private static void EvaluateAggregate(Span<ScriptValue> dest, BoundAggregateExpression expr)
+        {
+            foreach(var subExpr in expr.Expressions)
             {
-                LiteralKind.Int => int.TryParse(expr.ValueText, out int intVal) ? new Result(intVal) : (Result?)null,
-                LiteralKind.Float => float.TryParse(expr.ValueText, out float floatVal) ? new Result(floatVal) : (Result?)null,
-                _ => null,
-            };
+                var size = subExpr.Type!.SizeOf;
+                var subDest = dest[0..size];
+                Evaluate(subDest, subExpr);
+                dest = dest[size..];
+            }
+        }
+
+        private static void EvaluateUnary(Span<ScriptValue> dest, BoundUnaryExpression expr)
+        {
+            Evaluate(dest, expr.Operand);
+            switch (expr.Operand.Type)
+            {
+                case BasicType { TypeCode: BasicTypeCode.Float }:
+                    dest[0].AsFloat = expr.Op switch
+                    {
+                        UnaryOperator.Negate => -dest[0].AsFloat,
+                        _ => throw new NotSupportedException(),
+                    };
+                    break;
+                case BasicType { TypeCode: BasicTypeCode.Int }:
+                    dest[0].AsInt32 = expr.Op switch
+                    {
+                        UnaryOperator.Negate => -dest[0].AsInt32,
+                        _ => throw new NotSupportedException(),
+                    };
+                    break;
+                case BasicType { TypeCode: BasicTypeCode.Bool }:
+                    dest[0].AsInt64 = expr.Op switch
+                    {
+                        UnaryOperator.Not => dest[0].AsInt64 == 0,
+                        _ => throw new NotSupportedException(),
+                    } ? 1 : 0;
+                    break;
+                default: throw new NotSupportedException();
+            }
+        }
+
+        private static void EvaluateBinary(Span<ScriptValue> dest, BoundBinaryExpression expr)
+        {
+            var left = Evaluate(expr.Left);
+            var right = Evaluate(expr.Right);
+            var operandsType = expr.Left.Type;
+            var resultType = expr.Type;
+            switch (operandsType)
+            {
+                case BasicType { TypeCode: BasicTypeCode.Float }:
+                    switch (resultType)
+                    {
+                        case BasicType { TypeCode: BasicTypeCode.Float }:
+                            dest[0].AsFloat = expr.Op switch
+                            {
+                                BinaryOperator.Add => left[0].AsFloat + right[0].AsFloat,
+                                BinaryOperator.Subtract => left[0].AsFloat - right[0].AsFloat,
+                                BinaryOperator.Multiply => left[0].AsFloat * right[0].AsFloat,
+                                BinaryOperator.Divide => left[0].AsFloat / right[0].AsFloat,
+                                BinaryOperator.Modulo => left[0].AsFloat % right[0].AsFloat,
+                                _ => throw new NotSupportedException(),
+                            };
+                            break;
+                        case BasicType { TypeCode: BasicTypeCode.Bool }:
+                            dest[0].AsInt64 = expr.Op switch
+                            {
+                                BinaryOperator.Equal => left[0].AsFloat == right[0].AsFloat,
+                                BinaryOperator.NotEqual => left[0].AsFloat != right[0].AsFloat,
+                                BinaryOperator.Greater => left[0].AsFloat > right[0].AsFloat,
+                                BinaryOperator.GreaterOrEqual => left[0].AsFloat >= right[0].AsFloat,
+                                BinaryOperator.Less => left[0].AsFloat < right[0].AsFloat,
+                                BinaryOperator.LessOrEqual => left[0].AsFloat <= right[0].AsFloat,
+                                _ => throw new NotSupportedException(),
+                            } ? 1 : 0;
+                            break;
+                        default: throw new NotSupportedException();
+                    }
+                    break;
+                case BasicType { TypeCode: BasicTypeCode.Int }:
+                    switch (resultType)
+                    {
+                        case BasicType { TypeCode: BasicTypeCode.Int }:
+                            dest[0].AsInt32 = expr.Op switch
+                            {
+                                BinaryOperator.Add => left[0].AsInt32 + right[0].AsInt32,
+                                BinaryOperator.Subtract => left[0].AsInt32 - right[0].AsInt32,
+                                BinaryOperator.Multiply => left[0].AsInt32 * right[0].AsInt32,
+                                BinaryOperator.Divide => left[0].AsInt32 / right[0].AsInt32,
+                                BinaryOperator.Modulo => left[0].AsInt32 % right[0].AsInt32,
+                                BinaryOperator.And => left[0].AsInt32 & right[0].AsInt32,
+                                BinaryOperator.Or => left[0].AsInt32 | right[0].AsInt32,
+                                BinaryOperator.Xor => left[0].AsInt32 ^ right[0].AsInt32,
+                                _ => throw new NotSupportedException(),
+                            };
+                            break;
+                        case BasicType { TypeCode: BasicTypeCode.Bool }:
+                            dest[0].AsInt64 = expr.Op switch
+                            {
+                                BinaryOperator.Equal => left[0].AsInt32 == right[0].AsInt32,
+                                BinaryOperator.NotEqual => left[0].AsInt32 != right[0].AsInt32,
+                                BinaryOperator.Greater => left[0].AsInt32 > right[0].AsInt32,
+                                BinaryOperator.GreaterOrEqual => left[0].AsInt32 >= right[0].AsInt32,
+                                BinaryOperator.Less => left[0].AsInt32 < right[0].AsInt32,
+                                BinaryOperator.LessOrEqual => left[0].AsInt32 <= right[0].AsInt32,
+                                _ => throw new NotSupportedException(),
+                            } ? 1 : 0;
+                            break;
+                        default: throw new NotSupportedException();
+                    }
+                    break;
+                case BasicType { TypeCode: BasicTypeCode.Bool }:
+                    dest[0].AsInt64 = expr.Op switch
+                    {
+                        BinaryOperator.LogicalAnd => (left[0].AsInt64 != 0) && (right[0].AsInt64 != 0),
+                        BinaryOperator.LogicalOr => (left[0].AsInt64 != 0) || (right[0].AsInt64 != 0),
+                        BinaryOperator.Equal => left[0].AsInt64 == right[0].AsInt64,
+                        BinaryOperator.NotEqual => left[0].AsInt64 != right[0].AsInt64,
+                        _ => throw new NotSupportedException(),
+                    } ? 1 : 0;
+                    break;
+                default: throw new NotSupportedException();
+            }
+        }
     }
 }

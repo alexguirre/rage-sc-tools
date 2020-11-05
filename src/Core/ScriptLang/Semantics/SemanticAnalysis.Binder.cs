@@ -16,14 +16,24 @@ namespace ScTools.ScriptLang.Semantics
         {
             public BoundModule Module { get; } = new BoundModule();
             private IList<BoundStatement>? stmts = null; // statements of the current block
+            private readonly ExpressionBinder exprBinder;
 
-            public Binder(DiagnosticsReport diagnostics, string filePath, SymbolTable symbols, int staticVarsTotalSize)
+            public Binder(DiagnosticsReport diagnostics, string filePath, SymbolTable symbols)
                 : base(diagnostics, filePath, symbols)
             {
-                Module.StaticVarsTotalSize = staticVarsTotalSize;
+                exprBinder = new ExpressionBinder(Symbols, Diagnostics, FilePath);
             }
 
             public override void VisitScriptNameStatement(ScriptNameStatement node) => Module.Name = node.Name;
+
+            public override void VisitStaticVariableStatement(StaticVariableStatement node)
+            {
+                var s = Symbols.Lookup(node.Variable.Declaration.Name) as VariableSymbol;
+                Debug.Assert(s != null);
+                Debug.Assert(s.IsStatic);
+
+                Module.Statics.Add(new BoundStatic(s, Bind(node.Variable.Initializer)));
+            }
 
             public override void VisitFunctionStatement(FunctionStatement node) => VisitFunc(node.Name, node.Block);
             public override void VisitProcedureStatement(ProcedureStatement node) => VisitFunc(node.Name, node.Block);
@@ -113,7 +123,6 @@ namespace ScTools.ScriptLang.Semantics
             public override void VisitProcedureNativeStatement(ProcedureNativeStatement node) { /* empty */ }
             public override void VisitFunctionNativeStatement(FunctionNativeStatement node) { /* empty */ }
             public override void VisitParameterList(ParameterList node) { /* empty */ }
-            public override void VisitStaticVariableStatement(StaticVariableStatement node) { /* empty */ }
             public override void VisitStructFieldList(StructFieldList node) { /* empty */ }
             public override void VisitStructStatement(StructStatement node) { /* empty */ }
             public override void VisitType(Ast.Type node) { /* empty */ }
@@ -138,12 +147,15 @@ namespace ScTools.ScriptLang.Semantics
                 stmts = prevStmts;
             }
 
-            private BoundExpression? Bind(Expression? expr) => expr?.Accept(new ExpressionBinder(Symbols, Diagnostics, FilePath));
-
+            private BoundExpression? Bind(Expression? expr)
+            {
+                exprBinder.Symbols = Symbols;
+                return expr?.Accept(exprBinder);
+            }
 
             private sealed class ExpressionBinder : AstVisitor<BoundExpression>
             {
-                private SymbolTable Symbols { get; }
+                public SymbolTable Symbols { get; set; }
                 private DiagnosticsReport Diagnostics { get; }
                 private string FilePath { get; }
 

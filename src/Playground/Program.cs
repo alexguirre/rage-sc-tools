@@ -57,23 +57,25 @@ STRUCT SPAWNPOINT
     VEC3 position
 ENDSTRUCT
 
+SPAWNPOINT sp = <<45.0, <<100.0, 200.0, 50.0>>>>
+FLOAT v = 123.456 + 789.0
+
 PROC MAIN()
-    SPAWNPOINT sp = <<45.0, <<100.0, 200.0, 50.0>>>>
     SPAWNPOINT sp2 = <<sp.heading, GET_POS()>>
 
     WHILE TRUE
         WAIT(0)
 
         VEC3 pos = GET_GAMEPLAY_CAM_COORD()
-        FLOAT dist = VDIST(pos, <<100.0, 100.0, 60.0>>)
+        FLOAT dist = VDIST(pos, sp.position)
 
         DRAW_STRING(0.5, 0.05, ""Gameplay Cam Position"")
         DRAW_FLOAT(0.25, 0.15, pos.x)
         DRAW_FLOAT(0.5, 0.15, pos.y)
         DRAW_FLOAT(0.75, 0.15, pos.z)
 
-        DRAW_STRING(0.5, 0.35, ""Length"")
-        DRAW_FLOAT(0.5, 0.4, dist)
+        DRAW_STRING(0.5, 0.35, ""Distance"")
+        DRAW_FLOAT(0.5, 0.45, dist)
     ENDWHILE
 ENDPROC
 

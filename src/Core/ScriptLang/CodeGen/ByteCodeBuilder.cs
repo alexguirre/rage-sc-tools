@@ -241,6 +241,35 @@ namespace ScTools.ScriptLang.CodeGen
         public void EmitOffsetLoad(int offset) => EmitOffsetInst(offset, Opcode.IOFFSET_U8_LOAD, Opcode.IOFFSET_S16_LOAD);
         public void EmitOffsetStore(int offset) => EmitOffsetInst(offset, Opcode.IOFFSET_U8_STORE, Opcode.IOFFSET_S16_STORE);
 
+        public void EmitOffsetStoreN(int offset, int n)
+        {
+            if (n == 1)
+            {
+                EmitOffsetStore(offset);
+            }
+            else
+            {
+                // FIXME
+                EmitPushUInt(unchecked((uint)n));
+                EmitOffsetAddr(offset);
+                Emit(Opcode.STORE_N, ReadOnlySpan<Operand>.Empty);
+            }
+        }
+
+        public void EmitOffsetLoadN(int offset, int n)
+        {
+            if (n == 1)
+            {
+                EmitOffsetLoad(offset);
+            }
+            else
+            {
+                // FIXME
+                EmitPushUInt(unchecked((uint)n));
+                EmitOffsetAddr(offset);
+                Emit(Opcode.LOAD_N, ReadOnlySpan<Operand>.Empty);
+            }
+        }
         public void EmitCall(FunctionSymbol function) => Emit(Opcode.CALL, new[] { new Operand(function.Name, OperandType.Identifier) });
 
         public void EmitNative(FunctionSymbol function)

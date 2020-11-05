@@ -15,8 +15,6 @@ namespace ScTools.ScriptLang.Semantics
         /// </summary>
         private sealed class FirstPass : Pass
         {
-            public int StaticVarsTotalSize { get; private set; } = -1;
-
             public FirstPass(DiagnosticsReport diagnostics, string filePath, SymbolTable symbols)
                 : base(diagnostics, filePath, symbols)
             { }
@@ -139,8 +137,6 @@ namespace ScTools.ScriptLang.Semantics
                     s.Location = location;
                     location += s.Type.SizeOf;
                 }
-
-                StaticVarsTotalSize = location;
             }
 
             private FunctionType CreateUnresolvedFunctionType(Ast.Type? returnType, IEnumerable<VariableDeclaration> parameters)
@@ -187,8 +183,6 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitStaticVariableStatement(StaticVariableStatement node)
             {
-                Debug.Assert(node.Variable.Initializer == null, "Static initializers are not supported");
-
                 Symbols.Add(new VariableSymbol(node.Variable.Declaration.Name,
                                                node.Source,
                                                new UnresolvedType(node.Variable.Declaration.Type.Name),

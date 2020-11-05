@@ -12,11 +12,10 @@ namespace ScTools.ScriptLang.Semantics
             var diagnostics = new DiagnosticsReport();
             var symbols = new SymbolTable();
             AddBuiltIns(symbols);
-            var pass1 = new FirstPass(diagnostics, filePath, symbols);
-            pass1.Run(root);
+            new FirstPass(diagnostics, filePath, symbols).Run(root);
             new SecondPass(diagnostics, filePath, symbols).Run(root);
 
-            var binderPass = new Binder(diagnostics, filePath, symbols, pass1.StaticVarsTotalSize);
+            var binderPass = new Binder(diagnostics, filePath, symbols);
             binderPass.Run(root);
 
             return (diagnostics, symbols, binderPass.Module);
