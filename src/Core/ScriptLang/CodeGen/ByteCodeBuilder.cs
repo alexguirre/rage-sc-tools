@@ -241,31 +241,33 @@ namespace ScTools.ScriptLang.CodeGen
         public void EmitOffsetLoad(int offset) => EmitOffsetInst(offset, Opcode.IOFFSET_U8_LOAD, Opcode.IOFFSET_S16_LOAD);
         public void EmitOffsetStore(int offset) => EmitOffsetInst(offset, Opcode.IOFFSET_U8_STORE, Opcode.IOFFSET_S16_STORE);
 
-        public void EmitOffsetStoreN(int offset, int n)
+        public void EmitOffsetStoreN(int offset, int n, Action emitAddr)
         {
             if (n == 1)
             {
+                emitAddr();
                 EmitOffsetStore(offset);
             }
             else
             {
-                // FIXME
                 EmitPushUInt(unchecked((uint)n));
+                emitAddr();
                 EmitOffsetAddr(offset);
                 Emit(Opcode.STORE_N, ReadOnlySpan<Operand>.Empty);
             }
         }
 
-        public void EmitOffsetLoadN(int offset, int n)
+        public void EmitOffsetLoadN(int offset, int n, Action emitAddr)
         {
             if (n == 1)
             {
+                emitAddr();
                 EmitOffsetLoad(offset);
             }
             else
             {
-                // FIXME
                 EmitPushUInt(unchecked((uint)n));
+                emitAddr();
                 EmitOffsetAddr(offset);
                 Emit(Opcode.LOAD_N, ReadOnlySpan<Operand>.Empty);
             }

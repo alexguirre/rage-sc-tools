@@ -347,14 +347,12 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
         public override void EmitLoad(ByteCodeBuilder code)
         {
-            Expression.EmitAddr(code);
-            code.EmitOffsetLoadN(MemberOffset, Type!.SizeOf);
+            code.EmitOffsetLoadN(MemberOffset, Type!.SizeOf, () => Expression.EmitAddr(code));
         }
 
         public override void EmitStore(ByteCodeBuilder code)
         {
-            Expression.EmitAddr(code);
-            code.EmitOffsetStoreN(MemberOffset, Type!.SizeOf);
+            code.EmitOffsetStoreN(MemberOffset, Type!.SizeOf, () => Expression.EmitAddr(code));
         }
 
         public override void EmitAddr(ByteCodeBuilder code)
