@@ -86,6 +86,21 @@ namespace ScTools.ScriptLang.Semantics
                 // empty to avoid visiting its ParameterList
             }
 
+            public override void VisitStaticVariableStatement(StaticVariableStatement node)
+            {
+                var v = Symbols.Lookup(node.Variable.Declaration.Name) as VariableSymbol;
+                Debug.Assert(v != null);
+
+                if (node.Variable.Initializer != null)
+                {
+                    var initializerType = TypeOf(node.Variable.Initializer);
+                    if (initializerType == null || !Type.AreEquivalent(v.Type, initializerType))
+                    {
+                        Diagnostics.AddError(FilePath, $"Mismatched initializer type and type of static variable '{v.Name}'", node.Variable.Initializer.Source);
+                    }
+                }
+            }
+
             public override void VisitParameterList(ParameterList node)
             {
                 foreach (var p in node.Parameters)

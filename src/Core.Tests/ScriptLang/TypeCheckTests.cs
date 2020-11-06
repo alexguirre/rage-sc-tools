@@ -8,7 +8,6 @@
 
     public class TypeCheckTests
     {
-        // TODO: fix type checking in static initializers
         [Theory]
         [InlineData("BOOL v = 4")]
         [InlineData("INT v = TRUE")]
@@ -26,6 +25,26 @@
             "));
 
             Assert.True(module.Diagnostics.HasErrors, $"Expected errors due to incorrect type in static initializer '{staticDecl}'");
+        }
+
+        [Theory]
+        [InlineData("BOOL v = TRUE")]
+        [InlineData("BOOL v = FALSE")]
+        [InlineData("BOOL v = 3 == 6")]
+        [InlineData("INT v = 3")]
+        [InlineData("FLOAT v = 1.0")]
+        [InlineData("FLOAT v = 2.0 + 3.0")]
+        [InlineData("VEC3 v = <<1.0, 2.0, 3.0>>")]
+        public void TestStaticInitializersCorrectTypes(string staticDecl)
+        {
+            var module = Module.Parse(new StringReader($@"
+                {staticDecl}
+
+                PROC MAIN()
+                ENDPROC
+            "));
+
+            Assert.False(module.Diagnostics.HasErrors, $"Expected no errors due to incorrect type in static initializer '{staticDecl}'");
         }
     }
 }
