@@ -178,7 +178,14 @@ namespace ScTools.ScriptLang.Ast
 
         public int IntValue { get { Debug.Assert(Kind == LiteralKind.Int); return int.Parse(ValueText); } }
         public float FloatValue { get { Debug.Assert(Kind == LiteralKind.Float); return float.Parse(ValueText); } }
-        public string StringValue { get { Debug.Assert(Kind == LiteralKind.String); return ValueText.Trim('"').Unescape(); } }
+        public string StringValue
+        { 
+            get 
+            { 
+                Debug.Assert(Kind == LiteralKind.String); 
+                return ValueText[1..^1].Unescape(); // remove quotes at start and end of the string, then unescape it
+            }
+        }
         public bool BoolValue { get { Debug.Assert(Kind == LiteralKind.Bool); return ValueText.ToUpperInvariant() == "TRUE"; } }
 
         public LiteralExpression(LiteralKind kind, string valueText, SourceRange source) : base(source)

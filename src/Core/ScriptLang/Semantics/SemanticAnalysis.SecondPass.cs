@@ -98,6 +98,11 @@ namespace ScTools.ScriptLang.Semantics
 
                 if (node.Variable.Initializer != null)
                 {
+                    if (v.Type is BasicType { TypeCode: BasicTypeCode.String })
+                    {
+                        Diagnostics.AddError(FilePath, $"Static variables of type STRING cannot have an initializer", node.Variable.Initializer.Source);
+                    }
+
                     var initializerType = TypeOf(node.Variable.Initializer);
                     if (initializerType == null || !v.Type.IsAssignableFrom(initializerType, considerReferences: false))
                     {
