@@ -23,15 +23,32 @@ namespace ScTools.ScriptLang.Semantics
 
         private static void AddBuiltIns(SymbolTable symbols)
         {
-            var fl = new BasicType(BasicTypeCode.Float);
-            symbols.Add(new TypeSymbol("INT", SourceRange.Unknown, new BasicType(BasicTypeCode.Int)));
-            symbols.Add(new TypeSymbol("FLOAT", SourceRange.Unknown, fl));
+            // basic types
+            var flTy = new BasicType(BasicTypeCode.Float);
+            var intTy = new BasicType(BasicTypeCode.Int);
+            symbols.Add(new TypeSymbol("INT", SourceRange.Unknown, intTy));
+            symbols.Add(new TypeSymbol("FLOAT", SourceRange.Unknown, flTy));
             symbols.Add(new TypeSymbol("BOOL", SourceRange.Unknown, new BasicType(BasicTypeCode.Bool)));
             symbols.Add(new TypeSymbol("STRING", SourceRange.Unknown, new BasicType(BasicTypeCode.String)));
-            symbols.Add(new TypeSymbol("VEC3", SourceRange.Unknown, new StructType("VEC3",
-                                                                        new Field(fl, "x"),
-                                                                        new Field(fl, "y"),
-                                                                        new Field(fl, "z"))));
+
+            // struct types
+            static Field F(Type ty, string name) => new Field(ty, name);
+            var entityIndexTy = new StructType("ENTITY_INDEX", F(intTy, "value"));
+            var structTypes = new[]
+            {
+                new StructType("VEC3", F(flTy, "x"), F(flTy, "y"), F(flTy, "z")),
+                new StructType("PLAYER_INDEX", F(intTy, "value")),
+                entityIndexTy,
+                new StructType("PED_INDEX", F(entityIndexTy, "base")),
+                new StructType("VEHICLE_INDEX", F(entityIndexTy, "base")),
+                new StructType("OBJECT_INDEX", F(entityIndexTy, "base")),
+                new StructType("CAMERA_INDEX", F(intTy, "value")),
+            };
+
+            foreach (var structTy in structTypes)
+            {
+                symbols.Add(new TypeSymbol(structTy.Name!, SourceRange.Unknown, structTy));
+            }
         }
 
         private abstract class Pass : AstVisitor
