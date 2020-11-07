@@ -43,8 +43,8 @@ namespace ScTools.ScriptLang.Semantics
                 }
                 else if (considerReferences)
                 {
-                    assignable = (dest is RefType destRefType && destRefType.ElementType == src) ||
-                                 (src is RefType srcRefType && srcRefType.ElementType == dest);
+                    assignable = (dest is RefType destRefType && destRefType.ElementType.IsAssignableFrom(src, considerReferences: false)) ||
+                                 (src is RefType srcRefType && dest.IsAssignableFrom(srcRefType.ElementType, considerReferences: false));
                 }
             }
 

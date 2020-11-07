@@ -146,5 +146,21 @@
 
             Assert.False(module.Diagnostics.HasErrors);
         }
+
+        [Fact]
+        public void TestAssignToRefStruct()
+        {
+            var module = Module.Compile(new StringReader($@"
+                PROC MAIN()
+                    VEC3 a = <<1.0, 2.0, 3.0>>
+                    VEC3& b = a
+                    VEC3 c = <<4.0, 5.0, 6.0>>
+                    b = c
+                    b = <<7.0, 8.0, 9.0>>
+                ENDPROC
+            "));
+
+            Assert.False(module.Diagnostics.HasErrors);
+        }
     }
 }

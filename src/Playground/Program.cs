@@ -59,7 +59,9 @@ STRUCT SPAWNPOINT
 ENDSTRUCT
 
 PROC MAIN()
-    SPAWNPOINT sp = <<45.0, <<1.0, 2.0, 3.0>>>>
+    SPAWNPOINT sp
+    INIT_SPAWNPOINT(sp)
+
     DOUBLE(sp.position)
 
     VEC3& b = sp.position
@@ -72,6 +74,10 @@ PROC MAIN()
         DRAW_FLOAT(0.5, 0.45, b.y)
         DRAW_FLOAT(0.5, 0.60, b.z)
     ENDWHILE
+ENDPROC
+
+PROC INIT_SPAWNPOINT(SPAWNPOINT& sp)
+    sp = <<45.0, <<1.0, 2.0, 3.0>>>>
 ENDPROC
 
 PROC DOUBLE(VEC3& v)
