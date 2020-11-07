@@ -60,17 +60,20 @@ namespace ScTools.ScriptLang.Semantics
 
             protected virtual void OnEnd() { }
 
-            protected Type TryResolveType(string typeName, SourceRange source)
+            protected Type TryResolveType(Ast.Type type)
             {
-                var unresolved = new UnresolvedType(typeName);
+                var unresolved = new UnresolvedType(type.Name, type.IsReference);
                 var resolved = unresolved.Resolve(Symbols);
                 if (resolved == null)
                 {
-                    Diagnostics.AddError(FilePath, $"Unknown type '{typeName}'", source);
+                    Diagnostics.AddError(FilePath, $"Unknown type '{type.Name}'", type.Source);
                 }
 
                 return resolved ?? unresolved;
             }
+
+            protected UnresolvedType UnresolvedTypeFromAst(Ast.Type type)
+                => new UnresolvedType(type.Name, type.IsReference);
 
             protected Type? TypeOf(Expression expr) => expr.Accept(new TypeOf(Diagnostics, FilePath, Symbols));
         }

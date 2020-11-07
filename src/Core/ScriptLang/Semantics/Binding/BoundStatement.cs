@@ -5,6 +5,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Diagnostics;
+    using System.Linq;
 
     using ScTools.ScriptLang.CodeGen;
     using ScTools.ScriptLang.Semantics.Symbols;
@@ -12,6 +13,11 @@ namespace ScTools.ScriptLang.Semantics.Binding
     public abstract class BoundStatement : BoundNode
     {
         public abstract void Emit(ByteCodeBuilder code, BoundFunction parent);
+    }
+
+    public sealed class BoundInvalidStatement : BoundStatement
+    {
+        public override void Emit(ByteCodeBuilder code, BoundFunction parent) => throw new NotSupportedException();
     }
 
     public sealed class BoundVariableDeclarationStatement : BoundStatement
@@ -23,7 +29,20 @@ namespace ScTools.ScriptLang.Semantics.Binding
         {
             if (var.Kind != VariableKind.Local)
             {
-                throw new ArgumentException("Only local variables can have variable declaration statements");
+                throw new ArgumentException("Only local variables can have variable declaration statements", nameof(var));
+            }
+
+            if (var.Type is RefType)
+            {
+                if (initializer == null)
+                {
+                    throw new ArgumentException("Initializer is missing for reference type", nameof(initializer));
+                }
+
+                if (!initializer.IsAddressable)
+                {
+                    throw new ArgumentException("Initializer is not addressable and var is a reference", nameof(initializer));
+                }
             }
 
             Var = var;
@@ -34,7 +53,14 @@ namespace ScTools.ScriptLang.Semantics.Binding
         {
             if (Initializer != null)
             {
-                Initializer.EmitLoad(code);
+                if (Var.Type is RefType)
+                {
+                    Initializer.EmitAddr(code);
+                }
+                else
+                {
+                    Initializer.EmitLoad(code);
+                }
                 code.EmitLocalStoreN(Var.Location, Var.Type.SizeOf);
             }
         }
@@ -144,14 +170,22 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
         public override void Emit(ByteCodeBuilder code, BoundFunction parent)
         {
-            foreach (var arg in Arguments)
+            var functionType = (Callee.Type as FunctionType)!;
+            foreach (var (arg, paramType) in Arguments.Zip(functionType.Parameters))
             {
-                arg.EmitLoad(code);
+                if (paramType is RefType)
+                {
+                    arg.EmitAddr(code);
+                }
+                else
+                {
+                    arg.EmitLoad(code);
+                }
             }
             Callee.EmitCall(code);
 
             // since this is a statement, drop the returned values if any
-            var returnType = (Callee.Type as FunctionType)!.ReturnType;
+            var returnType = functionType.ReturnType;
             if (returnType != null)
             {
                 for (int i = 0; i < returnType.SizeOf; i++)

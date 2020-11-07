@@ -141,8 +141,8 @@ namespace ScTools.ScriptLang.Semantics
 
             private FunctionType CreateUnresolvedFunctionType(Ast.Type? returnType, IEnumerable<VariableDeclaration> parameters)
             {
-                var r = returnType != null ? new UnresolvedType(returnType.Name) : null;
-                return new FunctionType(r, parameters.Select(p => new UnresolvedType(p.Type.Name)));
+                var r = returnType != null ? UnresolvedTypeFromAst(returnType) : null;
+                return new FunctionType(r, parameters.Select(p => UnresolvedTypeFromAst(p.Type)));
             }
 
             public override void VisitFunctionStatement(FunctionStatement node)
@@ -185,13 +185,24 @@ namespace ScTools.ScriptLang.Semantics
             {
                 Symbols.Add(new VariableSymbol(node.Variable.Declaration.Name,
                                                node.Source,
-                                               new UnresolvedType(node.Variable.Declaration.Type.Name),
+                                               UnresolvedTypeFromAst(node.Variable.Declaration.Type),
                                                VariableKind.Static));
             }
 
             public override void VisitStructStatement(StructStatement node)
             {
-                var struc = new StructType(node.Name, node.FieldList.Fields.Select(f => new Field(new UnresolvedType(f.Declaration.Type.Name), f.Declaration.Name)));
+                var struc = new StructType(
+                    node.Name,
+                    node.FieldList.Fields.Select(f =>
+                    {
+                        if (f.Declaration.Type.IsReference)
+                        {
+                            Diagnostics.AddError(FilePath, $"Struct fields cannot be reference types", f.Declaration.Type.Source);
+                        }
+
+                        return new Field(UnresolvedTypeFromAst(f.Declaration.Type), f.Declaration.Name);
+                    }
+                ));
 
                 Symbols.Add(new TypeSymbol(node.Name, node.Source, struc));
             }

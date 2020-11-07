@@ -20,6 +20,10 @@ namespace ScTools.ScriptLang.Semantics.Binding
         /// Gets whether the value of this expression is known at compile time.
         /// </summary>
         public abstract bool IsConstant { get; }
+        /// <summary>
+        /// Gets whether <see cref="EmitAddr(ByteCodeBuilder)"/> is supported.
+        /// </summary>
+        public abstract bool IsAddressable { get; }
 
         public abstract void EmitLoad(ByteCodeBuilder code);
         public abstract void EmitStore(ByteCodeBuilder code);
@@ -30,6 +34,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
     public sealed class BoundUnknownSymbolExpression : BoundExpression
     {
         public override bool IsConstant => false;
+        public override bool IsAddressable => false;
         public string Identifier { get; }
 
         public BoundUnknownSymbolExpression(string identifier)
@@ -47,6 +52,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
     public sealed class BoundUnaryExpression : BoundExpression
     {
         public override bool IsConstant => Operand.IsConstant;
+        public override bool IsAddressable => false;
         public BoundExpression Operand { get; }
         public Ast.UnaryOperator Op { get; }
 
@@ -54,13 +60,14 @@ namespace ScTools.ScriptLang.Semantics.Binding
         {
             Operand = operand;
             Op = op;
-            Type = Operand.Type;
+            Type = Operand.Type?.UnderlyingType;
         }
 
         public override void EmitLoad(ByteCodeBuilder code)
         {
-            if (Operand.Type is BasicType { TypeCode: BasicTypeCode.Float } ||
-                Operand.Type is BasicType { TypeCode: BasicTypeCode.Int })
+            var operandType = Type;
+            if (operandType is BasicType { TypeCode: BasicTypeCode.Float } ||
+                operandType is BasicType { TypeCode: BasicTypeCode.Int })
             {
                 Operand.EmitLoad(code);
                 var isFloat = Type is BasicType { TypeCode: BasicTypeCode.Float };
@@ -72,7 +79,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
                     default: throw new NotImplementedException();
                 }
             }
-            else if (Operand.Type is BasicType { TypeCode: BasicTypeCode.Bool })
+            else if (operandType is BasicType { TypeCode: BasicTypeCode.Bool })
             {
                 Operand.EmitLoad(code);
                 switch (Op)
@@ -97,22 +104,23 @@ namespace ScTools.ScriptLang.Semantics.Binding
     public sealed class BoundBinaryExpression : BoundExpression
     {
         public override bool IsConstant => Left.IsConstant && Right.IsConstant;
+        public override bool IsAddressable => false;
         public BoundExpression Left { get; }
         public BoundExpression Right { get; }
         public Ast.BinaryOperator Op { get; }
 
         public BoundBinaryExpression(BoundExpression left, BoundExpression right, Ast.BinaryOperator op)
         {
-            Debug.Assert(left.Type == right.Type);
+            Debug.Assert(left.Type?.UnderlyingType == right.Type?.UnderlyingType);
             Left = left;
             Right = right;
             Op = op;
-            Type = Ast.BinaryExpression.OpIsComparison(op) ? new BasicType(BasicTypeCode.Bool) : left.Type;
+            Type = Ast.BinaryExpression.OpIsComparison(op) ? new BasicType(BasicTypeCode.Bool) : left.Type?.UnderlyingType;
         }
 
         public override void EmitLoad(ByteCodeBuilder code)
         {
-            var operandsType = Left.Type;
+            var operandsType = Left.Type?.UnderlyingType;
             if (operandsType is BasicType { TypeCode: BasicTypeCode.Float } ||
                 operandsType is BasicType { TypeCode: BasicTypeCode.Int })
             {
@@ -202,6 +210,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
     public sealed class BoundVariableExpression : BoundExpression
     {
         public override bool IsConstant => false;
+        public override bool IsAddressable => true;
         public VariableSymbol Var { get; }
 
         public BoundVariableExpression(VariableSymbol variable)
@@ -214,11 +223,25 @@ namespace ScTools.ScriptLang.Semantics.Binding
         {
             if (Var.IsLocal)
             {
-                code.EmitLocalLoadN(Var.Location, Var.Type.SizeOf);
+                if (Type is RefType refType)
+                {
+                    code.EmitAddrLoadN(refType.ElementType.SizeOf, () => code.EmitLocalLoad(Var.Location));
+                }
+                else
+                {
+                    code.EmitLocalLoadN(Var.Location, Var.Type.SizeOf);
+                }
             }
             else if (Var.IsStatic)
             {
-                code.EmitStaticLoadN(Var.Location, Var.Type.SizeOf);
+                if (Type is RefType)
+                {
+                    throw new NotSupportedException("Static variables cannot be references");
+                }
+                else
+                {
+                    code.EmitStaticLoadN(Var.Location, Var.Type.SizeOf);
+                }
             }
             else
             {
@@ -230,11 +253,25 @@ namespace ScTools.ScriptLang.Semantics.Binding
         {
             if (Var.IsLocal)
             {
-                code.EmitLocalStoreN(Var.Location, Var.Type.SizeOf);
+                if (Type is RefType refType)
+                {
+                    code.EmitAddrStoreN(refType.ElementType.SizeOf, () => code.EmitLocalLoad(Var.Location));
+                }
+                else
+                {
+                    code.EmitLocalStoreN(Var.Location, Var.Type.SizeOf);
+                }
             }
             else if (Var.IsStatic)
             {
-                code.EmitStaticStoreN(Var.Location, Var.Type.SizeOf);
+                if (Type is RefType)
+                {
+                    throw new NotSupportedException("Static variables cannot be references");
+                }
+                else
+                {
+                    code.EmitStaticStoreN(Var.Location, Var.Type.SizeOf);
+                }
             }
             else
             {
@@ -246,11 +283,26 @@ namespace ScTools.ScriptLang.Semantics.Binding
         {
             if (Var.IsLocal)
             {
-                code.EmitLocalAddr(Var.Location);
+                if (Type is RefType)
+                {
+                    // for references load the contained address instead of its own address
+                    code.EmitLocalLoad(Var.Location);
+                }
+                else
+                {
+                    code.EmitLocalAddr(Var.Location);
+                }
             }
             else if (Var.IsStatic)
             {
-                code.EmitStaticAddr(Var.Location);
+                if (Type is RefType)
+                {
+                    throw new NotSupportedException("Static variables cannot be references");
+                }
+                else
+                {
+                    code.EmitStaticAddr(Var.Location);
+                }
             }
             else
             {
@@ -269,6 +321,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
     public sealed class BoundFunctionExpression : BoundExpression
     {
         public override bool IsConstant => false;
+        public override bool IsAddressable => false;
         public FunctionSymbol Function { get; }
 
         public BoundFunctionExpression(FunctionSymbol function)
@@ -297,6 +350,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
     public sealed class BoundInvocationExpression : BoundExpression
     {
         public override bool IsConstant => false;
+        public override bool IsAddressable => false;
         public BoundExpression Callee { get; }
         public ImmutableArray<BoundExpression> Arguments { get; }
 
@@ -312,9 +366,17 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
         public override void EmitLoad(ByteCodeBuilder code)
         {
-            foreach (var arg in Arguments)
+            var functionType = (Callee.Type as FunctionType)!;
+            foreach (var (arg, paramType) in Arguments.Zip(functionType.Parameters))
             {
-                arg.EmitLoad(code);
+                if (paramType is RefType)
+                {
+                    arg.EmitAddr(code);
+                }
+                else
+                {
+                    arg.EmitLoad(code);
+                }
             }
             Callee.EmitCall(code);
         }
@@ -327,18 +389,19 @@ namespace ScTools.ScriptLang.Semantics.Binding
     public sealed class BoundMemberAccessExpression : BoundExpression
     {
         public override bool IsConstant => false;
+        public override bool IsAddressable => true;
         public BoundExpression Expression { get; }
         public string Member { get; }
         public int MemberOffset { get; }
 
         public BoundMemberAccessExpression(BoundExpression expression, string member)
         {
-            Debug.Assert(expression.Type is StructType);
+            Debug.Assert(expression.Type?.UnderlyingType is StructType);
 
             Expression = expression;
             Member = member;
 
-            var structType = (Expression.Type as StructType)!;
+            var structType = (Expression.Type.UnderlyingType as StructType)!;
             Debug.Assert(structType.HasField(Member));
 
             MemberOffset = structType.OffsetOfField(Member);
@@ -372,6 +435,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
     public sealed class BoundAggregateExpression : BoundExpression
     {
         public override bool IsConstant => Expressions.All(expr => expr.IsConstant);
+        public override bool IsAddressable => false;
         public ImmutableArray<BoundExpression> Expressions { get; }
 
         public BoundAggregateExpression(IEnumerable<BoundExpression> expressions)
@@ -398,6 +462,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
         private static readonly Type FloatType = new BasicType(BasicTypeCode.Float);
 
         public override bool IsConstant => true;
+        public override bool IsAddressable => false;
         public float Value { get; }
 
         public BoundFloatLiteralExpression(float value)
@@ -417,6 +482,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
         private static readonly Type IntType = new BasicType(BasicTypeCode.Int);
 
         public override bool IsConstant => true;
+        public override bool IsAddressable => false;
         public int Value { get; }
 
         public BoundIntLiteralExpression(int value)
@@ -436,6 +502,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
         private static readonly Type StringType = new BasicType(BasicTypeCode.String);
 
         public override bool IsConstant => false;
+        public override bool IsAddressable => false;
         public string Value { get; }
 
         public BoundStringLiteralExpression(string value)
@@ -455,6 +522,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
         private static readonly Type BoolType = new BasicType(BasicTypeCode.Bool);
 
         public override bool IsConstant => true;
+        public override bool IsAddressable => false;
         public bool Value { get; }
 
         public BoundBoolLiteralExpression(bool value)

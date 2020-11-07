@@ -97,10 +97,20 @@ namespace ScTools.ScriptLang.Semantics
                 var varSymbol = Symbols.Lookup(node.Variable.Declaration.Name) as VariableSymbol;
                 Debug.Assert(varSymbol != null);
 
-                stmts!.Add(new BoundVariableDeclarationStatement(
-                    varSymbol,
-                    Bind(node.Variable.Initializer)
-                ));
+                var initializerExpr = Bind(node.Variable.Initializer);
+
+                if (varSymbol.Type is RefType && initializerExpr is { IsAddressable: false })
+                {
+                    Diagnostics.AddError(FilePath, $"Cannot take reference of expression", node.Variable.Initializer!.Source);
+                    stmts!.Add(new BoundInvalidStatement());
+                }
+                else
+                {
+                    stmts!.Add(new BoundVariableDeclarationStatement(
+                        varSymbol,
+                        initializerExpr
+                    ));
+                }
             }
 
             public override void VisitArgumentList(ArgumentList node) => throw new NotSupportedException();

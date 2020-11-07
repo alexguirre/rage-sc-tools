@@ -91,10 +91,15 @@ namespace ScTools.ScriptLang.Semantics
                 var v = Symbols.Lookup(node.Variable.Declaration.Name) as VariableSymbol;
                 Debug.Assert(v != null);
 
+                if (v.Type is RefType)
+                {
+                    Diagnostics.AddError(FilePath, $"Static variables cannot be reference types", node.Source);
+                }
+
                 if (node.Variable.Initializer != null)
                 {
                     var initializerType = TypeOf(node.Variable.Initializer);
-                    if (initializerType == null || !Type.AreEquivalent(v.Type, initializerType))
+                    if (initializerType == null || !v.Type.IsAssignableFrom(initializerType, considerReferences: false))
                     {
                         Diagnostics.AddError(FilePath, $"Mismatched initializer type and type of static variable '{v.Name}'", node.Variable.Initializer.Source);
                     }
@@ -107,7 +112,7 @@ namespace ScTools.ScriptLang.Semantics
                 {
                     var v = new VariableSymbol(p.Name,
                                                p.Source,
-                                               TryResolveType(p.Type.Name, p.Type.Source),
+                                               TryResolveType(p.Type),
                                                VariableKind.LocalArgument)
                             {
                                 Location = funcAllocLocation,
@@ -124,7 +129,7 @@ namespace ScTools.ScriptLang.Semantics
             {
                 var v = new VariableSymbol(node.Variable.Declaration.Name,
                                            node.Source,
-                                           TryResolveType(node.Variable.Declaration.Type.Name, node.Variable.Declaration.Type.Source),
+                                           TryResolveType(node.Variable.Declaration.Type),
                                            VariableKind.Local)
                 {
                     Location = funcAllocLocation,
@@ -133,9 +138,16 @@ namespace ScTools.ScriptLang.Semantics
                 if (node.Variable.Initializer != null)
                 {
                     var initializerType = TypeOf(node.Variable.Initializer);
-                    if (initializerType == null || !Type.AreEquivalent(v.Type, initializerType))
+                    if (initializerType == null || !v.Type.IsAssignableFrom(initializerType, considerReferences: true))
                     {
                         Diagnostics.AddError(FilePath, $"Mismatched initializer type and type of variable '{v.Name}'", node.Variable.Initializer.Source);
+                    }
+                }
+                else
+                {
+                    if (v.Type is RefType)
+                    {
+                        Diagnostics.AddError(FilePath, $"Reference variable '{v.Name}' is missing an initializer", node.Source);
                     }
                 }
 
@@ -155,7 +167,7 @@ namespace ScTools.ScriptLang.Semantics
                     return;
                 }
 
-                if (!Type.AreEquivalent(destType, srcType))
+                if (!destType.IsAssignableFrom(srcType, considerReferences: true))
                 {
                     Diagnostics.AddError(FilePath, "Mismatched types in assigment", node.Source);
                 }
@@ -205,7 +217,7 @@ namespace ScTools.ScriptLang.Semantics
                 }
 
                 var returnType = TypeOf(node.Expression);
-                if (returnType == null || !Type.AreEquivalent(func.Type.ReturnType!, returnType))
+                if (returnType == null || !func.Type.ReturnType!.IsAssignableFrom(returnType, considerReferences: true))
                 {
                     Diagnostics.AddError(FilePath, $"Returned type does not match the specified function return type", node.Expression.Source);
                 }
@@ -237,7 +249,7 @@ namespace ScTools.ScriptLang.Semantics
                     var expectedType = f.Parameters[i];
                     var foundType = TypeOf(node.ArgumentList.Arguments[i]);
 
-                    if (foundType == null || !Type.AreEquivalent(expectedType, foundType))
+                    if (foundType == null || !expectedType.IsAssignableFrom(foundType, considerReferences: true))
                     {
                         Diagnostics.AddError(FilePath, $"Mismatched type of argument #{i}", node.ArgumentList.Arguments[i].Source);
                     }

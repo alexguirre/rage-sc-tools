@@ -69,7 +69,7 @@ namespace ScTools.ScriptLang.Semantics
                 }
 
                 // TODO: allow some conversions (e.g. INT -> FLOAT, aggregate -> struct)
-                if (left != right)
+                if (left.UnderlyingType != right.UnderlyingType)
                 {
                     diagnostics.AddError(filePath, $"Mismatched type in binary operation '{BinaryExpression.OpToString(node.Op)}'", node.Source);
                     return null;
@@ -108,7 +108,7 @@ namespace ScTools.ScriptLang.Semantics
                     var expectedType = f.Parameters[i];
                     var foundType = node.ArgumentList.Arguments[i].Accept(this);
 
-                    if (foundType == null || !Type.AreEquivalent(expectedType, foundType))
+                    if (foundType == null || !expectedType.IsAssignableFrom(foundType, considerReferences: true))
                     {
                         diagnostics.AddError(filePath, $"Mismatched type of argument #{i}", node.ArgumentList.Arguments[i].Source);
                     }
@@ -120,7 +120,7 @@ namespace ScTools.ScriptLang.Semantics
             public override Type? VisitMemberAccessExpression(MemberAccessExpression node)
             {
                 var type = node.Expression.Accept(this);
-                if (!(type is StructType struc))
+                if (!(type?.UnderlyingType is StructType struc))
                 {
                     if (type != null)
                     {

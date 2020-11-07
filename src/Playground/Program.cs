@@ -51,42 +51,33 @@ NATIVE FUNC FLOAT VMAG2(VEC3 v)
 NATIVE FUNC FLOAT VDIST(VEC3 v1, VEC3 v2)
 NATIVE FUNC FLOAT VDIST2(VEC3 v1, VEC3 v2)
 NATIVE FUNC VEC3 GET_GAMEPLAY_CAM_COORD()
+NATIVE PROC DELETE_PED(INT& handle)
 
 STRUCT SPAWNPOINT
     FLOAT heading
     VEC3 position
 ENDSTRUCT
 
-SPAWNPOINT sp = <<45.0, <<100.0, 200.0, 50.0>>>>
-FLOAT v = 123.456 + 789.0
-
 PROC MAIN()
-    SPAWNPOINT sp2 = <<sp.heading, GET_POS()>>
+    SPAWNPOINT sp = <<45.0, <<1.0, 2.0, 3.0>>>>
+    DOUBLE(sp.position)
+
+    VEC3& b = sp.position
+    DOUBLE(b)
 
     WHILE TRUE
         WAIT(0)
-
-        VEC3 pos = GET_GAMEPLAY_CAM_COORD()
-        FLOAT dist = VDIST(pos, sp.position)
-
-        DRAW_STRING(0.5, 0.05, ""Gameplay Cam Position"")
-        DRAW_FLOAT(0.25, 0.15, pos.x)
-        DRAW_FLOAT(0.5, 0.15, pos.y)
-        DRAW_FLOAT(0.75, 0.15, pos.z)
-
-        DRAW_STRING(0.5, 0.35, ""Distance"")
-        DRAW_FLOAT(0.5, 0.45, dist)
+        DRAW_FLOAT(0.5, 0.15, sp.heading)
+        DRAW_FLOAT(0.5, 0.3,  b.x)
+        DRAW_FLOAT(0.5, 0.45, b.y)
+        DRAW_FLOAT(0.5, 0.60, b.z)
     ENDWHILE
 ENDPROC
 
-FUNC VEC3 GET_POS()
-    RETURN <<100.0, 100.0, 60.0>>
-ENDFUNC
-
-PROC DRAW_STRING(FLOAT x, FLOAT y, STRING v)
-    BEGIN_TEXT_COMMAND_DISPLAY_TEXT(""STRING"")
-    ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(v)
-    END_TEXT_COMMAND_DISPLAY_TEXT(x, y, 0)
+PROC DOUBLE(VEC3& v)
+    v.x = v.x * 2.0
+    v.y = v.y * 2.0
+    v.z = v.z * 2.0
 ENDPROC
 
 PROC DRAW_FLOAT(FLOAT x, FLOAT y, FLOAT v)

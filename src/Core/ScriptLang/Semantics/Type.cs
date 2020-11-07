@@ -5,6 +5,7 @@ namespace ScTools.ScriptLang.Semantics
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using System.Runtime.CompilerServices;
 
     using ScTools.ScriptLang.Semantics.Symbols;
 
@@ -28,19 +29,48 @@ namespace ScTools.ScriptLang.Semantics
         /// Checks whether <paramref name="dest"/> and <paramref name="src"/> are the same type;
         /// or, if both are <see cref="StructType"/>, whether <paramref name="src"/> is an aggregate type with the same field layout as <paramref name="dest"/>.
         /// </summary>
-        public static bool AreEquivalent(Type dest, Type src)
+        public bool IsAssignableFrom(Type src, bool considerReferences)
         {
-            bool areEquivalent = dest == src;
+            var dest = this;
+            bool assignable = dest == src;
 
-            if (!areEquivalent &&
-                (src is StructType srcStructType && dest is StructType destStructType))
+            if (!assignable)
             {
-                bool srcIsAggregate = srcStructType.Name == null;
-                areEquivalent = srcIsAggregate && srcStructType.HasSameFieldLayout(destStructType);
+                if (dest is StructType destStructType && src is StructType srcStructType)
+                {
+                    bool srcIsAggregate = srcStructType.Name == null;
+                    assignable = srcIsAggregate && srcStructType.HasSameFieldLayout(destStructType);
+                }
+                else if (considerReferences)
+                {
+                    assignable = (dest is RefType destRefType && destRefType.ElementType == src) ||
+                                 (src is RefType srcRefType && srcRefType.ElementType == dest);
+                }
             }
 
-            return areEquivalent;
+            return assignable;
         }
+
+        /// <summary>
+        /// Gets this <see cref="Type"/>, except for <see cref="RefType"/>s, in which it returns its <see cref="RefType.ElementType"/>.
+        /// </summary>
+        public Type UnderlyingType => this is RefType refType ? refType.ElementType : this;
+    }
+
+    public sealed class RefType : Type
+    {
+        public override int SizeOf => 1;
+        public Type ElementType { get; }
+
+        public RefType(Type elementType)
+            => ElementType = elementType is RefType ? throw new ArgumentException("References to references are not allowed") :
+                                                      elementType;
+
+        public override bool Equals(Type? other)
+            => other is RefType r && r.ElementType == ElementType;
+
+        protected override int DoGetHashCode()
+            => HashCode.Combine(ElementType);
     }
 
     public sealed class BasicType : Type
@@ -295,21 +325,25 @@ namespace ScTools.ScriptLang.Semantics
     public sealed class UnresolvedType : Type
     {
         public string TypeName { get; }
+        public bool IsReference { get; }
         public override int SizeOf => throw new InvalidOperationException("Unresolved type");
 
-        public UnresolvedType(string typeName) => TypeName = typeName;
+        public UnresolvedType(string typeName, bool isReference)
+            => (TypeName, IsReference) = (typeName, isReference);
 
         public Type? Resolve(SymbolTable symbols)
         {
             var symbol = symbols.Lookup(TypeName);
-
-            return (symbol as TypeSymbol)?.Type;
+            var type = (symbol as TypeSymbol)?.Type;
+            return type != null ?
+                (IsReference ? new RefType(type) : type) :
+                null;
         }
 
         public override bool Equals(Type? other)
-            => other is UnresolvedType t && t.TypeName == TypeName;
+            => other is UnresolvedType t && t.TypeName == TypeName && t.IsReference == IsReference;
 
         protected override int DoGetHashCode()
-            => HashCode.Combine(TypeName);
+            => HashCode.Combine(TypeName, IsReference);
     }
 }

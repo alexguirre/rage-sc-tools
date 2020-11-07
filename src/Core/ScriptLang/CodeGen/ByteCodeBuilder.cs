@@ -272,6 +272,37 @@ namespace ScTools.ScriptLang.CodeGen
                 Emit(Opcode.LOAD_N, ReadOnlySpan<Operand>.Empty);
             }
         }
+
+        public void EmitAddrStoreN(int n, Action emitAddr)
+        {
+            if (n == 1)
+            {
+                emitAddr();
+                Emit(Opcode.STORE);
+            }
+            else
+            {
+                EmitPushUInt(unchecked((uint)n));
+                emitAddr();
+                Emit(Opcode.STORE_N, ReadOnlySpan<Operand>.Empty);
+            }
+        }
+
+        public void EmitAddrLoadN(int n, Action emitAddr)
+        {
+            if (n == 1)
+            {
+                emitAddr();
+                Emit(Opcode.LOAD);
+            }
+            else
+            {
+                EmitPushUInt(unchecked((uint)n));
+                emitAddr();
+                Emit(Opcode.LOAD_N, ReadOnlySpan<Operand>.Empty);
+            }
+        }
+
         public void EmitCall(FunctionSymbol function) => Emit(Opcode.CALL, new[] { new Operand(function.Name, OperandType.Identifier) });
 
         public void EmitNative(FunctionSymbol function)
