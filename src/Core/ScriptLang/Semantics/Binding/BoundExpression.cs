@@ -111,11 +111,15 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
         public BoundBinaryExpression(BoundExpression left, BoundExpression right, Ast.BinaryOperator op)
         {
-            Debug.Assert(left.Type?.UnderlyingType == right.Type?.UnderlyingType);
             Left = left;
             Right = right;
             Op = op;
-            Type = Ast.BinaryExpression.OpIsComparison(op) ? new BasicType(BasicTypeCode.Bool) : left.Type?.UnderlyingType;
+
+            if (!(left is BoundUnknownSymbolExpression) && !(right is BoundUnknownSymbolExpression))
+            {
+                Debug.Assert(left.Type?.UnderlyingType == right.Type?.UnderlyingType);
+                Type = Ast.BinaryExpression.OpIsComparison(op) ? new BasicType(BasicTypeCode.Bool) : left.Type?.UnderlyingType;
+            }
         }
 
         public override void EmitLoad(ByteCodeBuilder code)
@@ -356,11 +360,14 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
         public BoundInvocationExpression(BoundExpression callee, IEnumerable<BoundExpression> arguments)
         {
-            Debug.Assert(callee.Type is FunctionType f && f.ReturnType != null);
-
             Callee = callee;
             Arguments = arguments.ToImmutableArray();
-            Type = (Callee.Type as FunctionType)?.ReturnType!;
+
+            if (!(callee is BoundUnknownSymbolExpression))
+            {
+                Debug.Assert(callee.Type is FunctionType f && f.ReturnType != null);
+                Type = (Callee.Type as FunctionType)?.ReturnType!;
+            }
         }
 
 
@@ -396,16 +403,19 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
         public BoundMemberAccessExpression(BoundExpression expression, string member)
         {
-            Debug.Assert(expression.Type?.UnderlyingType is StructType);
-
             Expression = expression;
             Member = member;
 
-            var structType = (Expression.Type.UnderlyingType as StructType)!;
-            Debug.Assert(structType.HasField(Member));
+            if (!(expression is BoundUnknownSymbolExpression))
+            {
+                Debug.Assert(expression.Type?.UnderlyingType is StructType);
 
-            MemberOffset = structType.OffsetOfField(Member);
-            Type = structType.TypeOfField(Member);
+                var structType = (Expression.Type.UnderlyingType as StructType)!;
+                Debug.Assert(structType.HasField(Member));
+
+                MemberOffset = structType.OffsetOfField(Member);
+                Type = structType.TypeOfField(Member);
+            }
         }
 
         public override void EmitLoad(ByteCodeBuilder code)
