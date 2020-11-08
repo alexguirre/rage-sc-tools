@@ -162,7 +162,10 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
         public BoundInvocationStatement(BoundExpression callee, IEnumerable<BoundExpression> arguments)
         {
-            Debug.Assert(callee.Type is FunctionType);
+            if (!(callee is BoundUnknownSymbolExpression))
+            {
+                Debug.Assert(callee.Type is FunctionType);
+            }
 
             Callee = callee;
             Arguments = arguments.ToImmutableArray();
