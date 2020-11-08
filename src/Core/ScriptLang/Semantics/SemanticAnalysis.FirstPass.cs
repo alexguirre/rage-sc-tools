@@ -129,8 +129,7 @@ namespace ScTools.ScriptLang.Semantics
 
                 int location = 0;
                 foreach (var s in Symbols.Symbols.Where(sym => sym is VariableSymbol { Kind: VariableKind.Static })
-                                                 .Cast<VariableSymbol>()
-                                                 .Reverse()) // reverse to allocate in the order they are declared, the symbol table enumerates them from bottom to top
+                                                 .Cast<VariableSymbol>())
                 {
                     Debug.Assert(!s.IsAllocated);
 

@@ -14,7 +14,10 @@ namespace ScTools.ScriptLang.Semantics
         public SymbolTable? Parent { get; }
         public IEnumerable<(object Key, SymbolTable Table)> Children => children;
 
-        public IEnumerable<ISymbol> Symbols => symbols;
+        /// <summary>
+        /// Returns symbols in the order they were declared in.
+        /// </summary>
+        public IEnumerable<ISymbol> Symbols => symbols.Reverse();
 
         public SymbolTable(SymbolTable? parent = null)
         {
