@@ -9,7 +9,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cli", "src\Cli\Cli.csproj",
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Playground", "src\Playground\Playground.csproj", "{DB93263D-2A89-46D1-A543-87545167C6B6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core.Tests", "src\Core.Tests\Core.Tests.csproj", "{F446AFD1-13C9-4DA2-BE42-480C08EAD88F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Core.Tests", "src\Core.Tests\Core.Tests.csproj", "{F446AFD1-13C9-4DA2-BE42-480C08EAD88F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LanguageServer", "src\LanguageServer\LanguageServer.csproj", "{BDC8A6FC-E28B-4C7C-BAA5-B7671E7CE3D8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{F446AFD1-13C9-4DA2-BE42-480C08EAD88F}.Debug|x64.Build.0 = Debug|x64
 		{F446AFD1-13C9-4DA2-BE42-480C08EAD88F}.Release|x64.ActiveCfg = Release|x64
 		{F446AFD1-13C9-4DA2-BE42-480C08EAD88F}.Release|x64.Build.0 = Release|x64
+		{BDC8A6FC-E28B-4C7C-BAA5-B7671E7CE3D8}.Debug|x64.ActiveCfg = Debug|x64
+		{BDC8A6FC-E28B-4C7C-BAA5-B7671E7CE3D8}.Debug|x64.Build.0 = Debug|x64
+		{BDC8A6FC-E28B-4C7C-BAA5-B7671E7CE3D8}.Release|x64.ActiveCfg = Release|x64
+		{BDC8A6FC-E28B-4C7C-BAA5-B7671E7CE3D8}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

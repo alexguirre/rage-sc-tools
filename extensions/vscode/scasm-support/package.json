@@ -3,24 +3,48 @@
     "displayName": "ScLang Support",
     "description": "Language support for ScLang/ScAsm",
     "version": "0.0.1",
+    "license": "MIT",
+    "publisher": "alexguirre",
+    "homepage": "https://github.com/alexguirre/gtav-sc-tools",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/alexguirre/gtav-sc-tools"
+    },
+    "bugs": {
+        "url": "https://github.com/alexguirre/gtav-sc-tools/issues"
+    },
     "engines": {
-        "vscode": "^1.46.0"
+        "vscode": "^1.51.0"
     },
     "categories": [
         "Programming Languages"
     ],
+    "activationEvents": [
+        "onLanguage:sclang"
+    ],
+    "main": "./out/extension.js",
     "contributes": {
         "languages": [
             {
                 "id": "scasm",
-                "aliases": ["ScAsm", "scasm"],
-                "extensions": [".scasm"],
+                "aliases": [
+                    "ScAsm",
+                    "scasm"
+                ],
+                "extensions": [
+                    ".scasm"
+                ],
                 "configuration": "./scasm-configuration.json"
             },
             {
                 "id": "sclang",
-                "aliases": ["ScLang", "sclang"],
-                "extensions": [".sc"],
+                "aliases": [
+                    "ScLang",
+                    "sclang"
+                ],
+                "extensions": [
+                    ".sc"
+                ],
                 "configuration": "./sclang-configuration.json"
             }
         ],
@@ -35,6 +59,33 @@
                 "scopeName": "source.sclang",
                 "path": "./syntaxes/sclang.tmLanguage.json"
             }
-        ]
+        ],
+        "configuration": {
+            "type": "object",
+            "title": "ScLang Configuration",
+            "properties": {
+                "sclang.languageServerPath": {
+                    "scope": "resource",
+                    "type": ["string", "null"],
+                    "description": "Path to the language server executable for ScLang.",
+                    "default": null
+                }
+            }
+        }
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./"
+    },
+    "devDependencies": {
+        "typescript": "^3.3.1",
+        "tslint": "^5.12.1",
+        "@types/vscode": "^1.51.0",
+        "@types/node": "^10.12.21",
+        "@types/mocha": "^2.2.42"
+    },
+    "dependencies": {
+        "vscode-languageclient": "6.1.3"
     }
 }
