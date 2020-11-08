@@ -2,7 +2,9 @@
 {
     using System.CommandLine;
     using System.CommandLine.Invocation;
+    using System.Diagnostics;
     using System.Net.Sockets;
+    using System.Threading;
 
     internal static class Program
     {
@@ -10,15 +12,22 @@
         {
             var rootCmd = new RootCommand("Language server for ScriptLang (.sc).")
             {
-                new Argument<int>("port", "Port to use.")
+                new Argument<int>("port", "Port to use."),
+                new Option<bool>("--wait-for-debugger", () => false)
             };
-            rootCmd.Handler = CommandHandler.Create<int>(Run);
+            rootCmd.Handler = CommandHandler.Create<int, bool>(Run);
 
             return rootCmd.Invoke(args);
         }
 
-        private static int Run(int port)
+        private static int Run(int port, bool waitForDebugger)
         {
+            if (waitForDebugger)
+            {
+                while (!Debugger.IsAttached) Thread.Sleep(500);
+                Debugger.Break();
+            }
+
             using var tcp = new TcpClient("localhost", port);
             var tcpStream = tcp.GetStream();
 

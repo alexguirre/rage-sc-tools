@@ -10,11 +10,14 @@
 
     using ScTools.ScriptLang;
     using ScTools.ScriptLang.Semantics.Symbols;
+    using ScTools.ScriptLang.Semantics;
+    using System.Text;
 
     internal sealed class SourceFile
     {
         private string source = "";
         private Module? module;
+        private DocumentSymbol[]? cachedSymbols;
 
         public Uri Uri { get; }
         public string Path { get; }
@@ -33,6 +36,16 @@
             Uri = uri;
             Path = uri.AbsolutePath;
             Source = File.ReadAllText(Path);
+        }
+
+        private void OnSourceChanged(string newSource)
+        {
+            using var reader = new StringReader(newSource);
+            module = Module.Parse(reader, Path);
+            if (!module.Diagnostics.HasErrors)
+            {
+                cachedSymbols = null;
+            }
         }
 
         public PublishDiagnosticParams GetLspDiagnostics()
@@ -57,32 +70,70 @@
                 }).ToArray() ?? Array.Empty<LspDiagnostic>(),
             };
 
-        public SymbolInformation[] GetLspSymbols()
-            => module?.SymbolTable.Symbols.Select(s => new SymbolInformation
+        public DocumentSymbol[] GetLspSymbols()
+            => cachedSymbols ??= module?.SymbolTable.Symbols.Where(s => !s.Source.IsUnknown).Select(ToLspSymbol).ToArray() ?? Array.Empty<DocumentSymbol>();
+
+        private static DocumentSymbol ToLspSymbol(ISymbol symbol)
+            => new DocumentSymbol
             {
-                ContainerName = "global",
-                Kind = s switch
+                Kind = symbol switch
                 {
                     TypeSymbol _ => SymbolKind.Struct,
                     VariableSymbol _ => SymbolKind.Variable,
                     FunctionSymbol _ => SymbolKind.Function,
                     _ => throw new NotImplementedException(),
                 },
-                Location = new Location
-                {
-                    Range = ToLspRange(s.Source),
-                    Uri = Uri,
-                },
-                Name = s.Name,
-            }
-            ).ToArray() ?? Array.Empty<SymbolInformation>();
+                Range = ToLspRange(symbol.Source),
+                SelectionRange = ToLspRange(symbol.Source),
+                Name = symbol.Name,
+                Detail = GetLspDetail(symbol),
+                Children = GetLspSymbolChildren(symbol),
+            };
 
-        private void OnSourceChanged(string newSource)
+        private static string GetLspDetail(ISymbol symbol)
         {
-            using var reader = new StringReader(newSource);
-            module = Module.Parse(reader, Path);
+            return symbol switch
+            {
+                TypeSymbol _ => string.Empty,
+                VariableSymbol v => v.Type.ToString(),
+                FunctionSymbol f => FunctionDetail(f),
+                _ => throw new NotImplementedException(),
+            };
+
+            static string FunctionDetail(FunctionSymbol f)
+            {
+                // TODO: include parameter names in function symbol detail
+                var sb = new StringBuilder();
+                if (!f.IsProcedure)
+                {
+                    sb.Append(f.Type.ReturnType!.ToString());
+                    sb.Append(' ');
+                }
+                sb.Append("(");
+                sb.AppendJoin(", ", f.Type.Parameters);
+                sb.Append(")");
+                return sb.ToString();
+            }
         }
 
+        private static DocumentSymbol[] GetLspSymbolChildren(ISymbol symbol)
+        {
+            switch (symbol)
+            {
+                case TypeSymbol t when t.Type is StructType structTy:
+                    return structTy.Fields.Select(f => new DocumentSymbol
+                    {
+                        Kind = SymbolKind.Field,
+                        // TODO: report source range of struct fields
+                        Range = ToLspRange(t.Source),
+                        SelectionRange = ToLspRange(t.Source),
+                        Name = f.Name,
+                        Detail = f.Type.ToString(),
+                        Children = Array.Empty<DocumentSymbol>(),
+                    }).ToArray();
+                default: return Array.Empty<DocumentSymbol>();
+            }
+        }
 
         private static LspRange ToLspRange(SourceRange r)
             => r.IsUnknown ? new LspRange() : new LspRange

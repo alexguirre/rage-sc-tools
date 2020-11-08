@@ -5,6 +5,7 @@ import * as net from 'net';
 import * as url from 'url';
 import * as vscode from "vscode";
 import * as vscode_lc from "vscode-languageclient";
+import * as pf from "portfinder";
 
 export async function activate(context: vscode.ExtensionContext) {
     console.log("SC extension activated");
@@ -66,10 +67,15 @@ function startServerOptions(exePath: string, cwd: string): vscode_lc.ServerOptio
             resolve({ reader: socket, writer: socket } as vscode_lc.StreamInfo);
         });
     
-        let port = 8091;
-        listenPromise(server, port, port + 10, '127.0.0.1')
-        .then((actualPort) => {
-            spawnProcess(exePath, cwd, port);
+        const host = "127.0.0.1";
+        pf.getPortPromise({ host: host })
+        .then(port => {
+            return listenPromise(server, port, port + 10, host);
+        })
+        .then(actualPort => {
+            console.log(`[sclang] Listening to port ${actualPort}`);
+
+            spawnProcess(exePath, cwd, actualPort);
         })
         .catch(err => {
             reject(err);
@@ -97,7 +103,7 @@ function listenPromise(server: net.Server, port: number, maxPort: number, hostna
 }
 
 function spawnProcess(exePath: string, cwd: string, port: number) {
-    const process = cp.spawn(exePath, [`${port}`], { cwd: cwd })
+    const process = cp.spawn(exePath, [`${port}`], { cwd: cwd }) // , "--wait-for-debugger"
         .on("error", err => {
             console.log(`[sclang] Language server process spawn failed with '${err}'`);
             throw err;

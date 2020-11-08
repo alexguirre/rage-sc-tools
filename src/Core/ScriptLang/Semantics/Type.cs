@@ -16,11 +16,13 @@ namespace ScTools.ScriptLang.Semantics
         public abstract bool Equals(Type? other);
 
         protected abstract int DoGetHashCode();
+        protected abstract string DoToString();
 
         public override bool Equals(object? obj)
             => obj is Type t && Equals(t);
 
         public override int GetHashCode() => DoGetHashCode();
+        public override string ToString() => DoToString();
 
         public static bool operator ==(Type? lhs, Type? rhs) => ReferenceEquals(lhs, rhs) || (lhs?.Equals(rhs) ?? false);
         public static bool operator !=(Type? lhs, Type? rhs) => !(lhs == rhs);
@@ -71,6 +73,8 @@ namespace ScTools.ScriptLang.Semantics
 
         protected override int DoGetHashCode()
             => HashCode.Combine(ElementType);
+
+        protected override string DoToString() => $"{ElementType}&";
     }
 
     public sealed class BasicType : Type
@@ -85,6 +89,8 @@ namespace ScTools.ScriptLang.Semantics
 
         protected override int DoGetHashCode()
             => HashCode.Combine(TypeCode);
+
+        protected override string DoToString() => $"{TypeCode.ToString().ToUpper()}";
     }
 
     public enum BasicTypeCode
@@ -249,6 +255,8 @@ namespace ScTools.ScriptLang.Semantics
             return h.ToHashCode();
         }
 
+        protected override string DoToString() => Name ?? "<<unknown>>";
+
         public static Type NewAggregate(IEnumerable<Type> fieldTypes)
             => new StructType(null, fieldTypes.Select((t, i) => new Field(t, $"_item{i}")));
     }
@@ -320,6 +328,8 @@ namespace ScTools.ScriptLang.Semantics
             }
             return h.ToHashCode();
         }
+
+        protected override string DoToString() => "";
     }
 
     public sealed class UnresolvedType : Type
@@ -345,5 +355,7 @@ namespace ScTools.ScriptLang.Semantics
 
         protected override int DoGetHashCode()
             => HashCode.Combine(TypeName, IsReference);
+
+        protected override string DoToString() => TypeName;
     }
 }
