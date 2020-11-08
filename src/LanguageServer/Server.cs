@@ -2,19 +2,15 @@
 {
     using System;
     using System.IO;
-    using System.Linq;
     using System.Threading;
 
     using Microsoft.VisualStudio.LanguageServer.Protocol;
-    using Range = Microsoft.VisualStudio.LanguageServer.Protocol.Range;
-    using LspDiagnostic = Microsoft.VisualStudio.LanguageServer.Protocol.Diagnostic;
 
     using Newtonsoft.Json.Linq;
 
-    using ScTools.ScriptLang;
-    using ScTools.ScriptLang.Semantics.Symbols;
-
     using StreamJsonRpc;
+    using System.Collections.Generic;
+    using System.Diagnostics;
 
     internal sealed class Server : IDisposable
     {
@@ -23,6 +19,7 @@
         private readonly JsonRpc rpc;
         private readonly ManualResetEvent disconnectEvent;
         private ManualResetEvent? waitForInit;
+        private readonly Dictionary<Uri, SourceFile> sourceFiles;
 
         private bool IsInitialized => waitForInit == null;
         public bool ReadyForExit { get; private set; } = false;
@@ -37,11 +34,14 @@
             disconnectEvent = new ManualResetEvent(false);
             rpc.Disconnected += (s, e) => disconnectEvent.Set();
 
+            sourceFiles = new Dictionary<Uri, SourceFile>();
+
             waitForInit.Set();
         }
 
         public void Dispose()
         {
+            sourceFiles.Clear();
             rpc.Dispose();
             disconnectEvent.Dispose();
             waitForInit?.Dispose();
@@ -66,6 +66,7 @@
                 TextDocumentSync = new TextDocumentSyncOptions
                 {
                     OpenClose = true,
+                    Change = TextDocumentSyncKind.Full,
                 },
                 DocumentSymbolProvider = true,
             };
@@ -97,7 +98,10 @@
             }
 
             var param = arg.ToObject<DidOpenTextDocumentParams>();
-            Console.WriteLine($"Opened '{param.TextDocument.Uri}'");
+            var uri = param.TextDocument.Uri;
+            sourceFiles[uri] = new SourceFile(uri);
+            Console.WriteLine($"Opened '{uri}'");
+            PublishDiagnostics(sourceFiles[uri].GetLspDiagnostics());
             return null;
         }
 
@@ -110,7 +114,26 @@
             }
 
             var param = arg.ToObject<DidCloseTextDocumentParams>();
-            Console.WriteLine($"Closed '{param.TextDocument.Uri}'");
+            var uri = param.TextDocument.Uri;
+            sourceFiles.Remove(uri);
+            Console.WriteLine($"Closed '{uri}'");
+            return null;
+        }
+        
+        [JsonRpcMethod(Methods.TextDocumentDidChangeName)]
+        public object? OnTextDocumentDidChange(JToken arg)
+        {
+            if (!IsInitialized)
+            {
+                return null;
+            }
+
+            var param = arg.ToObject<DidChangeTextDocumentParams>();
+            var uri = param.TextDocument.Uri;
+            Debug.Assert(param.ContentChanges.Length == 1);
+            sourceFiles[uri].Source = param.ContentChanges[0].Text;
+            Console.WriteLine($"Changed '{uri}'");
+            PublishDiagnostics(sourceFiles[uri].GetLspDiagnostics());
             return null;
         }
 
@@ -123,85 +146,9 @@
             }
 
             var param = arg.ToObject<DocumentSymbolParams>();
-            var path = param.TextDocument.Uri.AbsolutePath;
-            Console.WriteLine($"Document symbol '{path}'");
-            using var reader = new StreamReader(path);
-            var module = Module.Parse(reader, path);
-
-            var symbols = module.SymbolTable.Symbols.Select(s =>
-            {
-                return new SymbolInformation
-                {
-                    ContainerName = "global",
-                    Kind = s switch
-                    {
-                        TypeSymbol _ => SymbolKind.Struct,
-                        VariableSymbol _ => SymbolKind.Variable,
-                        FunctionSymbol _ => SymbolKind.Function,
-                        _ => throw new NotImplementedException(),
-                    },
-                    Location = new Location
-                    {
-                        Range = s.Source.IsUnknown ? new Range() : new Range
-                        {
-                            Start = new Position(s.Source.Start.Line, s.Source.Start.Column),
-                            End = new Position(s.Source.End.Line, s.Source.End.Column),
-                        },
-                        Uri = s.Source.IsUnknown ? null : param.TextDocument.Uri,
-                    },
-                    Name = s.Name,
-                };
-                //return new DocumentSymbol
-                //{
-                //    Kind = s switch
-                //    {
-                //        TypeSymbol _ => SymbolKind.Struct,
-                //        VariableSymbol _ => SymbolKind.Variable,
-                //        FunctionSymbol _ => SymbolKind.Function,
-                //        _ => throw new NotImplementedException(),
-                //    },
-                //    Name = s.Name,
-                //    Detail = "The detail",
-                //    Range = s.Source.IsUnknown ? new Range() : new Range
-                //    {
-                //        Start = new Position(s.Source.Start.Line, s.Source.Start.Column),
-                //        End = new Position(s.Source.End.Line, s.Source.End.Column),
-                //    },
-                //    SelectionRange = s.Source.IsUnknown ? new Range() : new Range
-                //    {
-                //        Start = new Position(s.Source.Start.Line, s.Source.Start.Column),
-                //        End = new Position(s.Source.End.Line, s.Source.End.Column),
-                //    },
-                //};
-            }).ToArray();
-
-            var diagnostics = new PublishDiagnosticParams
-            {
-                Uri = param.TextDocument.Uri,
-                Diagnostics = module.Diagnostics.AllDiagnostics.Select(d =>
-                {
-                    return new LspDiagnostic
-                    {
-                        Code = "SC0000",
-                        Source = "the source",
-                        Message = d.Message,
-                        Severity = d switch
-                        {
-                            ErrorDiagnostic _ => DiagnosticSeverity.Error,
-                            WarningDiagnostic _ => DiagnosticSeverity.Warning,
-                            _ => throw new NotImplementedException(),
-                        },
-                        Range = d.Source.IsUnknown ? new Range() : new Range
-                        {
-                            Start = new Position(d.Source.Start.Line - 1, d.Source.Start.Column - 1),
-                            End = new Position(d.Source.End.Line - 1, d.Source.End.Column - 1),
-                        },
-                    };
-                }).ToArray(),
-            };
-            PublishDiagnostics(diagnostics);
-
-            return symbols;
+            var uri = param.TextDocument.Uri;
+            Console.WriteLine($"Document symbol '{uri}'");
+            return sourceFiles[uri].GetLspSymbols();
         }
 
         private void PublishDiagnostics(PublishDiagnosticParams @params)
