@@ -57,7 +57,7 @@ namespace ScTools.ScriptLang.Semantics
                 funcLocalArgsSize = 0;
                 funcAllocLocation = 0;
 
-                Symbols = Symbols.EnterScope(block);
+                Symbols = Symbols.EnterScope(func);
                 parameters.Accept(this);
                 block.Accept(this);
                 Symbols = Symbols.ExitScope();

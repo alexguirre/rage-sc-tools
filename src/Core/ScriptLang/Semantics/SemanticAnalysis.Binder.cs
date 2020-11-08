@@ -45,7 +45,7 @@ namespace ScTools.ScriptLang.Semantics
 
                 var boundFunc = new BoundFunction(func);
                 Module.Functions.Add(boundFunc);
-                VisitScope(block, boundFunc.Body);
+                VisitScope(block, boundFunc.Body, func);
             }
 
             public override void VisitAssignmentStatement(AssignmentStatement node)
@@ -147,11 +147,11 @@ namespace ScTools.ScriptLang.Semantics
                 }
             }
 
-            private void VisitScope(StatementBlock block, IList<BoundStatement> destStmts)
+            private void VisitScope(StatementBlock block, IList<BoundStatement> destStmts, FunctionSymbol? func = null)
             {
                 var prevStmts = stmts;
                 stmts = destStmts;
-                Symbols = Symbols.GetScope(block);
+                Symbols = Symbols.GetScope(func ?? (object)block);
                 VisitStatementBlock(block);
                 Symbols = Symbols.ExitScope();
                 stmts = prevStmts;
