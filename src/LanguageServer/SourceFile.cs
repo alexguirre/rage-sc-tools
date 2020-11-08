@@ -12,6 +12,8 @@
     using ScTools.ScriptLang.Semantics.Symbols;
     using ScTools.ScriptLang.Semantics;
     using System.Text;
+    using System.Diagnostics;
+    using System.Collections.Generic;
 
     internal sealed class SourceFile
     {
@@ -73,7 +75,7 @@
         public DocumentSymbol[] GetLspSymbols()
             => cachedSymbols ??= module?.SymbolTable.Symbols.Where(s => !s.Source.IsUnknown).Select(ToLspSymbol).ToArray() ?? Array.Empty<DocumentSymbol>();
 
-        private static DocumentSymbol ToLspSymbol(ISymbol symbol)
+        private DocumentSymbol ToLspSymbol(ISymbol symbol)
             => new DocumentSymbol
             {
                 Kind = symbol switch
@@ -95,10 +97,29 @@
             return symbol switch
             {
                 TypeSymbol _ => string.Empty,
-                VariableSymbol v => v.Type.ToString(),
+                VariableSymbol v => VariableDetail(v),
                 FunctionSymbol f => FunctionDetail(f),
                 _ => throw new NotImplementedException(),
             };
+
+            static string VariableDetail(VariableSymbol v)
+            {
+                var sb = new StringBuilder(v.Type.ToString());
+                sb.Append(' ');
+                switch (v.Kind)
+                {
+                    case VariableKind.Static:
+                        sb.Append("static");
+                        break;
+                    case VariableKind.Local:
+                        sb.Append("local");
+                        break;
+                    case VariableKind.LocalArgument:
+                        sb.Append("parameter");
+                        break;
+                }
+                return sb.ToString();
+            }
 
             static string FunctionDetail(FunctionSymbol f)
             {
@@ -116,8 +137,10 @@
             }
         }
 
-        private static DocumentSymbol[] GetLspSymbolChildren(ISymbol symbol)
+        private DocumentSymbol[] GetLspSymbolChildren(ISymbol symbol)
         {
+            Debug.Assert(module != null);
+
             switch (symbol)
             {
                 case TypeSymbol t when t.Type is StructType structTy:
@@ -131,8 +154,20 @@
                         Detail = f.Type.ToString(),
                         Children = Array.Empty<DocumentSymbol>(),
                     }).ToArray();
-                default: return Array.Empty<DocumentSymbol>();
+                case FunctionSymbol f when !f.IsNative:
+                    var funcScope = module.SymbolTable.GetScope(f);
+                    return GetAllSymbols(funcScope).Select(ToLspSymbol).ToArray();
+                default:
+                    return Array.Empty<DocumentSymbol>();
             }
+        }
+
+        /// <summary>
+        /// Gets all symbols in the table, including symbols in children tabes.
+        /// </summary>
+        private IEnumerable<ISymbol> GetAllSymbols(SymbolTable symbols)
+        {
+            return symbols.Symbols.Concat(symbols.Children.SelectMany(kvp => GetAllSymbols(kvp.Table)));
         }
 
         private static LspRange ToLspRange(SourceRange r)
