@@ -32,20 +32,10 @@ namespace ScTools.ScriptLang
             FilePath = filePath;
 
             Ast = Parse(input);
-            if (Diagnostics.HasErrors)
-            {
-                // create empty defaults in case of parsing errors
-                SymbolTable = new SymbolTable();
-                BoundModule = new BoundModule();
-                CompiledScript = CreateEmptyScript();
-            }
-            else
-            {
-                DoSyntaxCheck();
-                (SymbolTable, BoundModule) = DoSemanticAnalysis();
-                CompiledScript = (!compile || Diagnostics.HasErrors) ? CreateEmptyScript() :
-                                                                       Compile(nativeDB);
-            }
+            DoSyntaxCheck();
+            (SymbolTable, BoundModule) = DoSemanticAnalysis();
+            CompiledScript = (!compile || Diagnostics.HasErrors) ? CreateEmptyScript() :
+                                                                   Compile(nativeDB);
         }
 
         public string GetAstDotGraph() => AstDotGenerator.Generate(Ast);
