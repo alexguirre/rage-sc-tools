@@ -11,7 +11,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Playground", "src\Playgroun
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Core.Tests", "src\Core.Tests\Core.Tests.csproj", "{F446AFD1-13C9-4DA2-BE42-480C08EAD88F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LanguageServer", "src\LanguageServer\LanguageServer.csproj", "{BDC8A6FC-E28B-4C7C-BAA5-B7671E7CE3D8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LanguageServer", "src\LanguageServer\LanguageServer.csproj", "{BDC8A6FC-E28B-4C7C-BAA5-B7671E7CE3D8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
