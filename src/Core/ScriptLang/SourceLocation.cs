@@ -6,7 +6,10 @@ namespace ScTools.ScriptLang
     using Antlr4.Runtime;
     using Antlr4.Runtime.Misc;
 
-    public readonly struct SourceLocation : IEquatable<SourceLocation>
+    /// <summary>
+    /// Represents a position within a source file as line and column, 1-based.
+    /// </summary>
+    public readonly struct SourceLocation : IEquatable<SourceLocation>, IComparable<SourceLocation>
     {
         public static readonly SourceLocation Unknown = default;
 
@@ -21,10 +24,31 @@ namespace ScTools.ScriptLang
         public void Deconstruct(out int line, out int column) => (line, column) = (Line, Column);
 
         public bool Equals(SourceLocation other) => (Line, Column).Equals((other.Line, other.Column));
+
+        public int CompareTo(SourceLocation other)
+        {
+            if (Line == other.Line)
+            {
+                return Column.CompareTo(other.Column);
+            }
+            else
+            {
+                return Line.CompareTo(other.Line);
+            }
+        }
+
         public override int GetHashCode() => (Line, Column).GetHashCode();
         public override bool Equals(object? obj) => obj is SourceLocation l && Equals(l);
 
         public static implicit operator SourceLocation((int Line, int Column) location) => new SourceLocation(location.Line, location.Column);
+
+        public static bool operator <(SourceLocation left, SourceLocation right) => left.CompareTo(right) < 0;
+        public static bool operator <=(SourceLocation left, SourceLocation right) => left.CompareTo(right) <= 0;
+        public static bool operator >(SourceLocation left, SourceLocation right) => left.CompareTo(right) > 0;
+        public static bool operator >=(SourceLocation left, SourceLocation right) => left.CompareTo(right) >= 0;
+
+        public static bool operator ==(SourceLocation left, SourceLocation right) => left.Equals(right);
+        public static bool operator !=(SourceLocation left, SourceLocation right) => !left.Equals(right);
     }
 
     public readonly struct SourceRange : IEquatable<SourceRange>
@@ -42,9 +66,15 @@ namespace ScTools.ScriptLang
 
         public void Deconstruct(out SourceLocation start, out SourceLocation end) => (start, end) = (Start, End);
 
+        public bool Contains(SourceLocation location) => location >= Start && location <= End;
+
         public bool Equals(SourceRange other) => (Start, End).Equals((other.Start, other.End));
+
         public override int GetHashCode() => (Start, End).GetHashCode();
         public override bool Equals(object? obj) => obj is SourceLocation l && Equals(l);
+
+        public static bool operator ==(SourceRange left, SourceRange right) => left.Equals(right);
+        public static bool operator !=(SourceRange left, SourceRange right) => !left.Equals(right);
 
         public static SourceRange FromTokens(IToken start, IToken? stop)
         {
