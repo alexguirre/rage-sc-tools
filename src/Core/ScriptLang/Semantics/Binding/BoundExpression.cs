@@ -31,15 +31,15 @@ namespace ScTools.ScriptLang.Semantics.Binding
         public abstract void EmitCall(ByteCodeBuilder code);
     }
 
-    public sealed class BoundUnknownSymbolExpression : BoundExpression
+    public class BoundInvalidExpression : BoundExpression
     {
         public override bool IsConstant => false;
         public override bool IsAddressable => false;
-        public string Identifier { get; }
+        public string Reason { get; }
 
-        public BoundUnknownSymbolExpression(string identifier)
+        public BoundInvalidExpression(string reason)
         {
-            Identifier = identifier;
+            Reason = reason;
             Type = null;
         }
 
@@ -47,6 +47,16 @@ namespace ScTools.ScriptLang.Semantics.Binding
         public override void EmitStore(ByteCodeBuilder code) => throw new NotSupportedException();
         public override void EmitAddr(ByteCodeBuilder code) => throw new NotSupportedException();
         public override void EmitCall(ByteCodeBuilder code) => throw new NotSupportedException();
+    }
+
+    public sealed class BoundUnknownSymbolExpression : BoundInvalidExpression
+    {
+        public string Identifier { get; }
+
+        public BoundUnknownSymbolExpression(string identifier) : base($"Unknown symbol '{identifier}'")
+        {
+            Identifier = identifier;
+        }
     }
 
     public sealed class BoundUnaryExpression : BoundExpression
@@ -115,7 +125,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
             Right = right;
             Op = op;
 
-            if (!(left is BoundUnknownSymbolExpression) && !(right is BoundUnknownSymbolExpression))
+            if (!(left is BoundInvalidExpression) && !(right is BoundInvalidExpression))
             {
                 Debug.Assert(left.Type?.UnderlyingType == right.Type?.UnderlyingType);
                 Type = Ast.BinaryExpression.OpIsComparison(op) ? new BasicType(BasicTypeCode.Bool) : left.Type?.UnderlyingType;
@@ -363,10 +373,14 @@ namespace ScTools.ScriptLang.Semantics.Binding
             Callee = callee;
             Arguments = arguments.ToImmutableArray();
 
-            if (!(callee is BoundUnknownSymbolExpression))
+            if (!(callee is BoundInvalidExpression))
             {
-                Debug.Assert(callee.Type is FunctionType f && f.ReturnType != null);
-                Type = (Callee.Type as FunctionType)?.ReturnType!;
+                if (!(callee.Type is FunctionType funcTy) || funcTy.ReturnType == null)
+                {
+                    throw new ArgumentException("Callee type is not a function", nameof(callee));
+                }
+
+                Type = funcTy.ReturnType!;
             }
         }
 
@@ -406,11 +420,11 @@ namespace ScTools.ScriptLang.Semantics.Binding
             Expression = expression;
             Member = member;
 
-            if (!(expression is BoundUnknownSymbolExpression))
+            if (!(expression is BoundInvalidExpression))
             {
                 Debug.Assert(expression.Type?.UnderlyingType is StructType);
 
-                var structType = (Expression.Type.UnderlyingType as StructType)!;
+                var structType = (Expression.Type!.UnderlyingType as StructType)!;
                 Debug.Assert(structType.HasField(Member));
 
                 MemberOffset = structType.OffsetOfField(Member);

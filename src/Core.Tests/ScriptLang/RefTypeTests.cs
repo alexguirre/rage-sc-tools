@@ -39,6 +39,7 @@
         [Fact]
         public void TestRefMissingInitializer()
         {
+            // FIXME: TestRefMissingInitializer
             var module = Module.Compile(new StringReader($@"
                 PROC MAIN()
                     FLOAT& a

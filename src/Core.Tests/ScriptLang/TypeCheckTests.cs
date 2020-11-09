@@ -46,5 +46,23 @@
 
             Assert.False(module.Diagnostics.HasErrors, $"Expected no errors due to incorrect type in static initializer '{staticDecl}'");
         }
+
+        [Theory]
+        [InlineData("INT v = DUMMY(5)")]
+        [InlineData("DUMMY(DUMMY(5))")]
+        [InlineData("INT v = 5 + DUMMY(5)")]
+        public void TestProcedureInExpression(string statement)
+        {
+            var module = Module.Parse(new StringReader($@"
+                PROC MAIN()
+                    {statement}
+                ENDPROC
+
+                PROC DUMMY(INT v)
+                ENDPROC
+            "));
+
+            Assert.True(module.Diagnostics.HasErrors, $"Expected error due to calling a procedure in an expression");
+        }
     }
 }

@@ -200,10 +200,19 @@ namespace ScTools.ScriptLang.Semantics
                     };
                 }
                 public override BoundExpression VisitInvocationExpression(InvocationExpression node)
-                    => new BoundInvocationExpression(
-                        Bind(node.Expression)!,
+                {
+                    var callee = Bind(node.Expression)!;
+
+                    if (!(callee.Type is FunctionType funcTy) || funcTy.ReturnType == null)
+                    {
+                        return new BoundInvalidExpression("Callee is a procedure in an invocation expression");
+                    }
+
+                    return new BoundInvocationExpression(
+                        callee,
                         node.ArgumentList.Arguments.Select(a => Bind(a)!)
                     );
+                }
 
                 public override BoundExpression VisitMemberAccessExpression(MemberAccessExpression node)
                     => new BoundMemberAccessExpression(

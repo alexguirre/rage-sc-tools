@@ -90,8 +90,14 @@ namespace ScTools.ScriptLang.Semantics
                 {
                     if (callableType != null)
                     {
-                        diagnostics.AddError(filePath, $"Cannot call '{node.Expression}', it is not a procedure or a function", node.Expression.Source);
+                        diagnostics.AddError(filePath, $"Cannot call '{node.Expression}', it is not a function", node.Expression.Source);
                     }
+                    return null;
+                }
+
+                if (f.ReturnType == null)
+                {
+                    diagnostics.AddError(filePath, $"Cannot call '{node.Expression}'. It is a procedure, it has no return value", node.Source);
                     return null;
                 }
 
