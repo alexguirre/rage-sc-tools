@@ -67,6 +67,7 @@ namespace ScTools.ScriptLang
         public void Deconstruct(out SourceLocation start, out SourceLocation end) => (start, end) = (Start, End);
 
         public bool Contains(SourceLocation location) => location >= Start && location <= End;
+        public bool Contains(SourceRange range) => Contains(range.Start) && Contains(range.End);
 
         public bool Equals(SourceRange other) => (Start, End).Equals((other.Start, other.End));
 

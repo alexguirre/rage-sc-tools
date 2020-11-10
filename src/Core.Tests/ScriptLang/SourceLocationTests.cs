@@ -51,6 +51,8 @@
             var c = new SourceLocation(5, 10);
 
             var r = new SourceRange((1, 0), (3, 20));
+            var r1 = new SourceRange((1, 10), (2, 10));
+            var r2 = new SourceRange((4, 0), (5, 10));
 
             Assert.True(r.Contains(r.Start));
             Assert.True(r.Contains(r.End));
@@ -58,6 +60,10 @@
             Assert.True(r.Contains(a));
             Assert.True(r.Contains(b));
             Assert.False(r.Contains(c));
+
+            Assert.True(r.Contains(r));
+            Assert.True(r.Contains(r1));
+            Assert.False(r.Contains(r2));
         }
     }
 }

@@ -10,7 +10,7 @@ namespace ScTools.ScriptLang.Semantics
         public static (DiagnosticsReport, SymbolTable, BoundModule) Visit(Root root, string filePath)
         {
             var diagnostics = new DiagnosticsReport();
-            var symbols = new SymbolTable();
+            var symbols = new SymbolTable(root.Source);
             AddBuiltIns(symbols);
             new FirstPass(diagnostics, filePath, symbols).Run(root);
             new SecondPass(diagnostics, filePath, symbols).Run(root);

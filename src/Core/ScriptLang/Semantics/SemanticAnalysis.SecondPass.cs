@@ -57,7 +57,7 @@ namespace ScTools.ScriptLang.Semantics
                 funcLocalArgsSize = 0;
                 funcAllocLocation = 0;
 
-                Symbols = Symbols.EnterScope(func);
+                Symbols = Symbols.EnterScope(func, block.Source);
                 parameters.Accept(this);
                 block.Accept(this);
                 Symbols = Symbols.ExitScope();
@@ -186,13 +186,13 @@ namespace ScTools.ScriptLang.Semantics
                     Diagnostics.AddError(FilePath, $"IF statement condition requires BOOL type", node.Condition.Source);
                 }
 
-                Symbols = Symbols.EnterScope(node.ThenBlock);
+                Symbols = Symbols.EnterScope(node.ThenBlock, node.ThenBlock.Source);
                 node.ThenBlock.Accept(this);
                 Symbols = Symbols.ExitScope();
 
                 if (node.ElseBlock != null)
                 {
-                    Symbols = Symbols.EnterScope(node.ElseBlock);
+                    Symbols = Symbols.EnterScope(node.ElseBlock, node.ElseBlock.Source);
                     node.ElseBlock.Accept(this);
                     Symbols = Symbols.ExitScope();
                 }
@@ -206,7 +206,7 @@ namespace ScTools.ScriptLang.Semantics
                     Diagnostics.AddError(FilePath, $"WHILE statement condition requires BOOL type", node.Condition.Source);
                 }
 
-                Symbols = Symbols.EnterScope(node.Block);
+                Symbols = Symbols.EnterScope(node.Block, node.Block.Source);
                 node.Block.Accept(this);
                 Symbols = Symbols.ExitScope();
             }

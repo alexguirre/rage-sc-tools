@@ -8,9 +8,12 @@
 
     using Newtonsoft.Json.Linq;
 
+    using ScTools.ScriptLang.Semantics;
+    using ScTools.ScriptLang.Semantics.Symbols;
     using StreamJsonRpc;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
 
     internal sealed class Server : IDisposable
     {
@@ -69,6 +72,11 @@
                     Change = TextDocumentSyncKind.Full,
                 },
                 DocumentSymbolProvider = true,
+                CompletionProvider = new CompletionOptions
+                {
+                    TriggerCharacters = new[] { ".", ",", "(" },
+                    AllCommitCharacters = new[] { " ", ".", ",", "(", ")" }
+                },
             };
 
             waitForInit = null;
@@ -149,6 +157,149 @@
             var uri = param.TextDocument.Uri;
             Console.WriteLine($"Document symbol '{uri}'");
             return sourceFiles[uri].GetLspSymbols();
+        }
+
+        [JsonRpcMethod(Methods.TextDocumentCompletionName)]
+        public object? OnTextDocumentCompletion(JToken arg)
+        {
+            var param = arg.ToObject<CompletionParams>();
+            Console.WriteLine($"Document completion '{param.TextDocument.Uri}'");
+
+            var file = sourceFiles[param.TextDocument.Uri];
+            if (param.Context.TriggerKind == CompletionTriggerKind.TriggerCharacter)
+            {
+                switch (param.Context.TriggerCharacter)
+                {
+                    case ".":
+                        return GetDotCompletions(file, param.Position) ?? Array.Empty<CompletionItem>();
+                }
+            }
+
+            return GetDefaultCompletions(file, param.Position) ?? Array.Empty<CompletionItem>();
+        }
+
+        private CompletionItem[]? GetDefaultCompletions(SourceFile file, Position position)
+        {
+            var scope = file.FindScopeAt(position.ToSourceLocation());
+            if (scope == null)
+            {
+                return null;
+            }
+
+            static IEnumerable<ISymbol> AllSymbols(SymbolTable table)
+                => table.Parent != null ?
+                        AllSymbols(table.Parent).Concat(table.Symbols) :
+                        table.Symbols;
+
+            return AllSymbols(scope).Select(s => new CompletionItem
+            {
+                Label = s.Name,
+                Detail = SourceFile.GetLspDetail(s),
+                Kind = s switch
+                {
+                    TypeSymbol _ => CompletionItemKind.Struct,
+                    VariableSymbol _ => CompletionItemKind.Variable,
+                    FunctionSymbol _ => CompletionItemKind.Function,
+                    _ => throw new NotImplementedException(),
+                },
+            }).ToArray();
+        }
+
+        private CompletionItem[]? GetDotCompletions(SourceFile file, Position position)
+        {
+            var scope = file.FindScopeAt(position.ToSourceLocation());
+            if (scope == null)
+            {
+                return null;
+            }
+
+            var prevWord = GetPrevWord(file.Source, position);
+            if (prevWord == null)
+            {
+                return null;
+            }
+
+            var identifiers = prevWord.Split('.').Select(s => s.Trim()).ToArray();
+            if (identifiers.Length == 0)
+            {
+                return null;
+            }
+
+            var varSymbol = scope.Lookup(identifiers[0]) as VariableSymbol;
+            if (varSymbol?.Type is StructType structTy)
+            {
+                foreach (var fieldName in identifiers.Skip(1))
+                {
+                    if (!structTy.HasField(fieldName))
+                    {
+                        return null;
+                    }
+
+                    if (structTy.TypeOfField(fieldName) is StructType fieldStructTy)
+                    {
+                        structTy = fieldStructTy;
+                    }
+                }
+
+                return structTy.Fields.Select(f => new CompletionItem
+                {
+                    Label = f.Name,
+                    Detail = f.Type.ToString(),
+                    Kind = CompletionItemKind.Field
+                }).ToArray();
+            }
+
+            return null;
+        }
+
+        private static string? GetLine(string text, Position position)
+        {
+            int line = 0, lineStartIndex = 0;
+            for (int i = 0; i < text.Length; i++)
+            {
+                var c = text[i];
+                if (c == '\n')
+                {
+                    if (line == position.Line)
+                    {
+                        return text[lineStartIndex..i];
+                    }
+                    else
+                    {
+                        line++;
+                        lineStartIndex = i + 1;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private static string? GetPrevWord(string text, Position position)
+        {
+            var line = GetLine(text, position);
+            if (line == null)
+            {
+                return null;
+            }
+
+            var end = position.Character;
+            while (IsDelimeter(line[end - 1]) || line[end - 1] == '.') { end--; }
+
+            var start = 0;
+            for (int i = end - 1; i >= 0; i--)
+            {
+                if (IsDelimeter(line[i]))
+                {
+                    start = i + 1;
+                    break;
+                }
+            }
+
+            return line[start..end].Trim();
+
+            static bool IsDelimeter(char c)
+                => c != '_' && c != ' ' && c != '.' && !char.IsLetterOrDigit(c);
         }
 
         private void PublishDiagnostics(PublishDiagnosticParams @params)

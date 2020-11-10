@@ -5,7 +5,6 @@
     using System.Linq;
 
     using Microsoft.VisualStudio.LanguageServer.Protocol;
-    using LspRange = Microsoft.VisualStudio.LanguageServer.Protocol.Range;
     using LspDiagnostic = Microsoft.VisualStudio.LanguageServer.Protocol.Diagnostic;
 
     using ScTools.ScriptLang;
@@ -32,6 +31,7 @@
                 OnSourceChanged(value);
             }
         }
+        public SymbolTable? GlobalScope => module?.SymbolTable;
 
         public SourceFile(Uri uri)
         {
@@ -44,9 +44,39 @@
         {
             using var reader = new StringReader(newSource);
             module = Module.Parse(reader, Path);
+            Console.WriteLine($"Parsed '{Path}' (global symbols: {module.SymbolTable.Symbols.Count()})");
             if (!module.Diagnostics.HasErrors)
             {
                 cachedSymbols = null;
+            }
+        }
+
+        public SymbolTable? FindScopeAt(SourceLocation location)
+        {
+            if (module == null)
+            {
+                return null;
+            }
+
+            return RecursiveFind(module.SymbolTable, location);
+
+            static SymbolTable? RecursiveFind(SymbolTable symbols, SourceLocation location)
+            {
+                if (symbols.Source.Contains(location))
+                {
+                    foreach (var (_, childTable) in symbols.Children)
+                    {
+                        var t = RecursiveFind(childTable, location);
+                        if (t != null)
+                        {
+                            return t;
+                        }
+                    }
+
+                    return symbols;
+                }
+
+                return null;
             }
         }
 
@@ -67,7 +97,7 @@
                             WarningDiagnostic _ => DiagnosticSeverity.Warning,
                             _ => throw new NotImplementedException(),
                         },
-                        Range = ToLspRange(d.Source),
+                        Range = d.Source.ToLspRange(),
                     };
                 }).ToArray() ?? Array.Empty<LspDiagnostic>(),
             };
@@ -85,14 +115,14 @@
                     FunctionSymbol _ => SymbolKind.Function,
                     _ => throw new NotImplementedException(),
                 },
-                Range = ToLspRange(symbol.Source),
-                SelectionRange = ToLspRange(symbol.Source),
+                Range = symbol.Source.ToLspRange(),
+                SelectionRange = symbol.Source.ToLspRange(),
                 Name = symbol.Name,
                 Detail = GetLspDetail(symbol),
                 Children = GetLspSymbolChildren(symbol),
             };
 
-        private static string GetLspDetail(ISymbol symbol)
+        public static string GetLspDetail(ISymbol symbol)
         {
             return symbol switch
             {
@@ -148,15 +178,15 @@
                     {
                         Kind = SymbolKind.Field,
                         // TODO: report source range of struct fields
-                        Range = ToLspRange(t.Source),
-                        SelectionRange = ToLspRange(t.Source),
+                        Range = t.Source.ToLspRange(),
+                        SelectionRange = t.Source.ToLspRange(),
                         Name = f.Name,
                         Detail = f.Type.ToString(),
                         Children = Array.Empty<DocumentSymbol>(),
                     }).ToArray();
                 case FunctionSymbol f when !f.IsNative:
                     var funcScope = module.SymbolTable.GetScope(f);
-                    return GetAllSymbols(funcScope).Select(ToLspSymbol).ToArray();
+                    return GetAllSymbols(funcScope)!.Select(ToLspSymbol).ToArray();
                 default:
                     return Array.Empty<DocumentSymbol>();
             }
@@ -169,12 +199,5 @@
         {
             return symbols.Symbols.Concat(symbols.Children.SelectMany(kvp => GetAllSymbols(kvp.Table)));
         }
-
-        private static LspRange ToLspRange(SourceRange r)
-            => r.IsUnknown ? new LspRange() : new LspRange
-            {
-                Start = new Position(r.Start.Line - 1, r.Start.Column - 1),
-                End = new Position(r.End.Line - 1, r.End.Column - 1),
-            };
     }
 }

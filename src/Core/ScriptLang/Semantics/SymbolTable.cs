@@ -12,15 +12,23 @@ namespace ScTools.ScriptLang.Semantics
 
 
         public SymbolTable? Parent { get; }
+        public SourceRange Source { get; }
         public IEnumerable<(object Key, SymbolTable Table)> Children => children;
+
 
         /// <summary>
         /// Returns symbols in the order they were declared in.
         /// </summary>
         public IEnumerable<ISymbol> Symbols => symbols.Reverse();
 
-        public SymbolTable(SymbolTable? parent = null)
+        public SymbolTable(SourceRange source, SymbolTable? parent = null)
         {
+            if (parent != null && !parent.Source.Contains(source))
+            {
+                throw new ArgumentException($"Parent source range does not contain the specified range", nameof(source));
+            }
+
+            Source = source;
             Parent = parent;
         }
 
@@ -102,14 +110,14 @@ namespace ScTools.ScriptLang.Semantics
         /// <summary>
         /// Creates a new scope.
         /// </summary>
-        public SymbolTable EnterScope(object key) 
+        public SymbolTable EnterScope(object key, SourceRange range) 
         {
             if (Children.Any(c => c.Key == key))
             {
                 throw new InvalidOperationException($"A scope with key '{key}' already exists");
             }
 
-            var t = new SymbolTable(this);
+            var t = new SymbolTable(range, this);
             children.Add((key, t));
             return t;
         }
