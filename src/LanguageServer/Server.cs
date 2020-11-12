@@ -239,6 +239,10 @@
                     {
                         structTy = fieldStructTy;
                     }
+                    else
+                    {
+                        return null;
+                    }
                 }
 
                 return structTy.Fields.Select(f => new CompletionItem
