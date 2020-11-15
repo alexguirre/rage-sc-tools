@@ -1,7 +1,7 @@
 {
   "version": 1,
   "dependencies": {
-    ".NETCoreApp,Version=v3.1": {
+    ".NETCoreApp,Version=v5.0": {
       "Antlr4.Runtime.Standard": {
         "type": "Direct",
         "requested": "[4.8.0, )",
