@@ -12,8 +12,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - uses: microsoft/setup-msbuild@v1.0.1
-      - uses: nuget/setup-nuget@v1
+      - uses: microsoft/setup-msbuild@v1.0.2
+      - uses: nuget/setup-nuget@v1.0.5
 
       - name: Cache Codewalker.Core
         id: cache-codewalker
