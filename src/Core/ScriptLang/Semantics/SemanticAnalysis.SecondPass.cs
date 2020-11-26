@@ -148,13 +148,6 @@ namespace ScTools.ScriptLang.Semantics
                         Diagnostics.AddError(FilePath, $"Mismatched initializer type and type of variable '{v.Name}'", node.Variable.Initializer.Source);
                     }
                 }
-                else
-                {
-                    if (v.Type is RefType)
-                    {
-                        Diagnostics.AddError(FilePath, $"Reference variable '{v.Name}' is missing an initializer", node.Source);
-                    }
-                }
 
                 int size = v.Type.SizeOf;
                 funcAllocLocation += size;

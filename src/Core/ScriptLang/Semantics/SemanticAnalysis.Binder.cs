@@ -99,18 +99,31 @@ namespace ScTools.ScriptLang.Semantics
 
                 var initializerExpr = Bind(node.Variable.Initializer);
 
-                if (varSymbol.Type is RefType && initializerExpr is { IsAddressable: false })
+                if (varSymbol.Type is RefType)
                 {
-                    Diagnostics.AddError(FilePath, $"Cannot take reference of expression", node.Variable.Initializer!.Source);
-                    stmts!.Add(new BoundInvalidStatement());
+                    var err = false;
+                    if (initializerExpr is null)
+                    {
+                        Diagnostics.AddError(FilePath, $"Reference variable '{varSymbol.Name}' is missing an initializer", node.Source);
+                        err = true;
+                    }
+                    else if (!initializerExpr.IsAddressable)
+                    {
+                        Diagnostics.AddError(FilePath, $"Cannot take reference of expression", node.Variable.Initializer!.Source);
+                        err = true;
+                    }
+
+                    if (err)
+                    {
+                        stmts!.Add(new BoundInvalidStatement());
+                        return;
+                    }
                 }
-                else
-                {
-                    stmts!.Add(new BoundVariableDeclarationStatement(
-                        varSymbol,
-                        initializerExpr
-                    ));
-                }
+
+                stmts!.Add(new BoundVariableDeclarationStatement(
+                    varSymbol,
+                    initializerExpr
+                ));
             }
 
             public override void VisitArgumentList(ArgumentList node) => throw new NotSupportedException();
