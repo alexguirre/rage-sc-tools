@@ -24,8 +24,11 @@
             const string Script = @"
                 USING 'helper.sch'
 
+                INT otherValue = 100
+
                 PROC MAIN()
                     INT n = ADD_NUMBERS(someValue, 8)
+                    INT m = ADD_NUMBERS(otherValue, someValue)
                 ENDPROC
             ";
 
