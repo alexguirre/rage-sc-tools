@@ -15,11 +15,7 @@ namespace ScTools.ScriptLang.Semantics
         /// </summary>
         private sealed class SecondPass : Pass
         {
-
             private FunctionSymbol? func = null;
-            private int funcLocalsSize = 0;
-            private int funcLocalArgsSize = 0; 
-            private int funcAllocLocation = 0;
 
             public SecondPass(DiagnosticsReport diagnostics, string filePath, SymbolTable symbols)
                 : base(diagnostics, filePath, symbols)
@@ -53,17 +49,11 @@ namespace ScTools.ScriptLang.Semantics
             private void VisitFunc(FunctionSymbol func, ParameterList parameters, StatementBlock block)
             {
                 this.func = func;
-                funcLocalsSize = 0;
-                funcLocalArgsSize = 0;
-                funcAllocLocation = 0;
 
-                Symbols = Symbols.EnterScope(func, block.Source);
+                Symbols = Symbols.EnterScope(block);
                 parameters.Accept(this);
                 block.Accept(this);
                 Symbols = Symbols.ExitScope();
-
-                func.LocalArgsSize = funcLocalArgsSize;
-                func.LocalsSize = funcLocalsSize;
             }
 
             public override void VisitProcedurePrototypeStatement(ProcedurePrototypeStatement node)
@@ -118,16 +108,10 @@ namespace ScTools.ScriptLang.Semantics
                     var v = new VariableSymbol(p.Name,
                                                p.Source,
                                                TryResolveType(p.Type),
-                                               VariableKind.LocalArgument)
-                            {
-                                Location = funcAllocLocation,
-                            };
-                    int size = v.Type.SizeOf;
-                    funcAllocLocation += size;
-                    funcLocalArgsSize += size;
+                                               VariableKind.LocalArgument);
                     Symbols.Add(v);
+                    func?.LocalArgs.Add(v);
                 }
-                funcAllocLocation += 2; // space required by the game
             }
 
             public override void VisitVariableDeclarationStatement(VariableDeclarationStatement node)
@@ -135,10 +119,7 @@ namespace ScTools.ScriptLang.Semantics
                 var v = new VariableSymbol(node.Variable.Declaration.Name,
                                            node.Source,
                                            TryResolveType(node.Variable.Declaration.Type),
-                                           VariableKind.Local)
-                {
-                    Location = funcAllocLocation,
-                };
+                                           VariableKind.Local);
 
                 if (node.Variable.Initializer != null)
                 {
@@ -149,10 +130,8 @@ namespace ScTools.ScriptLang.Semantics
                     }
                 }
 
-                int size = v.Type.SizeOf;
-                funcAllocLocation += size;
-                funcLocalsSize += size;
                 Symbols.Add(v);
+                func?.Locals.Add(v);
             }
 
             public override void VisitAssignmentStatement(AssignmentStatement node)
@@ -179,13 +158,13 @@ namespace ScTools.ScriptLang.Semantics
                     Diagnostics.AddError(FilePath, $"IF statement condition requires BOOL type", node.Condition.Source);
                 }
 
-                Symbols = Symbols.EnterScope(node.ThenBlock, node.ThenBlock.Source);
+                Symbols = Symbols.EnterScope(node.ThenBlock);
                 node.ThenBlock.Accept(this);
                 Symbols = Symbols.ExitScope();
 
                 if (node.ElseBlock != null)
                 {
-                    Symbols = Symbols.EnterScope(node.ElseBlock, node.ElseBlock.Source);
+                    Symbols = Symbols.EnterScope(node.ElseBlock);
                     node.ElseBlock.Accept(this);
                     Symbols = Symbols.ExitScope();
                 }
@@ -199,7 +178,7 @@ namespace ScTools.ScriptLang.Semantics
                     Diagnostics.AddError(FilePath, $"WHILE statement condition requires BOOL type", node.Condition.Source);
                 }
 
-                Symbols = Symbols.EnterScope(node.Block, node.Block.Source);
+                Symbols = Symbols.EnterScope(node.Block);
                 node.Block.Accept(this);
                 Symbols = Symbols.ExitScope();
             }

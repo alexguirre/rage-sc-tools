@@ -239,11 +239,11 @@ namespace ScTools.ScriptLang.Semantics.Binding
             {
                 if (Type is RefType refType)
                 {
-                    code.EmitAddrLoadN(refType.ElementType.SizeOf, () => code.EmitLocalLoad(Var.Location));
+                    code.EmitAddrLoadN(refType.ElementType.SizeOf, () => code.EmitLocalLoad(Var));
                 }
                 else
                 {
-                    code.EmitLocalLoadN(Var.Location, Var.Type.SizeOf);
+                    code.EmitLocalLoad(Var);
                 }
             }
             else if (Var.IsStatic)
@@ -254,7 +254,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
                 }
                 else
                 {
-                    code.EmitStaticLoadN(Var.Location, Var.Type.SizeOf);
+                    code.EmitStaticLoad(Var);
                 }
             }
             else
@@ -269,11 +269,11 @@ namespace ScTools.ScriptLang.Semantics.Binding
             {
                 if (Type is RefType refType)
                 {
-                    code.EmitAddrStoreN(refType.ElementType.SizeOf, () => code.EmitLocalLoad(Var.Location));
+                    code.EmitAddrStoreN(refType.ElementType.SizeOf, () => code.EmitLocalLoad(Var));
                 }
                 else
                 {
-                    code.EmitLocalStoreN(Var.Location, Var.Type.SizeOf);
+                    code.EmitLocalStore(Var);
                 }
             }
             else if (Var.IsStatic)
@@ -284,7 +284,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
                 }
                 else
                 {
-                    code.EmitStaticStoreN(Var.Location, Var.Type.SizeOf);
+                    code.EmitStaticStore(Var);
                 }
             }
             else
@@ -300,11 +300,11 @@ namespace ScTools.ScriptLang.Semantics.Binding
                 if (Type is RefType)
                 {
                     // for references load the contained address instead of its own address
-                    code.EmitLocalLoad(Var.Location);
+                    code.EmitLocalLoad(Var);
                 }
                 else
                 {
-                    code.EmitLocalAddr(Var.Location);
+                    code.EmitLocalAddr(Var);
                 }
             }
             else if (Var.IsStatic)
@@ -315,7 +315,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
                 }
                 else
                 {
-                    code.EmitStaticAddr(Var.Location);
+                    code.EmitStaticAddr(Var);
                 }
             }
             else

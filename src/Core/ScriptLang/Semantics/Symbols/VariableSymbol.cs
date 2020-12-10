@@ -6,10 +6,7 @@ namespace ScTools.ScriptLang.Semantics.Symbols
         public string Name { get; }
         public SourceRange Source { get; }
         public Type Type { get; set; }
-        public VariableKind Kind { get; set; }
-        public int Location { get; set; } = -1;
-
-        public bool IsAllocated => Location != -1;
+        public VariableKind Kind { get; }
 
         public bool IsLocal => Kind == VariableKind.Local || Kind == VariableKind.LocalArgument;
         public bool IsStatic => Kind == VariableKind.Static;

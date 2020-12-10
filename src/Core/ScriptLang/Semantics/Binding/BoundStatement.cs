@@ -61,7 +61,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
                 {
                     Initializer.EmitLoad(code);
                 }
-                code.EmitLocalStoreN(Var.Location, Var.Type.SizeOf);
+                code.EmitLocalStore(Var);
             }
         }
     }
@@ -211,7 +211,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
         public override void Emit(ByteCodeBuilder code, BoundFunction parent)
         {
             Expression?.EmitLoad(code);
-            code.EmitEpilogue(parent.Function);
+            parent.EmitEpilogue(code);
         }
     }
 }

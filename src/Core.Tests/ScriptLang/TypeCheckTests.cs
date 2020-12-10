@@ -17,12 +17,12 @@
         [InlineData("VEC3 v = <<1.0, 2.0>>")]
         public void TestStaticInitializersIncorrectTypes(string staticDecl)
         {
-            var module = Module.Parse(new StringReader($@"
+            var module = Util.ParseAndAnalyze($@"
                 {staticDecl}
 
                 PROC MAIN()
                 ENDPROC
-            "));
+            ");
 
             Assert.True(module.Diagnostics.HasErrors, $"Expected errors due to incorrect type in static initializer '{staticDecl}'");
         }
@@ -37,12 +37,12 @@
         [InlineData("VEC3 v = <<1.0, 2.0, 3.0>>")]
         public void TestStaticInitializersCorrectTypes(string staticDecl)
         {
-            var module = Module.Parse(new StringReader($@"
+            var module = Util.ParseAndAnalyze($@"
                 {staticDecl}
 
                 PROC MAIN()
                 ENDPROC
-            "));
+            ");
 
             Assert.False(module.Diagnostics.HasErrors, $"Expected no errors due to incorrect type in static initializer '{staticDecl}'");
         }
@@ -53,14 +53,14 @@
         [InlineData("INT v = 5 + DUMMY(5)")]
         public void TestProcedureInExpression(string statement)
         {
-            var module = Module.Parse(new StringReader($@"
+            var module = Util.ParseAndAnalyze($@"
                 PROC MAIN()
                     {statement}
                 ENDPROC
 
                 PROC DUMMY(INT v)
                 ENDPROC
-            "));
+            ");
 
             Assert.True(module.Diagnostics.HasErrors, $"Expected error due to calling a procedure in an expression");
         }

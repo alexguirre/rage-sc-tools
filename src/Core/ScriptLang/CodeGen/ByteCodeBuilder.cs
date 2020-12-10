@@ -10,11 +10,12 @@ namespace ScTools.ScriptLang.CodeGen
     using ScTools.ScriptAssembly;
     using ScTools.ScriptAssembly.CodeGen;
     using ScTools.ScriptLang.Semantics.Symbols;
+    using ScTools.ScriptLang.Semantics.Binding;
 
     // TODO: ByteCodeBuilder is very similar to ScriptAssembly.CodeGen.CodeBuilder, refactor
     public sealed class ByteCodeBuilder : IByteCodeBuilder
     {
-        private readonly NativeDB? nativeDB;
+        private readonly Compilation compilation;
         private readonly IList<ulong> nativeHashes = new List<ulong>(); // hashes are already translated
         private readonly StringPagesBuilder strings = new StringPagesBuilder();
 
@@ -24,7 +25,8 @@ namespace ScTools.ScriptLang.CodeGen
         // bytes of the current instruction
         private readonly List<byte> buffer = new List<byte>();
 
-        private string? currentFunction = null;
+        private BoundModule? currentModule = null;
+        private BoundFunction? currentFunction = null;
         private string? currentLabel = null;
 
         // functions addresses and labels
@@ -37,20 +39,35 @@ namespace ScTools.ScriptLang.CodeGen
         private readonly List<int> labelTargetsInCurrentInstruction = new List<int>(); // index of labelTargets
 
         private bool inInstruction = false;
-        private bool InFunction => currentFunction != null;
+        private bool InModule => currentModule != null;
+        private bool InFunction => InModule && currentFunction != null;
 
-        public ByteCodeBuilder(NativeDB? nativeDB)
+        public ByteCodeBuilder(Compilation compilation)
         {
-            this.nativeDB = nativeDB;
+            this.compilation = compilation;
         }
 
-        public void BeginFunction(string function)
+        public void BeginModule(BoundModule module)
+        {
+            Debug.Assert(!InModule);
+
+            currentModule = module;
+        }
+
+        public void EndModule()
+        {
+            Debug.Assert(InModule);
+
+            currentModule = null;
+        }
+
+        public void BeginFunction(BoundFunction function)
         {
             Debug.Assert(!InFunction);
 
             currentFunction = function;
-            currentLabel = function;
-            functions.Add(function, (length, new Dictionary<string, uint>()));
+            currentLabel = function.Function.Name;
+            functions.Add(function.Function.Name, (length, new Dictionary<string, uint>()));
         }
 
         public void EndFunction()
@@ -191,6 +208,20 @@ namespace ScTools.ScriptLang.CodeGen
             }
         }
 
+        public void EmitLocalAddr(VariableSymbol var) => EmitLocalAddr(GetLocalLocation(var));
+        public void EmitLocalStore(VariableSymbol var) => EmitLocalStoreN(GetLocalLocation(var), var.Type.SizeOf);
+        public void EmitLocalLoad(VariableSymbol var) => EmitLocalLoadN(GetLocalLocation(var), var.Type.SizeOf);
+
+        private int GetLocalLocation(VariableSymbol var)
+        {
+            Debug.Assert(InFunction);
+            Debug.Assert(var.IsLocal);
+
+            var res = currentFunction!.GetLocalLocation(var);
+            Debug.Assert(res.HasValue);
+            return res.Value;
+        }
+
         public void EmitStaticAddr(int location) => EmitStatic(location, Opcode.STATIC_U8, Opcode.STATIC_U16);
         public void EmitStaticLoad(int location) => EmitStatic(location, Opcode.STATIC_U8_LOAD, Opcode.STATIC_U16_LOAD);
         public void EmitStaticStore(int location) => EmitStatic(location, Opcode.STATIC_U8_STORE, Opcode.STATIC_U16_STORE);
@@ -221,6 +252,20 @@ namespace ScTools.ScriptLang.CodeGen
                 EmitStaticAddr(location);
                 Emit(Opcode.LOAD_N, ReadOnlySpan<Operand>.Empty);
             }
+        }
+
+        public void EmitStaticAddr(VariableSymbol var) => EmitStaticAddr(GetStaticLocation(var));
+        public void EmitStaticStore(VariableSymbol var) => EmitStaticStoreN(GetStaticLocation(var), var.Type.SizeOf);
+        public void EmitStaticLoad(VariableSymbol var) => EmitStaticLoadN(GetStaticLocation(var), var.Type.SizeOf);
+
+        private int GetStaticLocation(VariableSymbol var)
+        {
+            Debug.Assert(InModule);
+            Debug.Assert(var.IsStatic);
+
+            var res = compilation.GetStaticLocation(var);
+            Debug.Assert(res.HasValue);
+            return res.Value;
         }
 
         private void EmitOffsetInst(int offset, Opcode opcodeU8, Opcode opcodeS16)
@@ -307,6 +352,7 @@ namespace ScTools.ScriptLang.CodeGen
 
         public void EmitNative(FunctionSymbol function)
         {
+            var nativeDB = compilation.NativeDB;
             Debug.Assert(nativeDB != null);
             Debug.Assert(function.IsNative);
 
@@ -348,20 +394,20 @@ namespace ScTools.ScriptLang.CodeGen
         public void EmitJump(string label) => Emit(Opcode.J, new[] { new Operand(label, OperandType.Identifier) });
         public void EmitJumpIfZero(string label) => Emit(Opcode.JZ, new[] { new Operand(label, OperandType.Identifier) });
 
-        public void EmitPrologue(FunctionSymbol function)
+        public void EmitPrologue(int localArgsSize, int localsSize)
         {
             // every function needs at least 2 locals (return address + function frame number)
             const uint MinLocals = 2;
 
-            uint argsSize = (uint)function.LocalArgsSize;
-            uint localsSize = (uint)function.LocalsSize + argsSize + MinLocals;
-            Emit(Opcode.ENTER, new[] { new Operand(argsSize), new Operand(localsSize) });
+            uint argsSize = (uint)localArgsSize;
+            uint totalLocalsSize = (uint)localsSize + argsSize + MinLocals;
+            Emit(Opcode.ENTER, new[] { new Operand(argsSize), new Operand(totalLocalsSize) });
         }
 
-        public void EmitEpilogue(FunctionSymbol function)
+        public void EmitEpilogue(int localArgsSize, Semantics.Type? returnType)
         {
-            uint argsSize = (uint)function.LocalArgsSize;
-            uint returnSize = (uint)(function.Type.ReturnType?.SizeOf ?? 0);
+            uint argsSize = (uint)localArgsSize;
+            uint returnSize = (uint)(returnType?.SizeOf ?? 0);
             Emit(Opcode.LEAVE, new[] { new Operand(argsSize), new Operand(returnSize) });
         }
 
@@ -374,7 +420,7 @@ namespace ScTools.ScriptLang.CodeGen
                 throw new ArgumentException("Empty label", nameof(label));
             }
 
-            if (!functions[currentFunction!].Labels.TryAdd(label, length))
+            if (!functions[currentFunction!.Function.Name].Labels.TryAdd(label, length))
             {
                 throw new InvalidOperationException($"Label '{label}' is repeated");
             }
@@ -467,7 +513,7 @@ namespace ScTools.ScriptLang.CodeGen
             }
 
             labelTargetsInCurrentInstruction.Add(labelTargets.Count);
-            labelTargets.Add((currentFunction!, label, length + (uint)buffer.Count));
+            labelTargets.Add((currentFunction!.Function.Name, label, length + (uint)buffer.Count));
             buffer.Add(0);
             buffer.Add(0);
 

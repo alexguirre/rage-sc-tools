@@ -1,6 +1,7 @@
 ﻿#nullable enable
 namespace ScTools.ScriptLang
 {
+    using System;
     using System.Diagnostics;
     using System.IO;
 
@@ -14,34 +15,42 @@ namespace ScTools.ScriptLang
     using ScTools.ScriptLang.Semantics.Binding;
     using ScTools.ScriptLang.Semantics.Symbols;
 
+    public enum ModuleState
+    {
+        None = 0,
+        Parsed,
+        SemanticAnalysisFirstPassDone,
+        SemanticAnalysisSecondPassDone,
+        Bound,
+    }
+
     public sealed class Module
     {
-        public Root Ast { get; }
-        public SymbolTable SymbolTable { get; }
-        public BoundModule BoundModule { get; }
+        public ModuleState State { get; private set; } = ModuleState.None;
+        public Root? Ast { get; private set; }
+        public SymbolTable? SymbolTable { get; private set; }
+        public BoundModule? BoundModule { get; private set; }
         public DiagnosticsReport Diagnostics { get; }
         /// <summary>
         /// Gets the file path included in diagnostics messages.
         /// </summary>
         public string FilePath { get; }
-        public Script CompiledScript { get; }
 
-        private Module(TextReader input, string filePath, NativeDB? nativeDB, bool compile)
+        public Module(string filePath)
         {
             Diagnostics = new DiagnosticsReport();
             FilePath = filePath;
-
-            Ast = Parse(input);
-            DoSyntaxCheck();
-            (SymbolTable, BoundModule) = DoSemanticAnalysis();
-            CompiledScript = (!compile || Diagnostics.HasErrors) ? CreateEmptyScript() :
-                                                                   Compile(nativeDB);
         }
 
-        public string GetAstDotGraph() => AstDotGenerator.Generate(Ast);
+        public string GetAstDotGraph() => Ast != null ? AstDotGenerator.Generate(Ast) : string.Empty;
 
-        private Root Parse(TextReader input)
+        public void Parse(TextReader input)
         {
+            if (State != ModuleState.None)
+            {
+                throw new InvalidOperationException("Invalid state");
+            }
+
             AntlrInputStream inputStream = new AntlrInputStream(input);
 
             ScLangLexer lexer = new ScLangLexer(inputStream);
@@ -51,48 +60,52 @@ namespace ScTools.ScriptLang
             ScLangParser parser = new ScLangParser(tokens);
             parser.RemoveErrorListeners();
             parser.AddErrorListener(new SyntaxErrorListener<IToken>(this));
-            return (Root)parser.script().Accept(new AstBuilder());
+            Ast = (Root)parser.script().Accept(new AstBuilder());
+            SyntaxChecker.Check(Ast, FilePath, Diagnostics);
+            State = ModuleState.Parsed;
         }
 
-        private void DoSyntaxCheck()
+        public void DoFirstSemanticAnalysisPass(IUsingModuleResolver? usingResolver)
         {
-            Diagnostics.AddFrom(SyntaxChecker.Check(Ast, FilePath));
-        }
-
-        private (SymbolTable, BoundModule) DoSemanticAnalysis()
-        {
-            var (diagnostics, symbols, boundModule) = SemanticAnalysis.Visit(Ast, FilePath);
-            Diagnostics.AddFrom(diagnostics);
-            return (symbols, boundModule);
-        }
-
-        private Script Compile(NativeDB? nativeDB)
-        {
-            Debug.Assert(!Diagnostics.HasErrors);
-            return BoundModule.Assemble(nativeDB);
-        }
-
-        private static Script CreateEmptyScript()
-            => new Script
+            if (State != ModuleState.Parsed)
             {
-                Hash = 0, // TODO: how is this hash calculated?
-                ArgsCount = 0,
-                StaticsCount = 0,
-                GlobalsLengthAndBlock = 0,
-                NativesCount = 0,
-                Name = EmptyScriptName,
-                NameHash = EmptyScriptName.ToHash(),
-                StringsLength = 0,
-            };
+                throw new InvalidOperationException("Invalid state");
+            }
 
-        private const string EmptyScriptName = "unknown";
+            Debug.Assert(Ast != null);
+            SymbolTable = new SymbolTable(Ast);
 
-        public static Module Compile(TextReader input, string filePath = "tmp.sc", NativeDB? nativeDB = null)
-            => new Module(input, filePath, nativeDB, compile: true);
+            SemanticAnalysis.DoFirstPass(Ast, FilePath, SymbolTable, usingResolver, Diagnostics);
+            State = ModuleState.SemanticAnalysisFirstPassDone;
+        }
 
-        public static Module Parse(TextReader input, string filePath = "tmp.sc", NativeDB? nativeDB = null)
-            => new Module(input, filePath, nativeDB, compile: false);
+        public void DoSecondSemanticAnalysisPass()
+        {
+            if (State != ModuleState.SemanticAnalysisFirstPassDone)
+            {
+                throw new InvalidOperationException("Invalid state");
+            }
 
+            Debug.Assert(Ast != null);
+            Debug.Assert(SymbolTable != null);
+
+            SemanticAnalysis.DoSecondPass(Ast, FilePath, SymbolTable, Diagnostics);
+            State = ModuleState.SemanticAnalysisSecondPassDone;
+        }
+
+        public void DoBinding()
+        {
+            if (State != ModuleState.SemanticAnalysisSecondPassDone)
+            {
+                throw new InvalidOperationException("Invalid state");
+            }
+
+            Debug.Assert(Ast != null);
+            Debug.Assert(SymbolTable != null);
+
+            BoundModule = SemanticAnalysis.DoBinding(Ast, FilePath, SymbolTable, Diagnostics);
+            State = ModuleState.Bound;
+        }
 
         /// <summary>
         /// Adds syntax errors to diagnostics report.

@@ -1,6 +1,4 @@
 ﻿#nullable enable
-using System;
-
 namespace ScTools.ScriptLang.Semantics.Symbols
 {
     public class TypeSymbol : ISymbol
@@ -13,7 +11,7 @@ namespace ScTools.ScriptLang.Semantics.Symbols
         {
             if (type is UnresolvedType)
             {
-                throw new ArgumentException($"Type is {nameof(UnresolvedType)}", nameof(type));
+                throw new System.ArgumentException($"Type is {nameof(UnresolvedType)}", nameof(type));
             }
 
             Name = name;

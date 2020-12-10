@@ -15,27 +15,17 @@ namespace ScTools.ScriptLang.Semantics
         /// </summary>
         private sealed class FirstPass : Pass
         {
-            public FirstPass(DiagnosticsReport diagnostics, string filePath, SymbolTable symbols)
+            private readonly IUsingModuleResolver? usingResolver;
+
+            public FirstPass(DiagnosticsReport diagnostics, string filePath, SymbolTable symbols, IUsingModuleResolver? usingResolver)
                 : base(diagnostics, filePath, symbols)
-            { }
+            {
+                this.usingResolver = usingResolver;
+            }
 
             protected override void OnEnd()
             {
-                bool allResolved = ResolveTypes();
-                if (allResolved)
-                {
-                    AllocateStaticVars();
-                }
-
-                var main = Symbols.Lookup(FunctionSymbol.MainName) as FunctionSymbol;
-                if (main == null)
-                {
-                    Diagnostics.AddError(FilePath, $"Missing '{FunctionSymbol.MainName}' procedure", SourceRange.Unknown);
-                }
-                else if (!main.IsMain)
-                {
-                    Diagnostics.AddError(FilePath, $"Incorrect signature for '{FunctionSymbol.MainName}' procedure, expected 'PROC {FunctionSymbol.MainName}()'", main.Source);
-                }
+                ResolveTypes();
             }
 
             // returns whether all types where resolved
@@ -123,21 +113,6 @@ namespace ScTools.ScriptLang.Semantics
                 }
             }
 
-            private void AllocateStaticVars()
-            {
-                Debug.Assert(Symbols.Parent == null, $"{nameof(AllocateStaticVars)} must be called from the global scope");
-
-                int location = 0;
-                foreach (var s in Symbols.Symbols.Where(sym => sym is VariableSymbol { Kind: VariableKind.Static })
-                                                 .Cast<VariableSymbol>())
-                {
-                    Debug.Assert(!s.IsAllocated);
-
-                    s.Location = location;
-                    location += s.Type.SizeOf;
-                }
-            }
-
             private FunctionType CreateUnresolvedFunctionType(Ast.Type? returnType, IEnumerable<VariableDeclaration> parameters)
             {
                 var r = returnType != null ? UnresolvedTypeFromAst(returnType) : null;
@@ -146,12 +121,12 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitFunctionStatement(FunctionStatement node)
             {
-                Symbols.Add(new FunctionSymbol(node.Name, node.Source, CreateUnresolvedFunctionType(node.ReturnType, node.ParameterList.Parameters), isNative: false));
+                Symbols.Add(new FunctionSymbol(node, CreateUnresolvedFunctionType(node.ReturnType, node.ParameterList.Parameters)));
             }
 
             public override void VisitProcedureStatement(ProcedureStatement node)
             {
-                Symbols.Add(new FunctionSymbol(node.Name, node.Source, CreateUnresolvedFunctionType(null, node.ParameterList.Parameters), isNative: false));
+                Symbols.Add(new FunctionSymbol(node, CreateUnresolvedFunctionType(null, node.ParameterList.Parameters)));
             }
 
             public override void VisitFunctionPrototypeStatement(FunctionPrototypeStatement node)
@@ -171,13 +146,13 @@ namespace ScTools.ScriptLang.Semantics
             public override void VisitFunctionNativeStatement(FunctionNativeStatement node)
             {
                 // TODO: check that native exists, if not report it in diagnostics
-                Symbols.Add(new FunctionSymbol(node.Name, node.Source, CreateUnresolvedFunctionType(node.ReturnType, node.ParameterList.Parameters), isNative: true));
+                Symbols.Add(new FunctionSymbol(node, CreateUnresolvedFunctionType(node.ReturnType, node.ParameterList.Parameters)));
             }
 
             public override void VisitProcedureNativeStatement(ProcedureNativeStatement node)
             {
                 // TODO: check that native exists, if not report it in diagnostics
-                Symbols.Add(new FunctionSymbol(node.Name, node.Source, CreateUnresolvedFunctionType(null, node.ParameterList.Parameters), isNative: true));
+                Symbols.Add(new FunctionSymbol(node, CreateUnresolvedFunctionType(null, node.ParameterList.Parameters)));
             }
 
             public override void VisitStaticVariableStatement(StaticVariableStatement node)
@@ -204,6 +179,27 @@ namespace ScTools.ScriptLang.Semantics
                 ));
 
                 Symbols.Add(new TypeSymbol(node.Name, node.Source, struc));
+            }
+
+            public override void VisitUsingStatement(UsingStatement node)
+            {
+                if (usingResolver == null)
+                {
+                    Diagnostics.AddError(FilePath, $"No USING resolver provided", node.Source);
+                    return;
+                }
+
+                var importedModule = usingResolver.Resolve(node.Path);
+                if (importedModule == null)
+                {
+                    Diagnostics.AddError(FilePath, $"Invalid USING path '{node.Path}'", node.Source);
+                    return;
+                }
+
+                Debug.Assert(importedModule.State == ModuleState.SemanticAnalysisFirstPassDone);
+                Debug.Assert(importedModule.SymbolTable != null);
+
+                Symbols.Import(importedModule.SymbolTable);
             }
 
             public override void DefaultVisit(Node node)

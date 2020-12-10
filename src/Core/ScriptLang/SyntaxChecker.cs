@@ -7,12 +7,8 @@ namespace ScTools.ScriptLang
 
     public static class SyntaxChecker
     {
-        public static DiagnosticsReport Check(Root root, string filePath)
-        {
-            Visitor v = new Visitor(root, filePath);
-            root.Accept(v);
-            return v.Diagnostics;
-        }
+        public static void Check(Root root, string filePath, DiagnosticsReport diagnostics)
+            => root.Accept(new Visitor(root, filePath, diagnostics));
 
         private sealed class Visitor : AstVisitor
         {
@@ -24,8 +20,8 @@ namespace ScTools.ScriptLang
             private bool InFunction { get; set; }
             private bool FoundScriptName { get; set; }
 
-            public Visitor(Root root, string filePath)
-                => (Root, FilePath, Diagnostics) = (root, filePath, new DiagnosticsReport());
+            public Visitor(Root root, string filePath, DiagnosticsReport diagnostics)
+                => (Root, FilePath, Diagnostics) = (root, filePath, diagnostics);
 
             private void Error(string message, Node node) => Diagnostics.AddError(FilePath, message, node.Source);
 

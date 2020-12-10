@@ -11,12 +11,12 @@
         [Fact]
         public void TestRefInStaticVariable()
         {
-            var module = Module.Compile(new StringReader($@"
+            var module = Util.ParseAndAnalyze($@"
                 FLOAT& v
 
                 PROC MAIN()
                 ENDPROC
-            "));
+            ");
 
             Assert.True(module.Diagnostics.HasErrors, $"Ref types are not supported as static variables");
         }
@@ -24,14 +24,14 @@
         [Fact]
         public void TestRefInStruct()
         {
-            var module = Module.Compile(new StringReader($@"
+            var module = Util.ParseAndAnalyze($@"
                 STRUCT MY_STRUCT
                     FLOAT& v
                 ENDSTRUCT
 
                 PROC MAIN()
                 ENDPROC
-            "));
+            ");
 
             Assert.True(module.Diagnostics.HasErrors, $"Ref type are not supported as struct fields");
         }
@@ -39,11 +39,11 @@
         [Fact]
         public void TestRefMissingInitializer()
         {
-            var module = Module.Compile(new StringReader($@"
+            var module = Util.ParseAndAnalyze($@"
                 PROC MAIN()
                     FLOAT& a
                 ENDPROC
-            "));
+            ");
 
             Assert.True(module.Diagnostics.HasErrors, $"Ref type variable needs to be initialized always");
         }
@@ -51,14 +51,14 @@
         [Fact]
         public void TestRefInLocalVariable()
         {
-            var module = Module.Compile(new StringReader($@"
+            var module = Util.ParseAndAnalyze($@"
                 PROC MAIN()
                     FLOAT a = 5.0
                     FLOAT& b = a
                     b = 2.0
                     FLOAT c = a + b
                 ENDPROC
-            "));
+            ");
 
             Assert.False(module.Diagnostics.HasErrors);
         }
@@ -66,11 +66,11 @@
         [Fact]
         public void TestRefIncorrectInitializerExpr()
         {
-            var module = Module.Compile(new StringReader($@"
+            var module = Util.ParseAndAnalyze($@"
                 PROC MAIN()
                     FLOAT& a = 4.0 + 5.0
                 ENDPROC
-            "));
+            ");
 
             Assert.True(module.Diagnostics.HasErrors);
         }
@@ -78,14 +78,14 @@
         [Fact]
         public void TestRefAssignFromRef()
         {
-            var module = Module.Compile(new StringReader($@"
+            var module = Util.ParseAndAnalyze($@"
                 PROC MAIN()
                     FLOAT a = 1.0
                     FLOAT& b = a
                     FLOAT& c = b
                     c = 2.0
                 ENDPROC
-            "));
+            ");
 
             Assert.False(module.Diagnostics.HasErrors);
         }
@@ -93,7 +93,7 @@
         [Fact]
         public void TestRefInParameter()
         {
-            var module = Module.Compile(new StringReader($@"
+            var module = Util.ParseAndAnalyze($@"
                 PROC MAIN()
                     FLOAT a = 5.0
                     DO_SOMETHING(a)
@@ -105,7 +105,7 @@
                 PROC DO_SOMETHING(FLOAT& b)
                     b = 2.0
                 ENDPROC
-            "));
+            ");
 
             Assert.False(module.Diagnostics.HasErrors);
         }
@@ -113,14 +113,14 @@
         [Fact]
         public void TestRefInNative()
         {
-            var module = Module.Parse(new StringReader($@"
+            var module = Util.ParseAndAnalyze($@"
                 NATIVE PROC DELETE_PED(INT& handle)
 
                 PROC MAIN()
                     INT a = 1
                     DELETE_PED(a)
                 ENDPROC
-            "));
+            ");
 
             Assert.False(module.Diagnostics.HasErrors);
         }
@@ -128,7 +128,7 @@
         [Fact]
         public void TestRefToStruct()
         {
-            var module = Module.Compile(new StringReader($@"
+            var module = Util.ParseAndAnalyze($@"
                 PROC MAIN()
                     VEC3 a = <<1.0, 2.0, 3.0>>
                     DO_SOMETHING(a)
@@ -142,7 +142,7 @@
                 PROC DO_SOMETHING(VEC3& b)
                     b.x = 4.0
                 ENDPROC
-            "));
+            ");
 
             Assert.False(module.Diagnostics.HasErrors);
         }
@@ -150,7 +150,7 @@
         [Fact]
         public void TestAssignToRefStruct()
         {
-            var module = Module.Compile(new StringReader($@"
+            var module = Util.ParseAndAnalyze($@"
                 PROC MAIN()
                     VEC3 a = <<1.0, 2.0, 3.0>>
                     VEC3& b = a
@@ -158,7 +158,7 @@
                     b = c
                     b = <<7.0, 8.0, 9.0>>
                 ENDPROC
-            "));
+            ");
 
             Assert.False(module.Diagnostics.HasErrors);
         }

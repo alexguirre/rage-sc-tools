@@ -12,6 +12,7 @@ namespace ScTools.ScriptLang.Ast
         public virtual void VisitRoot(Root node) => DefaultVisit(node);
 
         public virtual void VisitScriptNameStatement(ScriptNameStatement node) => DefaultVisit(node);
+        public virtual void VisitUsingStatement(UsingStatement node) => DefaultVisit(node);
         public virtual void VisitProcedureStatement(ProcedureStatement node) => DefaultVisit(node);
         public virtual void VisitFunctionStatement(FunctionStatement node) => DefaultVisit(node);
         public virtual void VisitProcedurePrototypeStatement(ProcedurePrototypeStatement node) => DefaultVisit(node);
@@ -56,6 +57,7 @@ namespace ScTools.ScriptLang.Ast
         [return: MaybeNull] public virtual TResult VisitRoot(Root node) => DefaultVisit(node);
         
         [return: MaybeNull] public virtual TResult VisitScriptNameStatement(ScriptNameStatement node) => DefaultVisit(node);
+        [return: MaybeNull] public virtual TResult VisitUsingStatement(UsingStatement node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitProcedureStatement(ProcedureStatement node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitFunctionStatement(FunctionStatement node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitProcedurePrototypeStatement(ProcedurePrototypeStatement node) => DefaultVisit(node);
@@ -101,6 +103,7 @@ namespace ScTools.ScriptLang.Ast
                 case Root n: visitor.VisitRoot(n); break;
 
                 case ScriptNameStatement n: visitor.VisitScriptNameStatement(n); break;
+                case UsingStatement n: visitor.VisitUsingStatement(n); break;
                 case ProcedureStatement n: visitor.VisitProcedureStatement(n); break;
                 case FunctionStatement n: visitor.VisitFunctionStatement(n); break;
                 case ProcedurePrototypeStatement n: visitor.VisitProcedurePrototypeStatement(n); break;
@@ -146,6 +149,7 @@ namespace ScTools.ScriptLang.Ast
             Root n => visitor.VisitRoot(n),
 
             ScriptNameStatement n => visitor.VisitScriptNameStatement(n),
+            UsingStatement n => visitor.VisitUsingStatement(n),
             ProcedureStatement n => visitor.VisitProcedureStatement(n),
             FunctionStatement n => visitor.VisitFunctionStatement(n),
             ProcedurePrototypeStatement n => visitor.VisitProcedurePrototypeStatement(n),

@@ -34,6 +34,9 @@ namespace ScTools.ScriptLang.Ast
         public override Node VisitScriptNameStatement([NotNull] ScLangParser.ScriptNameStatementContext context)
             => new ScriptNameStatement(context.identifier().GetText(), Source(context));
 
+        public override Node VisitUsingStatement([NotNull] ScLangParser.UsingStatementContext context)
+            => new UsingStatement(context.@string().GetText(), Source(context));
+
         public override Node VisitProcedureStatement([NotNull] ScLangParser.ProcedureStatementContext context)
             => new ProcedureStatement(context.identifier().GetText(),
                                       (ParameterList)context.parameterList().Accept(this),

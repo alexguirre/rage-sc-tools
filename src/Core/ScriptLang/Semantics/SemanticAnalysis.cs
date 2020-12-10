@@ -7,48 +7,17 @@ namespace ScTools.ScriptLang.Semantics
 
     public static partial class SemanticAnalysis
     {
-        public static (DiagnosticsReport, SymbolTable, BoundModule) Visit(Root root, string filePath)
+        public static void DoFirstPass(Root root, string filePath, SymbolTable symbols, IUsingModuleResolver? usingResolver, DiagnosticsReport diagnostics)
+            => new FirstPass(diagnostics, filePath, symbols, usingResolver).Run(root);
+
+        public static void DoSecondPass(Root root, string filePath, SymbolTable symbols, DiagnosticsReport diagnostics)
+            => new SecondPass(diagnostics, filePath, symbols).Run(root);
+
+        public static BoundModule DoBinding(Root root, string filePath, SymbolTable symbols, DiagnosticsReport diagnostics)
         {
-            var diagnostics = new DiagnosticsReport();
-            var symbols = new SymbolTable(root.Source);
-            AddBuiltIns(symbols);
-            new FirstPass(diagnostics, filePath, symbols).Run(root);
-            new SecondPass(diagnostics, filePath, symbols).Run(root);
-
-            var binderPass = new Binder(diagnostics, filePath, symbols);
-            binderPass.Run(root);
-
-            return (diagnostics, symbols, binderPass.Module);
-        }
-
-        private static void AddBuiltIns(SymbolTable symbols)
-        {
-            // basic types
-            var flTy = new BasicType(BasicTypeCode.Float);
-            var intTy = new BasicType(BasicTypeCode.Int);
-            symbols.Add(new TypeSymbol("INT", SourceRange.Unknown, intTy));
-            symbols.Add(new TypeSymbol("FLOAT", SourceRange.Unknown, flTy));
-            symbols.Add(new TypeSymbol("BOOL", SourceRange.Unknown, new BasicType(BasicTypeCode.Bool)));
-            symbols.Add(new TypeSymbol("STRING", SourceRange.Unknown, new BasicType(BasicTypeCode.String)));
-
-            // struct types
-            static Field F(Type ty, string name) => new Field(ty, name);
-            var entityIndexTy = new StructType("ENTITY_INDEX", F(intTy, "value"));
-            var structTypes = new[]
-            {
-                new StructType("VEC3", F(flTy, "x"), F(flTy, "y"), F(flTy, "z")),
-                new StructType("PLAYER_INDEX", F(intTy, "value")),
-                entityIndexTy,
-                new StructType("PED_INDEX", F(entityIndexTy, "base")),
-                new StructType("VEHICLE_INDEX", F(entityIndexTy, "base")),
-                new StructType("OBJECT_INDEX", F(entityIndexTy, "base")),
-                new StructType("CAMERA_INDEX", F(intTy, "value")),
-            };
-
-            foreach (var structTy in structTypes)
-            {
-                symbols.Add(new TypeSymbol(structTy.Name!, SourceRange.Unknown, structTy));
-            }
+            var pass = new Binder(diagnostics, filePath, symbols);
+            pass.Run(root);
+            return pass.Module;
         }
 
         private abstract class Pass : AstVisitor

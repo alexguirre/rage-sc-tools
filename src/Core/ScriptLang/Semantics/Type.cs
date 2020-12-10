@@ -13,6 +13,8 @@ namespace ScTools.ScriptLang.Semantics
     {
         public abstract int SizeOf { get; }
 
+        public abstract Type Clone();
+
         public abstract bool Equals(Type? other);
 
         protected abstract int DoGetHashCode();
@@ -68,6 +70,8 @@ namespace ScTools.ScriptLang.Semantics
             => ElementType = elementType is RefType ? throw new ArgumentException("References to references are not allowed") :
                                                       elementType;
 
+        public override RefType Clone() => new RefType(ElementType);
+
         public override bool Equals(Type? other)
             => other is RefType r && r.ElementType == ElementType;
 
@@ -83,6 +87,8 @@ namespace ScTools.ScriptLang.Semantics
         public override int SizeOf => 1;
 
         public BasicType(BasicTypeCode typeCode) => TypeCode = typeCode;
+
+        public override BasicType Clone() => new BasicType(TypeCode);
 
         public override bool Equals(Type? other)
             => other is BasicType b && b.TypeCode == TypeCode;
@@ -111,6 +117,8 @@ namespace ScTools.ScriptLang.Semantics
             => (Name, Fields) = (name, new List<Field>(fields));
 
         public StructType(string? name, params Field[] fields) : this(name, (IEnumerable<Field>)fields) { }
+
+        public override StructType Clone() => new StructType(Name, Fields);
 
         public bool HasField(string name)
         {
@@ -290,6 +298,8 @@ namespace ScTools.ScriptLang.Semantics
         public FunctionType(Type? returnType, IEnumerable<Type> parameters)
             => (ReturnType, Parameters) = (returnType, new List<Type>(parameters));
 
+        public override FunctionType Clone() => new FunctionType(ReturnType, Parameters);
+
         public override bool Equals(Type? other)
         {
             if (!(other is FunctionType f))
@@ -340,6 +350,8 @@ namespace ScTools.ScriptLang.Semantics
 
         public UnresolvedType(string typeName, bool isReference)
             => (TypeName, IsReference) = (typeName, isReference);
+
+        public override UnresolvedType Clone() => new UnresolvedType(TypeName, IsReference);
 
         public Type? Resolve(SymbolTable symbols)
         {

@@ -43,8 +43,12 @@
         private void OnSourceChanged(string newSource)
         {
             using var reader = new StringReader(newSource);
-            module = Module.Parse(reader, Path);
-            Console.WriteLine($"Parsed '{Path}' (global symbols: {module.SymbolTable.Symbols.Count()})");
+            module = new Module(Path);
+            module.Parse(reader);
+            module.DoFirstSemanticAnalysisPass(null);
+            module.DoSecondSemanticAnalysisPass();
+            module.DoBinding();
+            Console.WriteLine($"Parsed '{Path}' (global symbols: {module.SymbolTable?.Symbols.Count()})");
             if (!module.Diagnostics.HasErrors)
             {
                 cachedSymbols = null;
@@ -53,7 +57,7 @@
 
         public SymbolTable? FindScopeAt(SourceLocation location)
         {
-            if (module == null)
+            if (module?.SymbolTable == null)
             {
                 return null;
             }
@@ -62,9 +66,9 @@
 
             static SymbolTable? RecursiveFind(SymbolTable symbols, SourceLocation location)
             {
-                if (symbols.Source.Contains(location))
+                if (symbols.AstNode.Source.Contains(location))
                 {
-                    foreach (var (_, childTable) in symbols.Children)
+                    foreach (var childTable in symbols.Children)
                     {
                         var t = RecursiveFind(childTable, location);
                         if (t != null)
@@ -103,7 +107,7 @@
             };
 
         public DocumentSymbol[] GetLspSymbols()
-            => cachedSymbols ??= module?.SymbolTable.Symbols.Where(s => !s.Source.IsUnknown).Select(ToLspSymbol).ToArray() ?? Array.Empty<DocumentSymbol>();
+            => cachedSymbols ??= module?.SymbolTable?.Symbols.Where(s => !s.Source.IsUnknown).Select(ToLspSymbol).ToArray() ?? Array.Empty<DocumentSymbol>();
 
         private DocumentSymbol ToLspSymbol(ISymbol symbol)
             => new DocumentSymbol
@@ -185,7 +189,8 @@
                         Children = Array.Empty<DocumentSymbol>(),
                     }).ToArray();
                 case FunctionSymbol f when !f.IsNative:
-                    var funcScope = module.SymbolTable.GetScope(f);
+                    Debug.Assert(module.SymbolTable != null);
+                    var funcScope = module.SymbolTable.GetScope(f.AstBlock!);
                     return GetAllSymbols(funcScope)!.Select(ToLspSymbol).ToArray();
                 default:
                     return Array.Empty<DocumentSymbol>();
@@ -197,7 +202,7 @@
         /// </summary>
         private IEnumerable<ISymbol> GetAllSymbols(SymbolTable symbols)
         {
-            return symbols.Symbols.Concat(symbols.Children.SelectMany(kvp => GetAllSymbols(kvp.Table)));
+            return symbols.Symbols.Concat(symbols.Children.SelectMany(t => GetAllSymbols(t)));
         }
     }
 }

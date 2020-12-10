@@ -9,6 +9,10 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
     public sealed class BoundFunction : BoundNode
     {
+        private readonly Dictionary<VariableSymbol, int /*location*/> allocatedLocals = new();
+        private int localsSize = 0;
+        private int localArgsSize = 0;
+
         public FunctionSymbol Function { get; }
         public IList<BoundStatement> Body { get; } = new List<BoundStatement>();
 
@@ -19,8 +23,10 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
         public void Emit(ByteCodeBuilder code)
         {
-            code.BeginFunction(Function.Name);
-            code.EmitPrologue(this.Function);
+            AllocateLocals();
+
+            code.BeginFunction(this);
+            code.EmitPrologue(localArgsSize, localsSize);
 
             foreach (var stmt in Body)
             {
@@ -30,9 +36,38 @@ namespace ScTools.ScriptLang.Semantics.Binding
             // if the last statement is a return we can omit this epilogue
             if (!(Body.LastOrDefault() is BoundReturnStatement))
             {
-                code.EmitEpilogue(this.Function);
+                EmitEpilogue(code);
             }
             code.EndFunction();
+        }
+
+        public void EmitEpilogue(ByteCodeBuilder code) => code.EmitEpilogue(localArgsSize, Function.Type.ReturnType);
+
+        public int? GetLocalLocation(VariableSymbol var)
+            => allocatedLocals.TryGetValue(var, out int loc) ? loc : null;
+
+        private void AllocateLocals()
+        {
+            allocatedLocals.Clear();
+            localArgsSize = 0;
+            localsSize = 0;
+
+            int location = 0;
+            foreach (var l in Function.LocalArgs)
+            {
+                allocatedLocals.Add(l, location);
+                int size = l.Type.SizeOf;
+                location += size;
+                localArgsSize += size;
+            }
+            location += 2; // space required by the game
+            foreach (var l in Function.Locals)
+            {
+                allocatedLocals.Add(l, location);
+                int size = l.Type.SizeOf;
+                location += size;
+                localsSize += size;
+            }
         }
     }
 }

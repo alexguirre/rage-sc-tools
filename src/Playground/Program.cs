@@ -87,11 +87,13 @@ ENDPROC
             var nativeDB = NativeDB.FromJson(File.ReadAllText("nativedb.json"));
 
             using var reader = new StringReader(Code);
-            var module = Module.Compile(reader, nativeDB: nativeDB);
-            File.WriteAllText("test_script.ast.txt", module.GetAstDotGraph());
+            var comp = new Compilation { NativeDB = nativeDB };
+            comp.SetMainModule(reader);
+            comp.Compile();
+            File.WriteAllText("test_script.ast.txt", comp.MainModule.GetAstDotGraph());
 
-            var d = module.Diagnostics;
-            var symbols = module.SymbolTable;
+            var d = comp.GetAllDiagnostics();
+            var symbols = comp.MainModule.SymbolTable;
             Console.WriteLine($"Errors:   {d.HasErrors} ({d.Errors.Count()})");
             Console.WriteLine($"Warnings: {d.HasWarnings} ({d.Warnings.Count()})");
             foreach (var diagnostic in d.AllDiagnostics)
@@ -108,11 +110,11 @@ ENDPROC
             }
 
             Console.WriteLine();
-            new Dumper(module.CompiledScript).Dump(Console.Out, true, true, true, true, true);
+            new Dumper(comp.CompiledScript).Dump(Console.Out, true, true, true, true, true);
 
             YscFile ysc = new YscFile
             {
-                Script = module.CompiledScript
+                Script = comp.CompiledScript
             };
 
             string outputPath = "test_script.ysc";

@@ -6,7 +6,9 @@ script
 
 topLevelStatement
     : K_SCRIPT_NAME identifier                                  #scriptNameStatement
-    
+
+    | K_USING string                                            #usingStatement
+
     | K_PROC identifier parameterList EOL
       statementBlock
       K_ENDPROC                                                 #procedureStatement
@@ -145,6 +147,7 @@ K_WHILE : W H I L E;
 K_ENDWHILE : E N D W H I L E;
 K_RETURN : R E T U R N;
 K_SCRIPT_NAME : S C R I P T '_' N A M E;
+K_USING : U S I N G;
 
 OP_ADD: '+';
 OP_SUBTRACT: '-';

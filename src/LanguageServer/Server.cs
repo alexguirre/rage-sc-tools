@@ -166,7 +166,7 @@
             Console.WriteLine($"Document completion '{param.TextDocument.Uri}'");
 
             var file = sourceFiles[param.TextDocument.Uri];
-            if (param.Context.TriggerKind == CompletionTriggerKind.TriggerCharacter)
+            if (param.Context != null && param.Context.TriggerKind == CompletionTriggerKind.TriggerCharacter)
             {
                 switch (param.Context.TriggerCharacter)
                 {

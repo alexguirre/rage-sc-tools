@@ -20,6 +20,17 @@ namespace ScTools.ScriptLang.Ast
         public override string ToString() => $"SCRIPT_NAME {Name}";
     }
 
+    public sealed class UsingStatement : TopLevelStatement
+    {
+        public string PathRaw { get; }
+        public string Path { get; }
+
+        public UsingStatement(string pathRaw, SourceRange source) : base(source)
+            => (PathRaw, Path) = (pathRaw, pathRaw[1..^1].Unescape());
+
+        public override string ToString() => $"USING {PathRaw}";
+    }
+
     public sealed class ProcedureStatement : TopLevelStatement
     {
         public string Name { get; }
