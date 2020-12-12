@@ -249,6 +249,10 @@ namespace ScTools.ScriptLang.Semantics
                     };
 
                 public override BoundExpression VisitArrayAccessExpression(ArrayAccessExpression node) => throw new NotImplementedException();
+
+                public override BoundExpression VisitErrorExpression(ErrorExpression node) => new BoundInvalidExpression($"{nameof(ErrorExpression)}: '{node.Text}'");
+
+                public override BoundExpression DefaultVisit(Node node) => throw new InvalidOperationException($"Unsupported AST node {node.GetType().Name}");
             }
         }
     }

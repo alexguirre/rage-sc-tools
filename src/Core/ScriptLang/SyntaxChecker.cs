@@ -86,6 +86,12 @@ namespace ScTools.ScriptLang
                 DefaultVisit(node);
             }
 
+            public override void VisitErrorStatement(ErrorStatement node)
+                => Error($"Expected statement, found '{node.Text}'", node);
+
+            public override void VisitErrorExpression(ErrorExpression node)
+                => Error($"Expected expression, found '{node.Text}'", node);
+
             public override void DefaultVisit(Node node)
             {
                 foreach (var n in node.Children)

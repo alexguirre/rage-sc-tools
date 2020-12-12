@@ -196,7 +196,7 @@ namespace ScTools.ScriptLang.Semantics
                     return;
                 }
 
-                Debug.Assert(importedModule.State == ModuleState.SemanticAnalysisFirstPassDone);
+                Debug.Assert(importedModule.State >= ModuleState.SemanticAnalysisFirstPassDone);
                 Debug.Assert(importedModule.SymbolTable != null);
 
                 Symbols.Import(importedModule.SymbolTable);

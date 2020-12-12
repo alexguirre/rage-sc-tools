@@ -23,6 +23,7 @@ namespace ScTools.ScriptLang.Ast
         public virtual void VisitStaticVariableStatement(StaticVariableStatement node) => DefaultVisit(node);
 
         public virtual void VisitStatementBlock(StatementBlock node) => DefaultVisit(node);
+        public virtual void VisitErrorStatement(ErrorStatement node) => DefaultVisit(node);
         public virtual void VisitVariableDeclarationStatement(VariableDeclarationStatement node) => DefaultVisit(node);
         public virtual void VisitAssignmentStatement(AssignmentStatement node) => DefaultVisit(node);
         public virtual void VisitIfStatement(IfStatement node) => DefaultVisit(node);
@@ -30,6 +31,7 @@ namespace ScTools.ScriptLang.Ast
         public virtual void VisitReturnStatement(ReturnStatement node) => DefaultVisit(node);
         public virtual void VisitInvocationStatement(InvocationStatement node) => DefaultVisit(node);
 
+        public virtual void VisitErrorExpression(ErrorExpression node) => DefaultVisit(node);
         public virtual void VisitUnaryExpression(UnaryExpression node) => DefaultVisit(node);
         public virtual void VisitBinaryExpression(BinaryExpression node) => DefaultVisit(node);
         public virtual void VisitAggregateExpression(AggregateExpression node) => DefaultVisit(node);
@@ -68,6 +70,7 @@ namespace ScTools.ScriptLang.Ast
         [return: MaybeNull] public virtual TResult VisitStaticVariableStatement(StaticVariableStatement node) => DefaultVisit(node);
 
         [return: MaybeNull] public virtual TResult VisitStatementBlock(StatementBlock node) => DefaultVisit(node);
+        [return: MaybeNull] public virtual TResult VisitErrorStatement(ErrorStatement node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitVariableDeclarationStatement(VariableDeclarationStatement node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitAssignmentStatement(AssignmentStatement node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitIfStatement(IfStatement node) => DefaultVisit(node);
@@ -75,6 +78,7 @@ namespace ScTools.ScriptLang.Ast
         [return: MaybeNull] public virtual TResult VisitReturnStatement(ReturnStatement node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitInvocationStatement(InvocationStatement node) => DefaultVisit(node);
 
+        [return: MaybeNull] public virtual TResult VisitErrorExpression(ErrorExpression node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitUnaryExpression(UnaryExpression node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitBinaryExpression(BinaryExpression node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitAggregateExpression(AggregateExpression node) => DefaultVisit(node);
@@ -114,6 +118,7 @@ namespace ScTools.ScriptLang.Ast
                 case StaticVariableStatement n: visitor.VisitStaticVariableStatement(n); break;
 
                 case StatementBlock n: visitor.VisitStatementBlock(n); break;
+                case ErrorStatement n: visitor.VisitErrorStatement(n); break;
                 case VariableDeclarationStatement n: visitor.VisitVariableDeclarationStatement(n); break;
                 case AssignmentStatement n: visitor.VisitAssignmentStatement(n); break;
                 case IfStatement n: visitor.VisitIfStatement(n); break;
@@ -121,6 +126,7 @@ namespace ScTools.ScriptLang.Ast
                 case ReturnStatement n: visitor.VisitReturnStatement(n); break;
                 case InvocationStatement n: visitor.VisitInvocationStatement(n); break;
 
+                case ErrorExpression n: visitor.VisitErrorExpression(n); break;
                 case UnaryExpression n: visitor.VisitUnaryExpression(n); break;
                 case BinaryExpression n: visitor.VisitBinaryExpression(n); break;
                 case AggregateExpression n: visitor.VisitAggregateExpression(n); break;
@@ -160,6 +166,7 @@ namespace ScTools.ScriptLang.Ast
             StaticVariableStatement n => visitor.VisitStaticVariableStatement(n),
 
             StatementBlock n => visitor.VisitStatementBlock(n),
+            ErrorStatement n => visitor.VisitErrorStatement(n),
             VariableDeclarationStatement n => visitor.VisitVariableDeclarationStatement(n),
             AssignmentStatement n => visitor.VisitAssignmentStatement(n),
             IfStatement n => visitor.VisitIfStatement(n),
@@ -167,6 +174,7 @@ namespace ScTools.ScriptLang.Ast
             ReturnStatement n => visitor.VisitReturnStatement(n),
             InvocationStatement n => visitor.VisitInvocationStatement(n),
 
+            ErrorExpression n => visitor.VisitErrorExpression(n),
             UnaryExpression n => visitor.VisitUnaryExpression(n),
             BinaryExpression n => visitor.VisitBinaryExpression(n),
             AggregateExpression n => visitor.VisitAggregateExpression(n),

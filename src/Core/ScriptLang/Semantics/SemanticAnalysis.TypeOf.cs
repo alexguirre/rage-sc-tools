@@ -2,6 +2,7 @@
 namespace ScTools.ScriptLang.Semantics
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
 
     using ScTools.ScriptLang.Ast;
@@ -160,6 +161,8 @@ namespace ScTools.ScriptLang.Semantics
             }
 
             // TODO: VisitArrayAccessExpression
+
+            public override Type? VisitErrorExpression(ErrorExpression node) => null;
 
             public override Type? DefaultVisit(Node node) => throw new InvalidOperationException($"Unsupported AST node {node.GetType().Name}");
         }

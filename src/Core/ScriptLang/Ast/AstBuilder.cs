@@ -6,6 +6,7 @@ namespace ScTools.ScriptLang.Ast
 
     using Antlr4.Runtime;
     using Antlr4.Runtime.Misc;
+    using Antlr4.Runtime.Tree;
 
     using ScTools.ScriptLang.Grammar;
 
@@ -28,7 +29,7 @@ namespace ScTools.ScriptLang.Ast
         private static Node PlaceholderExpr(ScLangParser.ExpressionContext context) => new PlaceholderExpression(Source(context));
 
         public override Node VisitScript([NotNull] ScLangParser.ScriptContext context)
-            => new Root(context.topLevelStatement().Select(stmt => stmt.Accept(this)).Cast<TopLevelStatement>(), Source(context));
+            => new Root(context.topLevelStatement().Select(stmt => Visit(stmt)).Cast<TopLevelStatement>(), Source(context));
 
         #region Top Level Statements
         public override Node VisitScriptNameStatement([NotNull] ScLangParser.ScriptNameStatementContext context)
@@ -39,82 +40,83 @@ namespace ScTools.ScriptLang.Ast
 
         public override Node VisitProcedureStatement([NotNull] ScLangParser.ProcedureStatementContext context)
             => new ProcedureStatement(context.identifier().GetText(),
-                                      (ParameterList)context.parameterList().Accept(this),
-                                      (StatementBlock)context.statementBlock().Accept(this),
+                                      (ParameterList)Visit(context.parameterList()),
+                                      (StatementBlock)Visit(context.statementBlock()),
                                       Source(context));
 
         public override Node VisitFunctionStatement([NotNull] ScLangParser.FunctionStatementContext context)
             => new FunctionStatement(context.identifier().GetText(),
-                                     (Type)context.returnType.Accept(this),
-                                     (ParameterList)context.parameterList().Accept(this),
-                                     (StatementBlock)context.statementBlock().Accept(this),
+                                     (Type)Visit(context.returnType),
+                                     (ParameterList)Visit(context.parameterList()),
+                                     (StatementBlock)Visit(context.statementBlock()),
                                      Source(context));
 
         public override Node VisitProcedurePrototypeStatement([NotNull] ScLangParser.ProcedurePrototypeStatementContext context)
             => new ProcedurePrototypeStatement(context.identifier().GetText(),
-                                               (ParameterList)context.parameterList().Accept(this),
+                                               (ParameterList)Visit(context.parameterList()),
                                                Source(context));
 
         public override Node VisitFunctionPrototypeStatement([NotNull] ScLangParser.FunctionPrototypeStatementContext context)
             => new FunctionPrototypeStatement(context.identifier().GetText(),
-                                              (Type)context.returnType.Accept(this),
-                                              (ParameterList)context.parameterList().Accept(this),
+                                              (Type)Visit(context.returnType),
+                                              (ParameterList)Visit(context.parameterList()),
                                               Source(context));
 
         public override Node VisitProcedureNativeStatement([NotNull] ScLangParser.ProcedureNativeStatementContext context)
             => new ProcedureNativeStatement(context.identifier().GetText(),
-                                            (ParameterList)context.parameterList().Accept(this),
+                                            (ParameterList)Visit(context.parameterList()),
                                             Source(context));
 
         public override Node VisitFunctionNativeStatement([NotNull] ScLangParser.FunctionNativeStatementContext context)
             => new FunctionNativeStatement(context.identifier().GetText(),
-                                           (Type)context.returnType.Accept(this),
-                                           (ParameterList)context.parameterList().Accept(this),
+                                           (Type)Visit(context.returnType),
+                                           (ParameterList)Visit(context.parameterList()),
                                            Source(context));
 
         public override Node VisitStructStatement([NotNull] ScLangParser.StructStatementContext context)
             => new StructStatement(context.identifier().GetText(),
-                                   (StructFieldList)context.structFieldList().Accept(this),
+                                   (StructFieldList)Visit(context.structFieldList()),
                                    Source(context));
 
         public override Node VisitStaticVariableStatement([NotNull] ScLangParser.StaticVariableStatementContext context)
-            => new StaticVariableStatement((VariableDeclarationWithInitializer)context.variableDeclarationWithInitializer().Accept(this),
+            => new StaticVariableStatement((VariableDeclarationWithInitializer)Visit(context.variableDeclarationWithInitializer()),
                                            Source(context));
         #endregion Top Level Statements
 
+
         #region Statements
         public override Node VisitVariableDeclarationStatement([NotNull] ScLangParser.VariableDeclarationStatementContext context)
-            => new VariableDeclarationStatement((VariableDeclarationWithInitializer)context.variableDeclarationWithInitializer().Accept(this),
+            => new VariableDeclarationStatement((VariableDeclarationWithInitializer)Visit(context.variableDeclarationWithInitializer()),
                                                 Source(context));
 
         public override Node VisitAssignmentStatement([NotNull] ScLangParser.AssignmentStatementContext context)
-            => new AssignmentStatement((Expression)context.left.Accept(this),
-                                       (Expression)context.right.Accept(this),
+            => new AssignmentStatement((Expression)Visit(context.left),
+                                       (Expression)Visit(context.right),
                                        Source(context));
 
         public override Node VisitIfStatement([NotNull] ScLangParser.IfStatementContext context)
-            => new IfStatement((Expression)context.condition.Accept(this),
-                               (StatementBlock)context.thenBlock.Accept(this),
-                               (StatementBlock?)context.elseBlock?.Accept(this),
+            => new IfStatement((Expression)Visit(context.condition),
+                               (StatementBlock)Visit(context.thenBlock),
+                               (StatementBlock?)Visit(context.elseBlock),
                                Source(context));
 
         public override Node VisitWhileStatement([NotNull] ScLangParser.WhileStatementContext context)
-            => new WhileStatement((Expression)context.condition.Accept(this),
-                                  (StatementBlock)context.statementBlock().Accept(this),
+            => new WhileStatement((Expression)Visit(context.condition),
+                                  (StatementBlock)Visit(context.statementBlock()),
                                   Source(context));
 
         public override Node VisitReturnStatement([NotNull] ScLangParser.ReturnStatementContext context)
-            => new ReturnStatement((Expression?)context.expression()?.Accept(this), Source(context));
+            => new ReturnStatement((Expression?)Visit(context.expression()), Source(context));
 
         public override Node VisitInvocationStatement([NotNull] ScLangParser.InvocationStatementContext context)
-            => new InvocationStatement((Expression)context.expression().Accept(this),
-                                       (ArgumentList)context.argumentList().Accept(this),
+            => new InvocationStatement((Expression)Visit(context.expression()),
+                                       (ArgumentList)Visit(context.argumentList()),
                                        Source(context));
         #endregion Statements
 
         #region Expressions
         public override Node VisitParenthesizedExpression([NotNull] ScLangParser.ParenthesizedExpressionContext context)
-            => context.expression().Accept(this);
+            => Visit(context.expression());
         
         public override Node VisitUnaryExpression([NotNull] ScLangParser.UnaryExpressionContext context)
             => new UnaryExpression(context.op.Type switch
@@ -123,7 +125,7 @@ namespace ScTools.ScriptLang.Ast
                 ScLangLexer.OP_SUBTRACT => UnaryOperator.Negate,
                 _ => throw new NotImplementedException()
             },
-            (Expression)context.expression().Accept(this),
+            (Expression)Visit(context.expression()),
             Source(context));
 
         public override Node VisitBinaryExpression([NotNull] ScLangParser.BinaryExpressionContext context)
@@ -147,29 +149,29 @@ namespace ScTools.ScriptLang.Ast
                 ScLangLexer.K_OR => BinaryOperator.LogicalOr,
                 _ => throw new NotImplementedException()
             },
-            (Expression)context.left.Accept(this),
-            (Expression)context.right.Accept(this),
+            (Expression)Visit(context.left),
+            (Expression)Visit(context.right),
             Source(context));
 
         public override Node VisitAggregateExpression([NotNull] ScLangParser.AggregateExpressionContext context)
-            => new AggregateExpression(context.expression().Select(expr => expr.Accept(this)).Cast<Expression>(), Source(context));
+            => new AggregateExpression(context.expression().Select(Visit).Cast<Expression>(), Source(context));
 
         public override Node VisitIdentifierExpression([NotNull] ScLangParser.IdentifierExpressionContext context)
             => new IdentifierExpression(context.identifier().GetText(), Source(context));
 
         public override Node VisitMemberAccessExpression([NotNull] ScLangParser.MemberAccessExpressionContext context)
-            => new MemberAccessExpression((Expression)context.expression().Accept(this),
+            => new MemberAccessExpression((Expression)Visit(context.expression()),
                                           context.identifier().GetText(),
                                           Source(context));
 
         public override Node VisitArrayAccessExpression([NotNull] ScLangParser.ArrayAccessExpressionContext context)
-            => new ArrayAccessExpression((Expression)context.expression().Accept(this),
-                                         (ArrayIndexer)context.arrayIndexer().Accept(this),
+            => new ArrayAccessExpression((Expression)Visit(context.expression()),
+                                         (ArrayIndexer)Visit(context.arrayIndexer()),
                                          Source(context));
 
         public override Node VisitInvocationExpression([NotNull] ScLangParser.InvocationExpressionContext context)
-            => new InvocationExpression((Expression)context.expression().Accept(this),
-                                        (ArgumentList)context.argumentList().Accept(this),
+            => new InvocationExpression((Expression)Visit(context.expression()),
+                                        (ArgumentList)Visit(context.argumentList()),
                                         Source(context));
 
         public override Node VisitLiteralExpression([NotNull] ScLangParser.LiteralExpressionContext context)
@@ -194,32 +196,46 @@ namespace ScTools.ScriptLang.Ast
 
         #region Misc
         public override Node VisitStatementBlock([NotNull] ScLangParser.StatementBlockContext context)
-            => new StatementBlock(context.statement().Select(stmt => stmt.Accept(this)).Cast<Statement>(), Source(context));
+            => new StatementBlock(context.statement().Select(Visit).Cast<Statement>(), Source(context));
 
         public override Node VisitVariableDeclaration([NotNull] ScLangParser.VariableDeclarationContext context)
-            => new VariableDeclaration((Type)context.type().Accept(this),
+            => new VariableDeclaration((Type)Visit(context.type()),
                                        context.identifier().GetText(),
-                                       (ArrayIndexer?)context.arrayIndexer()?.Accept(this),
+                                       (ArrayIndexer?)Visit(context.arrayIndexer()),
                                        Source(context));
 
         public override Node VisitVariableDeclarationWithInitializer([NotNull] ScLangParser.VariableDeclarationWithInitializerContext context)
-            => new VariableDeclarationWithInitializer((VariableDeclaration)context.decl.Accept(this),
-                                                      (Expression?)context.initializer?.Accept(this),
+            => new VariableDeclarationWithInitializer((VariableDeclaration)Visit(context.decl),
+                                                      (Expression?)Visit(context.initializer),
                                                       Source(context));
 
         public override Node VisitParameterList([NotNull] ScLangParser.ParameterListContext context)
-            => new ParameterList(context.variableDeclaration().Select(v => v.Accept(this)).Cast<VariableDeclaration>(), Source(context));
+            => new ParameterList(context.variableDeclaration().Select(Visit).Cast<VariableDeclaration>(), Source(context));
 
         public override Node VisitArgumentList([NotNull] ScLangParser.ArgumentListContext context)
-            => new ArgumentList(context.expression().Select(expr => expr.Accept(this)).Cast<Expression>(),
+            => new ArgumentList(context.expression().Select(Visit).Cast<Expression>(),
                                 Source(context));
 
         public override Node VisitStructFieldList([NotNull] ScLangParser.StructFieldListContext context)
-            => new StructFieldList(context.variableDeclarationWithInitializer().Select(v => v.Accept(this)).Cast<VariableDeclarationWithInitializer>(),
+            => new StructFieldList(context.variableDeclarationWithInitializer().Select(Visit).Cast<VariableDeclarationWithInitializer>(),
                                    Source(context));
 
         public override Node VisitArrayIndexer([NotNull] ScLangParser.ArrayIndexerContext context)
-            => new ArrayIndexer((Expression)context.expression().Accept(this), Source(context));
+            => new ArrayIndexer((Expression)Visit(context.expression()), Source(context));
+
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("tree")]
+        public override Node? Visit(IParseTree? tree)
+        {
+            return tree switch
+            {
+                null => null,
+                ScLangParser.StatementContext stmt when !stmt.GetType().IsSubclassOf(typeof(ScLangParser.StatementContext))
+                    => new ErrorStatement(stmt.GetText(), Source(stmt)),
+                ScLangParser.ExpressionContext expr when !expr.GetType().IsSubclassOf(typeof(ScLangParser.ExpressionContext))
+                    => new ErrorExpression(expr.GetText(), Source(expr)),
+                _ => base.Visit(tree),
+            };
+        }
         #endregion Misc
     }
 }

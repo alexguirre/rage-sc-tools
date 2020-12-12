@@ -13,6 +13,16 @@ namespace ScTools.ScriptLang.Ast
         }
     }
 
+    public sealed class ErrorExpression : Expression
+    {
+        public string Text { get; }
+
+        public ErrorExpression(string text, SourceRange source) : base(source)
+            => Text = text;
+
+        public override string ToString() => Text;
+    }
+
     public sealed class UnaryExpression : Expression
     {
         public UnaryOperator Op { get; }

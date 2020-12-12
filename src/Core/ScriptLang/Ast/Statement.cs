@@ -23,6 +23,16 @@ namespace ScTools.ScriptLang.Ast
         public override string ToString() => $"{string.Join("\n", Statements)}";
     }
 
+    public sealed class ErrorStatement : Statement
+    {
+        public string Text { get; }
+
+        public ErrorStatement(string text, SourceRange source) : base(source)
+            => Text = text;
+
+        public override string ToString() => Text;
+    }
+
     public sealed class VariableDeclarationStatement : Statement
     {
         public VariableDeclarationWithInitializer Variable { get; }

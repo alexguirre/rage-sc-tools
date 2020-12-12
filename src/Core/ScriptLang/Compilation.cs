@@ -64,13 +64,13 @@ namespace ScTools.ScriptLang
         public void PerformPendingAnalysis()
         {
             var modules = ImportedModules.Append(MainModule);
-            foreach (var m in modules.Where(s => s.State == ModuleState.SemanticAnalysisFirstPassDone))
+            foreach (var m in modules.Where(s => s!.State == ModuleState.SemanticAnalysisFirstPassDone))
             {
-                m.DoSecondSemanticAnalysisPass();
+                m!.DoSecondSemanticAnalysisPass();
             }
-            foreach (var m in modules.Where(s => s.State == ModuleState.SemanticAnalysisSecondPassDone))
+            foreach (var m in modules.Where(s => s!.State == ModuleState.SemanticAnalysisSecondPassDone))
             {
-                m.DoBinding();
+                m!.DoBinding();
             }
         }
 
@@ -174,8 +174,6 @@ namespace ScTools.ScriptLang
             {
                 return null;
             }
-
-            usingPath = SourceResolver.NormalizePath(usingPath);
 
             if (!SourceResolver.IsValid(usingPath))
             {
