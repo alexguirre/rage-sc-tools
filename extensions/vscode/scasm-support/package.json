@@ -43,7 +43,8 @@
                     "sclang"
                 ],
                 "extensions": [
-                    ".sc"
+                    ".sc",
+                    ".sch"
                 ],
                 "configuration": "./sclang-configuration.json"
             }

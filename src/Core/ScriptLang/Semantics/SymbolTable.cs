@@ -65,24 +65,6 @@ namespace ScTools.ScriptLang.Semantics
             symbols.Push(symbol);
         }
 
-        //public void Import(SymbolTable importedSymbols)
-        //{
-        //    if (!importedSymbols.IsGlobal)
-        //    {
-        //        throw new ArgumentException("Can only import from a global symbol table");
-        //    }
-
-        //    if (!IsGlobal)
-        //    {
-        //        throw new InvalidOperationException("Can only import to a global symbol table");
-        //    }
-
-        //    foreach (var s in importedSymbols.Symbols)
-        //    {
-        //        Add(s);
-        //    }
-        //}
-
         public bool Exists(string name) => Lookup(name) != null;
 
         private bool LocalExists(string name) => LocalLookup(name) != null;

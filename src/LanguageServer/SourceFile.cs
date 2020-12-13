@@ -17,7 +17,7 @@
     internal sealed class SourceFile
     {
         private string source = "";
-        private Module? module;
+        private readonly Compilation compilation;
         private DocumentSymbol[]? cachedSymbols;
 
         public Uri Uri { get; }
@@ -31,25 +31,27 @@
                 OnSourceChanged(value);
             }
         }
-        public SymbolTable? GlobalScope => module?.SymbolTable;
+        public SymbolTable? GlobalScope => compilation.MainModule?.SymbolTable;
 
         public SourceFile(Uri uri)
         {
             Uri = uri;
             Path = uri.AbsolutePath;
+            var dir = Directory.GetParent(Path)!.FullName;
+            compilation = new Compilation
+            {
+                SourceResolver = new DefaultSourceResolver(dir),
+            };
             Source = File.ReadAllText(Path);
         }
 
         private void OnSourceChanged(string newSource)
         {
             using var reader = new StringReader(newSource);
-            module = new Module(Path);
-            module.Parse(reader);
-            module.DoFirstSemanticAnalysisPass(null);
-            module.DoSecondSemanticAnalysisPass();
-            module.DoBinding();
-            Console.WriteLine($"Parsed '{Path}' (global symbols: {module.SymbolTable?.Symbols.Count()})");
-            if (!module.Diagnostics.HasErrors)
+            compilation.SetMainModule(reader, Path);
+            compilation.PerformPendingAnalysis();
+            Console.WriteLine($"Parsed '{Path}' (global symbols: {compilation.MainModule!.SymbolTable?.Symbols.Count()})");
+            if (!compilation.MainModule!.Diagnostics.HasErrors)
             {
                 cachedSymbols = null;
             }
@@ -57,12 +59,12 @@
 
         public SymbolTable? FindScopeAt(SourceLocation location)
         {
-            if (module?.SymbolTable == null)
+            if (compilation.MainModule?.SymbolTable == null)
             {
                 return null;
             }
 
-            return RecursiveFind(module.SymbolTable, location);
+            return RecursiveFind(compilation.MainModule.SymbolTable, location);
 
             static SymbolTable? RecursiveFind(SymbolTable symbols, SourceLocation location)
             {
@@ -88,7 +90,7 @@
             => new PublishDiagnosticParams
             {
                 Uri = Uri,
-                Diagnostics = module?.Diagnostics.AllDiagnostics.Select(d =>
+                Diagnostics = compilation.MainModule?.Diagnostics.AllDiagnostics.Select(d =>
                 {
                     return new LspDiagnostic
                     {
@@ -107,7 +109,7 @@
             };
 
         public DocumentSymbol[] GetLspSymbols()
-            => cachedSymbols ??= module?.SymbolTable?.Symbols.Where(s => !s.Source.IsUnknown).Select(ToLspSymbol).ToArray() ?? Array.Empty<DocumentSymbol>();
+            => cachedSymbols ??= compilation.MainModule?.SymbolTable?.Symbols.Where(s => !s.Source.IsUnknown).Select(ToLspSymbol).ToArray() ?? Array.Empty<DocumentSymbol>();
 
         private DocumentSymbol ToLspSymbol(ISymbol symbol)
             => new DocumentSymbol
@@ -173,7 +175,7 @@
 
         private DocumentSymbol[] GetLspSymbolChildren(ISymbol symbol)
         {
-            Debug.Assert(module != null);
+            Debug.Assert(compilation.MainModule != null);
 
             switch (symbol)
             {
@@ -189,8 +191,8 @@
                         Children = Array.Empty<DocumentSymbol>(),
                     }).ToArray();
                 case FunctionSymbol f when !f.IsNative:
-                    Debug.Assert(module.SymbolTable != null);
-                    var funcScope = module.SymbolTable.GetScope(f.AstBlock!);
+                    Debug.Assert(compilation.MainModule.SymbolTable != null);
+                    var funcScope = compilation.MainModule.SymbolTable.GetScope(f.AstBlock!);
                     return GetAllSymbols(funcScope)!.Select(ToLspSymbol).ToArray();
                 default:
                     return Array.Empty<DocumentSymbol>();
