@@ -18,6 +18,7 @@ namespace ScTools.ScriptLang.Semantics
         public Ast.Node AstNode { get; }
         public SymbolTable? Parent { get; }
         public IEnumerable<SymbolTable> Children => children;
+        public IEnumerable<SymbolTable> Imports => imports;
 
         public bool IsGlobal => Parent == null;
 
@@ -25,6 +26,7 @@ namespace ScTools.ScriptLang.Semantics
         /// Returns symbols in the order they were declared in.
         /// </summary>
         public IEnumerable<ISymbol> Symbols => symbols.Reverse();
+
 
         public SymbolTable(Ast.Root astNode)
         {
@@ -113,21 +115,12 @@ namespace ScTools.ScriptLang.Semantics
             IEnumerable<ISymbol> availableSymbols = symbols;
             if (IsGlobal)
             {
-                availableSymbols = availableSymbols.Concat(BuiltIns);
+                availableSymbols = availableSymbols.Concat(BuiltIns).Concat(imports.SelectMany(i => i.symbols));
             }
 
             foreach (var symbol in availableSymbols)
             {
                 if (symbol.Name == name)
-                {
-                    return symbol;
-                }
-            }
-
-            foreach (var importedTable in imports)
-            {
-                var symbol = importedTable.LocalLookup(name);
-                if (symbol != null)
                 {
                     return symbol;
                 }
