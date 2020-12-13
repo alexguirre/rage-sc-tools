@@ -206,7 +206,7 @@ namespace ScTools.ScriptLang.Semantics
                     {
                         case FunctionSymbol fn: return new BoundFunctionExpression(fn);
                         case VariableSymbol v: return new BoundVariableExpression(v);
-                        case null:
+                        case null: // TODO: unresolved symbols?
                             Diagnostics.AddError(FilePath, $"Unknown symbol '{node.Identifier}'", node.Source);
                             return new BoundUnknownSymbolExpression(node.Identifier);
                         default: throw new NotSupportedException();

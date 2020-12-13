@@ -328,6 +328,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
         {
             Debug.Assert(Type is FunctionType, "Only function types can be called");
 
+            // TODO: support indirect calls
             throw new NotImplementedException();
         }
     }
