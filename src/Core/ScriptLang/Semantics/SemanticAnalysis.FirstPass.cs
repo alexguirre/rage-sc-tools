@@ -89,7 +89,8 @@ namespace ScTools.ScriptLang.Semantics
  
                     for (int i = 0; i < func.Parameters.Count; i++)
                     {
-                        func.Parameters[i] = Resolve(func.Parameters[i], source);
+                        var p = func.Parameters[i];
+                        func.Parameters[i] = (Resolve(p.Type, source), p.Name);
                     }
                 }
 
@@ -116,7 +117,7 @@ namespace ScTools.ScriptLang.Semantics
             private FunctionType CreateUnresolvedFunctionType(Ast.Type? returnType, IEnumerable<VariableDeclaration> parameters)
             {
                 var r = returnType != null ? UnresolvedTypeFromAst(returnType) : null;
-                return new FunctionType(r, parameters.Select(p => UnresolvedTypeFromAst(p.Type)));
+                return new FunctionType(r, parameters.Select(p => ((Type)UnresolvedTypeFromAst(p.Type), (string?)p.Name)));
             }
 
             public override void VisitFunctionStatement(FunctionStatement node)

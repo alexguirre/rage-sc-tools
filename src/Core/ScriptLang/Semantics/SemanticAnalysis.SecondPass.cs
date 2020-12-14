@@ -223,7 +223,7 @@ namespace ScTools.ScriptLang.Semantics
                 int argCount = Math.Min(expected, found);
                 for (int i = 0; i < argCount; i++)
                 {
-                    var expectedType = f.Parameters[i];
+                    var expectedType = f.Parameters[i].Type;
                     var foundType = TypeOf(node.ArgumentList.Arguments[i]);
 
                     if (foundType == null || !expectedType.IsAssignableFrom(foundType, considerReferences: true))

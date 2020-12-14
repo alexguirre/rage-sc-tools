@@ -292,17 +292,21 @@ namespace ScTools.ScriptLang.Semantics
     public sealed class FunctionType : Type
     {
         public Type? ReturnType { get; set; }
-        public IList<Type> Parameters { get; set; }
+        public IList<(Type Type, string? Name)> Parameters { get; set; }
         public override int SizeOf => 1;
 
         public FunctionType(Type? returnType, IEnumerable<Type> parameters)
-            => (ReturnType, Parameters) = (returnType, new List<Type>(parameters));
+            : this(returnType, parameters.Select(t => (t, (string?)null)))
+        { }
+
+        public FunctionType(Type? returnType, IEnumerable<(Type, string?)> parameters)
+            => (ReturnType, Parameters) = (returnType, new List<(Type, string?)>(parameters));
 
         public override FunctionType Clone() => new FunctionType(ReturnType, Parameters);
 
         public override bool Equals(Type? other)
         {
-            if (!(other is FunctionType f))
+            if (other is not FunctionType f)
             {
                 return false;
             }
@@ -319,7 +323,8 @@ namespace ScTools.ScriptLang.Semantics
 
             for (int i = 0; i < Parameters.Count; i++)
             {
-                if (f.Parameters[i] != Parameters[i])
+                // note: two FunctionTypes with different parameter names should be considered equal, so only check the types
+                if (f.Parameters[i].Type != Parameters[i].Type)
                 {
                     return false;
                 }
@@ -332,9 +337,9 @@ namespace ScTools.ScriptLang.Semantics
         {
             HashCode h = default;
             h.Add(ReturnType);
-            foreach (var f in Parameters)
+            foreach (var p in Parameters)
             {
-                h.Add(f);
+                h.Add(p.Type);
             }
             return h.ToHashCode();
         }

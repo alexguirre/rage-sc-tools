@@ -363,7 +363,7 @@ namespace ScTools.ScriptLang.CodeGen
                 throw new InvalidOperationException($"Unknown native hash '{hash:X16}' ('{function.Name}')");
             }
 
-            byte paramCount = (byte)function.Type.Parameters.Sum(p => p.SizeOf);
+            byte paramCount = (byte)function.Type.Parameters.Sum(p => p.Type.SizeOf);
             byte returnValueCount = (byte)(function.Type.ReturnType?.SizeOf ?? 0);
             ushort idx = IndexOfNative(translatedHash);
             Emit(Opcode.NATIVE, new[] { new Operand(paramCount), new Operand(returnValueCount), new Operand(idx) });

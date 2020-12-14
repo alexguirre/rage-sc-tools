@@ -37,7 +37,7 @@
         {
             Uri = uri;
             Path = uri.AbsolutePath;
-            var dir = Directory.GetParent(Path)!.FullName;
+            var dir = System.IO.Path.GetDirectoryName(Path)!;
             compilation = new Compilation
             {
                 SourceResolver = new DefaultSourceResolver(dir),
@@ -167,7 +167,21 @@
                     sb.Append(' ');
                 }
                 sb.Append("(");
-                sb.AppendJoin(", ", f.Type.Parameters);
+                var addComma = false;
+                foreach (var (type, name) in f.Type.Parameters)
+                {
+                    if (addComma)
+                    {
+                        sb.Append(", ");
+                    }
+                    sb.Append(type);
+                    if (name != null)
+                    {
+                        sb.Append(' ');
+                        sb.Append(name);
+                    }
+                    addComma = true;
+                }
                 sb.Append(")");
                 return sb.ToString();
             }
