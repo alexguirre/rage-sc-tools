@@ -15,6 +15,7 @@
     using ScTools.ScriptAssembly;
     using ScTools.ScriptAssembly.CodeGen;
     using ScTools.ScriptAssembly.Disassembly;
+    using ScTools.ScriptLang;
 
     internal static class Program
     {
@@ -73,6 +74,25 @@
             };
             assemble.Handler = CommandHandler.Create<AssembleOptions>(Assemble);
 
+            Command compile = new Command("compile")
+            {
+                new Argument<FileGlob[]>(
+                    "input",
+                    "The input SC files. Supports glob patterns.")
+                    .AtLeastOne(),
+                new Option<DirectoryInfo>(
+                    new[] { "--output", "-o" },
+                    () => new DirectoryInfo(".\\"),
+                    "The output directory.")
+                    .ExistingOnly(),
+                new Option<FileInfo>(
+                    new[] { "--nativedb", "-n" },
+                    "The SCNDB file containing the native commands definitions.")
+                    .ExistingOnly(),
+                new Option(new[] { "--unencrypted", "-u" }, "Output unencrypted files of the compiled scripts."),
+            };
+            compile.Handler = CommandHandler.Create<CompileOptions>(Compile);
+
             Command fetchNativeDb = new Command("fetch-nativedb")
             {
                 new Option<Uri>(
@@ -94,6 +114,7 @@
             rootCmd.AddCommand(dump);
             rootCmd.AddCommand(disassemble);
             rootCmd.AddCommand(assemble);
+            rootCmd.AddCommand(compile);
             rootCmd.AddCommand(fetchNativeDb);
 
             return rootCmd.InvokeAsync(args).Result;
@@ -172,6 +193,104 @@
                     File.WriteAllBytes(Path.ChangeExtension(outputFile.FullName, "unencrypted.ysc"), data);
                 }
             });
+        }
+
+        private class CompileOptions
+        {
+            public FileGlob[] Input { get; set; }
+            public DirectoryInfo Output { get; set; }
+            public FileInfo NativeDB { get; set; }
+            public bool Unencrypted { get; set; }
+        }
+
+        private static void Compile(CompileOptions options)
+        {
+            static void Print(string str)
+            {
+                lock (Console.Out)
+                {
+                    Console.WriteLine(str);
+                }
+            }
+
+            var totalTime = Stopwatch.StartNew();
+
+            LoadGTA5Keys();
+
+            NativeDB nativeDB = null;
+            if (options.NativeDB != null)
+            {
+                nativeDB = NativeDB.FromJson(File.ReadAllText(options.NativeDB.FullName));
+            }
+
+            Parallel.ForEach(options.Input.SelectMany(i => i.Matches), inputFile =>
+            {
+                var outputFile = new FileInfo(Path.Combine(options.Output.FullName, Path.ChangeExtension(inputFile.Name, "ysc")));
+
+                try
+                {
+                    Print($"Compiling '{inputFile}'...");
+                    var compilationTime = Stopwatch.StartNew();
+                    var c = new Compilation
+                    {
+                        SourceResolver = new DefaultSourceResolver(inputFile.DirectoryName),
+                        NativeDB = nativeDB,
+                    };
+
+                    using (var source = new StreamReader(inputFile.OpenRead()))
+                    {
+                        c.SetMainModule(source, inputFile.FullName);
+                    }
+                    c.PerformPendingAnalysis();
+
+                    var diagnostics = c.GetAllDiagnostics();
+                    if (diagnostics.HasErrors)
+                    {
+                        compilationTime.Stop();
+                        lock (Console.Error)
+                        {
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Console.Error.WriteLine($"Compilation of '{inputFile}' failed (time: {compilationTime.Elapsed}):");
+                            foreach (var d in diagnostics.Errors)
+                            {
+                                d.Print(Console.Error);
+                            }
+                            Console.Error.WriteLine();
+                            Console.ForegroundColor = ConsoleColor.White;
+                        }
+                    }
+                    else
+                    {
+                        c.Compile();
+                        compilationTime.Stop();
+
+                        var outputFileName = outputFile.FullName;
+                        Print($"Successful compilation, writing '{Path.GetRelativePath(Directory.GetCurrentDirectory(), outputFileName)}'... (time: {compilationTime.Elapsed})");
+                        YscFile ysc = new YscFile { Script = c.CompiledScript };
+                        byte[] data = ysc.Save(Path.GetFileName(outputFileName));
+                        File.WriteAllBytes(outputFileName, data);
+
+                        if (options.Unencrypted)
+                        {
+                            data = ysc.Save();
+                            File.WriteAllBytes(Path.ChangeExtension(outputFileName, "unencrypted.ysc"), data);
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    lock (Console.Error)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.Error.Write(e.ToString());
+                        Console.ForegroundColor = ConsoleColor.White;
+                    }
+                    return;
+                }
+            });
+
+            totalTime.Stop();
+            Print($"Total time: {totalTime.Elapsed}");
         }
 
         private class DisassembleOptions
