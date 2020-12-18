@@ -27,26 +27,15 @@ namespace ScTools.ScriptLang.Ast
 
     public sealed class VariableDeclaration : Node
     {
-        public Type Type { get; }
-        public string Name { get; }
-        public ArrayIndexer? ArrayRank { get; }
+        public string Type { get; }
+        public Declarator Decl { get; }
 
-        public override IEnumerable<Node> Children
-        {
-            get
-            {
-                yield return Type;
-                if (ArrayRank != null)
-                {
-                    yield return ArrayRank;
-                }
-            }
-        }
+        public override IEnumerable<Node> Children { get { yield return Decl; } }
 
-        public VariableDeclaration(Type type, string name, ArrayIndexer? arrayRank, SourceRange source) : base(source)
-            => (Type, Name, ArrayRank) = (type, name, arrayRank);
+        public VariableDeclaration(string type, Declarator decl, SourceRange source) : base(source)
+            => (Type, Decl) = (type, decl);
 
-        public override string ToString() => $"{Type} {Name}{ArrayRank?.ToString() ?? ""}";
+        public override string ToString() => $"{Type} {Decl}";
     }
 
     public sealed class VariableDeclarationWithInitializer : Node

@@ -74,13 +74,13 @@ namespace ScTools.ScriptLang.Ast
     public sealed class FunctionStatement : TopLevelStatement
     {
         public string Name { get; }
-        public Type ReturnType { get; }
+        public string ReturnType { get; }
         public ParameterList ParameterList { get; }
         public StatementBlock Block { get; }
 
-        public override IEnumerable<Node> Children { get { yield return ReturnType; yield return ParameterList; yield return Block; } }
+        public override IEnumerable<Node> Children { get { yield return ParameterList; yield return Block; } }
 
-        public FunctionStatement(string name, Type returnType, ParameterList parameterList, StatementBlock block, SourceRange source) : base(source)
+        public FunctionStatement(string name, string returnType, ParameterList parameterList, StatementBlock block, SourceRange source) : base(source)
             => (Name, ReturnType, ParameterList, Block) = (name, returnType, parameterList, block);
 
         public override string ToString() => $"FUNC {ReturnType} {Name}{ParameterList}\n{Block}\nENDFUNC";
@@ -89,12 +89,12 @@ namespace ScTools.ScriptLang.Ast
     public sealed class FunctionPrototypeStatement : TopLevelStatement
     {
         public string Name { get; }
-        public Type ReturnType { get; }
+        public string ReturnType { get; }
         public ParameterList ParameterList { get; }
 
-        public override IEnumerable<Node> Children { get { yield return ReturnType; yield return ParameterList; } }
+        public override IEnumerable<Node> Children { get { yield return ParameterList; } }
 
-        public FunctionPrototypeStatement(string name, Type returnType, ParameterList parameterList, SourceRange source) : base(source)
+        public FunctionPrototypeStatement(string name, string returnType, ParameterList parameterList, SourceRange source) : base(source)
             => (Name, ReturnType, ParameterList) = (name, returnType, parameterList);
 
         public override string ToString() => $"PROTO FUNC {ReturnType} {Name}{ParameterList}";
@@ -103,12 +103,12 @@ namespace ScTools.ScriptLang.Ast
     public sealed class FunctionNativeStatement : TopLevelStatement
     {
         public string Name { get; }
-        public Type ReturnType { get; }
+        public string ReturnType { get; }
         public ParameterList ParameterList { get; }
 
-        public override IEnumerable<Node> Children { get { yield return ReturnType; yield return ParameterList; } }
+        public override IEnumerable<Node> Children { get { yield return ParameterList; } }
 
-        public FunctionNativeStatement(string name, Type returnType, ParameterList parameterList, SourceRange source) : base(source)
+        public FunctionNativeStatement(string name, string returnType, ParameterList parameterList, SourceRange source) : base(source)
             => (Name, ReturnType, ParameterList) = (name, returnType, parameterList);
 
         public override string ToString() => $"NATIVE FUNC {ReturnType} {Name}{ParameterList}";

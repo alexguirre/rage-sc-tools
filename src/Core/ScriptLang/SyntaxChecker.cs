@@ -78,11 +78,6 @@ namespace ScTools.ScriptLang
 
             public override void VisitVariableDeclarationWithInitializer(VariableDeclarationWithInitializer node)
             {
-                if (node.Declaration.ArrayRank != null && node.Initializer != null)
-                {
-                    Error("Array variable must not have an initializer.", node);
-                }
-
                 DefaultVisit(node);
             }
 

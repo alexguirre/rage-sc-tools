@@ -28,7 +28,7 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitStaticVariableStatement(StaticVariableStatement node)
             {
-                var s = Symbols.Lookup(node.Variable.Declaration.Name) as VariableSymbol;
+                var s = Symbols.Lookup(node.Variable.Declaration.Decl.Identifier) as VariableSymbol;
                 Debug.Assert(s != null);
                 Debug.Assert(s.IsStatic);
 
@@ -94,7 +94,7 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitVariableDeclarationStatement(VariableDeclarationStatement node) 
             {
-                var varSymbol = Symbols.Lookup(node.Variable.Declaration.Name) as VariableSymbol;
+                var varSymbol = Symbols.Lookup(node.Variable.Declaration.Decl.Identifier) as VariableSymbol;
                 Debug.Assert(varSymbol != null);
 
                 var initializerExpr = Bind(node.Variable.Initializer);
@@ -148,7 +148,9 @@ namespace ScTools.ScriptLang.Semantics
             public override void VisitParameterList(ParameterList node) { /* empty */ }
             public override void VisitStructFieldList(StructFieldList node) { /* empty */ }
             public override void VisitStructStatement(StructStatement node) { /* empty */ }
-            public override void VisitType(Ast.Type node) { /* empty */ }
+            public override void VisitRefDeclarator(RefDeclarator node) { /* empty */ }
+            public override void VisitSimpleDeclarator(SimpleDeclarator node) { /* empty */ }
+            public override void VisitArrayDeclarator(ArrayDeclarator node) { /* empty */ }
             public override void VisitVariableDeclaration(VariableDeclaration node) { /* empty */ }
             public override void VisitVariableDeclarationWithInitializer(VariableDeclarationWithInitializer node) { /* empty */ }
 

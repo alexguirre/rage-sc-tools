@@ -41,7 +41,9 @@ namespace ScTools.ScriptLang.Ast
         public virtual void VisitInvocationExpression(InvocationExpression node) => DefaultVisit(node);
         public virtual void VisitLiteralExpression(LiteralExpression node) => DefaultVisit(node);
 
-        public virtual void VisitType(Type node) => DefaultVisit(node);
+        public virtual void VisitRefDeclarator(RefDeclarator node) => DefaultVisit(node);
+        public virtual void VisitSimpleDeclarator(SimpleDeclarator node) => DefaultVisit(node);
+        public virtual void VisitArrayDeclarator(ArrayDeclarator node) => DefaultVisit(node);
 
         public virtual void VisitArrayIndexer(ArrayIndexer node) => DefaultVisit(node);
         public virtual void VisitVariableDeclaration(VariableDeclaration node) => DefaultVisit(node);
@@ -88,7 +90,9 @@ namespace ScTools.ScriptLang.Ast
         [return: MaybeNull] public virtual TResult VisitInvocationExpression(InvocationExpression node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitLiteralExpression(LiteralExpression node) => DefaultVisit(node);
 
-        [return: MaybeNull] public virtual TResult VisitType(Type node) => DefaultVisit(node);
+        [return: MaybeNull] public virtual TResult VisitRefDeclarator(RefDeclarator node) => DefaultVisit(node);
+        [return: MaybeNull] public virtual TResult VisitSimpleDeclarator(SimpleDeclarator node) => DefaultVisit(node);
+        [return: MaybeNull] public virtual TResult VisitArrayDeclarator(ArrayDeclarator node) => DefaultVisit(node);
 
         [return: MaybeNull] public virtual TResult VisitArrayIndexer(ArrayIndexer node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitVariableDeclaration(VariableDeclaration node) => DefaultVisit(node);
@@ -136,7 +140,9 @@ namespace ScTools.ScriptLang.Ast
                 case InvocationExpression n: visitor.VisitInvocationExpression(n); break;
                 case LiteralExpression n: visitor.VisitLiteralExpression(n); break;
 
-                case Type n: visitor.VisitType(n); break;
+                case RefDeclarator n: visitor.VisitRefDeclarator(n); break;
+                case SimpleDeclarator n: visitor.VisitSimpleDeclarator(n); break;
+                case ArrayDeclarator n: visitor.VisitArrayDeclarator(n); break;
 
                 case ArrayIndexer n: visitor.VisitArrayIndexer(n); break;
                 case VariableDeclaration n: visitor.VisitVariableDeclaration(n); break;
@@ -184,7 +190,9 @@ namespace ScTools.ScriptLang.Ast
             InvocationExpression n => visitor.VisitInvocationExpression(n),
             LiteralExpression n => visitor.VisitLiteralExpression(n),
 
-            Type n => visitor.VisitType(n),
+            RefDeclarator n => visitor.VisitRefDeclarator(n),
+            SimpleDeclarator n => visitor.VisitSimpleDeclarator(n),
+            ArrayDeclarator n => visitor.VisitArrayDeclarator(n),
 
             ArrayIndexer n => visitor.VisitArrayIndexer(n),
             VariableDeclaration n => visitor.VisitVariableDeclaration(n),

@@ -78,7 +78,7 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitStaticVariableStatement(StaticVariableStatement node)
             {
-                var v = Symbols.Lookup(node.Variable.Declaration.Name) as VariableSymbol;
+                var v = Symbols.Lookup(node.Variable.Declaration.Decl.Identifier) as VariableSymbol;
                 Debug.Assert(v != null);
 
                 if (v.Type is RefType)
@@ -105,9 +105,9 @@ namespace ScTools.ScriptLang.Semantics
             {
                 foreach (var p in node.Parameters)
                 {
-                    var v = new VariableSymbol(p.Name,
+                    var v = new VariableSymbol(p.Decl.Identifier,
                                                p.Source,
-                                               TryResolveType(p.Type),
+                                               TryResolveVarDecl(p),
                                                VariableKind.LocalArgument);
                     Symbols.Add(v);
                     func?.LocalArgs.Add(v);
@@ -116,9 +116,9 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitVariableDeclarationStatement(VariableDeclarationStatement node)
             {
-                var v = new VariableSymbol(node.Variable.Declaration.Name,
+                var v = new VariableSymbol(node.Variable.Declaration.Decl.Identifier,
                                            node.Source,
-                                           TryResolveType(node.Variable.Declaration.Type),
+                                           TryResolveVarDecl(node.Variable.Declaration),
                                            VariableKind.Local);
 
                 if (node.Variable.Initializer != null)

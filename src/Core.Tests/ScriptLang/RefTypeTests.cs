@@ -29,11 +29,31 @@
                     FLOAT& v
                 ENDSTRUCT
 
+                FLOAT value = 0.5
+
+                PROC MAIN()
+                    MY_STRUCT s = <<value>>
+                ENDPROC
+            ");
+
+            Assert.False(module.Diagnostics.HasErrors);
+        }
+
+        [Fact]
+        public void TestRefInStructInStaticVariable()
+        {
+            var module = Util.ParseAndAnalyze($@"
+                STRUCT MY_STRUCT
+                    FLOAT& v
+                ENDSTRUCT
+
+                MY_STRUCT s
+
                 PROC MAIN()
                 ENDPROC
             ");
 
-            Assert.True(module.Diagnostics.HasErrors, $"Ref type are not supported as struct fields");
+            Assert.True(module.Diagnostics.HasErrors, $"Ref types are not supported as static variables");
         }
 
         [Fact]
@@ -46,6 +66,22 @@
             ");
 
             Assert.True(module.Diagnostics.HasErrors, $"Ref type variable needs to be initialized always");
+        }
+
+        [Fact]
+        public void TestRefInStructMissingInitializer()
+        {
+            var module = Util.ParseAndAnalyze($@"
+                STRUCT MY_STRUCT
+                    FLOAT& v
+                ENDSTRUCT
+
+                PROC MAIN()
+                    MY_STRUCT s
+                ENDPROC
+            ");
+
+            Assert.True(module.Diagnostics.HasErrors, $"Refs need to be initialized always");
         }
 
         [Fact]
@@ -148,6 +184,34 @@
         }
 
         [Fact]
+        public void TestRefToArray()
+        {
+            var module = Util.ParseAndAnalyze($@"
+                PROC MAIN()
+                    INT arr[4]
+                    arr[0] = 1
+                    arr[1] = 2
+                    arr[2] = 3
+                    arr[3] = 4
+                    DO_SOMETHING(a)
+
+                    INT (&b)[4] = a
+                    DO_SOMETHING(b)
+                    b[3] = 10
+                ENDPROC
+
+                PROC DO_SOMETHING(INT (&arr)[4])
+                    arr[0] = arr[0] + 1
+                    arr[1] = arr[1] + 1
+                    arr[2] = arr[2] + 1
+                    arr[3] = arr[3] + 1
+                ENDPROC
+            ");
+
+            Assert.False(module.Diagnostics.HasErrors);
+        }
+
+        [Fact]
         public void TestAssignToRefStruct()
         {
             var module = Util.ParseAndAnalyze($@"
@@ -161,6 +225,21 @@
             ");
 
             Assert.False(module.Diagnostics.HasErrors);
+        }
+
+        [Fact]
+        public void TestRefToRef()
+        {
+            var module = Util.ParseAndAnalyze($@"
+                PROC MAIN()
+                    FLOAT a = 1.0
+                    FLOAT &b = a
+                    FLOAT &(&c) = b
+                    FLOAT &&d = b
+                ENDPROC
+            ");
+
+            Assert.True(module.Diagnostics.HasErrors, "No references to references");
         }
     }
 }

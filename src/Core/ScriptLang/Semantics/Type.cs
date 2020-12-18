@@ -3,9 +3,7 @@ namespace ScTools.ScriptLang.Semantics
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Linq;
-    using System.Runtime.CompilerServices;
 
     using ScTools.ScriptLang.Semantics.Symbols;
 
@@ -14,6 +12,7 @@ namespace ScTools.ScriptLang.Semantics
         public abstract int SizeOf { get; }
 
         public abstract Type Clone();
+        public abstract Type? Resolve(SymbolTable symbols);
 
         public abstract bool Equals(Type? other);
 
@@ -64,13 +63,24 @@ namespace ScTools.ScriptLang.Semantics
     public sealed class RefType : Type
     {
         public override int SizeOf => 1;
-        public Type ElementType { get; }
+        public Type ElementType { get; set; }
 
         public RefType(Type elementType)
             => ElementType = elementType is RefType ? throw new ArgumentException("References to references are not allowed") :
                                                       elementType;
 
         public override RefType Clone() => new RefType(ElementType);
+
+        public override RefType? Resolve(SymbolTable symbols)
+        {
+            var resolvedElementType = ElementType.Resolve(symbols);
+            if (resolvedElementType == null)
+            {
+                return null;
+            }
+
+            return new RefType(resolvedElementType);
+        }
 
         public override bool Equals(Type? other)
             => other is RefType r && r.ElementType == ElementType;
@@ -89,6 +99,7 @@ namespace ScTools.ScriptLang.Semantics
         public BasicType(BasicTypeCode typeCode) => TypeCode = typeCode;
 
         public override BasicType Clone() => new BasicType(TypeCode);
+        public override BasicType? Resolve(SymbolTable symbols) => this;
 
         public override bool Equals(Type? other)
             => other is BasicType b && b.TypeCode == TypeCode;
@@ -119,6 +130,17 @@ namespace ScTools.ScriptLang.Semantics
         public StructType(string? name, params Field[] fields) : this(name, (IEnumerable<Field>)fields) { }
 
         public override StructType Clone() => new StructType(Name, Fields);
+
+        public override StructType? Resolve(SymbolTable symbols)
+        {
+            var resolvedFields = Fields.Select(f => (Type: f.Type.Resolve(symbols), f.Name)).ToArray();
+            if (resolvedFields.Any(f => f.Type == null))
+            {
+                return null;
+            }
+
+            return new StructType(Name, resolvedFields.Select(f => new Field(f.Type!, f.Name)));
+        }
 
         public bool HasField(string name)
         {
@@ -304,6 +326,23 @@ namespace ScTools.ScriptLang.Semantics
 
         public override FunctionType Clone() => new FunctionType(ReturnType, Parameters);
 
+        public override FunctionType? Resolve(SymbolTable symbols)
+        {
+            var resolvedReturnType = ReturnType?.Resolve(symbols);
+            if (resolvedReturnType == null && ReturnType != null)
+            {
+                return null;
+            }
+
+            var resolvedParameters = Parameters.Select(p => (Type: p.Type.Resolve(symbols), p.Name)).ToArray();
+            if (resolvedParameters.Any(p => p.Type == null))
+            {
+                return null;
+            }
+
+            return new FunctionType(resolvedReturnType, resolvedParameters!);
+        }
+
         public override bool Equals(Type? other)
         {
             if (other is not FunctionType f)
@@ -347,31 +386,69 @@ namespace ScTools.ScriptLang.Semantics
         protected override string DoToString() => "";
     }
 
-    public sealed class UnresolvedType : Type
+    public sealed class ArrayType : Type
     {
-        public string TypeName { get; }
-        public bool IsReference { get; }
-        public override int SizeOf => throw new InvalidOperationException("Unresolved type");
+        public override int SizeOf => 1 + (ItemType.SizeOf * Length);
+        public Type ItemType { get; set; }
+        public int Length { get; set; }
 
-        public UnresolvedType(string typeName, bool isReference)
-            => (TypeName, IsReference) = (typeName, isReference);
-
-        public override UnresolvedType Clone() => new UnresolvedType(TypeName, IsReference);
-
-        public Type? Resolve(SymbolTable symbols)
+        public ArrayType(Type itemType, int length)
         {
-            var symbol = symbols.Lookup(TypeName);
-            var type = (symbol as TypeSymbol)?.Type;
-            return type != null ?
-                (IsReference ? new RefType(type) : type) :
-                null;
+            if (length <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(length), "Length is negative or 0");
+            }
+
+            if (itemType is RefType)
+            {
+                throw new ArgumentException("Arrays of references are not allowed");
+            }
+
+            ItemType = itemType;
+            Length = length;
+        }
+
+        public override ArrayType Clone() => new ArrayType(ItemType, Length);
+
+        public override ArrayType? Resolve(SymbolTable symbols)
+        {
+            var resolvedItemType = ItemType.Resolve(symbols);
+            if (resolvedItemType == null)
+            {
+                return null;
+            }
+
+            return new ArrayType(resolvedItemType, Length);
         }
 
         public override bool Equals(Type? other)
-            => other is UnresolvedType t && t.TypeName == TypeName && t.IsReference == IsReference;
+            => other is ArrayType arr && arr.Length == Length && arr.ItemType == ItemType;
+
+        protected override int DoGetHashCode() => HashCode.Combine(ItemType, Length);
+        protected override string DoToString() => $"{ItemType}[{Length}]";
+    }
+
+    public sealed class UnresolvedType : Type
+    {
+        public string TypeName { get; }
+        public override int SizeOf => throw new InvalidOperationException("Unresolved type");
+
+        public UnresolvedType(string typeName)
+            => TypeName = typeName;
+
+        public override UnresolvedType Clone() => new UnresolvedType(TypeName);
+
+        public override Type? Resolve(SymbolTable symbols)
+        {
+            var symbol = symbols.Lookup(TypeName);
+            return (symbol as TypeSymbol)?.Type;
+        }
+
+        public override bool Equals(Type? other)
+            => other is UnresolvedType t && t.TypeName == TypeName;
 
         protected override int DoGetHashCode()
-            => HashCode.Combine(TypeName, IsReference);
+            => HashCode.Combine(TypeName);
 
         protected override string DoToString() => TypeName;
     }
