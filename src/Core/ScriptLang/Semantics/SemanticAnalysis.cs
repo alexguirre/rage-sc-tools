@@ -61,7 +61,9 @@ namespace ScTools.ScriptLang.Semantics
                     {
                         case SimpleDeclarator: break;
                         case ArrayDeclarator d:
-                            ty = new ArrayType(ty, 4); // TODO: EVALUATE LENGTH EXPRESSION!!!!
+                            var lengthExpr = new ExpressionBinder().Visit(d.Length)!;
+                            var length = Evaluator.Evaluate(lengthExpr)[0].AsInt32;
+                            ty = new ArrayType(ty, length);
                             decl = d.Inner;
                             break;
                         case RefDeclarator d:
