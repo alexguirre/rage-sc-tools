@@ -116,14 +116,18 @@ namespace ScTools.ScriptLang
             };
 
             // initialize static vars values
-            foreach (var s in statics.Where(s => s.Initializer != null))
+            foreach (var s in statics)
             {
                 // TODO: initialize static arrays
-                var defaultValue = Evaluator.Evaluate(s.Initializer!);
-                Debug.Assert(defaultValue.Length == s.Var.Type.SizeOf);
+                InitializeStaticArraysLengths(s.Var.Type, allocatedStatics[s.Var], sc.Statics.AsSpan());
+                if (s.Initializer != null)
+                {
+                    var defaultValue = Evaluator.Evaluate(s.Initializer!);
+                    Debug.Assert(defaultValue.Length == s.Var.Type.SizeOf);
 
-                var dest = sc.Statics.AsSpan(allocatedStatics[s.Var], s.Var.Type.SizeOf);
-                defaultValue.CopyTo(dest);
+                    var dest = sc.Statics.AsSpan(allocatedStatics[s.Var], s.Var.Type.SizeOf);
+                    defaultValue.CopyTo(dest);
+                }
             }
 
             // emit byte code
@@ -167,6 +171,36 @@ namespace ScTools.ScriptLang
             }
 
             return location; // return total size
+        }
+
+        private static void InitializeStaticArraysLengths(Semantics.Type ty, int location, Span<ScriptValue> statics)
+        {
+            switch (ty)
+            {
+                case ArrayType arrTy:
+                    statics[location].AsInt32 = arrTy.Length;
+
+                    if (arrTy.ItemType is ArrayType or StructType)
+                    {
+                        var itemSize = arrTy.ItemType.SizeOf;
+                        location += 1;
+                        for (int i = 0; i < arrTy.Length; i++)
+                        {
+                            InitializeStaticArraysLengths(arrTy.ItemType, location, statics);
+                            location += itemSize;
+                        }
+                    }
+                    break;
+                case StructType strucTy:
+                    for (int i = 0; i < strucTy.Fields.Count; i++)
+                    {
+                        var f = strucTy.Fields[i];
+                        InitializeStaticArraysLengths(f.Type, location, statics);
+                        location += f.Type.SizeOf;
+                    }
+                    break;
+                default: break;
+            }
         }
 
         Module? IUsingModuleResolver.Resolve(string usingPath)

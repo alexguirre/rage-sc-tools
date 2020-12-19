@@ -27,21 +27,37 @@
         [Fact]
         public void TestStaticArray()
         {
-            var module = Util.ParseAndAnalyze($@"
+            var c = Util.Compile($@"
+                STRUCT MY_STRUCT
+                    FLOAT data[4]
+                ENDSTRUCT
+
                 INT a[4]
+                MY_STRUCT b[2]
 
                 PROC MAIN()
                     a[0] = 1
                     a[1] = a[0] + 1
                     a[2] = a[1] + 1
                     a[3] = a[2] + 1
+
+                    b[0].data[0] = 1.0
+                    b[0].data[1] = 2.0
+                    b[0].data[2] = 3.0
+                    b[0].data[3] = 4.0
+                    b[1] = b[0]
                 ENDPROC
             ");
 
-            Assert.False(module.Diagnostics.HasErrors);
+            Assert.False(c.GetAllDiagnostics().HasErrors);
+            Assert.NotNull(c.CompiledScript);
+            Assert.Equal(4, c.CompiledScript.Statics[0].AsInt32);
+            Assert.Equal(2, c.CompiledScript.Statics[5].AsInt32);
+            Assert.Equal(4, c.CompiledScript.Statics[5 + 1].AsInt32);
+            Assert.Equal(4, c.CompiledScript.Statics[5 + 6].AsInt32);
         }
 
-        [Fact]
+        [Fact(Skip = "Array initializers not supported yet")]
         public void TestArrayInitializer()
         {
             var module = Util.ParseAndAnalyze($@"
@@ -53,17 +69,23 @@
             Assert.False(module.Diagnostics.HasErrors);
         }
 
-        [Fact]
+        [Fact(Skip = "Array initializers not supported yet")]
         public void TestStaticArrayInitializer()
         {
-            var module = Util.ParseAndAnalyze($@"
+            var c = Util.Compile($@"
                 INT a[4] = <<1, 2, 3, 4>>
 
                 PROC MAIN()
                 ENDPROC
             ");
 
-            Assert.False(module.Diagnostics.HasErrors);
+            Assert.False(c.GetAllDiagnostics().HasErrors);
+            Assert.NotNull(c.CompiledScript);
+            Assert.Equal(4, c.CompiledScript.Statics[0].AsInt32);
+            Assert.Equal(1, c.CompiledScript.Statics[1].AsInt32);
+            Assert.Equal(2, c.CompiledScript.Statics[2].AsInt32);
+            Assert.Equal(3, c.CompiledScript.Statics[3].AsInt32);
+            Assert.Equal(4, c.CompiledScript.Statics[4].AsInt32);
         }
 
         [Fact]
@@ -75,8 +97,10 @@
                 PROC MAIN()
                     INT b[4]
 
-                    a = <<1, 2, 3, 4>>
-                    b = <<5, 6, 7, 8>>
+                    b[0] = 1
+                    b[1] = 2
+                    b[2] = 3
+                    b[3] = 4
                     a = b
                 ENDPROC
             ");
@@ -96,12 +120,43 @@
                     a[1][1] = a[1][0] + 1
                     a[2][0] = a[1][1] + 1
                     a[2][1] = a[2][0] + 1
-
-                    a = <<<<1, 2>>, <<3, 4>>, <<5, 6>>>>
                 ENDPROC
             ");
 
             Assert.False(module.Diagnostics.HasErrors);
+        }
+
+        [Fact]
+        public void TestArrayOfStructs()
+        {
+            var module = Util.ParseAndAnalyze($@"
+                PROC MAIN()
+                    VEC3 a[3]
+                    a[0] = <<1.0, 2.0, 3.0>>
+                    a[1] = <<4.0, 5.0, 6.0>>
+                    a[2] = <<7.0, 8.0, 9.0>>
+                ENDPROC
+            ");
+
+            Assert.False(module.Diagnostics.HasErrors);
+        }
+
+        [Fact]
+        public void TestRefToArrayItem()
+        {
+            var c = Util.Compile($@"
+                PROC MAIN()
+                    INT a[3]
+                    a[0] = 1
+                    a[1] = 2
+                    a[2] = 3
+
+                    INT& b = a[1]
+                    b = 4 + b
+                ENDPROC
+            ");
+
+            Assert.False(c.GetAllDiagnostics().HasErrors);
         }
 
         [Fact]

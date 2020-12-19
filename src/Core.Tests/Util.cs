@@ -16,5 +16,14 @@
             m.DoBinding();
             return m;
         }
+
+        public static Compilation Compile(string src, string path = "test.sc")
+        {
+            var c = new Compilation();
+            using var r = new StringReader(src);
+            c.SetMainModule(r, path);
+            c.Compile();
+            return c;
+        }
     }
 }
