@@ -457,6 +457,73 @@ namespace ScTools.ScriptLang.Semantics.Binding
         }
     }
 
+    public sealed class BoundArrayAccessExpression : BoundExpression
+    {
+        public override bool IsConstant => false;
+        public override bool IsAddressable => true;
+        public BoundExpression Expression { get; }
+        public BoundExpression IndexExpression { get; }
+
+        public BoundArrayAccessExpression(BoundExpression expression, BoundExpression indexExpression)
+        {
+            Expression = expression;
+            IndexExpression = indexExpression;
+
+            if (expression is not BoundInvalidExpression)
+            {
+                Debug.Assert(expression.Type?.UnderlyingType is ArrayType);
+                Debug.Assert(indexExpression.Type?.UnderlyingType is BasicType { TypeCode: BasicTypeCode.Int });
+
+                var arrType = (Expression.Type!.UnderlyingType as ArrayType)!;
+                Type = arrType.ItemType;
+            }
+        }
+
+        public override void EmitLoad(ByteCodeBuilder code)
+        {
+            var itemSize = Type!.SizeOf;
+            if (itemSize == 1)
+            {
+                IndexExpression.EmitLoad(code);
+                Expression.EmitAddr(code);
+                code.EmitArrayLoad(itemSize);
+            }
+            else
+            {
+                code.EmitAddrLoadN(itemSize, () => EmitAddr(code));
+            }
+        }
+
+        public override void EmitStore(ByteCodeBuilder code)
+        {
+            var itemSize = Type!.SizeOf;
+            if (itemSize == 1)
+            {
+                IndexExpression.EmitLoad(code);
+                Expression.EmitAddr(code);
+                code.EmitArrayStore(itemSize);
+            }
+            else
+            {
+                code.EmitAddrStoreN(itemSize, () => EmitAddr(code));
+            }
+        }
+
+        public override void EmitAddr(ByteCodeBuilder code)
+        {
+            IndexExpression.EmitLoad(code);
+            Expression.EmitAddr(code);
+            code.EmitArrayAddr(Type!.SizeOf);
+        }
+
+        public override void EmitCall(ByteCodeBuilder code)
+        {
+            Debug.Assert(Type is FunctionType, "Only function types can be called");
+
+            throw new NotImplementedException();
+        }
+    }
+
     public sealed class BoundAggregateExpression : BoundExpression
     {
         public override bool IsConstant => Expressions.All(expr => expr.IsConstant);

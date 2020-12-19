@@ -160,7 +160,20 @@ namespace ScTools.ScriptLang.Semantics
                 }
             }
 
-            // TODO: VisitArrayAccessExpression
+            public override Type? VisitArrayAccessExpression(ArrayAccessExpression node)
+            {
+                var type = node.Expression.Accept(this);
+                if (type?.UnderlyingType is not ArrayType arr)
+                {
+                    if (type != null)
+                    {
+                        diagnostics.AddError(filePath, $"Cannot index '{node.Expression}' of type '{type}'", node.Expression.Source);
+                    }
+                    return null;
+                }
+
+                return arr.ItemType;
+            }
 
             public override Type? VisitErrorExpression(ErrorExpression node) => null;
 

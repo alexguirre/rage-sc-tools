@@ -241,6 +241,12 @@ namespace ScTools.ScriptLang.Semantics
                     node.Member
                 );
 
+            public override BoundExpression VisitArrayAccessExpression(ArrayAccessExpression node)
+                => new BoundArrayAccessExpression(
+                    Bind(node.Expression)!,
+                    Bind(node.Indexer.Expression)!
+                );
+
             public override BoundExpression VisitAggregateExpression(AggregateExpression node)
                 => new BoundAggregateExpression(
                     node.Expressions.Select(Bind)!
@@ -255,8 +261,6 @@ namespace ScTools.ScriptLang.Semantics
                     LiteralKind.Bool => new BoundBoolLiteralExpression(node.BoolValue),
                     _ => throw new NotSupportedException(),
                 };
-
-            public override BoundExpression VisitArrayAccessExpression(ArrayAccessExpression node) => throw new NotImplementedException();
 
             public override BoundExpression VisitErrorExpression(ErrorExpression node) => new BoundInvalidExpression($"{nameof(ErrorExpression)}: '{node.Text}'");
 

@@ -118,6 +118,7 @@ namespace ScTools.ScriptLang
             // initialize static vars values
             foreach (var s in statics.Where(s => s.Initializer != null))
             {
+                // TODO: initialize static arrays
                 var defaultValue = Evaluator.Evaluate(s.Initializer!);
                 Debug.Assert(defaultValue.Length == s.Var.Type.SizeOf);
 
