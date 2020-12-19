@@ -52,24 +52,32 @@ namespace ScTools.ScriptLang.Semantics
                 return decl != null ? TypeFromDecl(decl, unresolved) : unresolved;
             }
 
-            private static Type TypeFromDecl(Declarator decl, Type baseType)
+            protected Type TypeFromDecl(Declarator decl, Type baseType)
             {
+                var source = decl.Source;
                 var ty = baseType;
                 while (decl is not SimpleDeclarator)
                 {
                     switch (decl)
                     {
-                        case SimpleDeclarator: break;
+                        case ArrayDeclarator when ty is RefType:
+                            Diagnostics.AddError(FilePath, $"Array of references is not valid", source);
+                            return baseType;
                         case ArrayDeclarator d:
                             var lengthExpr = new ExpressionBinder().Visit(d.Length)!;
                             var length = Evaluator.Evaluate(lengthExpr)[0].AsInt32;
                             ty = new ArrayType(ty, length);
                             decl = d.Inner;
                             break;
+
+                        case RefDeclarator when ty is RefType:
+                            Diagnostics.AddError(FilePath, $"Reference to reference is not valid", source);
+                            return baseType;
                         case RefDeclarator d:
                             ty = new RefType(ty);
                             decl = d.Inner;
                             break;
+
                         default: throw new NotImplementedException();
                     };
                 }
