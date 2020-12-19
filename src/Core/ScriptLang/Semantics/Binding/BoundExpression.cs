@@ -415,6 +415,8 @@ namespace ScTools.ScriptLang.Semantics.Binding
         public BoundExpression Expression { get; }
         public string Member { get; }
         public int MemberOffset { get; }
+        public bool IsArrayLength { get; } = false;
+        public int ArrayLength { get; } = 0;
 
         public BoundMemberAccessExpression(BoundExpression expression, string member)
         {
@@ -423,28 +425,58 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
             if (!(expression is BoundInvalidExpression))
             {
-                Debug.Assert(expression.Type?.UnderlyingType is StructType);
+                var ty = Expression.Type!.UnderlyingType;
+                if (ty is ArrayType arrTy)
+                {
+                    Debug.Assert(member == ArrayType.LengthFieldName);
 
-                var structType = (Expression.Type!.UnderlyingType as StructType)!;
-                Debug.Assert(structType.HasField(Member));
+                    MemberOffset = 0;
+                    Type = new BasicType(BasicTypeCode.Int);
+                    IsArrayLength = true;
+                    ArrayLength = arrTy.Length;
+                }
+                else
+                {
+                    Debug.Assert(ty is StructType);
 
-                MemberOffset = structType.OffsetOfField(Member);
-                Type = structType.TypeOfField(Member);
+                    var structType = (ty as StructType)!;
+                    Debug.Assert(structType.HasField(Member));
+
+                    MemberOffset = structType.OffsetOfField(Member);
+                    Type = structType.TypeOfField(Member);
+                }
             }
         }
 
         public override void EmitLoad(ByteCodeBuilder code)
         {
-            code.EmitOffsetLoadN(MemberOffset, Type!.SizeOf, () => Expression.EmitAddr(code));
+            if (IsArrayLength)
+            {
+                code.EmitPushInt(ArrayLength);
+            }
+            else
+            {
+                code.EmitOffsetLoadN(MemberOffset, Type!.SizeOf, () => Expression.EmitAddr(code));
+            }
         }
 
         public override void EmitStore(ByteCodeBuilder code)
         {
+            if (IsArrayLength)
+            {
+                throw new InvalidOperationException("Cannot modify array 'length' field");
+            }
+
             code.EmitOffsetStoreN(MemberOffset, Type!.SizeOf, () => Expression.EmitAddr(code));
         }
 
         public override void EmitAddr(ByteCodeBuilder code)
         {
+            if (IsArrayLength)
+            {
+                throw new InvalidOperationException("Cannot take address of array 'length' field");
+            }
+
             Expression.EmitAddr(code);
             code.EmitOffsetAddr(MemberOffset);
         }

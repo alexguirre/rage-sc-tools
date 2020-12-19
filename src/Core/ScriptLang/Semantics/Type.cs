@@ -388,15 +388,17 @@ namespace ScTools.ScriptLang.Semantics
 
     public sealed class ArrayType : Type
     {
+        public const string LengthFieldName = "length";
+
         public override int SizeOf => 1 + (ItemType.SizeOf * Length);
         public Type ItemType { get; set; }
         public int Length { get; set; }
 
         public ArrayType(Type itemType, int length)
         {
-            if (length <= 0)
+            if (length < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(length), "Length is negative or 0");
+                throw new ArgumentOutOfRangeException(nameof(length), "Length is negative");
             }
 
             if (itemType is RefType)

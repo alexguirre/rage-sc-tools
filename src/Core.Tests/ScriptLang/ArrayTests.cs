@@ -170,5 +170,39 @@
 
             Assert.True(module.Diagnostics.HasErrors, "No arrays of references");
         }
+
+        [Fact]
+        public void TestArrayLengthField()
+        {
+            var c = Util.Compile($@"
+                PROC MAIN()
+                    INT a[3]
+                    INT b[2][3]
+
+                    INT i = 0
+                    WHILE i < a.length
+                        a[i] = a.length + i + b.length + b[0].length
+
+                        i = i + 1
+                    ENDWHILE
+                ENDPROC
+            ");
+
+            Assert.False(c.GetAllDiagnostics().HasErrors);
+        }
+
+        [Fact]
+        public void TestArrayFieldDifferentToLength()
+        {
+            var module = Util.ParseAndAnalyze($@"
+                PROC MAIN()
+                    INT a[3]
+
+                    INT i = a.someField
+                ENDPROC
+            ");
+
+            Assert.True(module.Diagnostics.HasErrors, "Arrays only have 'length' field");
+        }
     }
 }
