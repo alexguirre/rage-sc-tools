@@ -20,7 +20,7 @@ namespace ScTools.ScriptLang.Ast
         public override IEnumerable<Node> Children { get { yield return Inner; } }
 
         public RefDeclarator(Declarator inner, SourceRange source) : base(source)
-            => Inner = inner is not RefDeclarator ? inner : throw new ArgumentException("Ref to ref is not valid");
+            => Inner = inner;
 
         public override string ToString() => $"&{Inner}";
     }
