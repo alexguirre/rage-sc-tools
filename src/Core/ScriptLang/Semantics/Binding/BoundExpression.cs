@@ -389,7 +389,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
         public override void EmitLoad(ByteCodeBuilder code)
         {
             var functionType = (Callee.Type as FunctionType)!;
-            foreach (var (arg, paramType) in Arguments.Zip(functionType.Parameters))
+            foreach (var (arg, (paramType, _)) in Arguments.Zip(functionType.Parameters))
             {
                 if (paramType is RefType)
                 {
