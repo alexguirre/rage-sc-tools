@@ -188,11 +188,11 @@
         {
             var module = Util.ParseAndAnalyze($@"
                 PROC MAIN()
-                    INT arr[4]
-                    arr[0] = 1
-                    arr[1] = 2
-                    arr[2] = 3
-                    arr[3] = 4
+                    INT a[4]
+                    a[0] = 1
+                    a[1] = 2
+                    a[2] = 3
+                    a[3] = 4
                     DO_SOMETHING(a)
 
                     INT (&b)[4] = a
