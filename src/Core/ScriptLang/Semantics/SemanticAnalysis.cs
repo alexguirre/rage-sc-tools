@@ -66,6 +66,13 @@ namespace ScTools.ScriptLang.Semantics
                         case ArrayDeclarator d:
                             var lengthExpr = new ExpressionBinder().Visit(d.Length)!;
                             var length = Evaluator.Evaluate(lengthExpr)[0].AsInt32;
+
+                            if (length < 0)
+                            {
+                                Diagnostics.AddError(FilePath, $"Arrays cannot have negative length", d.Length.Source);
+                                return baseType;
+                            }
+
                             ty = new ArrayType(ty, length);
                             decl = d.Inner;
                             break;

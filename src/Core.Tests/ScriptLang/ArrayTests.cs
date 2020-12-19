@@ -204,5 +204,18 @@
 
             Assert.True(module.Diagnostics.HasErrors, "Arrays only have 'length' field");
         }
+
+        [Fact]
+        public void TestNegativeLength()
+        {
+            var module = Util.ParseAndAnalyze($@"
+                PROC MAIN()
+                    INT a[-4]
+                    INT b[5 - 10]
+                ENDPROC
+            ");
+
+            Assert.True(module.Diagnostics.HasErrors, "Arrays cannot have negative length");
+        }
     }
 }
