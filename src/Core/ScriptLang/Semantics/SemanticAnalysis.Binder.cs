@@ -236,10 +236,16 @@ namespace ScTools.ScriptLang.Semantics
             }
 
             public override BoundExpression VisitMemberAccessExpression(MemberAccessExpression node)
-                => new BoundMemberAccessExpression(
-                    Bind(node.Expression)!,
-                    node.Member
-                );
+            {
+                var expr = Bind(node.Expression)!;
+
+                if (expr is not BoundInvalidExpression && !expr.Type!.UnderlyingType.HasField(node.Member))
+                {
+                    return new BoundUnknownMemberAccessExpression(expr, node.Member);
+                }
+
+                return new BoundMemberAccessExpression(expr, node.Member);
+            }
 
             public override BoundExpression VisitArrayAccessExpression(ArrayAccessExpression node)
                 => new BoundArrayAccessExpression(

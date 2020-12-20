@@ -13,6 +13,7 @@ namespace ScTools.ScriptLang.Semantics
 
         public abstract Type Clone();
         public abstract Type? Resolve(SymbolTable symbols);
+        public virtual bool HasField(string name) { return false; }
 
         public abstract bool Equals(Type? other);
 
@@ -142,7 +143,7 @@ namespace ScTools.ScriptLang.Semantics
             return new StructType(Name, resolvedFields.Select(f => new Field(f.Type!, f.Name)));
         }
 
-        public bool HasField(string name)
+        public override bool HasField(string name)
         {
             foreach (var f in Fields)
             {
@@ -422,6 +423,8 @@ namespace ScTools.ScriptLang.Semantics
 
             return new ArrayType(resolvedItemType, Length);
         }
+
+        public override bool HasField(string name) => name == LengthFieldName;
 
         public override bool Equals(Type? other)
             => other is ArrayType arr && arr.Length == Length && arr.ItemType == ItemType;

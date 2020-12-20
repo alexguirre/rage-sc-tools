@@ -59,6 +59,18 @@ namespace ScTools.ScriptLang.Semantics.Binding
         }
     }
 
+    public sealed class BoundUnknownMemberAccessExpression : BoundInvalidExpression
+    {
+        public BoundExpression Expression { get; }
+        public string Member { get; }
+
+        public BoundUnknownMemberAccessExpression(BoundExpression expression, string member) : base($"Unknown member '{member}'")
+        {
+            Expression = expression;
+            Member = member;
+        }
+    }
+
     public sealed class BoundUnaryExpression : BoundExpression
     {
         public override bool IsConstant => Operand.IsConstant;
@@ -423,14 +435,13 @@ namespace ScTools.ScriptLang.Semantics.Binding
             Expression = expression;
             Member = member;
 
-            if (!(expression is BoundInvalidExpression))
+            if (expression is not BoundInvalidExpression)
             {
                 var ty = Expression.Type!.UnderlyingType;
+                Debug.Assert(ty.HasField(Member));
+
                 if (ty is ArrayType arrTy)
                 {
-                    Debug.Assert(member == ArrayType.LengthFieldName);
-
-                    MemberOffset = 0;
                     Type = new BasicType(BasicTypeCode.Int);
                     IsArrayLength = true;
                     ArrayLength = arrTy.Length;
@@ -439,11 +450,9 @@ namespace ScTools.ScriptLang.Semantics.Binding
                 {
                     Debug.Assert(ty is StructType);
 
-                    var structType = (ty as StructType)!;
-                    Debug.Assert(structType.HasField(Member));
-
-                    MemberOffset = structType.OffsetOfField(Member);
-                    Type = structType.TypeOfField(Member);
+                    var structTy = (ty as StructType)!;
+                    MemberOffset = structTy.OffsetOfField(Member);
+                    Type = structTy.TypeOfField(Member);
                 }
             }
         }
