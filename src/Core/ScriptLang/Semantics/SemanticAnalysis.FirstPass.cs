@@ -37,87 +37,20 @@ namespace ScTools.ScriptLang.Semantics
                 {
                     switch (symbol)
                     {
-                        case VariableSymbol s: s.Type = Resolve(s.Type, s.Source); break;
-                        case FunctionSymbol s: ResolveFunc(s.Type, s.Source); break;
-                        case TypeSymbol s when s.Type is StructType struc: ResolveStruct(struc, s.Source); break;
-                        case TypeSymbol s when s.Type is FunctionType func: ResolveFunc(func, s.Source); break;
+                        case VariableSymbol s: s.Type = Resolve(s.Type, s.Source, ref anyUnresolved); break;
+                        case FunctionSymbol s: ResolveFunc(s.Type, s.Source, ref anyUnresolved); break;
+                        case TypeSymbol s when s.Type is StructType struc: ResolveStruct(struc, s.Source, ref anyUnresolved); break;
+                        case TypeSymbol s when s.Type is FunctionType func: ResolveFunc(func, s.Source, ref anyUnresolved); break;
                     }
                 }
 
                 return !anyUnresolved;
-
-                void ResolveStruct(StructType struc, SourceRange source)
-                {
-                    // TODO: be more specific with SourceRange for structs fields
-                    for (int i = 0; i < struc.Fields.Count; i++)
-                    {
-                        var f = struc.Fields[i];
-                        var newType = Resolve(f.Type, source);
-                        if (IsCyclic(newType, struc))
-                        {
-                            Diagnostics.AddError(FilePath, $"Circular type reference in '{struc.Name}'", source);
-                            anyUnresolved |= true;
-                        }
-                        else
-                        {
-                            struc.Fields[i] = new Field(newType, f.Name);
-                        }
-                    }
-
-                    static bool IsCyclic(Type t, StructType orig)
-                    {
-                        if (t == orig)
-                        {
-                            return true;
-                        }
-                        else if (t is StructType s)
-                        {
-                            return s.Fields.Any(f => IsCyclic(f.Type, orig));
-                        }
-
-                        return false;
-                    }
-                }
-
-                void ResolveFunc(FunctionType func, SourceRange source)
-                {
-                    // TODO: be more specific with SourceRange for funcs return type and parameters
-                    if (func.ReturnType != null)
-                    {
-                        func.ReturnType = Resolve(func.ReturnType, source);
-                    }
- 
-                    for (int i = 0; i < func.Parameters.Count; i++)
-                    {
-                        var p = func.Parameters[i];
-                        func.Parameters[i] = (Resolve(p.Type, source), p.Name);
-                    }
-                }
-
-                Type Resolve(Type t, SourceRange source)
-                {
-                    if (t is UnresolvedType u)
-                    {
-                        var newType = u.Resolve(Symbols);
-                        if (newType == null)
-                        {
-                            Diagnostics.AddError(FilePath, $"Unknown type '{u.TypeName}'", source);
-                            anyUnresolved |= true;
-                        }
-                        else
-                        {
-                            return newType;
-                        }
-                    }
-
-                    return t;
-                }
             }
 
-            private FunctionType CreateUnresolvedFunctionType(Ast.Type? returnType, IEnumerable<VariableDeclaration> parameters)
+            private FunctionType CreateUnresolvedFunctionType(string? returnType, IEnumerable<VariableDeclaration> parameters)
             {
-                var r = returnType != null ? UnresolvedTypeFromAst(returnType) : null;
-                return new FunctionType(r, parameters.Select(p => ((Type)UnresolvedTypeFromAst(p.Type), (string?)p.Name)));
+                var r = returnType != null ? TypeFromAst(returnType, null) : null;
+                return new FunctionType(r, parameters.Select(p => (TypeFromAst(p.Type, p.Decl), (string?)p.Decl.Identifier)));
             }
 
             public override void VisitFunctionStatement(FunctionStatement node)
@@ -158,9 +91,9 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitStaticVariableStatement(StaticVariableStatement node)
             {
-                Symbols.Add(new VariableSymbol(node.Variable.Declaration.Name,
+                Symbols.Add(new VariableSymbol(node.Variable.Declaration.Decl.Identifier,
                                                node.Source,
-                                               UnresolvedTypeFromAst(node.Variable.Declaration.Type),
+                                               TypeFromAst(node.Variable.Declaration.Type, node.Variable.Declaration.Decl),
                                                VariableKind.Static));
             }
 
@@ -170,12 +103,12 @@ namespace ScTools.ScriptLang.Semantics
                     node.Name,
                     node.FieldList.Fields.Select(f =>
                     {
-                        if (f.Declaration.Type.IsReference)
-                        {
-                            Diagnostics.AddError(FilePath, $"Struct fields cannot be reference types", f.Declaration.Type.Source);
-                        }
+                        //if (f.Declaration.Type.IsReference)
+                        //{
+                        //    Diagnostics.AddError(FilePath, $"Struct fields cannot be reference types", f.Declaration.Source);
+                        //}
 
-                        return new Field(UnresolvedTypeFromAst(f.Declaration.Type), f.Declaration.Name);
+                        return new Field(TypeFromAst(f.Declaration.Type, f.Declaration.Decl), f.Declaration.Decl.Identifier);
                     }
                 ));
 

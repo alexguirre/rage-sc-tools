@@ -127,7 +127,20 @@ namespace ScTools.ScriptLang.Semantics
             public override Type? VisitMemberAccessExpression(MemberAccessExpression node)
             {
                 var type = node.Expression.Accept(this);
-                if (!(type?.UnderlyingType is StructType struc))
+                var underlyingTy = type?.UnderlyingType;
+                
+                if (underlyingTy is ArrayType arrTy)
+                {
+                    if (node.Member != ArrayType.LengthFieldName)
+                    {
+                        diagnostics.AddError(filePath, $"Unknown field '{node.Member}', arrays only have a 'length' field", node.Source);
+                        return null;
+                    }
+
+                    return (symbols.Lookup("INT") as TypeSymbol)!.Type;
+                }
+                
+                if (underlyingTy is not StructType struc)
                 {
                     if (type != null)
                     {
@@ -160,7 +173,20 @@ namespace ScTools.ScriptLang.Semantics
                 }
             }
 
-            // TODO: VisitArrayAccessExpression
+            public override Type? VisitArrayAccessExpression(ArrayAccessExpression node)
+            {
+                var type = node.Expression.Accept(this);
+                if (type?.UnderlyingType is not ArrayType arr)
+                {
+                    if (type != null)
+                    {
+                        diagnostics.AddError(filePath, $"Cannot index '{node.Expression}' of type '{type}'", node.Expression.Source);
+                    }
+                    return null;
+                }
+
+                return arr.ItemType;
+            }
 
             public override Type? VisitErrorExpression(ErrorExpression node) => null;
 

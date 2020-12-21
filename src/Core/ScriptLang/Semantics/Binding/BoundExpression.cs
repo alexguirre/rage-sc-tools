@@ -59,6 +59,18 @@ namespace ScTools.ScriptLang.Semantics.Binding
         }
     }
 
+    public sealed class BoundUnknownMemberAccessExpression : BoundInvalidExpression
+    {
+        public BoundExpression Expression { get; }
+        public string Member { get; }
+
+        public BoundUnknownMemberAccessExpression(BoundExpression expression, string member) : base($"Unknown member '{member}'")
+        {
+            Expression = expression;
+            Member = member;
+        }
+    }
+
     public sealed class BoundUnaryExpression : BoundExpression
     {
         public override bool IsConstant => Operand.IsConstant;
@@ -389,7 +401,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
         public override void EmitLoad(ByteCodeBuilder code)
         {
             var functionType = (Callee.Type as FunctionType)!;
-            foreach (var (arg, paramType) in Arguments.Zip(functionType.Parameters))
+            foreach (var (arg, (paramType, _)) in Arguments.Zip(functionType.Parameters))
             {
                 if (paramType is RefType)
                 {
@@ -415,38 +427,134 @@ namespace ScTools.ScriptLang.Semantics.Binding
         public BoundExpression Expression { get; }
         public string Member { get; }
         public int MemberOffset { get; }
+        public bool IsArrayLength { get; } = false;
+        public int ArrayLength { get; } = 0;
 
         public BoundMemberAccessExpression(BoundExpression expression, string member)
         {
             Expression = expression;
             Member = member;
 
-            if (!(expression is BoundInvalidExpression))
+            if (expression is not BoundInvalidExpression)
             {
-                Debug.Assert(expression.Type?.UnderlyingType is StructType);
+                var ty = Expression.Type!.UnderlyingType;
+                Debug.Assert(ty.HasField(Member));
 
-                var structType = (Expression.Type!.UnderlyingType as StructType)!;
-                Debug.Assert(structType.HasField(Member));
+                if (ty is ArrayType arrTy)
+                {
+                    Type = new BasicType(BasicTypeCode.Int);
+                    IsArrayLength = true;
+                    ArrayLength = arrTy.Length;
+                }
+                else
+                {
+                    Debug.Assert(ty is StructType);
 
-                MemberOffset = structType.OffsetOfField(Member);
-                Type = structType.TypeOfField(Member);
+                    var structTy = (ty as StructType)!;
+                    MemberOffset = structTy.OffsetOfField(Member);
+                    Type = structTy.TypeOfField(Member);
+                }
             }
         }
 
         public override void EmitLoad(ByteCodeBuilder code)
         {
-            code.EmitOffsetLoadN(MemberOffset, Type!.SizeOf, () => Expression.EmitAddr(code));
+            if (IsArrayLength)
+            {
+                code.EmitPushInt(ArrayLength);
+            }
+            else
+            {
+                code.EmitOffsetLoadN(MemberOffset, Type!.SizeOf, () => Expression.EmitAddr(code));
+            }
         }
 
         public override void EmitStore(ByteCodeBuilder code)
         {
+            if (IsArrayLength)
+            {
+                throw new InvalidOperationException("Cannot modify array 'length' field");
+            }
+
             code.EmitOffsetStoreN(MemberOffset, Type!.SizeOf, () => Expression.EmitAddr(code));
         }
 
         public override void EmitAddr(ByteCodeBuilder code)
         {
+            if (IsArrayLength)
+            {
+                throw new InvalidOperationException("Cannot take address of array 'length' field");
+            }
+
             Expression.EmitAddr(code);
             code.EmitOffsetAddr(MemberOffset);
+        }
+
+        public override void EmitCall(ByteCodeBuilder code)
+        {
+            Debug.Assert(Type is FunctionType, "Only function types can be called");
+
+            throw new NotImplementedException();
+        }
+    }
+
+    public sealed class BoundArrayAccessExpression : BoundExpression
+    {
+        public override bool IsConstant => false;
+        public override bool IsAddressable => true;
+        public BoundExpression Expression { get; }
+        public BoundExpression IndexExpression { get; }
+
+        public BoundArrayAccessExpression(BoundExpression expression, BoundExpression indexExpression)
+        {
+            Expression = expression;
+            IndexExpression = indexExpression;
+
+            if (expression is not BoundInvalidExpression)
+            {
+                Debug.Assert(expression.Type?.UnderlyingType is ArrayType);
+                Debug.Assert(indexExpression.Type?.UnderlyingType is BasicType { TypeCode: BasicTypeCode.Int });
+
+                var arrType = (Expression.Type!.UnderlyingType as ArrayType)!;
+                Type = arrType.ItemType;
+            }
+        }
+
+        public override void EmitLoad(ByteCodeBuilder code)
+        {
+            var itemSize = Type!.SizeOf;
+            if (itemSize == 1)
+            {
+                IndexExpression.EmitLoad(code);
+                Expression.EmitAddr(code);
+                code.EmitArrayLoad(itemSize);
+            }
+            else
+            {
+                code.EmitAddrLoadN(itemSize, () => EmitAddr(code));
+            }
+        }
+
+        public override void EmitStore(ByteCodeBuilder code)
+        {
+            var itemSize = Type!.SizeOf;
+            if (itemSize == 1)
+            {
+                IndexExpression.EmitLoad(code);
+                Expression.EmitAddr(code);
+                code.EmitArrayStore(itemSize);
+            }
+            else
+            {
+                code.EmitAddrStoreN(itemSize, () => EmitAddr(code));
+            }
+        }
+
+        public override void EmitAddr(ByteCodeBuilder code)
+        {
+            IndexExpression.EmitLoad(code);
+            Expression.EmitAddr(code);
+            code.EmitArrayAddr(Type!.SizeOf);
         }
 
         public override void EmitCall(ByteCodeBuilder code)

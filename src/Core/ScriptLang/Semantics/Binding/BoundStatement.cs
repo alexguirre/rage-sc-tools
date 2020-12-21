@@ -51,6 +51,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
         public override void Emit(ByteCodeBuilder code, BoundFunction parent)
         {
+            EmitArrayLengthInitializers(Var.Type, parent.GetLocalLocation(Var)!.Value, code);
             if (Initializer != null)
             {
                 if (Var.Type is RefType)
@@ -62,6 +63,40 @@ namespace ScTools.ScriptLang.Semantics.Binding
                     Initializer.EmitLoad(code);
                 }
                 code.EmitLocalStore(Var);
+            }
+        }
+
+        private static void EmitArrayLengthInitializers(Semantics.Type ty, int offset, ByteCodeBuilder code)
+        {
+            switch (ty)
+            {
+                case ArrayType arrTy:
+                    // this is how R*'s compiler initializes array, though it could be simplified (PUSH->LOCAL->STORE)
+                    code.EmitLocalAddr(offset);
+                    code.EmitPushInt(arrTy.Length);
+                    code.EmitAddrStoreRev();
+                    code.EmitDrop();
+
+                    if (arrTy.ItemType is ArrayType or StructType)
+                    {
+                        var itemSize = arrTy.ItemType.SizeOf;
+                        offset += 1;
+                        for (int i = 0; i < arrTy.Length; i++)
+                        {
+                            EmitArrayLengthInitializers(arrTy.ItemType, offset, code);
+                            offset += itemSize;
+                        }
+                    }
+                    break;
+                case StructType strucTy:
+                    for (int i = 0; i < strucTy.Fields.Count; i++)
+                    {
+                        var f = strucTy.Fields[i];
+                        EmitArrayLengthInitializers(f.Type, offset, code);
+                        offset += f.Type.SizeOf;
+                    }
+                    break;
+                default: break;
             }
         }
     }
@@ -174,7 +209,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
         public override void Emit(ByteCodeBuilder code, BoundFunction parent)
         {
             var functionType = (Callee.Type as FunctionType)!;
-            foreach (var (arg, paramType) in Arguments.Zip(functionType.Parameters))
+            foreach (var (arg, (paramType, _)) in Arguments.Zip(functionType.Parameters))
             {
                 if (paramType is RefType)
                 {

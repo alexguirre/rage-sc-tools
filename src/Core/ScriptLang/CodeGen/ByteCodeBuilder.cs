@@ -318,6 +318,23 @@ namespace ScTools.ScriptLang.CodeGen
             }
         }
 
+        private void EmitArrayInst(int itemSize, Opcode opcodeU8, Opcode opcodeU16)
+        {
+            var v = unchecked((uint)itemSize);
+            var inst = v switch
+            {
+                var l when l <= byte.MaxValue => (opcodeU8, new[] { new Operand(v) }),
+                var l when l <= ushort.MaxValue => (opcodeU16, new[] { new Operand(v) }),
+                _ => throw new InvalidOperationException($"{itemSize} out of bounds")
+            };
+
+            Emit(inst.Item1, inst.Item2);
+        }
+
+        public void EmitArrayAddr(int itemSize) => EmitArrayInst(itemSize, Opcode.ARRAY_U8, Opcode.ARRAY_U16);
+        public void EmitArrayLoad(int itemSize) => EmitArrayInst(itemSize, Opcode.ARRAY_U8_LOAD, Opcode.ARRAY_U16_LOAD);
+        public void EmitArrayStore(int itemSize) => EmitArrayInst(itemSize, Opcode.ARRAY_U8_STORE, Opcode.ARRAY_U16_STORE);
+
         public void EmitAddrStoreN(int n, Action emitAddr)
         {
             if (n == 1)
@@ -347,6 +364,10 @@ namespace ScTools.ScriptLang.CodeGen
                 Emit(Opcode.LOAD_N, ReadOnlySpan<Operand>.Empty);
             }
         }
+
+        public void EmitAddrStoreRev() => Emit(Opcode.STORE_REV);
+
+        public void EmitDrop() => Emit(Opcode.DROP);
 
         public void EmitCall(FunctionSymbol function) => Emit(Opcode.CALL, new[] { new Operand(function.Name, OperandType.Identifier) });
 

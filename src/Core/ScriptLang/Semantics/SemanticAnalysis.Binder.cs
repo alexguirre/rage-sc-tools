@@ -28,7 +28,7 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitStaticVariableStatement(StaticVariableStatement node)
             {
-                var s = Symbols.Lookup(node.Variable.Declaration.Name) as VariableSymbol;
+                var s = Symbols.Lookup(node.Variable.Declaration.Decl.Identifier) as VariableSymbol;
                 Debug.Assert(s != null);
                 Debug.Assert(s.IsStatic);
 
@@ -94,7 +94,7 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitVariableDeclarationStatement(VariableDeclarationStatement node) 
             {
-                var varSymbol = Symbols.Lookup(node.Variable.Declaration.Name) as VariableSymbol;
+                var varSymbol = Symbols.Lookup(node.Variable.Declaration.Decl.Identifier) as VariableSymbol;
                 Debug.Assert(varSymbol != null);
 
                 var initializerExpr = Bind(node.Variable.Initializer);
@@ -148,7 +148,9 @@ namespace ScTools.ScriptLang.Semantics
             public override void VisitParameterList(ParameterList node) { /* empty */ }
             public override void VisitStructFieldList(StructFieldList node) { /* empty */ }
             public override void VisitStructStatement(StructStatement node) { /* empty */ }
-            public override void VisitType(Ast.Type node) { /* empty */ }
+            public override void VisitRefDeclarator(RefDeclarator node) { /* empty */ }
+            public override void VisitSimpleDeclarator(SimpleDeclarator node) { /* empty */ }
+            public override void VisitArrayDeclarator(ArrayDeclarator node) { /* empty */ }
             public override void VisitVariableDeclaration(VariableDeclaration node) { /* empty */ }
             public override void VisitVariableDeclarationWithInitializer(VariableDeclarationWithInitializer node) { /* empty */ }
 
@@ -175,85 +177,100 @@ namespace ScTools.ScriptLang.Semantics
                 exprBinder.Symbols = Symbols;
                 return expr?.Accept(exprBinder);
             }
+        }
 
-            private sealed class ExpressionBinder : AstVisitor<BoundExpression>
+        private sealed class ExpressionBinder : AstVisitor<BoundExpression>
+        {
+            public SymbolTable? Symbols { get; set; }
+            private DiagnosticsReport? Diagnostics { get; }
+            private string? FilePath { get; }
+
+            public ExpressionBinder()
+                => (Symbols, Diagnostics, FilePath) = (null, null, null);
+
+            public ExpressionBinder(SymbolTable symbols, DiagnosticsReport diagnostics, string filePath)
+                => (Symbols, Diagnostics, FilePath) = (symbols, diagnostics, filePath);
+
+            private BoundExpression? Bind(Expression? expr) => expr?.Accept(this);
+
+            public override BoundExpression VisitUnaryExpression(UnaryExpression node)
+                => new BoundUnaryExpression(
+                    Bind(node.Operand)!,
+                    node.Op
+                );
+
+            public override BoundExpression VisitBinaryExpression(BinaryExpression node)
+                => new BoundBinaryExpression(
+                    Bind(node.Left)!,
+                    Bind(node.Right)!,
+                    node.Op
+                );
+
+            public override BoundExpression VisitIdentifierExpression(IdentifierExpression node)
             {
-                public SymbolTable Symbols { get; set; }
-                private DiagnosticsReport Diagnostics { get; }
-                private string FilePath { get; }
+                Debug.Assert(Symbols != null, "Found identifier but no SymbolTable provided");
 
-                public ExpressionBinder(SymbolTable symbols, DiagnosticsReport diagnostics, string filePath)
-                    => (Symbols, Diagnostics, FilePath) = (symbols, diagnostics, filePath);
-
-                private BoundExpression? Bind(Expression? expr) => expr?.Accept(this);
-
-                public override BoundExpression VisitUnaryExpression(UnaryExpression node)
-                    => new BoundUnaryExpression(
-                        Bind(node.Operand)!,
-                        node.Op
-                    );
-
-                public override BoundExpression VisitBinaryExpression(BinaryExpression node)
-                    => new BoundBinaryExpression(
-                        Bind(node.Left)!,
-                        Bind(node.Right)!,
-                        node.Op
-                    );
-
-                public override BoundExpression VisitIdentifierExpression(IdentifierExpression node)
+                switch (Symbols.Lookup(node.Identifier))
                 {
-                    switch (Symbols.Lookup(node.Identifier))
-                    {
-                        case FunctionSymbol fn: return new BoundFunctionExpression(fn);
-                        case VariableSymbol v: return new BoundVariableExpression(v);
-                        case null: // TODO: unresolved symbols?
-                            Diagnostics.AddError(FilePath, $"Unknown symbol '{node.Identifier}'", node.Source);
-                            return new BoundUnknownSymbolExpression(node.Identifier);
-                        default: throw new NotSupportedException();
-                    };
-                }
-                public override BoundExpression VisitInvocationExpression(InvocationExpression node)
-                {
-                    var callee = Bind(node.Expression)!;
-
-                    if (!(callee.Type is FunctionType funcTy) || funcTy.ReturnType == null)
-                    {
-                        return new BoundInvalidExpression("Callee is a procedure in an invocation expression");
-                    }
-
-                    return new BoundInvocationExpression(
-                        callee,
-                        node.ArgumentList.Arguments.Select(a => Bind(a)!)
-                    );
-                }
-
-                public override BoundExpression VisitMemberAccessExpression(MemberAccessExpression node)
-                    => new BoundMemberAccessExpression(
-                        Bind(node.Expression)!,
-                        node.Member
-                    );
-
-                public override BoundExpression VisitAggregateExpression(AggregateExpression node)
-                    => new BoundAggregateExpression(
-                        node.Expressions.Select(Bind)!
-                    );
-                
-                public override BoundExpression VisitLiteralExpression(LiteralExpression node)
-                    => node.Kind switch
-                    {
-                        LiteralKind.Int => new BoundIntLiteralExpression(node.IntValue),
-                        LiteralKind.Float => new BoundFloatLiteralExpression(node.FloatValue),
-                        LiteralKind.String => new BoundStringLiteralExpression(node.StringValue),
-                        LiteralKind.Bool => new BoundBoolLiteralExpression(node.BoolValue),
-                        _ => throw new NotSupportedException(),
-                    };
-
-                public override BoundExpression VisitArrayAccessExpression(ArrayAccessExpression node) => throw new NotImplementedException();
-
-                public override BoundExpression VisitErrorExpression(ErrorExpression node) => new BoundInvalidExpression($"{nameof(ErrorExpression)}: '{node.Text}'");
-
-                public override BoundExpression DefaultVisit(Node node) => throw new InvalidOperationException($"Unsupported AST node {node.GetType().Name}");
+                    case FunctionSymbol fn: return new BoundFunctionExpression(fn);
+                    case VariableSymbol v: return new BoundVariableExpression(v);
+                    case null: // TODO: unresolved symbols?
+                        Diagnostics?.AddError(FilePath!, $"Unknown symbol '{node.Identifier}'", node.Source);
+                        return new BoundUnknownSymbolExpression(node.Identifier);
+                    default: throw new NotSupportedException();
+                };
             }
+            public override BoundExpression VisitInvocationExpression(InvocationExpression node)
+            {
+                var callee = Bind(node.Expression)!;
+
+                if (callee.Type is not FunctionType funcTy || funcTy.ReturnType == null)
+                {
+                    return new BoundInvalidExpression("Callee is a procedure in an invocation expression");
+                }
+
+                return new BoundInvocationExpression(
+                    callee,
+                    node.ArgumentList.Arguments.Select(a => Bind(a)!)
+                );
+            }
+
+            public override BoundExpression VisitMemberAccessExpression(MemberAccessExpression node)
+            {
+                var expr = Bind(node.Expression)!;
+
+                if (expr is not BoundInvalidExpression && !expr.Type!.UnderlyingType.HasField(node.Member))
+                {
+                    return new BoundUnknownMemberAccessExpression(expr, node.Member);
+                }
+
+                return new BoundMemberAccessExpression(expr, node.Member);
+            }
+
+            public override BoundExpression VisitArrayAccessExpression(ArrayAccessExpression node)
+                => new BoundArrayAccessExpression(
+                    Bind(node.Expression)!,
+                    Bind(node.Indexer.Expression)!
+                );
+
+            public override BoundExpression VisitAggregateExpression(AggregateExpression node)
+                => new BoundAggregateExpression(
+                    node.Expressions.Select(Bind)!
+                );
+
+            public override BoundExpression VisitLiteralExpression(LiteralExpression node)
+                => node.Kind switch
+                {
+                    LiteralKind.Int => new BoundIntLiteralExpression(node.IntValue),
+                    LiteralKind.Float => new BoundFloatLiteralExpression(node.FloatValue),
+                    LiteralKind.String => new BoundStringLiteralExpression(node.StringValue),
+                    LiteralKind.Bool => new BoundBoolLiteralExpression(node.BoolValue),
+                    _ => throw new NotSupportedException(),
+                };
+
+            public override BoundExpression VisitErrorExpression(ErrorExpression node) => new BoundInvalidExpression($"{nameof(ErrorExpression)}: '{node.Text}'");
+
+            public override BoundExpression DefaultVisit(Node node) => throw new InvalidOperationException($"Unsupported AST node {node.GetType().Name}");
         }
     }
 }

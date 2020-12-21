@@ -13,15 +13,15 @@ topLevelStatement
       statementBlock
       K_ENDPROC                                                 #procedureStatement
 
-    | K_FUNC returnType=type identifier parameterList EOL
+    | K_FUNC returnType=identifier identifier parameterList EOL
       statementBlock
       K_ENDFUNC                                                 #functionStatement
 
     | K_PROTO K_PROC identifier parameterList                   #procedurePrototypeStatement
-    | K_PROTO K_FUNC returnType=type identifier parameterList   #functionPrototypeStatement
+    | K_PROTO K_FUNC returnType=identifier identifier parameterList   #functionPrototypeStatement
 
     | K_NATIVE K_PROC identifier parameterList                   #procedureNativeStatement
-    | K_NATIVE K_FUNC returnType=type identifier parameterList   #functionNativeStatement
+    | K_NATIVE K_FUNC returnType=identifier identifier parameterList   #functionNativeStatement
 
     | K_STRUCT identifier EOL
       structFieldList
@@ -77,7 +77,22 @@ variableDeclarationWithInitializer
     ;
 
 variableDeclaration
-    : type identifier arrayIndexer?
+    : type=identifier declarator
+    ;
+
+declarator
+    : noRefDeclarator
+    | refDeclarator
+    ;
+
+refDeclarator
+    : '&' noRefDeclarator
+    ;
+
+noRefDeclarator
+    : identifier                            #simpleDeclarator
+    | noRefDeclarator '[' expression ']'    #arrayDeclarator
+    | '(' refDeclarator ')'                 #parenthesizedRefDeclarator
     ;
 
 structFieldList
@@ -94,14 +109,6 @@ parameterList
 
 arrayIndexer
     : '[' expression ']'
-    ;
-
-type
-    : typeName isRef='&'?
-    ;
-
-typeName
-    : identifier
     ;
 
 identifier

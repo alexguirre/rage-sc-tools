@@ -45,8 +45,8 @@ namespace ScTools.ScriptLang.Ast
                                       Source(context));
 
         public override Node VisitFunctionStatement([NotNull] ScLangParser.FunctionStatementContext context)
-            => new FunctionStatement(context.identifier().GetText(),
-                                     (Type)Visit(context.returnType),
+            => new FunctionStatement(context.identifier(1).GetText(),
+                                     context.returnType.GetText(),
                                      (ParameterList)Visit(context.parameterList()),
                                      (StatementBlock)Visit(context.statementBlock()),
                                      Source(context));
@@ -57,8 +57,8 @@ namespace ScTools.ScriptLang.Ast
                                                Source(context));
 
         public override Node VisitFunctionPrototypeStatement([NotNull] ScLangParser.FunctionPrototypeStatementContext context)
-            => new FunctionPrototypeStatement(context.identifier().GetText(),
-                                              (Type)Visit(context.returnType),
+            => new FunctionPrototypeStatement(context.identifier(1).GetText(),
+                                              context.returnType.GetText(),
                                               (ParameterList)Visit(context.parameterList()),
                                               Source(context));
 
@@ -68,8 +68,8 @@ namespace ScTools.ScriptLang.Ast
                                             Source(context));
 
         public override Node VisitFunctionNativeStatement([NotNull] ScLangParser.FunctionNativeStatementContext context)
-            => new FunctionNativeStatement(context.identifier().GetText(),
-                                           (Type)Visit(context.returnType),
+            => new FunctionNativeStatement(context.identifier(1).GetText(),
+                                           context.returnType.GetText(),
                                            (ParameterList)Visit(context.parameterList()),
                                            Source(context));
 
@@ -187,11 +187,20 @@ namespace ScTools.ScriptLang.Ast
             Source(context));
         #endregion Expressions
 
-        #region Types
-        public override Node VisitType([NotNull] ScLangParser.TypeContext context)
-            => new Type(context.typeName().GetText(),
-                        context.isRef != null,
-                        Source(context));
+        #region Declarators
+        public override Node VisitSimpleDeclarator([NotNull] ScLangParser.SimpleDeclaratorContext context)
+            => new SimpleDeclarator(context.identifier().GetText(), Source(context));
+
+        public override Node VisitArrayDeclarator([NotNull] ScLangParser.ArrayDeclaratorContext context)
+            => new ArrayDeclarator((Declarator)Visit(context.noRefDeclarator()),
+                                   (Expression)Visit(context.expression()),
+                                   Source(context));
+
+        public override Node VisitParenthesizedRefDeclarator([NotNull] ScLangParser.ParenthesizedRefDeclaratorContext context)
+            => (RefDeclarator)Visit(context.refDeclarator());
+
+        public override Node VisitRefDeclarator([NotNull] ScLangParser.RefDeclaratorContext context)
+            => new RefDeclarator((Declarator)Visit(context.noRefDeclarator()), Source(context));
         #endregion
 
         #region Misc
@@ -199,9 +208,8 @@ namespace ScTools.ScriptLang.Ast
             => new StatementBlock(context.statement().Select(Visit).Cast<Statement>(), Source(context));
 
         public override Node VisitVariableDeclaration([NotNull] ScLangParser.VariableDeclarationContext context)
-            => new VariableDeclaration((Type)Visit(context.type()),
-                                       context.identifier().GetText(),
-                                       (ArrayIndexer?)Visit(context.arrayIndexer()),
+            => new VariableDeclaration(context.type.GetText(),
+                                       (Declarator)Visit(context.declarator()),
                                        Source(context));
 
         public override Node VisitVariableDeclarationWithInitializer([NotNull] ScLangParser.VariableDeclarationWithInitializerContext context)
