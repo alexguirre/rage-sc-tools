@@ -71,8 +71,9 @@ namespace ScTools
         b1737 = 20,
         b1868 = 21,
         b2060 = 22,
+        b2189 = 23,
 
-        Latest = b2060,
+        Latest = b2189,
     }
 
     public sealed class NativeDB
@@ -338,17 +339,17 @@ namespace ScTools
                 return (new ulong[0,0], new Dictionary<ulong, List<int>>());
             }
 
-            int translationTableRVA = (int)ReadUInt32(code, addr - 4);
-            int translationTableAddr = addr + translationTableRVA - 0xC00; // TODO: where does 0xC00 come from?
+            int translationTableRVA = ReadInt32(code, addr - 4);
+            int translationTableAddr = addr + translationTableRVA - 0x600; // - 0xC00; // TODO: where does 0x600/0xC00 come from?
 
             uint tableEntrySize = ReadUInt32(code, addr + 0x11);
             uint versionCount = tableEntrySize / sizeof(ulong);
             uint nativeCount = ReadUInt32(code, addr + 0x1A);
 
-            Console.WriteLine($"{translationTableAddr:X8}");
-            Console.WriteLine($"{tableEntrySize:X8}");
-            Console.WriteLine($"{versionCount}");
-            Console.WriteLine($"{nativeCount}");
+            Console.WriteLine($"Translation Table Addr: {translationTableAddr:X8}");
+            Console.WriteLine($"Entry Size:             {tableEntrySize:X8}");
+            Console.WriteLine($"Version count:          {versionCount}");
+            Console.WriteLine($"Native count:           {nativeCount}");
 
             var table = new ulong[nativeCount, versionCount];
             var hashToRows = new Dictionary<ulong, List<int>>((int)nativeCount);
@@ -378,6 +379,7 @@ namespace ScTools
 
             return (table, hashToRows);
 
+            static int ReadInt32(Span<byte> data, int offset) => BitConverter.ToInt32(data[offset..(offset + sizeof(int))]);
             static uint ReadUInt32(Span<byte> data, int offset) => BitConverter.ToUInt32(data[offset..(offset + sizeof(uint))]);
             static ulong ReadUInt64(Span<byte> data, int offset) => BitConverter.ToUInt64(data[offset..(offset + sizeof(ulong))]);
 

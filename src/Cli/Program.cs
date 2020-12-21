@@ -93,7 +93,7 @@
             };
             compile.Handler = CommandHandler.Create<CompileOptions>(Compile);
 
-            Command fetchNativeDb = new Command("fetch-nativedb")
+            Command fetchNativeDbOld = new Command("fetch-nativedb-old")
             {
                 new Option<Uri>(
                     new[] { "--crossmap-url", "-c" },
@@ -109,12 +109,31 @@
                     "The output SCNDB file.")
                     .LegalFilePathsOnly(),
             };
+            fetchNativeDbOld.Handler = CommandHandler.Create<FetchNativeDbOldOptions>(FetchNativeDbOld);
+
+            Command fetchNativeDb = new Command("fetch-nativedb")
+            {
+                new Argument<FileInfo>(
+                    "shv-zip",
+                    "Specifies the path to the ScriptHookV .zip file.")
+                    .ExistingOnly(),
+                new Option<Uri>(
+                    new[] { "--nativedb-url", "-n" },
+                    () => new Uri("https://raw.githubusercontent.com/alloc8or/gta5-nativedb-data/master/natives.json"),
+                    "Specifies the URL from which to download the native DB data."),
+                new Option<FileInfo>(
+                    new[] { "--output", "-o" },
+                    () => new FileInfo("nativesdb.json"),
+                    "The output JSON file.")
+                    .LegalFilePathsOnly(),
+            };
             fetchNativeDb.Handler = CommandHandler.Create<FetchNativeDbOptions>(FetchNativeDb);
 
             rootCmd.AddCommand(dump);
             rootCmd.AddCommand(disassemble);
             rootCmd.AddCommand(assemble);
             rootCmd.AddCommand(compile);
+            rootCmd.AddCommand(fetchNativeDbOld);
             rootCmd.AddCommand(fetchNativeDb);
 
             return rootCmd.InvokeAsync(args).Result;
@@ -361,14 +380,14 @@
                                 showOffsets: !o.NoOffsets, showBytes: !o.NoBytes, showInstructions: !o.NoInstructions);
         }
 
-        private class FetchNativeDbOptions
+        private class FetchNativeDbOldOptions
         {
             public Uri CrossMapUrl { get; set; }
             public Uri NativeDbUrl { get; set; }
             public FileInfo Output { get; set; }
         }
 
-        private static async Task FetchNativeDb(FetchNativeDbOptions o)
+        private static async Task FetchNativeDbOld(FetchNativeDbOldOptions o)
         {
             NativeDBOld db = await NativeDBOld.Fetch(o.CrossMapUrl, o.NativeDbUrl);
 
@@ -390,6 +409,20 @@
                              "natives do not match");
             }
 #endif
+        }
+
+        private class FetchNativeDbOptions
+        {
+            public FileInfo SHVZip { get; set; }
+            public Uri NativeDbUrl { get; set; }
+            public FileInfo Output { get; set; }
+        }
+
+        private static async Task FetchNativeDb(FetchNativeDbOptions o)
+        {
+            NativeDB db = await NativeDB.Fetch(o.NativeDbUrl, o.SHVZip.FullName);
+
+            await File.WriteAllTextAsync(o.Output.FullName, db.ToJson());
         }
     }
 }
