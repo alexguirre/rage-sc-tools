@@ -1,7 +1,7 @@
 grammar ScLang;
 
 script
-    : (topLevelStatement? EOL)*
+    : (topLevelStatement? EOL)* topLevelStatement?
     ;
 
 topLevelStatement
