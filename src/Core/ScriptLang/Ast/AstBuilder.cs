@@ -81,6 +81,10 @@ namespace ScTools.ScriptLang.Ast
         public override Node VisitStaticVariableStatement([NotNull] ScLangParser.StaticVariableStatementContext context)
             => new StaticVariableStatement((VariableDeclarationWithInitializer)Visit(context.variableDeclarationWithInitializer()),
                                            Source(context));
+
+        public override Node VisitConstantVariableStatement([NotNull] ScLangParser.ConstantVariableStatementContext context)
+            => new ConstantVariableStatement((VariableDeclarationWithInitializer)Visit(context.variableDeclarationWithInitializer()),
+                                             Source(context));
         #endregion Top Level Statements
 
 

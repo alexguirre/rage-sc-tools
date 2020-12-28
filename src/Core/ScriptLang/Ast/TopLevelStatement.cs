@@ -138,4 +138,16 @@ namespace ScTools.ScriptLang.Ast
 
         public override string ToString() => $"{Variable}";
     }
+
+    public sealed class ConstantVariableStatement : TopLevelStatement
+    {
+        public VariableDeclarationWithInitializer Variable { get; }
+
+        public override IEnumerable<Node> Children { get { yield return Variable; } }
+
+        public ConstantVariableStatement(VariableDeclarationWithInitializer variable, SourceRange source) : base(source)
+            => Variable = variable;
+
+        public override string ToString() => $"CONST {Variable}";
+    }
 }

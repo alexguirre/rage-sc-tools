@@ -21,6 +21,7 @@ namespace ScTools.ScriptLang.Ast
         public virtual void VisitFunctionNativeStatement(FunctionNativeStatement node) => DefaultVisit(node);
         public virtual void VisitStructStatement(StructStatement node) => DefaultVisit(node);
         public virtual void VisitStaticVariableStatement(StaticVariableStatement node) => DefaultVisit(node);
+        public virtual void VisitConstantVariableStatement(ConstantVariableStatement node) => DefaultVisit(node);
 
         public virtual void VisitStatementBlock(StatementBlock node) => DefaultVisit(node);
         public virtual void VisitErrorStatement(ErrorStatement node) => DefaultVisit(node);
@@ -70,6 +71,7 @@ namespace ScTools.ScriptLang.Ast
         [return: MaybeNull] public virtual TResult VisitFunctionNativeStatement(FunctionNativeStatement node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitStructStatement(StructStatement node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitStaticVariableStatement(StaticVariableStatement node) => DefaultVisit(node);
+        [return: MaybeNull] public virtual TResult VisitConstantVariableStatement(ConstantVariableStatement node) => DefaultVisit(node);
 
         [return: MaybeNull] public virtual TResult VisitStatementBlock(StatementBlock node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitErrorStatement(ErrorStatement node) => DefaultVisit(node);
@@ -120,6 +122,7 @@ namespace ScTools.ScriptLang.Ast
                 case FunctionNativeStatement n: visitor.VisitFunctionNativeStatement(n); break;
                 case StructStatement n: visitor.VisitStructStatement(n); break;
                 case StaticVariableStatement n: visitor.VisitStaticVariableStatement(n); break;
+                case ConstantVariableStatement n: visitor.VisitConstantVariableStatement(n); break;
 
                 case StatementBlock n: visitor.VisitStatementBlock(n); break;
                 case ErrorStatement n: visitor.VisitErrorStatement(n); break;
@@ -170,6 +173,7 @@ namespace ScTools.ScriptLang.Ast
             FunctionNativeStatement n => visitor.VisitFunctionNativeStatement(n),
             StructStatement n => visitor.VisitStructStatement(n),
             StaticVariableStatement n => visitor.VisitStaticVariableStatement(n),
+            ConstantVariableStatement n => visitor.VisitConstantVariableStatement(n),
 
             StatementBlock n => visitor.VisitStatementBlock(n),
             ErrorStatement n => visitor.VisitErrorStatement(n),

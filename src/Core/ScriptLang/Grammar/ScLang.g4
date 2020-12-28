@@ -27,6 +27,7 @@ topLevelStatement
       structFieldList
       K_ENDSTRUCT                                               #structStatement
     
+    | K_CONST variableDeclarationWithInitializer                #constantVariableStatement
     | variableDeclarationWithInitializer                        #staticVariableStatement
     ;
 
@@ -155,6 +156,7 @@ K_ENDWHILE : E N D W H I L E;
 K_RETURN : R E T U R N;
 K_SCRIPT_NAME : S C R I P T '_' N A M E;
 K_USING : U S I N G;
+K_CONST : C O N S T;
 
 OP_ADD: '+';
 OP_SUBTRACT: '-';
