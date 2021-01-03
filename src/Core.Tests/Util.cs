@@ -1,5 +1,6 @@
 ﻿namespace ScTools.Tests
 {
+    using System;
     using System.IO;
 
     using ScTools.ScriptLang;
@@ -25,5 +26,25 @@
             c.Compile();
             return c;
         }
+
+        public static string Dump(GameFiles.Script sc)
+        {
+            var d = new Dumper(sc);
+            using var s = new StringWriter();
+            d.Dump(s, true, true, true, true, true);
+            return s.ToString();
+        }
+    }
+
+    internal sealed class DelegatedUsingResolver : IUsingSourceResolver
+    {
+        public Func<string, string> Resolver { get; }
+
+        public DelegatedUsingResolver(Func<string, string> resolver) => Resolver = resolver;
+
+        public string NormalizePath(string usingPath) => usingPath;
+        public bool IsValid(string usingPath) => Resolver(usingPath) != null;
+        public bool HasChanged(string usingPath) => false;
+        public TextReader Resolve(string usingPath) => new StringReader(Resolver(usingPath));
     }
 }

@@ -23,9 +23,8 @@ namespace ScTools.ScriptLang.Semantics.Binding
     public sealed class BoundVariableDeclarationStatement : BoundStatement
     {
         public VariableSymbol Var { get; }
-        public BoundExpression? Initializer { get; }
 
-        public BoundVariableDeclarationStatement(VariableSymbol var, BoundExpression? initializer)
+        public BoundVariableDeclarationStatement(VariableSymbol var)
         {
             if (var.Kind != VariableKind.Local)
             {
@@ -34,33 +33,34 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
             if (var.Type is RefType)
             {
+                var initializer = var.Initializer;
                 if (initializer == null)
                 {
-                    throw new ArgumentException("Initializer is missing for reference type", nameof(initializer));
+                    throw new ArgumentException("Initializer is missing for reference type", nameof(var));
                 }
 
                 if (!initializer.IsAddressable)
                 {
-                    throw new ArgumentException("Initializer is not addressable and var is a reference", nameof(initializer));
+                    throw new ArgumentException("Initializer is not addressable and var is a reference", nameof(var));
                 }
             }
 
             Var = var;
-            Initializer = initializer;
         }
 
         public override void Emit(ByteCodeBuilder code, BoundFunction parent)
         {
             EmitArrayLengthInitializers(Var.Type, parent.GetLocalLocation(Var)!.Value, code);
-            if (Initializer != null)
+            var initializer = Var.Initializer;
+            if (initializer != null)
             {
                 if (Var.Type is RefType)
                 {
-                    Initializer.EmitAddr(code);
+                    initializer.EmitAddr(code);
                 }
                 else
                 {
-                    Initializer.EmitLoad(code);
+                    initializer.EmitLoad(code);
                 }
                 code.EmitLocalStore(Var);
             }

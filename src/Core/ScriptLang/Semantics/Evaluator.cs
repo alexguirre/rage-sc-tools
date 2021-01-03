@@ -33,6 +33,8 @@ namespace ScTools.ScriptLang.Semantics
         private static void Evaluate(Span<ScriptValue> dest, BoundExpression expr)
         {
             Debug.Assert(dest.Length == expr.Type!.SizeOf);
+            Debug.Assert(expr.IsConstant);
+
             switch (expr)
             {
                 case BoundIntLiteralExpression x: EvaluateIntLiteral(dest, x); break;
@@ -41,6 +43,14 @@ namespace ScTools.ScriptLang.Semantics
                 case BoundAggregateExpression x: EvaluateAggregate(dest, x); break;
                 case BoundUnaryExpression x: EvaluateUnary(dest, x); break;
                 case BoundBinaryExpression x: EvaluateBinary(dest, x); break;
+                case BoundVariableExpression x:
+                    if (x.Var.Initializer == null)
+                    {
+                        throw new ArgumentException($"Unresolved constant '{x.Var.Name}'", nameof(expr));
+                    }
+
+                    Evaluate(dest, x.Var.Initializer);
+                    break;
                 default: throw new NotImplementedException();
             }
         }

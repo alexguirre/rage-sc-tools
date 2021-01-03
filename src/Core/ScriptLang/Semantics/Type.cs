@@ -12,7 +12,7 @@ namespace ScTools.ScriptLang.Semantics
         public abstract int SizeOf { get; }
 
         public abstract Type Clone();
-        public abstract Type? Resolve(SymbolTable symbols);
+        public abstract Type? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics, string filePath);
         public virtual bool HasField(string name) { return false; }
 
         public abstract bool Equals(Type? other);
@@ -72,9 +72,9 @@ namespace ScTools.ScriptLang.Semantics
 
         public override RefType Clone() => new RefType(ElementType);
 
-        public override RefType? Resolve(SymbolTable symbols)
+        public override RefType? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics, string filePath)
         {
-            var resolvedElementType = ElementType.Resolve(symbols);
+            var resolvedElementType = ElementType.Resolve(symbols, diagnostics, filePath);
             if (resolvedElementType == null)
             {
                 return null;
@@ -100,7 +100,7 @@ namespace ScTools.ScriptLang.Semantics
         public BasicType(BasicTypeCode typeCode) => TypeCode = typeCode;
 
         public override BasicType Clone() => new BasicType(TypeCode);
-        public override BasicType? Resolve(SymbolTable symbols) => this;
+        public override BasicType? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics, string filePath) => this;
 
         public override bool Equals(Type? other)
             => other is BasicType b && b.TypeCode == TypeCode;
@@ -132,9 +132,9 @@ namespace ScTools.ScriptLang.Semantics
 
         public override StructType Clone() => new StructType(Name, Fields);
 
-        public override StructType? Resolve(SymbolTable symbols)
+        public override StructType? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics, string filePath)
         {
-            var resolvedFields = Fields.Select(f => (Type: f.Type.Resolve(symbols), f.Name)).ToArray();
+            var resolvedFields = Fields.Select(f => (Type: f.Type.Resolve(symbols, diagnostics, filePath), f.Name)).ToArray();
             if (resolvedFields.Any(f => f.Type == null))
             {
                 return null;
@@ -327,15 +327,15 @@ namespace ScTools.ScriptLang.Semantics
 
         public override FunctionType Clone() => new FunctionType(ReturnType, Parameters);
 
-        public override FunctionType? Resolve(SymbolTable symbols)
+        public override FunctionType? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics, string filePath)
         {
-            var resolvedReturnType = ReturnType?.Resolve(symbols);
+            var resolvedReturnType = ReturnType?.Resolve(symbols, diagnostics, filePath);
             if (resolvedReturnType == null && ReturnType != null)
             {
                 return null;
             }
 
-            var resolvedParameters = Parameters.Select(p => (Type: p.Type.Resolve(symbols), p.Name)).ToArray();
+            var resolvedParameters = Parameters.Select(p => (Type: p.Type.Resolve(symbols, diagnostics, filePath), p.Name)).ToArray();
             if (resolvedParameters.Any(p => p.Type == null))
             {
                 return null;
@@ -413,9 +413,9 @@ namespace ScTools.ScriptLang.Semantics
 
         public override ArrayType Clone() => new ArrayType(ItemType, Length);
 
-        public override ArrayType? Resolve(SymbolTable symbols)
+        public override ArrayType? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics, string filePath)
         {
-            var resolvedItemType = ItemType.Resolve(symbols);
+            var resolvedItemType = ItemType.Resolve(symbols, diagnostics, filePath);
             if (resolvedItemType == null)
             {
                 return null;
@@ -433,6 +433,46 @@ namespace ScTools.ScriptLang.Semantics
         protected override string DoToString() => $"{ItemType}[{Length}]";
     }
 
+    public sealed class UnresolvedArrayType : Type
+    {
+        public override int SizeOf => throw new InvalidOperationException("Unresolved array type");
+        public Type ItemType { get; }
+        public Ast.Expression LengthExpression { get; set; }
+
+        public UnresolvedArrayType(Type itemType, Ast.Expression lengthExpr)
+            => (ItemType, LengthExpression) = (itemType, lengthExpr);
+
+        public override UnresolvedArrayType Clone() => new UnresolvedArrayType(ItemType, LengthExpression);
+
+        public override Type? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics, string filePath)
+        {
+            var lengthExpr = new SemanticAnalysis.ExpressionBinder(symbols, diagnostics, filePath).Visit(LengthExpression)!;
+            var length = Evaluator.Evaluate(lengthExpr)[0].AsInt32;
+
+            if (length < 0)
+            {
+                diagnostics.AddError(filePath, $"Arrays cannot have negative length", LengthExpression.Source);
+                return null;
+            }
+
+            var itemType = ItemType.Resolve(symbols, diagnostics, filePath);
+            if (itemType == null)
+            {
+                return null;
+            }
+
+            return new ArrayType(itemType, length);
+        }
+
+        public override bool Equals(Type? other)
+            => other is UnresolvedArrayType t && t.ItemType == ItemType && t.LengthExpression == LengthExpression;
+
+        protected override int DoGetHashCode()
+            => HashCode.Combine(ItemType, LengthExpression);
+
+        protected override string DoToString() => $"{ItemType}[{LengthExpression}]";
+    }
+
     public sealed class UnresolvedType : Type
     {
         public string TypeName { get; }
@@ -443,10 +483,17 @@ namespace ScTools.ScriptLang.Semantics
 
         public override UnresolvedType Clone() => new UnresolvedType(TypeName);
 
-        public override Type? Resolve(SymbolTable symbols)
+        public override Type? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics, string filePath)
         {
             var symbol = symbols.Lookup(TypeName);
-            return (symbol as TypeSymbol)?.Type;
+            var ty = (symbol as TypeSymbol)?.Type;
+
+            if (ty == null)
+            {
+                diagnostics.AddError(filePath, $"Unknown type '{TypeName}'", SourceRange.Unknown); // TODO: specify error source range
+            }
+
+            return ty;
         }
 
         public override bool Equals(Type? other)

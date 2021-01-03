@@ -32,7 +32,8 @@ namespace ScTools.ScriptLang.Semantics
                 Debug.Assert(s != null);
                 Debug.Assert(s.IsStatic);
 
-                Module.Statics.Add(new BoundStatic(s, Bind(node.Variable.Initializer)));
+                s.Initializer = Bind(node.Variable.Initializer);
+                Module.Statics.Add(s);
             }
 
             public override void VisitFunctionStatement(FunctionStatement node) => VisitFunc(node.Name, node.Block);
@@ -97,17 +98,17 @@ namespace ScTools.ScriptLang.Semantics
                 var varSymbol = Symbols.Lookup(node.Variable.Declaration.Decl.Identifier) as VariableSymbol;
                 Debug.Assert(varSymbol != null);
 
-                var initializerExpr = Bind(node.Variable.Initializer);
+                varSymbol.Initializer = Bind(node.Variable.Initializer);
 
                 if (varSymbol.Type is RefType)
                 {
                     var err = false;
-                    if (initializerExpr is null)
+                    if (varSymbol.Initializer is null)
                     {
                         Diagnostics.AddError(FilePath, $"Reference variable '{varSymbol.Name}' is missing an initializer", node.Source);
                         err = true;
                     }
-                    else if (!initializerExpr.IsAddressable)
+                    else if (!varSymbol.Initializer.IsAddressable)
                     {
                         Diagnostics.AddError(FilePath, $"Cannot take reference of expression", node.Variable.Initializer!.Source);
                         err = true;
@@ -120,10 +121,7 @@ namespace ScTools.ScriptLang.Semantics
                     }
                 }
 
-                stmts!.Add(new BoundVariableDeclarationStatement(
-                    varSymbol,
-                    initializerExpr
-                ));
+                stmts!.Add(new BoundVariableDeclarationStatement(varSymbol));
             }
 
             public override void VisitArgumentList(ArgumentList node) => throw new NotSupportedException();
@@ -179,7 +177,7 @@ namespace ScTools.ScriptLang.Semantics
             }
         }
 
-        private sealed class ExpressionBinder : AstVisitor<BoundExpression>
+        public sealed class ExpressionBinder : AstVisitor<BoundExpression>
         {
             public SymbolTable? Symbols { get; set; }
             private DiagnosticsReport? Diagnostics { get; }

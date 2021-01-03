@@ -11,11 +11,12 @@ namespace ScTools.ScriptLang.Semantics
     public static partial class SemanticAnalysis
     {
         /// <summary>
-        /// Register global symbols (structs, static variable, procedures and functions)
+        /// Register global symbols (structs, static variables, constants, procedures and functions)
         /// </summary>
         private sealed class FirstPass : Pass
         {
             private readonly IUsingModuleResolver? usingResolver;
+            private readonly Queue<(VariableSymbol Constant, Expression Initializer)> constantsToResolve = new();
 
             public FirstPass(DiagnosticsReport diagnostics, string filePath, SymbolTable symbols, IUsingModuleResolver? usingResolver)
                 : base(diagnostics, filePath, symbols)
@@ -25,7 +26,37 @@ namespace ScTools.ScriptLang.Semantics
 
             protected override void OnEnd()
             {
+                ResolveConstants();
                 ResolveTypes();
+            }
+
+            private void ResolveConstants()
+            {
+                var tmpDiagnostics = new DiagnosticsReport();
+                var exprBinder = new ExpressionBinder(Symbols, tmpDiagnostics, FilePath);
+                // TODO: exit gracefully in case of circular dependencies
+                while (constantsToResolve.Count > 0)
+                {
+                    var c = constantsToResolve.Dequeue();
+                    c.Constant.Initializer = exprBinder.Visit(c.Initializer)!;
+                    if (c.Constant.Initializer.IsInvalid)
+                    {
+                        tmpDiagnostics.Clear();
+                        constantsToResolve.Enqueue(c); // try again
+                    }
+                    else
+                    {
+                        // reduce the initializer to a literal
+                        c.Constant.Initializer = ((BasicType)c.Constant.Initializer.Type!).TypeCode switch
+                        {
+                            BasicTypeCode.Bool => new Binding.BoundBoolLiteralExpression(Evaluator.Evaluate(c.Constant.Initializer)[0].AsUInt64 == 1),
+                            BasicTypeCode.Int => new Binding.BoundIntLiteralExpression(Evaluator.Evaluate(c.Constant.Initializer)[0].AsInt32),
+                            BasicTypeCode.Float => new Binding.BoundFloatLiteralExpression(Evaluator.Evaluate(c.Constant.Initializer)[0].AsFloat),
+                            BasicTypeCode.String => c.Constant.Initializer, // if it is a STRING it should already be a literal
+                            _ => throw new System.InvalidOperationException(),
+                        };
+                    }
+                }
             }
 
             // returns whether all types where resolved
@@ -95,6 +126,27 @@ namespace ScTools.ScriptLang.Semantics
                                                node.Source,
                                                TypeFromAst(node.Variable.Declaration.Type, node.Variable.Declaration.Decl),
                                                VariableKind.Static));
+            }
+
+            public override void VisitConstantVariableStatement(ConstantVariableStatement node)
+            {
+                bool unresolved = false;
+                var ty = Resolve(TypeFromAst(node.Variable.Declaration.Type, node.Variable.Declaration.Decl), node.Source, ref unresolved);
+                var error = unresolved || ty is not BasicType;
+                if (error)
+                {
+                    Diagnostics.AddError(FilePath, $"The type '{ty}' cannot be CONST. Only INT, FLOAT, BOOL or STRING can be CONST.", node.Source);
+                }
+
+                var v = new VariableSymbol(node.Variable.Declaration.Decl.Identifier,
+                                           node.Source,
+                                           ty,
+                                           VariableKind.Constant);
+                Symbols.Add(v);
+                if (node.Variable.Initializer != null && !error)
+                {
+                    constantsToResolve.Enqueue((v, node.Variable.Initializer));
+                }
             }
 
             public override void VisitStructStatement(StructStatement node)
