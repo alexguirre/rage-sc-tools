@@ -37,6 +37,11 @@ namespace ScTools.ScriptLang.Semantics
                 while (constantsToResolve.Count > 0)
                 {
                     var c = constantsToResolve.Dequeue();
+                    if (!IsExprConstant(c.Constant, c.Initializer))
+                    {
+                        continue;
+                    }
+
                     var constantInitializer = exprBinder.Visit(c.Initializer)!;
                     if (constantInitializer.IsInvalid)
                     {
@@ -69,6 +74,24 @@ namespace ScTools.ScriptLang.Semantics
                             }
                         }
                     }
+                }
+
+                bool IsExprConstant(VariableSymbol targetConstant, Expression expr)
+                {
+                    if (expr is IdentifierExpression idExpr)
+                    {
+                        switch (Symbols.Lookup(idExpr.Identifier))
+                        {
+                            case VariableSymbol v when !v.IsConstant:
+                                Diagnostics.AddError(FilePath, $"The expression assigned to '{targetConstant.Name}' must be constant. The variable '{idExpr.Identifier}' is not constant", idExpr.Source);
+                                return false;
+                            case null:
+                                Diagnostics.AddError(FilePath, $"Unknown symbol '{idExpr.Identifier}'", idExpr.Source);
+                                return false;
+                        }
+                    }
+
+                    return expr.Children.Where(c => c is Expression).All(e => IsExprConstant(targetConstant, (Expression)e));
                 }
 
                 static int CountUnresolvedDependencies(BoundExpression expr)

@@ -125,5 +125,19 @@
 
             Assert.True(c.GetAllDiagnostics().HasErrors, "Circular definitions are invalid");
         }
+
+        [Fact]
+        public void TestUseNonConstant()
+        {
+            var c = Util.Compile($@"
+                INT STATIC_A = 1
+                CONST INT CONSTANT_B = 1 + STATIC_A
+
+                PROC MAIN()
+                ENDPROC
+            ");
+
+            Assert.True(c.GetAllDiagnostics().HasErrors, "Needs a constant expression");
+        }
     }
 }
