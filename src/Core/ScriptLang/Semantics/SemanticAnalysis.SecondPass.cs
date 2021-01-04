@@ -26,8 +26,8 @@ namespace ScTools.ScriptLang.Semantics
                 Debug.Assert(Symbols.Parent == null);
                 Debug.Assert(Symbols.Symbols.Where(sym => sym is VariableSymbol)
                                             .Cast<VariableSymbol>()
-                                            .All(s => s.Kind == VariableKind.Static),
-                             "All variables in global scope must be static");
+                                            .All(s => s.Kind is VariableKind.Static or VariableKind.Constant),
+                             "All variables in global scope must be static or constant");
             }
 
             public override void VisitFunctionStatement(FunctionStatement node)
@@ -80,6 +80,7 @@ namespace ScTools.ScriptLang.Semantics
             {
                 var v = Symbols.Lookup(node.Variable.Declaration.Decl.Identifier) as VariableSymbol;
                 Debug.Assert(v != null);
+                Debug.Assert(v.IsStatic);
 
                 if (v.Type is RefType)
                 {
@@ -99,6 +100,13 @@ namespace ScTools.ScriptLang.Semantics
                         Diagnostics.AddError(FilePath, $"Mismatched initializer type and type of static variable '{v.Name}'", node.Variable.Initializer.Source);
                     }
                 }
+            }
+
+            public override void VisitConstantVariableStatement(ConstantVariableStatement node)
+            {
+                var v = Symbols.Lookup(node.Variable.Declaration.Decl.Identifier) as VariableSymbol;
+                Debug.Assert(v != null);
+                Debug.Assert(v.IsConstant);
             }
 
             public override void VisitParameterList(ParameterList node)

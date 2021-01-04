@@ -64,16 +64,7 @@ namespace ScTools.ScriptLang.Semantics
                             Diagnostics.AddError(FilePath, $"Array of references is not valid", source);
                             return baseType;
                         case ArrayDeclarator d:
-                            var lengthExpr = new ExpressionBinder().Visit(d.Length)!;
-                            var length = Evaluator.Evaluate(lengthExpr)[0].AsInt32;
-
-                            if (length < 0)
-                            {
-                                Diagnostics.AddError(FilePath, $"Arrays cannot have negative length", d.Length.Source);
-                                return baseType;
-                            }
-
-                            ty = new ArrayType(ty, length);
+                            ty = new UnresolvedArrayType(ty, d.Length);
                             decl = d.Inner;
                             break;
 
@@ -154,14 +145,13 @@ namespace ScTools.ScriptLang.Semantics
             {
                 switch (t)
                 {
-                    case UnresolvedType ty:
+                    case UnresolvedType or UnresolvedArrayType:
                     {
-                        var newType = ty.Resolve(Symbols);
+                        var newType = t.Resolve(Symbols, Diagnostics, FilePath);
                         if (newType == null)
                         {
-                            Diagnostics.AddError(FilePath, $"Unknown type '{ty.TypeName}'", source);
                             unresolved = true;
-                            return ty;
+                            return t;
                         }
                         else
                         {

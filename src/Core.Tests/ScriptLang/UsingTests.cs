@@ -111,17 +111,5 @@
 
             Assert.False(comp.GetAllDiagnostics().HasErrors);
         }
-
-        private sealed class DelegatedUsingResolver : IUsingSourceResolver
-        {
-            public Func<string, string> Resolver { get; }
-
-            public DelegatedUsingResolver(Func<string, string> resolver) => Resolver = resolver;
-
-            public string NormalizePath(string usingPath) => usingPath;
-            public bool IsValid(string usingPath) => Resolver(usingPath) != null;
-            public bool HasChanged(string usingPath) => false;
-            public TextReader Resolve(string usingPath) => new StringReader(Resolver(usingPath));
-        }
     }
 }

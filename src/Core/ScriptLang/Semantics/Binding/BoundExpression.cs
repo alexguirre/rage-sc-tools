@@ -24,6 +24,10 @@ namespace ScTools.ScriptLang.Semantics.Binding
         /// Gets whether <see cref="EmitAddr(ByteCodeBuilder)"/> is supported.
         /// </summary>
         public abstract bool IsAddressable { get; }
+        /// <summary>
+        /// Gets whether this expression or any of its sub-expressions are <see cref="BoundInvalidExpression"/>.
+        /// </summary>
+        public abstract bool IsInvalid { get; }
 
         public abstract void EmitLoad(ByteCodeBuilder code);
         public abstract void EmitStore(ByteCodeBuilder code);
@@ -35,6 +39,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
     {
         public override bool IsConstant => false;
         public override bool IsAddressable => false;
+        public override bool IsInvalid => true;
         public string Reason { get; }
 
         public BoundInvalidExpression(string reason)
@@ -75,6 +80,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
     {
         public override bool IsConstant => Operand.IsConstant;
         public override bool IsAddressable => false;
+        public override bool IsInvalid => Operand.IsInvalid;
         public BoundExpression Operand { get; }
         public Ast.UnaryOperator Op { get; }
 
@@ -127,6 +133,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
     {
         public override bool IsConstant => Left.IsConstant && Right.IsConstant;
         public override bool IsAddressable => false;
+        public override bool IsInvalid => Left.IsInvalid || Right.IsInvalid;
         public BoundExpression Left { get; }
         public BoundExpression Right { get; }
         public Ast.BinaryOperator Op { get; }
@@ -137,7 +144,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
             Right = right;
             Op = op;
 
-            if (!(left is BoundInvalidExpression) && !(right is BoundInvalidExpression))
+            if (!left.IsInvalid && !right.IsInvalid)
             {
                 Debug.Assert(left.Type?.UnderlyingType == right.Type?.UnderlyingType);
                 Type = Ast.BinaryExpression.OpIsComparison(op) ? new BasicType(BasicTypeCode.Bool) : left.Type?.UnderlyingType;
@@ -235,8 +242,9 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
     public sealed class BoundVariableExpression : BoundExpression
     {
-        public override bool IsConstant => false;
+        public override bool IsConstant => Var.IsConstant;
         public override bool IsAddressable => true;
+        public override bool IsInvalid => false;
         public VariableSymbol Var { get; }
 
         public BoundVariableExpression(VariableSymbol variable)
@@ -269,6 +277,11 @@ namespace ScTools.ScriptLang.Semantics.Binding
                     code.EmitStaticLoad(Var);
                 }
             }
+            else if (Var.IsConstant)
+            {
+                Debug.Assert(Var.Initializer != null);
+                Var.Initializer.EmitLoad(code);
+            }
             else
             {
                 throw new NotSupportedException();
@@ -298,6 +311,10 @@ namespace ScTools.ScriptLang.Semantics.Binding
                 {
                     code.EmitStaticStore(Var);
                 }
+            }
+            else if (Var.IsConstant)
+            {
+                throw new NotSupportedException("Constants cannot be written to");
             }
             else
             {
@@ -330,6 +347,10 @@ namespace ScTools.ScriptLang.Semantics.Binding
                     code.EmitStaticAddr(Var);
                 }
             }
+            else if (Var.IsConstant)
+            {
+                throw new NotSupportedException("Cannot take address of constants");
+            }
             else
             {
                 throw new NotSupportedException();
@@ -349,6 +370,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
     {
         public override bool IsConstant => false;
         public override bool IsAddressable => false;
+        public override bool IsInvalid => false;
         public FunctionSymbol Function { get; }
 
         public BoundFunctionExpression(FunctionSymbol function)
@@ -378,6 +400,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
     {
         public override bool IsConstant => false;
         public override bool IsAddressable => false;
+        public override bool IsInvalid => Callee.IsInvalid || Arguments.Any(a => a.IsInvalid);
         public BoundExpression Callee { get; }
         public ImmutableArray<BoundExpression> Arguments { get; }
 
@@ -388,7 +411,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
             if (!(callee is BoundInvalidExpression))
             {
-                if (!(callee.Type is FunctionType funcTy) || funcTy.ReturnType == null)
+                if (callee.Type is not FunctionType funcTy || funcTy.ReturnType == null)
                 {
                     throw new ArgumentException("Callee type is not a function", nameof(callee));
                 }
@@ -424,6 +447,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
     {
         public override bool IsConstant => false;
         public override bool IsAddressable => true;
+        public override bool IsInvalid => Expression.IsInvalid;
         public BoundExpression Expression { get; }
         public string Member { get; }
         public int MemberOffset { get; }
@@ -502,6 +526,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
     {
         public override bool IsConstant => false;
         public override bool IsAddressable => true;
+        public override bool IsInvalid => Expression.IsInvalid || IndexExpression.IsInvalid;
         public BoundExpression Expression { get; }
         public BoundExpression IndexExpression { get; }
 
@@ -569,6 +594,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
     {
         public override bool IsConstant => Expressions.All(expr => expr.IsConstant);
         public override bool IsAddressable => false;
+        public override bool IsInvalid => Expressions.Any(expr => expr.IsInvalid);
         public ImmutableArray<BoundExpression> Expressions { get; }
 
         public BoundAggregateExpression(IEnumerable<BoundExpression> expressions)
@@ -596,6 +622,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
         public override bool IsConstant => true;
         public override bool IsAddressable => false;
+        public override bool IsInvalid => false;
         public float Value { get; }
 
         public BoundFloatLiteralExpression(float value)
@@ -616,6 +643,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
         public override bool IsConstant => true;
         public override bool IsAddressable => false;
+        public override bool IsInvalid => false;
         public int Value { get; }
 
         public BoundIntLiteralExpression(int value)
@@ -636,6 +664,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
         public override bool IsConstant => false;
         public override bool IsAddressable => false;
+        public override bool IsInvalid => false;
         public string Value { get; }
 
         public BoundStringLiteralExpression(string value)
@@ -656,6 +685,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
         public override bool IsConstant => true;
         public override bool IsAddressable => false;
+        public override bool IsInvalid => false;
         public bool Value { get; }
 
         public BoundBoolLiteralExpression(bool value)

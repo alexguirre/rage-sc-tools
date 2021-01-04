@@ -13,7 +13,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
     public sealed class BoundModule : BoundNode
     {
         public string Name { get; set; } = "unknown";
-        public IList<BoundStatic> Statics { get; } = new List<BoundStatic>();
+        public IList<VariableSymbol> Statics { get; } = new List<VariableSymbol>();
         public IList<BoundFunction> Functions { get; } = new List<BoundFunction>();
 
         public void Emit(ByteCodeBuilder code)

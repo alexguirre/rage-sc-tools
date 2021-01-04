@@ -76,8 +76,13 @@ namespace ScTools.ScriptLang
                 }
             }
 
-            public override void VisitVariableDeclarationWithInitializer(VariableDeclarationWithInitializer node)
+            public override void VisitConstantVariableStatement(ConstantVariableStatement node)
             {
+                if (node.Variable.Initializer == null)
+                {
+                    Error($"A constant requires an initializer", node);
+                }
+
                 DefaultVisit(node);
             }
 

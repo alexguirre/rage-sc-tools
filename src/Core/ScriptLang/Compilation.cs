@@ -118,14 +118,13 @@ namespace ScTools.ScriptLang
             // initialize static vars values
             foreach (var s in statics)
             {
-                // TODO: initialize static arrays
-                InitializeStaticArraysLengths(s.Var.Type, allocatedStatics[s.Var], sc.Statics.AsSpan());
+                InitializeStaticArraysLengths(s.Type, allocatedStatics[s], sc.Statics.AsSpan());
                 if (s.Initializer != null)
                 {
                     var defaultValue = Evaluator.Evaluate(s.Initializer!);
-                    Debug.Assert(defaultValue.Length == s.Var.Type.SizeOf);
+                    Debug.Assert(defaultValue.Length == s.Type.SizeOf);
 
-                    var dest = sc.Statics.AsSpan(allocatedStatics[s.Var], s.Var.Type.SizeOf);
+                    var dest = sc.Statics.AsSpan(allocatedStatics[s], s.Type.SizeOf);
                     defaultValue.CopyTo(dest);
                 }
             }
@@ -159,15 +158,15 @@ namespace ScTools.ScriptLang
         public int? GetStaticLocation(VariableSymbol var)
             => allocatedStatics.TryGetValue(var, out int loc) ? loc : null;
 
-        private int AllocateStatics(IEnumerable<BoundStatic> statics)
+        private int AllocateStatics(IEnumerable<VariableSymbol> statics)
         {
             allocatedStatics.Clear();
 
             int location = 0;
             foreach (var s in statics)
             {
-                allocatedStatics.Add(s.Var, location);
-                location += s.Var.Type.SizeOf;
+                allocatedStatics.Add(s, location);
+                location += s.Type.SizeOf;
             }
 
             return location; // return total size
