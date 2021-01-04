@@ -111,18 +111,19 @@
             Assert.True(c.GetAllDiagnostics().HasErrors, "Cannot have custom types as CONST");
         }
 
-        [Fact(Skip = "Circular definitions in CONST throw an exception for now")]
+        [Fact]
         public void TestCircularDefinition()
         {
-            var module = Util.ParseAndAnalyze($@"
+            var c = Util.Compile($@"
                 CONST INT VALUE_A = 1 + VALUE_B
-                CONST INT VALUE_B = 1 + VALUE_A
+                CONST INT VALUE_B = 1 + VALUE_A + VALUE_C
+                CONST INT VALUE_C = 2
 
                 PROC MAIN()
                 ENDPROC
             ");
 
-            Assert.True(module.Diagnostics.HasErrors);
+            Assert.True(c.GetAllDiagnostics().HasErrors, "Circular definitions are invalid");
         }
     }
 }

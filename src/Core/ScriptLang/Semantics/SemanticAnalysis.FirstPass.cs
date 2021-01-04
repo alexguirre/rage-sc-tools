@@ -6,6 +6,7 @@ namespace ScTools.ScriptLang.Semantics
     using System.Linq;
 
     using ScTools.ScriptLang.Ast;
+    using ScTools.ScriptLang.Semantics.Binding;
     using ScTools.ScriptLang.Semantics.Symbols;
 
     public static partial class SemanticAnalysis
@@ -16,7 +17,7 @@ namespace ScTools.ScriptLang.Semantics
         private sealed class FirstPass : Pass
         {
             private readonly IUsingModuleResolver? usingResolver;
-            private readonly Queue<(VariableSymbol Constant, Expression Initializer)> constantsToResolve = new();
+            private readonly Queue<(VariableSymbol Constant, Expression Initializer, int NumUnresolved)> constantsToResolve = new();
 
             public FirstPass(DiagnosticsReport diagnostics, string filePath, SymbolTable symbols, IUsingModuleResolver? usingResolver)
                 : base(diagnostics, filePath, symbols)
@@ -32,30 +33,62 @@ namespace ScTools.ScriptLang.Semantics
 
             private void ResolveConstants()
             {
-                var tmpDiagnostics = new DiagnosticsReport();
-                var exprBinder = new ExpressionBinder(Symbols, tmpDiagnostics, FilePath);
-                // TODO: exit gracefully in case of circular dependencies
+                var exprBinder = new ExpressionBinder(Symbols, new DiagnosticsReport(), FilePath);
                 while (constantsToResolve.Count > 0)
                 {
                     var c = constantsToResolve.Dequeue();
-                    c.Constant.Initializer = exprBinder.Visit(c.Initializer)!;
-                    if (c.Constant.Initializer.IsInvalid)
+                    var constantInitializer = exprBinder.Visit(c.Initializer)!;
+                    if (constantInitializer.IsInvalid)
                     {
-                        tmpDiagnostics.Clear();
                         constantsToResolve.Enqueue(c); // try again
                     }
                     else
                     {
-                        // reduce the initializer to a literal
-                        c.Constant.Initializer = ((BasicType)c.Constant.Initializer.Type!).TypeCode switch
+                        var numUnresolved = CountUnresolvedDependencies(constantInitializer);
+                        if (numUnresolved == 0)
                         {
-                            BasicTypeCode.Bool => new Binding.BoundBoolLiteralExpression(Evaluator.Evaluate(c.Constant.Initializer)[0].AsUInt64 == 1),
-                            BasicTypeCode.Int => new Binding.BoundIntLiteralExpression(Evaluator.Evaluate(c.Constant.Initializer)[0].AsInt32),
-                            BasicTypeCode.Float => new Binding.BoundFloatLiteralExpression(Evaluator.Evaluate(c.Constant.Initializer)[0].AsFloat),
-                            BasicTypeCode.String => c.Constant.Initializer, // if it is a STRING it should already be a literal
-                            _ => throw new System.InvalidOperationException(),
-                        };
+                            // reduce the initializer to a literal
+                            c.Constant.Initializer = ((BasicType)constantInitializer.Type!).TypeCode switch
+                            {
+                                BasicTypeCode.Bool => new BoundBoolLiteralExpression(Evaluator.Evaluate(constantInitializer)[0].AsUInt64 == 1),
+                                BasicTypeCode.Int => new BoundIntLiteralExpression(Evaluator.Evaluate(constantInitializer)[0].AsInt32),
+                                BasicTypeCode.Float => new BoundFloatLiteralExpression(Evaluator.Evaluate(constantInitializer)[0].AsFloat),
+                                BasicTypeCode.String => constantInitializer, // if it is a STRING it should already be a literal
+                                _ => throw new System.InvalidOperationException(),
+                            };
+                        }
+                        else
+                        {
+                            if (numUnresolved < c.NumUnresolved)
+                            {
+                                constantsToResolve.Enqueue((c.Constant, c.Initializer, numUnresolved)); // try again
+                            }
+                            else
+                            {
+                                Diagnostics.AddError(FilePath, $"The constant '{c.Constant.Name}' involves a circular definition", c.Initializer.Source);
+                            }
+                        }
                     }
+                }
+
+                static int CountUnresolvedDependencies(BoundExpression expr)
+                {
+                    int count = 0;
+
+                    switch (expr)
+                    {
+                        case BoundAggregateExpression x: count += x.Expressions.Sum(CountUnresolvedDependencies); break;
+                        case BoundUnaryExpression x: count += CountUnresolvedDependencies(x.Operand); break;
+                        case BoundBinaryExpression x: count += CountUnresolvedDependencies(x.Left) + CountUnresolvedDependencies(x.Right);break;
+                        case BoundVariableExpression x:
+                            if (x.Var.Initializer == null)
+                            {
+                                count += 1;
+                            }
+                            break;
+                    }
+
+                    return count;
                 }
             }
 
@@ -145,7 +178,7 @@ namespace ScTools.ScriptLang.Semantics
                 Symbols.Add(v);
                 if (node.Variable.Initializer != null && !error)
                 {
-                    constantsToResolve.Enqueue((v, node.Variable.Initializer));
+                    constantsToResolve.Enqueue((v, node.Variable.Initializer, int.MaxValue));
                 }
             }
 
