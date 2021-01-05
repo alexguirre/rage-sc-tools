@@ -359,10 +359,13 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
         public override void EmitCall(ByteCodeBuilder code)
         {
-            Debug.Assert(Type is FunctionType, "Only function types can be called");
+            if (Type is not FunctionType)
+            {
+                throw new InvalidOperationException("Only function types can be called");
+            }
 
-            // TODO: support indirect calls
-            throw new NotImplementedException();
+            EmitLoad(code);
+            code.EmitIndirectCall();
         }
     }
 
@@ -379,7 +382,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
             Type = Function.Type;
         }
 
-        public override void EmitLoad(ByteCodeBuilder code) => throw new NotSupportedException();
+        public override void EmitLoad(ByteCodeBuilder code) => code.EmitFuncAddr(Function);
         public override void EmitStore(ByteCodeBuilder code) => throw new NotSupportedException();
         public override void EmitAddr(ByteCodeBuilder code) => throw new NotSupportedException();
 
@@ -516,9 +519,13 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
         public override void EmitCall(ByteCodeBuilder code)
         {
-            Debug.Assert(Type is FunctionType, "Only function types can be called");
+            if (Type is not FunctionType)
+            {
+                throw new InvalidOperationException("Only function types can be called");
+            }
 
-            throw new NotImplementedException();
+            EmitLoad(code);
+            code.EmitIndirectCall();
         }
     }
 
@@ -584,9 +591,13 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
         public override void EmitCall(ByteCodeBuilder code)
         {
-            Debug.Assert(Type is FunctionType, "Only function types can be called");
+            if (Type is not FunctionType)
+            {
+                throw new InvalidOperationException("Only function types can be called");
+            }
 
-            throw new NotImplementedException();
+            EmitLoad(code);
+            code.EmitIndirectCall();
         }
     }
 
