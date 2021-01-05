@@ -11,9 +11,11 @@ namespace ScTools.ScriptLang.Semantics
     /// <summary>
     /// Evaluates constant expressions.
     /// </summary>
-    public static class Evaluator
+    public class Evaluator
     {
-        public static ScriptValue[] Evaluate(BoundExpression expr)
+        public Func<Symbols.FunctionSymbol, uint>? FunctionAddressResolver { get; set; }
+
+        public ScriptValue[] DoEvaluate(BoundExpression expr)
         {
             if (!expr.IsConstant)
             {
@@ -30,7 +32,7 @@ namespace ScTools.ScriptLang.Semantics
             return result;
         }
 
-        private static void Evaluate(Span<ScriptValue> dest, BoundExpression expr)
+        private void Evaluate(Span<ScriptValue> dest, BoundExpression expr)
         {
             Debug.Assert(dest.Length == expr.Type!.SizeOf);
             Debug.Assert(expr.IsConstant);
@@ -51,26 +53,34 @@ namespace ScTools.ScriptLang.Semantics
 
                     Evaluate(dest, x.Var.Initializer);
                     break;
+                case BoundFunctionExpression x:
+                    if (FunctionAddressResolver == null)
+                    {
+                        throw new InvalidOperationException($"Cannot get address of '{x.Function.Name}'. No function address resolver provided.");
+                    }
+
+                    dest[0].AsUInt32 = FunctionAddressResolver(x.Function);
+                    break;
                 default: throw new NotImplementedException();
             }
         }
 
-        private static void EvaluateIntLiteral(Span<ScriptValue> dest, BoundIntLiteralExpression expr)
+        private void EvaluateIntLiteral(Span<ScriptValue> dest, BoundIntLiteralExpression expr)
         {
             dest[0].AsInt32 = expr.Value;
         }
 
-        private static void EvaluateFloatLiteral(Span<ScriptValue> dest, BoundFloatLiteralExpression expr)
+        private void EvaluateFloatLiteral(Span<ScriptValue> dest, BoundFloatLiteralExpression expr)
         {
             dest[0].AsFloat = expr.Value;
         }
 
-        private static void EvaluateBoolLiteral(Span<ScriptValue> dest, BoundBoolLiteralExpression expr)
+        private void EvaluateBoolLiteral(Span<ScriptValue> dest, BoundBoolLiteralExpression expr)
         {
             dest[0].AsInt64 = expr.Value ? 1 : 0;
         }
 
-        private static void EvaluateAggregate(Span<ScriptValue> dest, BoundAggregateExpression expr)
+        private void EvaluateAggregate(Span<ScriptValue> dest, BoundAggregateExpression expr)
         {
             foreach(var subExpr in expr.Expressions)
             {
@@ -81,7 +91,7 @@ namespace ScTools.ScriptLang.Semantics
             }
         }
 
-        private static void EvaluateUnary(Span<ScriptValue> dest, BoundUnaryExpression expr)
+        private void EvaluateUnary(Span<ScriptValue> dest, BoundUnaryExpression expr)
         {
             Evaluate(dest, expr.Operand);
             switch (expr.Operand.Type)
@@ -111,7 +121,7 @@ namespace ScTools.ScriptLang.Semantics
             }
         }
 
-        private static void EvaluateBinary(Span<ScriptValue> dest, BoundBinaryExpression expr)
+        private void EvaluateBinary(Span<ScriptValue> dest, BoundBinaryExpression expr)
         {
             var left = Evaluate(expr.Left);
             var right = Evaluate(expr.Right);
@@ -193,5 +203,11 @@ namespace ScTools.ScriptLang.Semantics
                 default: throw new NotSupportedException();
             }
         }
+
+        public static ScriptValue[] Evaluate(BoundExpression expr)
+            => new Evaluator().DoEvaluate(expr);
+
+        public static ScriptValue[] Evaluate(BoundExpression expr, Func<Symbols.FunctionSymbol, uint> functionAddressResolver)
+            => new Evaluator { FunctionAddressResolver = functionAddressResolver }.DoEvaluate(expr);
     }
 }

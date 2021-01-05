@@ -160,6 +160,14 @@ namespace ScTools.ScriptLang.CodeGen
             Emit(Opcode.STRING, ReadOnlySpan<Operand>.Empty);
         }
 
+        public void EmitFuncAddr(FunctionSymbol func)
+        {
+            BeginInstruction();
+            InstructionU8((byte)Opcode.PUSH_CONST_U24);
+            InstructionFunctionTarget(func.Name);
+            EndInstruction();
+        }
+
         private void EmitVarInst(int location, Opcode opcodeU8, Opcode opcodeU16, bool local)
         {
             var v = unchecked((uint)location);
@@ -370,6 +378,8 @@ namespace ScTools.ScriptLang.CodeGen
         public void EmitDrop() => Emit(Opcode.DROP);
 
         public void EmitCall(FunctionSymbol function) => Emit(Opcode.CALL, new[] { new Operand(function.Name, OperandType.Identifier) });
+
+        public void EmitIndirectCall() => Emit(Opcode.CALLINDIRECT);
 
         public void EmitNative(FunctionSymbol function)
         {
@@ -605,7 +615,7 @@ namespace ScTools.ScriptLang.CodeGen
             inInstruction = false;
         }
 
-        private uint GetFunctionIP(string function)
+        public uint GetFunctionIP(string function)
         {
             if (!functions.TryGetValue(function, out var data))
             {

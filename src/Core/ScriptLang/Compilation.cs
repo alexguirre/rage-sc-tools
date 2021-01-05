@@ -115,26 +115,26 @@ namespace ScTools.ScriptLang
                 StringsLength = 0,
             };
 
-            // initialize static vars values
-            foreach (var s in statics)
-            {
-                InitializeStaticArraysLengths(s.Type, allocatedStatics[s], sc.Statics.AsSpan());
-                if (s.Initializer != null)
-                {
-                    var defaultValue = Evaluator.Evaluate(s.Initializer!);
-                    Debug.Assert(defaultValue.Length == s.Type.SizeOf);
-
-                    var dest = sc.Statics.AsSpan(allocatedStatics[s], s.Type.SizeOf);
-                    defaultValue.CopyTo(dest);
-                }
-            }
-
             // emit byte code
             var code = new ByteCodeBuilder(this);
             MainModule.BoundModule.Emit(code);
             foreach (var m in ImportedModules)
             {
                 m.BoundModule!.Emit(code);
+            }
+
+            // initialize static vars values
+            foreach (var s in statics)
+            {
+                InitializeStaticArraysLengths(s.Type, allocatedStatics[s], sc.Statics.AsSpan());
+                if (s.Initializer != null)
+                {
+                    var defaultValue = Evaluator.Evaluate(s.Initializer!, functionAddressResolver: func => code.GetFunctionIP(func.Name));
+                    Debug.Assert(defaultValue.Length == s.Type.SizeOf);
+
+                    var dest = sc.Statics.AsSpan(allocatedStatics[s], s.Type.SizeOf);
+                    defaultValue.CopyTo(dest);
+                }
             }
 
             sc.CodePages = new ScriptPageArray<byte>
