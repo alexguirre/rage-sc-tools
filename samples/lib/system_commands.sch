@@ -1,0 +1,1 @@
+NATIVE PROC WAIT(INT ms)
