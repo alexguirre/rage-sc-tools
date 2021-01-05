@@ -85,7 +85,7 @@
                 ENDPROC
             ");
 
-            Assert.True(c.GetAllDiagnostics().HasErrors, "Cannot statically initialize procedure/function references");
+            Assert.False(c.GetAllDiagnostics().HasErrors);
         }
 
         [Fact]

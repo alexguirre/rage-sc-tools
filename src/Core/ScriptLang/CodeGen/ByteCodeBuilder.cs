@@ -615,7 +615,7 @@ namespace ScTools.ScriptLang.CodeGen
             inInstruction = false;
         }
 
-        private uint GetFunctionIP(string function)
+        public uint GetFunctionIP(string function)
         {
             if (!functions.TryGetValue(function, out var data))
             {

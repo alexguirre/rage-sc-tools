@@ -371,7 +371,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
     public sealed class BoundFunctionExpression : BoundExpression
     {
-        public override bool IsConstant => false;
+        public override bool IsConstant => true;
         public override bool IsAddressable => false;
         public override bool IsInvalid => false;
         public FunctionSymbol Function { get; }
