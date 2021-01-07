@@ -9,6 +9,7 @@
         ["PROC", "ENDPROC"],
         ["IF", "ENDIF"],
         ["WHILE", "ENDWHILE"],
+        ["SWITCH", "ENDSWITCH"],
         ["[", "]"],
         ["(", ")"]
     ],
@@ -18,6 +19,7 @@
         ["PROC", "ENDPROC"],
         ["IF", "ENDIF"],
         ["WHILE", "ENDWHILE"],
+        ["SWITCH", "ENDSWITCH"],
         ["[", "]"],
         ["(", ")"],
         ["<<", ">>"],
