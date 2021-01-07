@@ -3,6 +3,7 @@ namespace ScTools.ScriptLang.Ast
 {
     using System.Collections.Generic;
     using System.Collections.Immutable;
+    using System.Linq;
 
     public abstract class Statement : Node
     {
@@ -94,6 +95,49 @@ namespace ScTools.ScriptLang.Ast
             => (Condition, Block) = (condition, block);
 
         public override string ToString() => $"WHILE {Condition}\n{Block}\nENDWHILE";
+    }
+
+    public sealed class SwitchStatement : Statement
+    {
+        public Expression Expression { get; }
+        public ImmutableArray<SwitchCase> Cases { get; }
+
+        public override IEnumerable<Node> Children => Cases.Cast<Node>().Prepend(Expression);
+
+        public SwitchStatement(Expression expression, IEnumerable<SwitchCase> cases, SourceRange source) : base(source)
+            => (Expression, Cases) = (expression, cases.ToImmutableArray());
+
+        public override string ToString() => $"SWITCH {Expression}\n{string.Join("\n", Cases)}\nENDSWITCH";
+    }
+
+    public abstract class SwitchCase : Node
+    {
+        public StatementBlock Block { get; }
+
+        public override IEnumerable<Node> Children { get { yield return Block; } }
+
+        public SwitchCase(StatementBlock block, SourceRange source) : base(source)
+            => Block = block;
+    }
+
+    public sealed class ValueSwitchCase : SwitchCase
+    {
+        public Expression Value { get; }
+
+        public override IEnumerable<Node> Children { get { yield return Value; yield return Block; } }
+
+        public ValueSwitchCase(Expression value, StatementBlock block, SourceRange source) : base(block, source)
+            => Value = value;
+
+        public override string ToString() => $"CASE {Value}\n{Block}";
+    }
+
+    public sealed class DefaultSwitchCase : SwitchCase
+    {
+        public DefaultSwitchCase(StatementBlock block, SourceRange source) : base(block, source)
+        { }
+
+        public override string ToString() => $"DEFAULT\n{Block}";
     }
 
     public sealed class ReturnStatement : Statement

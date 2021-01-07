@@ -109,6 +109,20 @@ namespace ScTools.ScriptLang.Ast
                                   (StatementBlock)Visit(context.statementBlock()),
                                   Source(context));
 
+        public override Node VisitSwitchStatement([NotNull] ScLangParser.SwitchStatementContext context)
+            => new SwitchStatement((Expression)Visit(context.expression()),
+                                   context.switchCase().Select(Visit).Cast<SwitchCase>(),
+                                   Source(context));
+
+        public override Node VisitValueSwitchCase([NotNull] ScLangParser.ValueSwitchCaseContext context)
+            => new ValueSwitchCase((Expression)Visit(context.value),
+                                   (StatementBlock)Visit(context.statementBlock()),
+                                   Source(context));
+
+        public override Node VisitDefaultSwitchCase([NotNull] ScLangParser.DefaultSwitchCaseContext context)
+            => new DefaultSwitchCase((StatementBlock)Visit(context.statementBlock()),
+                                     Source(context));
+
         public override Node VisitReturnStatement([NotNull] ScLangParser.ReturnStatementContext context)
             => new ReturnStatement((Expression?)Visit(context.expression()), Source(context));
 
