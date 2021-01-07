@@ -3,6 +3,7 @@ namespace ScTools.ScriptLang.Ast
 {
     using System.Collections.Generic;
     using System.Collections.Immutable;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
 
     public abstract class Statement : Node
@@ -22,6 +23,9 @@ namespace ScTools.ScriptLang.Ast
             => Statements = statements.ToImmutableArray();
 
         public override string ToString() => $"{string.Join("\n", Statements)}";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitStatementBlock(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitStatementBlock(this);
     }
 
     public sealed class ErrorStatement : Statement
@@ -32,6 +36,9 @@ namespace ScTools.ScriptLang.Ast
             => Text = text;
 
         public override string ToString() => Text;
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitErrorStatement(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitErrorStatement(this);
     }
 
     public sealed class VariableDeclarationStatement : Statement
@@ -44,6 +51,9 @@ namespace ScTools.ScriptLang.Ast
             => Variable = variable;
 
         public override string ToString() => $"{Variable}";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitVariableDeclarationStatement(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitVariableDeclarationStatement(this);
     }
 
     public sealed class AssignmentStatement : Statement
@@ -57,6 +67,9 @@ namespace ScTools.ScriptLang.Ast
             => (Left, Right) = (left, right);
 
         public override string ToString() => $"{Left} = {Right}";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitAssignmentStatement(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitAssignmentStatement(this);
     }
 
     public sealed class IfStatement : Statement
@@ -82,6 +95,9 @@ namespace ScTools.ScriptLang.Ast
             => (Condition, ThenBlock, ElseBlock) = (condition, thenBlock, elseBlock);
 
         public override string ToString() => $"IF {Condition}\n{ThenBlock}\n{(ElseBlock != null ? $"ELSE\n{ElseBlock}\n" : "")}ENDIF";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitIfStatement(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitIfStatement(this);
     }
 
     public sealed class WhileStatement : Statement
@@ -95,6 +111,9 @@ namespace ScTools.ScriptLang.Ast
             => (Condition, Block) = (condition, block);
 
         public override string ToString() => $"WHILE {Condition}\n{Block}\nENDWHILE";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitWhileStatement(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitWhileStatement(this);
     }
 
     public sealed class SwitchStatement : Statement
@@ -108,6 +127,9 @@ namespace ScTools.ScriptLang.Ast
             => (Expression, Cases) = (expression, cases.ToImmutableArray());
 
         public override string ToString() => $"SWITCH {Expression}\n{string.Join("\n", Cases)}\nENDSWITCH";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitSwitchStatement(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitSwitchStatement(this);
     }
 
     public abstract class SwitchCase : Node
@@ -130,6 +152,9 @@ namespace ScTools.ScriptLang.Ast
             => Value = value;
 
         public override string ToString() => $"CASE {Value}\n{Block}";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitValueSwitchCase(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitValueSwitchCase(this);
     }
 
     public sealed class DefaultSwitchCase : SwitchCase
@@ -138,6 +163,9 @@ namespace ScTools.ScriptLang.Ast
         { }
 
         public override string ToString() => $"DEFAULT\n{Block}";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitDefaultSwitchCase(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitDefaultSwitchCase(this);
     }
 
     public sealed class ReturnStatement : Statement
@@ -150,6 +178,9 @@ namespace ScTools.ScriptLang.Ast
             => Expression = expression;
 
         public override string ToString() => $"RETURN{(Expression != null ? $" {Expression}": "")}";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitReturnStatement(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitReturnStatement(this);
     }
 
     public sealed class InvocationStatement : Statement
@@ -163,5 +194,8 @@ namespace ScTools.ScriptLang.Ast
             => (Expression, ArgumentList) = (expression, argumentList);
 
         public override string ToString() => $"{Expression}{ArgumentList}";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitInvocationStatement(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitInvocationStatement(this);
     }
 }

@@ -2,6 +2,7 @@
 namespace ScTools.ScriptLang.Ast
 {
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
 
     public abstract class TopLevelStatement : Node
     {
@@ -18,6 +19,9 @@ namespace ScTools.ScriptLang.Ast
             => Name = name;
 
         public override string ToString() => $"SCRIPT_NAME {Name}";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitScriptNameStatement(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitScriptNameStatement(this);
     }
 
     public sealed class UsingStatement : TopLevelStatement
@@ -29,6 +33,9 @@ namespace ScTools.ScriptLang.Ast
             => (PathRaw, Path) = (pathRaw, pathRaw[1..^1].Unescape());
 
         public override string ToString() => $"USING {PathRaw}";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitUsingStatement(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitUsingStatement(this);
     }
 
     public sealed class ProcedureStatement : TopLevelStatement
@@ -43,6 +50,9 @@ namespace ScTools.ScriptLang.Ast
             => (Name, ParameterList, Block) = (name, parameterList, block);
 
         public override string ToString() => $"PROC {Name}{ParameterList}\n{Block}\nENDPROC";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitProcedureStatement(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitProcedureStatement(this);
     }
 
     public sealed class ProcedurePrototypeStatement : TopLevelStatement
@@ -56,6 +66,9 @@ namespace ScTools.ScriptLang.Ast
             => (Name, ParameterList) = (name, parameterList);
 
         public override string ToString() => $"PROTO PROC {Name}{ParameterList}";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitProcedurePrototypeStatement(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitProcedurePrototypeStatement(this);
     }
 
     public sealed class ProcedureNativeStatement : TopLevelStatement
@@ -69,6 +82,9 @@ namespace ScTools.ScriptLang.Ast
             => (Name, ParameterList) = (name, parameterList);
 
         public override string ToString() => $"NATIVE PROC {Name}{ParameterList}";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitProcedureNativeStatement(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitProcedureNativeStatement(this);
     }
 
     public sealed class FunctionStatement : TopLevelStatement
@@ -84,6 +100,9 @@ namespace ScTools.ScriptLang.Ast
             => (Name, ReturnType, ParameterList, Block) = (name, returnType, parameterList, block);
 
         public override string ToString() => $"FUNC {ReturnType} {Name}{ParameterList}\n{Block}\nENDFUNC";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitFunctionStatement(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitFunctionStatement(this);
     }
 
     public sealed class FunctionPrototypeStatement : TopLevelStatement
@@ -98,6 +117,9 @@ namespace ScTools.ScriptLang.Ast
             => (Name, ReturnType, ParameterList) = (name, returnType, parameterList);
 
         public override string ToString() => $"PROTO FUNC {ReturnType} {Name}{ParameterList}";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitFunctionPrototypeStatement(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitFunctionPrototypeStatement(this);
     }
 
     public sealed class FunctionNativeStatement : TopLevelStatement
@@ -112,6 +134,9 @@ namespace ScTools.ScriptLang.Ast
             => (Name, ReturnType, ParameterList) = (name, returnType, parameterList);
 
         public override string ToString() => $"NATIVE FUNC {ReturnType} {Name}{ParameterList}";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitFunctionNativeStatement(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitFunctionNativeStatement(this);
     }
 
     public sealed class StructStatement : TopLevelStatement
@@ -125,6 +150,9 @@ namespace ScTools.ScriptLang.Ast
             => (Name, FieldList) = (name, fieldList);
 
         public override string ToString() => $"STRUCT {Name}\n{FieldList}\nENDSTRUCT";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitStructStatement(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitStructStatement(this);
     }
 
     public sealed class StaticVariableStatement : TopLevelStatement
@@ -137,6 +165,9 @@ namespace ScTools.ScriptLang.Ast
             => Variable = variable;
 
         public override string ToString() => $"{Variable}";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitStaticVariableStatement(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitStaticVariableStatement(this);
     }
 
     public sealed class ConstantVariableStatement : TopLevelStatement
@@ -149,5 +180,8 @@ namespace ScTools.ScriptLang.Ast
             => Variable = variable;
 
         public override string ToString() => $"CONST {Variable}";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitConstantVariableStatement(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitConstantVariableStatement(this);
     }
 }

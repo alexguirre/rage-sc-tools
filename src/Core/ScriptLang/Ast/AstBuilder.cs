@@ -12,21 +12,7 @@ namespace ScTools.ScriptLang.Ast
 
     public sealed class AstBuilder : ScLangBaseVisitor<Node>
     {
-        private sealed class PlaceholderStatement : Statement
-        {
-            public PlaceholderStatement(SourceRange source) : base(source) { }
-            public override string ToString() => "PlaceholderStmt";
-        }
-
-        private sealed class PlaceholderExpression : Expression
-        {
-            public PlaceholderExpression(SourceRange source) : base(source) { }
-            public override string ToString() => "PlaceholderExpr";
-        }
-
         private static SourceRange Source(ParserRuleContext context) => SourceRange.FromTokens(context.Start, context.Stop);
-        private static Node PlaceholderStmt(ScLangParser.StatementContext context) => new PlaceholderStatement(Source(context));
-        private static Node PlaceholderExpr(ScLangParser.ExpressionContext context) => new PlaceholderExpression(Source(context));
 
         public override Node VisitScript([NotNull] ScLangParser.ScriptContext context)
             => new Root(context.topLevelStatement().Select(stmt => Visit(stmt)).Cast<TopLevelStatement>(), Source(context));

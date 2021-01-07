@@ -5,6 +5,7 @@ namespace ScTools.ScriptLang.Ast
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
 
     public abstract class Expression : Node
     {
@@ -21,6 +22,9 @@ namespace ScTools.ScriptLang.Ast
             => Text = text;
 
         public override string ToString() => Text;
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitErrorExpression(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitErrorExpression(this);
     }
 
     public sealed class UnaryExpression : Expression
@@ -34,6 +38,9 @@ namespace ScTools.ScriptLang.Ast
             => (Op, Operand) = (op, operand);
 
         public override string ToString() => $"{OpToString(Op)}{Operand}";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitUnaryExpression(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitUnaryExpression(this);
 
         public static string OpToString(UnaryOperator op) => op switch
         {
@@ -61,6 +68,9 @@ namespace ScTools.ScriptLang.Ast
             => (Op, Left, Right) = (op, left, right);
 
         public override string ToString() => $"({Left} {OpToString(Op)} {Right})";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitBinaryExpression(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitBinaryExpression(this);
 
         public static string OpToString(BinaryOperator op) => op switch
         {
@@ -130,6 +140,9 @@ namespace ScTools.ScriptLang.Ast
             => Expressions = expressions.ToImmutableArray();
 
         public override string ToString() => $"<<{string.Join(", ", Expressions)}>>";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitAggregateExpression(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitAggregateExpression(this);
     }
 
     public sealed class IdentifierExpression : Expression
@@ -140,6 +153,9 @@ namespace ScTools.ScriptLang.Ast
             => Identifier = identifier;
 
         public override string ToString() => $"{Identifier}";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitIdentifierExpression(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitIdentifierExpression(this);
     }
 
     public sealed class MemberAccessExpression : Expression
@@ -153,6 +169,9 @@ namespace ScTools.ScriptLang.Ast
             => (Expression, Member) = (expression, member);
 
         public override string ToString() => $"{Expression}.{Member}";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitMemberAccessExpression(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitMemberAccessExpression(this);
     }
 
     public sealed class ArrayAccessExpression : Expression
@@ -166,6 +185,9 @@ namespace ScTools.ScriptLang.Ast
             => (Expression, Indexer) = (expression, indexer);
 
         public override string ToString() => $"{Expression}{Indexer}";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitArrayAccessExpression(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitArrayAccessExpression(this);
     }
 
     public sealed class InvocationExpression : Expression
@@ -179,6 +201,9 @@ namespace ScTools.ScriptLang.Ast
             => (Expression, ArgumentList) = (expression, argumentList);
 
         public override string ToString() => $"{Expression}{ArgumentList}";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitInvocationExpression(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitInvocationExpression(this);
     }
 
     public sealed class LiteralExpression : Expression
@@ -202,6 +227,9 @@ namespace ScTools.ScriptLang.Ast
             => (Kind, ValueText) = (kind, valueText);
 
         public override string ToString() => $"{ValueText}";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitLiteralExpression(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitLiteralExpression(this);
     }
 
     public enum LiteralKind

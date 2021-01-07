@@ -1,6 +1,7 @@
 ﻿#nullable enable
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace ScTools.ScriptLang.Ast
 {
@@ -23,6 +24,9 @@ namespace ScTools.ScriptLang.Ast
             => Inner = inner;
 
         public override string ToString() => $"&{Inner}";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitRefDeclarator(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitRefDeclarator(this);
     }
 
     public sealed class SimpleDeclarator : Declarator
@@ -33,6 +37,9 @@ namespace ScTools.ScriptLang.Ast
             => Identifier = identifier;
 
         public override string ToString() => Identifier;
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitSimpleDeclarator(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitSimpleDeclarator(this);
     }
 
     public sealed class ArrayDeclarator : Declarator
@@ -47,5 +54,8 @@ namespace ScTools.ScriptLang.Ast
             => (Inner, Length) = (inner, length);
 
         public override string ToString() => Inner is RefDeclarator ? $"({Inner})[{Length}]" : $"{Inner}[{Length}]";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitArrayDeclarator(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitArrayDeclarator(this);
     }
 }

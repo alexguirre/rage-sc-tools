@@ -3,6 +3,7 @@ namespace ScTools.ScriptLang.Ast
 {
     using System.Collections.Generic;
     using System.Collections.Immutable;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
 
     public abstract class Node
@@ -11,6 +12,9 @@ namespace ScTools.ScriptLang.Ast
         public virtual IEnumerable<Node> Children => Enumerable.Empty<Node>();
 
         public Node(SourceRange source) => Source = source;
+
+        public abstract void Accept(AstVisitor visitor);
+        [return: MaybeNull] public abstract T Accept<T>(AstVisitor<T> visitor);
     }
 
     public sealed class ArrayIndexer : Node
@@ -23,6 +27,9 @@ namespace ScTools.ScriptLang.Ast
             => Expression = expression;
 
         public override string ToString() => $"[{Expression}]";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitArrayIndexer(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitArrayIndexer(this);
     }
 
     public sealed class VariableDeclaration : Node
@@ -36,6 +43,9 @@ namespace ScTools.ScriptLang.Ast
             => (Type, Decl) = (type, decl);
 
         public override string ToString() => $"{Type} {Decl}";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitVariableDeclaration(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitVariableDeclaration(this);
     }
 
     public sealed class VariableDeclarationWithInitializer : Node
@@ -59,6 +69,9 @@ namespace ScTools.ScriptLang.Ast
             => (Declaration, Initializer) = (declaration, initializer);
 
         public override string ToString() => Declaration.ToString() + (Initializer != null ? $" = {Initializer}" : "");
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitVariableDeclarationWithInitializer(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitVariableDeclarationWithInitializer(this);
     }
 
     public sealed class ParameterList : Node
@@ -71,6 +84,9 @@ namespace ScTools.ScriptLang.Ast
             => Parameters = parameters.ToImmutableArray();
 
         public override string ToString() => $"({string.Join(", ", Parameters)})";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitParameterList(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitParameterList(this);
     }
 
     public sealed class ArgumentList : Node
@@ -83,6 +99,9 @@ namespace ScTools.ScriptLang.Ast
             => Arguments = arguments.ToImmutableArray();
 
         public override string ToString() => $"({string.Join(", ", Arguments)})";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitArgumentList(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitArgumentList(this);
     }
 
     public sealed class StructFieldList : Node
@@ -95,5 +114,9 @@ namespace ScTools.ScriptLang.Ast
             => Fields = fields.ToImmutableArray();
 
         public override string ToString() => $"{string.Join('\n', Fields)}";
+
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitStructFieldList(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitStructFieldList(this);
     }
 }
