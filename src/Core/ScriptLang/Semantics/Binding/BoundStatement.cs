@@ -190,6 +190,69 @@ namespace ScTools.ScriptLang.Semantics.Binding
         }
     }
 
+    public sealed class BoundSwitchStatement : BoundStatement
+    {
+        public BoundExpression Expression { get; }
+        public IList<BoundSwitchCase> Cases { get; } = new List<BoundSwitchCase>();
+
+        private readonly string id = Guid.NewGuid().ToString(); // unique ID used for labels
+
+        public BoundSwitchStatement(BoundExpression expression)
+            => Expression = expression;
+
+        public override void Emit(ByteCodeBuilder code, BoundFunction parent)
+        {
+            var endLabel = id + "-end";
+
+            Expression.EmitLoad(code);
+            code.EmitSwitch(GetCases());
+
+            var defaultCase = Cases.SingleOrDefault(c => c.IsDefault);
+            if (defaultCase != null)
+            {
+                foreach (var stmt in defaultCase.Block)
+                {
+                    stmt.Emit(code, parent);
+                }
+            }
+            code.EmitJump(endLabel);
+
+            foreach (var c in Cases.Where(c => !c.IsDefault))
+            {
+                code.AddLabel(GetCaseLabel(c));
+                foreach (var stmt in c.Block)
+                {
+                    stmt.Emit(code, parent);
+                }
+                code.EmitJump(endLabel);
+            }
+
+            code.AddLabel(endLabel);
+        }
+
+        private IEnumerable<(int Value, string Label)> GetCases()
+        {
+            foreach (var c in Cases.Where(c => !c.IsDefault))
+            {
+                yield return (c.Value!.Value, GetCaseLabel(c));
+            }
+        }
+
+        private string GetCaseLabel(BoundSwitchCase c) => id + c.Id;
+    }
+
+    public sealed class BoundSwitchCase : BoundNode
+    {
+        public int? Value { get; }
+        public IList<BoundStatement> Block { get; } = new List<BoundStatement>();
+
+        public bool IsDefault => Value == null;
+
+        public string Id { get; } = Guid.NewGuid().ToString();
+
+        public BoundSwitchCase(int? value) => Value = value;
+    }
+
     public sealed class BoundInvocationStatement : BoundStatement
     {
         public BoundExpression Callee { get; }

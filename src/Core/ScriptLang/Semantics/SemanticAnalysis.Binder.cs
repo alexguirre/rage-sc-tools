@@ -78,6 +78,45 @@ namespace ScTools.ScriptLang.Semantics
                 VisitScope(node.Block, boundWhile.Block);
             }
 
+            public override void VisitSwitchStatement(SwitchStatement node)
+            {
+                var boundSwitch = new BoundSwitchStatement(Bind(node.Expression)!);
+                stmts!.Add(boundSwitch);
+
+                var handledCases = new HashSet<int?>();
+                foreach (var c in node.Cases)
+                {
+                    int? value = null;
+                    if (c is ValueSwitchCase v)
+                    {
+                        var boundExpr = Bind(v.Value)!;
+
+                        if (!boundExpr.IsConstant)
+                        {
+                            Diagnostics.AddError(FilePath, $"Expected constant expression", v.Value.Source);
+                            continue;
+                        }
+                        else if (boundExpr.Type is not BasicType { TypeCode: BasicTypeCode.Int })
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            value = Evaluator.Evaluate(boundExpr)[0].AsInt32;
+                        }
+                    }
+
+                    if (!handledCases.Add(value))
+                    {
+                        Diagnostics.AddError(FilePath, value == null ? $"Default case already handled" : $"Case '{value.Value}' already handled", c.Source);
+                    }
+
+                    var boundCase = new BoundSwitchCase(value);
+                    boundSwitch.Cases.Add(boundCase);
+                    VisitScope(c.Block, boundCase.Block);
+                }
+            }
+
             public override void VisitReturnStatement(ReturnStatement node)
             {
                 stmts!.Add(new BoundReturnStatement(

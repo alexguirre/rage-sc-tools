@@ -191,6 +191,37 @@ namespace ScTools.ScriptLang.Semantics
                 Symbols = Symbols.ExitScope();
             }
 
+            public override void VisitSwitchStatement(SwitchStatement node)
+            {
+                var exprType = TypeOf(node.Expression);
+                if (exprType is not BasicType { TypeCode: BasicTypeCode.Int })
+                {
+                    Diagnostics.AddError(FilePath, $"SWITCH statement value requires INT type", node.Expression.Source);
+                }
+
+                DefaultVisit(node);
+            }
+
+            public override void VisitValueSwitchCase(ValueSwitchCase node)
+            {
+                var valueType = TypeOf(node.Value);
+                if (valueType is not BasicType { TypeCode: BasicTypeCode.Int })
+                {
+                    Diagnostics.AddError(FilePath, $"SWITCH case value requires INT type", node.Value.Source);
+                }
+
+                Symbols = Symbols.EnterScope(node.Block);
+                node.Block.Accept(this);
+                Symbols = Symbols.ExitScope();
+            }
+
+            public override void VisitDefaultSwitchCase(DefaultSwitchCase node)
+            {
+                Symbols = Symbols.EnterScope(node.Block);
+                node.Block.Accept(this);
+                Symbols = Symbols.ExitScope();
+            }
+
             public override void VisitReturnStatement(ReturnStatement node)
             {
                 Debug.Assert(func != null);
