@@ -69,7 +69,7 @@ ENDPROC
 PROC DELETE_ENEMIES()
     INT i = 0
     WHILE i < nEnemyCount
-        IF DOES_ENTITY_EXIST(aEnemies[i].base)
+        IF DOES_ENTITY_EXIST(aEnemies[i])
             DELETE_PED(aEnemies[i])
         ENDIF
         i = i + 1

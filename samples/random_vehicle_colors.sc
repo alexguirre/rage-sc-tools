@@ -17,7 +17,7 @@ PROC MAIN()
         INT i = 0
         WHILE i < vehCount
             VEHICLE_INDEX veh = vehicles[i]
-            IF DOES_ENTITY_EXIST(veh.base)
+            IF DOES_ENTITY_EXIST(veh)
                 INT r = GET_RANDOM_INT_IN_RANGE(0, 255)
                 INT g = GET_RANDOM_INT_IN_RANGE(0, 255)
                 INT b = GET_RANDOM_INT_IN_RANGE(0, 255)

@@ -3,6 +3,7 @@ namespace ScTools.ScriptLang.Semantics
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
 
     using ScTools.ScriptLang.Semantics.Symbols;
@@ -42,8 +43,7 @@ namespace ScTools.ScriptLang.Semantics
             {
                 if (dest is StructType destStructType && src is StructType srcStructType)
                 {
-                    bool srcIsAggregate = srcStructType.Name == null;
-                    assignable = srcIsAggregate && srcStructType.HasSameFieldLayout(destStructType);
+                    assignable = srcStructType.IsImplicitlyConvertibleTo(destStructType);
                 }
                 else if (considerReferences)
                 {
@@ -287,6 +287,23 @@ namespace ScTools.ScriptLang.Semantics
         }
 
         protected override string DoToString() => Name ?? "<<unknown>>";
+
+        public bool IsImplicitlyConvertibleTo(StructType destTy)
+        {
+            switch (Name)
+            {
+                // aggregate to concrete structure
+                case null: // source type is aggregate
+                    return HasSameFieldLayout(destTy);
+
+                // implicit conversion from PED/VEHICLE/OBJECT_INDEX to ENTITY_INDEX
+                case "PED_INDEX" or "VEHICLE_INDEX" or "OBJECT_INDEX" when destTy.Name is "ENTITY_INDEX":
+                    Debug.Assert(SizeOf == destTy.SizeOf);
+                    return true;
+            }
+
+            return false;
+        }
 
         public static Type NewAggregate(IEnumerable<Type> fieldTypes)
             => new StructType(null, fieldTypes.Select((t, i) => new Field(t, $"_item{i}")));
