@@ -45,6 +45,10 @@ statement
       statementBlock
       K_ENDWHILE                                                #whileStatement
     
+    | K_SWITCH expression EOL
+      switchCase*
+      K_ENDSWITCH                                               #switchStatement
+
     | K_RETURN expression?                                      #returnStatement
     | expression argumentList                                   #invocationStatement
     ;
@@ -71,6 +75,13 @@ expression
     | '<<' expression (',' expression)* '>>'                        #aggregateExpression
     | identifier                                                    #identifierExpression
     | (integer | float | string | bool)                             #literalExpression
+    ;
+
+switchCase
+    : K_CASE value=expression EOL
+      statementBlock                                                #valueSwitchCase
+    | K_DEFAULT EOL
+      statementBlock                                                #defaultSwitchCase
     ;
 
 variableDeclarationWithInitializer
@@ -153,6 +164,10 @@ K_ELSE : E L S E;
 K_ENDIF : E N D I F;
 K_WHILE : W H I L E;
 K_ENDWHILE : E N D W H I L E;
+K_SWITCH : S W I T C H;
+K_ENDSWITCH : E N D S W I T C H;
+K_CASE : C A S E;
+K_DEFAULT : D E F A U L T;
 K_RETURN : R E T U R N;
 K_SCRIPT_NAME : S C R I P T '_' N A M E;
 K_USING : U S I N G;

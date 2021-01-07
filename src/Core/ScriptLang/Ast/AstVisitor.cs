@@ -29,6 +29,9 @@ namespace ScTools.ScriptLang.Ast
         public virtual void VisitAssignmentStatement(AssignmentStatement node) => DefaultVisit(node);
         public virtual void VisitIfStatement(IfStatement node) => DefaultVisit(node);
         public virtual void VisitWhileStatement(WhileStatement node) => DefaultVisit(node);
+        public virtual void VisitSwitchStatement(SwitchStatement node) => DefaultVisit(node);
+        public virtual void VisitValueSwitchCase(ValueSwitchCase node) => DefaultVisit(node);
+        public virtual void VisitDefaultSwitchCase(DefaultSwitchCase node) => DefaultVisit(node);
         public virtual void VisitReturnStatement(ReturnStatement node) => DefaultVisit(node);
         public virtual void VisitInvocationStatement(InvocationStatement node) => DefaultVisit(node);
 
@@ -79,6 +82,9 @@ namespace ScTools.ScriptLang.Ast
         [return: MaybeNull] public virtual TResult VisitAssignmentStatement(AssignmentStatement node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitIfStatement(IfStatement node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitWhileStatement(WhileStatement node) => DefaultVisit(node);
+        [return: MaybeNull] public virtual TResult VisitSwitchStatement(SwitchStatement node) => DefaultVisit(node);
+        [return: MaybeNull] public virtual TResult VisitValueSwitchCase(ValueSwitchCase node) => DefaultVisit(node);
+        [return: MaybeNull] public virtual TResult VisitDefaultSwitchCase(DefaultSwitchCase node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitReturnStatement(ReturnStatement node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitInvocationStatement(InvocationStatement node) => DefaultVisit(node);
 
@@ -130,6 +136,9 @@ namespace ScTools.ScriptLang.Ast
                 case AssignmentStatement n: visitor.VisitAssignmentStatement(n); break;
                 case IfStatement n: visitor.VisitIfStatement(n); break;
                 case WhileStatement n: visitor.VisitWhileStatement(n); break;
+                case SwitchStatement n: visitor.VisitSwitchStatement(n); break;
+                case ValueSwitchCase n: visitor.VisitValueSwitchCase(n); break;
+                case DefaultSwitchCase n: visitor.VisitDefaultSwitchCase(n); break;
                 case ReturnStatement n: visitor.VisitReturnStatement(n); break;
                 case InvocationStatement n: visitor.VisitInvocationStatement(n); break;
 
@@ -181,6 +190,9 @@ namespace ScTools.ScriptLang.Ast
             AssignmentStatement n => visitor.VisitAssignmentStatement(n),
             IfStatement n => visitor.VisitIfStatement(n),
             WhileStatement n => visitor.VisitWhileStatement(n),
+            SwitchStatement n => visitor.VisitSwitchStatement(n),
+            ValueSwitchCase n => visitor.VisitValueSwitchCase(n),
+            DefaultSwitchCase n => visitor.VisitDefaultSwitchCase(n),
             ReturnStatement n => visitor.VisitReturnStatement(n),
             InvocationStatement n => visitor.VisitInvocationStatement(n),
 

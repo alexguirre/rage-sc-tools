@@ -21,14 +21,12 @@ PROC MAIN()
     WHILE TRUE
         WAIT(0)
 
-        // TODO: replace with SWITCH when supported
-        IF nState == STATE_WAITING_INPUT
-            CHECK_INPUT()
-        ELSE
-            IF nState == STATE_SPAWNING_ENEMIES
+        SWITCH nState
+            CASE STATE_WAITING_INPUT
+                CHECK_INPUT()
+            CASE STATE_SPAWNING_ENEMIES
                 TRY_SPAWN_ENEMIES()
-            ENDIF
-        ENDIF
+        ENDSWITCH
     ENDWHILE
 ENDPROC
 

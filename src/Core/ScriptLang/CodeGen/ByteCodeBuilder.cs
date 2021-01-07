@@ -425,6 +425,8 @@ namespace ScTools.ScriptLang.CodeGen
         public void EmitJump(string label) => Emit(Opcode.J, new[] { new Operand(label, OperandType.Identifier) });
         public void EmitJumpIfZero(string label) => Emit(Opcode.JZ, new[] { new Operand(label, OperandType.Identifier) });
 
+        public void EmitSwitch(IEnumerable<(int Value, string Label)> cases) => Emit(Opcode.SWITCH, cases.Select(c => new Operand((unchecked((uint)c.Value), c.Label))).ToArray());
+
         public void EmitPrologue(int localArgsSize, int localsSize)
         {
             // every function needs at least 2 locals (return address + function frame number)
