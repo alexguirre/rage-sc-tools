@@ -191,6 +191,25 @@ namespace ScTools.ScriptLang.Semantics
                 Symbols = Symbols.ExitScope();
             }
 
+            public override void VisitRepeatStatement(RepeatStatement node)
+            {
+                var limitType = TypeOf(node.Limit);
+                if (limitType is not BasicType { TypeCode: BasicTypeCode.Int })
+                {
+                    Diagnostics.AddError(FilePath, $"REPEAT statement limit requires INT type", node.Limit.Source);
+                }
+
+                var counterType = TypeOf(node.Counter);
+                if (counterType is not BasicType { TypeCode: BasicTypeCode.Int })
+                {
+                    Diagnostics.AddError(FilePath, $"REPEAT statement counter requires INT type", node.Limit.Source);
+                }
+
+                Symbols = Symbols.EnterScope(node.Block);
+                node.Block.Accept(this);
+                Symbols = Symbols.ExitScope();
+            }
+
             public override void VisitSwitchStatement(SwitchStatement node)
             {
                 var exprType = TypeOf(node.Expression);

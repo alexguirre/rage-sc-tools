@@ -78,6 +78,40 @@ namespace ScTools.ScriptLang.Semantics
                 VisitScope(node.Block, boundWhile.Block);
             }
 
+            public override void VisitRepeatStatement(RepeatStatement node)
+            {
+                // reduce REPEAT statement to a WHILE statement
+                /* REPEAT n i
+                 *    block
+                 * ENDREPEAT
+                 *
+                 * i = 0
+                 * WHILE i < n
+                 *    block
+                 *    i = i + 1
+                 * ENDWHILE
+                 */
+
+                var boundLimit = Bind(node.Limit)!;
+                var boundCounter = Bind(node.Counter)!;
+
+                // i = 0
+                var zeroCounter = new BoundAssignmentStatement(boundCounter, new BoundIntLiteralExpression(0));
+                stmts!.Add(zeroCounter);
+
+                // WHILE i < n
+                var condition = new BoundBinaryExpression(boundCounter, boundLimit, BinaryOperator.Less);
+                var boundWhile = new BoundWhileStatement(condition);
+                stmts!.Add(boundWhile);
+
+                VisitScope(node.Block, boundWhile.Block);
+
+                // i = i + 1
+                var add = new BoundBinaryExpression(boundCounter, new BoundIntLiteralExpression(1), BinaryOperator.Add);
+                var assign = new BoundAssignmentStatement(boundCounter, add);
+                boundWhile.Block.Add(assign);
+            }
+
             public override void VisitSwitchStatement(SwitchStatement node)
             {
                 var boundSwitch = new BoundSwitchStatement(Bind(node.Expression)!);

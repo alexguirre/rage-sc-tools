@@ -20,6 +20,9 @@
                         DO_SOMETHING(i)
                     ENDREPEAT
                 ENDPROC
+
+                PROC DO_SOMETHING(INT x)
+                ENDPROC
             ");
 
             Assert.False(c.GetAllDiagnostics().HasErrors);
