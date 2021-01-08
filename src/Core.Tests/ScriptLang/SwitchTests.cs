@@ -152,5 +152,31 @@
 
             Assert.True(c.GetAllDiagnostics().HasErrors, "Only INT type is supported");
         }
+
+        [Fact]
+        public void TestReference()
+        {
+            var c = Util.Compile($@"
+                PROC MAIN()
+                    INT n = 1
+                    INT &nRef = n
+                    SWITCH nRef
+                        CASE 0
+                            n = 10
+
+                        CASE 1
+                            n = 20
+
+                        CASE 2
+                            n = 30
+
+                        DEFAULT
+                            n = 40
+                    ENDSWITCH
+                ENDPROC
+            ");
+
+            Assert.False(c.GetAllDiagnostics().HasErrors);
+        }
     }
 }
