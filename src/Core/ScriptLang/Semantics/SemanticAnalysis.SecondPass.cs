@@ -202,7 +202,7 @@ namespace ScTools.ScriptLang.Semantics
                 var counterType = TypeOf(node.Counter);
                 if (counterType is not BasicType { TypeCode: BasicTypeCode.Int })
                 {
-                    Diagnostics.AddError(FilePath, $"REPEAT statement counter requires INT type", node.Limit.Source);
+                    Diagnostics.AddError(FilePath, $"REPEAT statement counter requires INT type", node.Counter.Source);
                 }
 
                 Symbols = Symbols.EnterScope(node.Block);
