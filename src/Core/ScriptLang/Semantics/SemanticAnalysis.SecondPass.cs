@@ -161,7 +161,7 @@ namespace ScTools.ScriptLang.Semantics
             public override void VisitIfStatement(IfStatement node)
             {
                 var conditionType = TypeOf(node.Condition);
-                if (conditionType?.UnderlyingType is not BasicType { TypeCode: BasicTypeCode.Bool }))
+                if (conditionType?.UnderlyingType is not BasicType { TypeCode: BasicTypeCode.Bool })
                 {
                     Diagnostics.AddError(FilePath, $"IF statement condition requires BOOL type", node.Condition.Source);
                 }
