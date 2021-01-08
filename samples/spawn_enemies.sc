@@ -55,25 +55,23 @@ PROC SPAWN_ENEMIES()
     IF IS_MODEL_AVAILABLE(enemyModel)
         nEnemyCount = GET_RANDOM_INT_IN_RANGE(1, MAX_ENEMIES + 1)
         VEC3 spawnPos = <<0.0, 0.0, 70.0>>
-        INT i = 0
-        WHILE i < nEnemyCount
+        INT i
+        REPEAT nEnemyCount i
             PED_INDEX ped = CREATE_PED(PED_TYPE_CRIMINAL, enemyModel, spawnPos, 0.0, FALSE, FALSE)
 
             aEnemies[i] = ped
             spawnPos.x = spawnPos.x + 0.5
-            i = i + 1
-        ENDWHILE
+        ENDREPEAT
     ENDIF
 ENDPROC
 
 PROC DELETE_ENEMIES()
-    INT i = 0
-    WHILE i < nEnemyCount
+    INT i
+    REPEAT nEnemyCount i
         IF DOES_ENTITY_EXIST(aEnemies[i])
             DELETE_PED(aEnemies[i])
         ENDIF
-        i = i + 1
-    ENDWHILE
+    ENDREPEAT
     nEnemyCount = 0
 ENDPROC
 

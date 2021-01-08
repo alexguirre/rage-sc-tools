@@ -14,8 +14,8 @@ PROC MAIN()
         VEHICLE_INDEX vehicles[256]
         INT vehCount = _GET_ALL_VEHICLES(vehicles)
 
-        INT i = 0
-        WHILE i < vehCount
+        INT i
+        REPEAT vehCount i
             VEHICLE_INDEX veh = vehicles[i]
             IF DOES_ENTITY_EXIST(veh)
                 INT r = GET_RANDOM_INT_IN_RANGE(0, 255)
@@ -23,9 +23,7 @@ PROC MAIN()
                 INT b = GET_RANDOM_INT_IN_RANGE(0, 255)
                 SET_VEHICLE_CUSTOM_PRIMARY_COLOUR(veh, r, g, b)
             ENDIF
-
-            i = i + 1
-        ENDWHILE
+        ENDREPEAT
 
         WAIT(500)
     ENDWHILE
