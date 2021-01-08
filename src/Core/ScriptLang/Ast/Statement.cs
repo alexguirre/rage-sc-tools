@@ -116,6 +116,23 @@ namespace ScTools.ScriptLang.Ast
         [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitWhileStatement(this);
     }
 
+    public sealed class RepeatStatement : Statement
+    {
+        public Expression Limit { get; }
+        public Expression Counter { get; }
+        public StatementBlock Block { get; }
+
+        public override IEnumerable<Node> Children { get { yield return Limit; yield return Counter; yield return Block; } }
+
+        public RepeatStatement(Expression limit, Expression counter, StatementBlock block, SourceRange source) : base(source)
+            => (Limit, Counter, Block) = (limit, counter, block);
+
+        public override string ToString() => $"REPEAT {Limit} {Counter}\n{Block}\nENDREPEAT";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitRepeatStatement(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitRepeatStatement(this);
+    }
+
     public sealed class SwitchStatement : Statement
     {
         public Expression Expression { get; }
