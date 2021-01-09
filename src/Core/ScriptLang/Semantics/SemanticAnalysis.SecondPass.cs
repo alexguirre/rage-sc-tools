@@ -78,44 +78,50 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitStaticVariableStatement(StaticVariableStatement node)
             {
-                var v = Symbols.Lookup(node.Variable.Declaration.Decl.Identifier) as VariableSymbol;
-                Debug.Assert(v != null);
-                Debug.Assert(v.IsStatic);
-
-                if (v.Type is RefType)
+                foreach (var decl in node.Declaration.Declarators)
                 {
-                    Diagnostics.AddError(FilePath, $"Static variables cannot be reference types", node.Source);
-                }
+                    var v = Symbols.Lookup(decl.Declarator.Identifier) as VariableSymbol;
+                    Debug.Assert(v != null);
+                    Debug.Assert(v.IsStatic);
 
-                if (node.Variable.Initializer != null)
-                {
-                    if (v.Type is BasicType { TypeCode: BasicTypeCode.String })
+                    if (v.Type is RefType)
                     {
-                        Diagnostics.AddError(FilePath, $"Static variables of type STRING cannot have an initializer", node.Variable.Initializer.Source);
+                        Diagnostics.AddError(FilePath, $"Static variables cannot be reference types", decl.Declarator.Source);
                     }
 
-                    var initializerType = TypeOf(node.Variable.Initializer);
-                    if (initializerType == null || !v.Type.IsAssignableFrom(initializerType, considerReferences: false))
+                    if (decl.Initializer != null)
                     {
-                        Diagnostics.AddError(FilePath, $"Mismatched initializer type and type of static variable '{v.Name}'", node.Variable.Initializer.Source);
+                        if (v.Type is BasicType { TypeCode: BasicTypeCode.String })
+                        {
+                            Diagnostics.AddError(FilePath, $"Static variables of type STRING cannot have an initializer", decl.Initializer.Source);
+                        }
+
+                        var initializerType = TypeOf(decl.Initializer);
+                        if (initializerType == null || !v.Type.IsAssignableFrom(initializerType, considerReferences: false))
+                        {
+                            Diagnostics.AddError(FilePath, $"Mismatched initializer type and type of static variable '{v.Name}'", decl.Initializer.Source);
+                        }
                     }
                 }
             }
 
             public override void VisitConstantVariableStatement(ConstantVariableStatement node)
             {
-                var v = Symbols.Lookup(node.Variable.Declaration.Decl.Identifier) as VariableSymbol;
-                Debug.Assert(v != null);
-                Debug.Assert(v.IsConstant);
+                //foreach (var decl in node.Declaration.Declarators)
+                //{
+                //    var v = Symbols.Lookup(decl.Declarator.Identifier) as VariableSymbol;
+                //    Debug.Assert(v != null);
+                //    Debug.Assert(v.IsConstant);
+                //}
             }
 
             public override void VisitParameterList(ParameterList node)
             {
                 foreach (var p in node.Parameters)
                 {
-                    var v = new VariableSymbol(p.Decl.Identifier,
+                    var v = new VariableSymbol(p.Declarator.Declarator.Identifier,
                                                p.Source,
-                                               TryResolveVarDecl(p),
+                                               TryResolveVarDecl(p.Type, p.Declarator.Declarator),
                                                VariableKind.LocalArgument);
                     Symbols.Add(v);
                     func?.LocalArgs.Add(v);
@@ -124,22 +130,25 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitVariableDeclarationStatement(VariableDeclarationStatement node)
             {
-                var v = new VariableSymbol(node.Variable.Declaration.Decl.Identifier,
-                                           node.Source,
-                                           TryResolveVarDecl(node.Variable.Declaration),
-                                           VariableKind.Local);
-
-                if (node.Variable.Initializer != null)
+                foreach (var decl in node.Declaration.Declarators)
                 {
-                    var initializerType = TypeOf(node.Variable.Initializer);
-                    if (initializerType == null || !v.Type.IsAssignableFrom(initializerType, considerReferences: true))
-                    {
-                        Diagnostics.AddError(FilePath, $"Mismatched initializer type and type of variable '{v.Name}'", node.Variable.Initializer.Source);
-                    }
-                }
+                    var v = new VariableSymbol(decl.Declarator.Identifier,
+                                               node.Source,
+                                               TryResolveVarDecl(node.Declaration.Type, decl.Declarator),
+                                               VariableKind.Local);
 
-                Symbols.Add(v);
-                func?.Locals.Add(v);
+                    if (decl.Initializer != null)
+                    {
+                        var initializerType = TypeOf(decl.Initializer);
+                        if (initializerType == null || !v.Type.IsAssignableFrom(initializerType, considerReferences: true))
+                        {
+                            Diagnostics.AddError(FilePath, $"Mismatched initializer type and type of variable '{v.Name}'", decl.Initializer.Source);
+                        }
+                    }
+
+                    Symbols.Add(v);
+                    func?.Locals.Add(v);
+                }
             }
 
             public override void VisitAssignmentStatement(AssignmentStatement node)

@@ -2,6 +2,7 @@
 namespace ScTools.ScriptLang
 {
     using System.Diagnostics;
+    using System.Linq;
 
     using ScTools.ScriptLang.Ast;
 
@@ -78,9 +79,38 @@ namespace ScTools.ScriptLang
 
             public override void VisitConstantVariableStatement(ConstantVariableStatement node)
             {
-                if (node.Variable.Initializer == null)
+                foreach (var d in node.Declaration.Declarators)
                 {
-                    Error($"A constant requires an initializer", node);
+                    if (d.Initializer == null)
+                    {
+                        Error($"A constant requires an initializer", node);
+                    }
+                }
+
+                DefaultVisit(node);
+            }
+
+            public override void VisitStructFieldList(StructFieldList node)
+            {
+                foreach (var d in node.Fields.SelectMany(f => f.Declarators))
+                {
+                    if (d.Initializer != null)
+                    {
+                        Error($"Struct fields cannot be initialized", d.Initializer);
+                    }
+                }
+
+                DefaultVisit(node);
+            }
+
+            public override void VisitParameterList(ParameterList node)
+            {
+                foreach (var p in node.Parameters)
+                {
+                    if (p.Declarator.Initializer != null)
+                    {
+                        Error($"Parameters cannot be initialized", p.Declarator.Initializer);
+                    }
                 }
 
                 DefaultVisit(node);

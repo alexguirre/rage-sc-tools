@@ -27,12 +27,12 @@ topLevelStatement
       structFieldList
       K_ENDSTRUCT                                               #structStatement
     
-    | K_CONST variableDeclarationWithInitializer                #constantVariableStatement
-    | variableDeclarationWithInitializer                        #staticVariableStatement
+    | K_CONST declaration                                       #constantVariableStatement
+    | declaration                                               #staticVariableStatement
     ;
 
 statement
-    : variableDeclarationWithInitializer                        #variableDeclarationStatement
+    : declaration                                               #variableDeclarationStatement
     | left=expression '=' right=expression                      #assignmentStatement // TODO: more assignment operators (+=, -=, *=, /=, ...)
     
     | K_IF condition=expression EOL
@@ -88,12 +88,28 @@ switchCase
       statementBlock                                                #defaultSwitchCase
     ;
 
-variableDeclarationWithInitializer
-    : decl=variableDeclaration ('=' initializer=expression)?
+// variableDeclarationWithInitializer
+//     : decl=variableDeclaration ('=' initializer=expression)?
+//     ;
+
+// variableDeclaration
+//     : type=identifier declarator
+//     ;
+
+declaration
+    : type=identifier initDeclaratorList
     ;
 
-variableDeclaration
-    : type=identifier declarator
+singleDeclaration
+    : type=identifier initDeclarator
+    ;
+
+initDeclaratorList
+    : initDeclarator (',' initDeclarator)*
+    ;
+
+initDeclarator
+    : declarator ('=' initializer=expression)?
     ;
 
 declarator
@@ -112,7 +128,7 @@ noRefDeclarator
     ;
 
 structFieldList
-    : (variableDeclarationWithInitializer? EOL)*
+    : (declaration? EOL)*
     ;
 
 argumentList
@@ -120,7 +136,7 @@ argumentList
     ;
 
 parameterList
-    : '(' (variableDeclaration (',' variableDeclaration)*)? ')'
+    : '(' (singleDeclaration (',' singleDeclaration)*)? ')'
     ;
 
 arrayIndexer

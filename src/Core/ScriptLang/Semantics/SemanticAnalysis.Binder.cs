@@ -28,12 +28,15 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitStaticVariableStatement(StaticVariableStatement node)
             {
-                var s = Symbols.Lookup(node.Variable.Declaration.Decl.Identifier) as VariableSymbol;
-                Debug.Assert(s != null);
-                Debug.Assert(s.IsStatic);
+                foreach (var decl in node.Declaration.Declarators)
+                {
+                    var s = Symbols.Lookup(decl.Declarator.Identifier) as VariableSymbol;
+                    Debug.Assert(s != null);
+                    Debug.Assert(s.IsStatic);
 
-                s.Initializer = Bind(node.Variable.Initializer);
-                Module.Statics.Add(s);
+                    s.Initializer = Bind(decl.Initializer);
+                    Module.Statics.Add(s);
+                }
             }
 
             public override void VisitFunctionStatement(FunctionStatement node) => VisitFunc(node.Name, node.Block);
@@ -166,35 +169,38 @@ namespace ScTools.ScriptLang.Semantics
                 ));
             }
 
-            public override void VisitVariableDeclarationStatement(VariableDeclarationStatement node) 
+            public override void VisitVariableDeclarationStatement(VariableDeclarationStatement node)
             {
-                var varSymbol = Symbols.Lookup(node.Variable.Declaration.Decl.Identifier) as VariableSymbol;
-                Debug.Assert(varSymbol != null);
-
-                varSymbol.Initializer = Bind(node.Variable.Initializer);
-
-                if (varSymbol.Type is RefType)
+                foreach (var decl in node.Declaration.Declarators)
                 {
-                    var err = false;
-                    if (varSymbol.Initializer is null)
+                    var varSymbol = Symbols.Lookup(decl.Declarator.Identifier) as VariableSymbol;
+                    Debug.Assert(varSymbol != null);
+
+                    varSymbol.Initializer = Bind(decl.Initializer);
+
+                    if (varSymbol.Type is RefType)
                     {
-                        Diagnostics.AddError(FilePath, $"Reference variable '{varSymbol.Name}' is missing an initializer", node.Source);
-                        err = true;
-                    }
-                    else if (!varSymbol.Initializer.IsAddressable)
-                    {
-                        Diagnostics.AddError(FilePath, $"Cannot take reference of expression", node.Variable.Initializer!.Source);
-                        err = true;
+                        var err = false;
+                        if (varSymbol.Initializer is null)
+                        {
+                            Diagnostics.AddError(FilePath, $"Reference variable '{varSymbol.Name}' is missing an initializer", node.Source);
+                            err = true;
+                        }
+                        else if (!varSymbol.Initializer.IsAddressable)
+                        {
+                            Diagnostics.AddError(FilePath, $"Cannot take reference of expression", decl.Initializer!.Source);
+                            err = true;
+                        }
+
+                        if (err)
+                        {
+                            stmts!.Add(new BoundInvalidStatement());
+                            return;
+                        }
                     }
 
-                    if (err)
-                    {
-                        stmts!.Add(new BoundInvalidStatement());
-                        return;
-                    }
+                    stmts!.Add(new BoundVariableDeclarationStatement(varSymbol));
                 }
-
-                stmts!.Add(new BoundVariableDeclarationStatement(varSymbol));
             }
 
             public override void VisitArgumentList(ArgumentList node) => throw new NotSupportedException();
@@ -222,8 +228,10 @@ namespace ScTools.ScriptLang.Semantics
             public override void VisitRefDeclarator(RefDeclarator node) { /* empty */ }
             public override void VisitSimpleDeclarator(SimpleDeclarator node) { /* empty */ }
             public override void VisitArrayDeclarator(ArrayDeclarator node) { /* empty */ }
-            public override void VisitVariableDeclaration(VariableDeclaration node) { /* empty */ }
-            public override void VisitVariableDeclarationWithInitializer(VariableDeclarationWithInitializer node) { /* empty */ }
+            public override void VisitInitDeclarator(InitDeclarator node) { /* empty */ }
+            public override void VisitInitDeclaratorList(InitDeclaratorList node) { /* empty */ }
+            public override void VisitDeclaration(Declaration node) { /* empty */ }
+            public override void VisitSingleDeclaration(SingleDeclaration node) { /* empty */ }
 
             public override void DefaultVisit(Node node)
             {

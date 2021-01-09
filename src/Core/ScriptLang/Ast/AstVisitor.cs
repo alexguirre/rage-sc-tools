@@ -51,8 +51,10 @@ namespace ScTools.ScriptLang.Ast
         public virtual void VisitArrayDeclarator(ArrayDeclarator node) => DefaultVisit(node);
 
         public virtual void VisitArrayIndexer(ArrayIndexer node) => DefaultVisit(node);
-        public virtual void VisitVariableDeclaration(VariableDeclaration node) => DefaultVisit(node);
-        public virtual void VisitVariableDeclarationWithInitializer(VariableDeclarationWithInitializer node) => DefaultVisit(node);
+        public virtual void VisitDeclaration(Declaration node) => DefaultVisit(node);
+        public virtual void VisitSingleDeclaration(SingleDeclaration node) => DefaultVisit(node);
+        public virtual void VisitInitDeclarator(InitDeclarator node) => DefaultVisit(node);
+        public virtual void VisitInitDeclaratorList(InitDeclaratorList node) => DefaultVisit(node);
         public virtual void VisitParameterList(ParameterList node) => DefaultVisit(node);
         public virtual void VisitArgumentList(ArgumentList node) => DefaultVisit(node);
         public virtual void VisitStructFieldList(StructFieldList node) => DefaultVisit(node);
@@ -105,8 +107,10 @@ namespace ScTools.ScriptLang.Ast
         [return: MaybeNull] public virtual TResult VisitArrayDeclarator(ArrayDeclarator node) => DefaultVisit(node);
 
         [return: MaybeNull] public virtual TResult VisitArrayIndexer(ArrayIndexer node) => DefaultVisit(node);
-        [return: MaybeNull] public virtual TResult VisitVariableDeclaration(VariableDeclaration node) => DefaultVisit(node);
-        [return: MaybeNull] public virtual TResult VisitVariableDeclarationWithInitializer(VariableDeclarationWithInitializer node) => DefaultVisit(node);
+        [return: MaybeNull] public virtual TResult VisitDeclaration(Declaration node) => DefaultVisit(node);
+        [return: MaybeNull] public virtual TResult VisitSingleDeclaration(SingleDeclaration node) => DefaultVisit(node);
+        [return: MaybeNull] public virtual TResult VisitInitDeclarator(InitDeclarator node) => DefaultVisit(node);
+        [return: MaybeNull] public virtual TResult VisitInitDeclaratorList(InitDeclaratorList node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitParameterList(ParameterList node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitArgumentList(ArgumentList node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitStructFieldList(StructFieldList node) => DefaultVisit(node);

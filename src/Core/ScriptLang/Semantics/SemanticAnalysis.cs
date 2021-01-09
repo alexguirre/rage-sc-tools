@@ -40,10 +40,10 @@ namespace ScTools.ScriptLang.Semantics
 
             protected virtual void OnEnd() { }
 
-            protected Type TryResolveVarDecl(VariableDeclaration varDecl)
+            protected Type TryResolveVarDecl(string type, Declarator varDecl)
             {
                 bool unresolved = false;
-                return Resolve(TypeFromAst(varDecl.Type, varDecl.Decl), varDecl.Source, ref unresolved);
+                return Resolve(TypeFromAst(type, varDecl), varDecl.Source, ref unresolved);
             }
 
             protected Type TypeFromAst(string type, Declarator? decl)

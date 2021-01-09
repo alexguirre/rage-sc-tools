@@ -43,14 +43,14 @@ namespace ScTools.ScriptLang.Ast
 
     public sealed class VariableDeclarationStatement : Statement
     {
-        public VariableDeclarationWithInitializer Variable { get; }
+        public Declaration Declaration { get; }
 
-        public override IEnumerable<Node> Children { get { yield return Variable; } }
+        public override IEnumerable<Node> Children { get { yield return Declaration; } }
 
-        public VariableDeclarationStatement(VariableDeclarationWithInitializer variable, SourceRange source) : base(source)
-            => Variable = variable;
+        public VariableDeclarationStatement(Declaration declaration, SourceRange source) : base(source)
+            => Declaration = declaration;
 
-        public override string ToString() => $"{Variable}";
+        public override string ToString() => $"{Declaration}";
 
         public override void Accept(AstVisitor visitor) => visitor.VisitVariableDeclarationStatement(this);
         [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitVariableDeclarationStatement(this);

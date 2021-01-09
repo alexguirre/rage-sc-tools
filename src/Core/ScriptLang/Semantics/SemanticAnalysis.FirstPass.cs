@@ -134,10 +134,10 @@ namespace ScTools.ScriptLang.Semantics
                 return !anyUnresolved;
             }
 
-            private FunctionType CreateUnresolvedFunctionType(string? returnType, IEnumerable<VariableDeclaration> parameters)
+            private FunctionType CreateUnresolvedFunctionType(string? returnType, IEnumerable<SingleDeclaration> parameters)
             {
                 var r = returnType != null ? TypeFromAst(returnType, null) : null;
-                return new FunctionType(r, parameters.Select(p => (TypeFromAst(p.Type, p.Decl), (string?)p.Decl.Identifier)));
+                return new FunctionType(r, parameters.Select(p => (TypeFromAst(p.Type, p.Declarator.Declarator), (string?)p.Declarator.Declarator.Identifier)));
             }
 
             public override void VisitFunctionStatement(FunctionStatement node)
@@ -178,30 +178,36 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitStaticVariableStatement(StaticVariableStatement node)
             {
-                Symbols.Add(new VariableSymbol(node.Variable.Declaration.Decl.Identifier,
-                                               node.Source,
-                                               TypeFromAst(node.Variable.Declaration.Type, node.Variable.Declaration.Decl),
-                                               VariableKind.Static));
+                foreach (var decl in node.Declaration.Declarators)
+                {
+                    Symbols.Add(new VariableSymbol(decl.Declarator.Identifier,
+                                                   decl.Source,
+                                                   TypeFromAst(node.Declaration.Type, decl.Declarator),
+                                                   VariableKind.Static));
+                }
             }
 
             public override void VisitConstantVariableStatement(ConstantVariableStatement node)
             {
-                bool unresolved = false;
-                var ty = Resolve(TypeFromAst(node.Variable.Declaration.Type, node.Variable.Declaration.Decl), node.Source, ref unresolved);
-                var error = unresolved || ty is not BasicType;
-                if (error)
+                foreach (var decl in node.Declaration.Declarators)
                 {
-                    Diagnostics.AddError(FilePath, $"The type '{ty}' cannot be CONST. Only INT, FLOAT, BOOL or STRING can be CONST.", node.Source);
-                }
+                    bool unresolved = false;
+                    var ty = Resolve(TypeFromAst(node.Declaration.Type, decl.Declarator), node.Source, ref unresolved);
+                    var error = unresolved || ty is not BasicType;
+                    if (error)
+                    {
+                        Diagnostics.AddError(FilePath, $"The type '{ty}' cannot be CONST. Only INT, FLOAT, BOOL or STRING can be CONST.", node.Source);
+                    }
 
-                var v = new VariableSymbol(node.Variable.Declaration.Decl.Identifier,
-                                           node.Source,
-                                           ty,
-                                           VariableKind.Constant);
-                Symbols.Add(v);
-                if (node.Variable.Initializer != null && !error)
-                {
-                    constantsToResolve.Enqueue((v, node.Variable.Initializer, int.MaxValue));
+                    var v = new VariableSymbol(decl.Declarator.Identifier,
+                                               node.Source,
+                                               ty,
+                                               VariableKind.Constant);
+                    Symbols.Add(v);
+                    if (decl.Initializer != null && !error)
+                    {
+                        constantsToResolve.Enqueue((v, decl.Initializer, int.MaxValue));
+                    }
                 }
             }
 
@@ -209,16 +215,9 @@ namespace ScTools.ScriptLang.Semantics
             {
                 var struc = new StructType(
                     node.Name,
-                    node.FieldList.Fields.Select(f =>
-                    {
-                        //if (f.Declaration.Type.IsReference)
-                        //{
-                        //    Diagnostics.AddError(FilePath, $"Struct fields cannot be reference types", f.Declaration.Source);
-                        //}
-
-                        return new Field(TypeFromAst(f.Declaration.Type, f.Declaration.Decl), f.Declaration.Decl.Identifier);
-                    }
-                ));
+                    node.FieldList.Fields.SelectMany(f => 
+                        f.Declarators.Select(decl =>
+                            new Field(TypeFromAst(f.Type, decl.Declarator), decl.Declarator.Identifier))));
 
                 Symbols.Add(new TypeSymbol(node.Name, node.Source, struc));
             }

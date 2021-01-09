@@ -157,14 +157,14 @@ namespace ScTools.ScriptLang.Ast
 
     public sealed class StaticVariableStatement : TopLevelStatement
     {
-        public VariableDeclarationWithInitializer Variable { get; }
+        public Declaration Declaration { get; }
 
-        public override IEnumerable<Node> Children { get { yield return Variable; } }
+        public override IEnumerable<Node> Children { get { yield return Declaration; } }
 
-        public StaticVariableStatement(VariableDeclarationWithInitializer variable, SourceRange source) : base(source)
-            => Variable = variable;
+        public StaticVariableStatement(Declaration declaration, SourceRange source) : base(source)
+            => Declaration = declaration;
 
-        public override string ToString() => $"{Variable}";
+        public override string ToString() => $"{Declaration}";
 
         public override void Accept(AstVisitor visitor) => visitor.VisitStaticVariableStatement(this);
         [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitStaticVariableStatement(this);
@@ -172,14 +172,14 @@ namespace ScTools.ScriptLang.Ast
 
     public sealed class ConstantVariableStatement : TopLevelStatement
     {
-        public VariableDeclarationWithInitializer Variable { get; }
+        public Declaration Declaration { get; }
 
-        public override IEnumerable<Node> Children { get { yield return Variable; } }
+        public override IEnumerable<Node> Children { get { yield return Declaration; } }
 
-        public ConstantVariableStatement(VariableDeclarationWithInitializer variable, SourceRange source) : base(source)
-            => Variable = variable;
+        public ConstantVariableStatement(Declaration declaration, SourceRange source) : base(source)
+            => Declaration = declaration;
 
-        public override string ToString() => $"CONST {Variable}";
+        public override string ToString() => $"CONST {Declaration}";
 
         public override void Accept(AstVisitor visitor) => visitor.VisitConstantVariableStatement(this);
         [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitConstantVariableStatement(this);

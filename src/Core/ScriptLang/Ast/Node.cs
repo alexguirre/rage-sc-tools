@@ -1,6 +1,7 @@
 ﻿#nullable enable
 namespace ScTools.ScriptLang.Ast
 {
+    using System.Collections;
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Diagnostics.CodeAnalysis;
@@ -32,32 +33,48 @@ namespace ScTools.ScriptLang.Ast
         [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitArrayIndexer(this);
     }
 
-    public sealed class VariableDeclaration : Node
+    public sealed class Declaration : Node
     {
         public string Type { get; }
-        public Declarator Decl { get; }
+        public InitDeclaratorList Declarators { get; }
 
-        public override IEnumerable<Node> Children { get { yield return Decl; } }
+        public override IEnumerable<Node> Children { get { yield return Declarators; } }
 
-        public VariableDeclaration(string type, Declarator decl, SourceRange source) : base(source)
-            => (Type, Decl) = (type, decl);
+        public Declaration(string type, InitDeclaratorList declarators, SourceRange source) : base(source)
+            => (Type, Declarators) = (type, declarators);
 
-        public override string ToString() => $"{Type} {Decl}";
+        public override string ToString() => $"{Type} {Declarators}";
 
-        public override void Accept(AstVisitor visitor) => visitor.VisitVariableDeclaration(this);
-        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitVariableDeclaration(this);
+        public override void Accept(AstVisitor visitor) => visitor.VisitDeclaration(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitDeclaration(this);
     }
 
-    public sealed class VariableDeclarationWithInitializer : Node
+    public sealed class SingleDeclaration : Node
     {
-        public VariableDeclaration Declaration { get; }
+        public string Type { get; }
+        public InitDeclarator Declarator { get; }
+
+        public override IEnumerable<Node> Children { get { yield return Declarator; } }
+
+        public SingleDeclaration(string type, InitDeclarator declarator, SourceRange source) : base(source)
+            => (Type, Declarator) = (type, declarator);
+
+        public override string ToString() => $"{Type} {Declarator}";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitSingleDeclaration(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitSingleDeclaration(this);
+    }
+
+    public sealed class InitDeclarator : Node
+    {
+        public Declarator Declarator { get; }
         public Expression? Initializer { get; }
 
         public override IEnumerable<Node> Children
         {
             get
             {
-                yield return Declaration;
+                yield return Declarator;
                 if (Initializer != null)
                 {
                     yield return Initializer;
@@ -65,22 +82,40 @@ namespace ScTools.ScriptLang.Ast
             }
         }
 
-        public VariableDeclarationWithInitializer(VariableDeclaration declaration, Expression? initializer, SourceRange source) : base(source)
-            => (Declaration, Initializer) = (declaration, initializer);
+        public InitDeclarator(Declarator declarator, Expression? initializer, SourceRange source) : base(source)
+            => (Declarator, Initializer) = (declarator, initializer);
 
-        public override string ToString() => Declaration.ToString() + (Initializer != null ? $" = {Initializer}" : "");
+        public override string ToString() => Initializer == null ? $"{Declarator}" : $"{Declarator} = {Initializer}";
 
-        public override void Accept(AstVisitor visitor) => visitor.VisitVariableDeclarationWithInitializer(this);
-        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitVariableDeclarationWithInitializer(this);
+        public override void Accept(AstVisitor visitor) => visitor.VisitInitDeclarator(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitInitDeclarator(this);
+    }
+
+    public sealed class InitDeclaratorList : Node, IEnumerable<InitDeclarator>
+    {
+        public ImmutableArray<InitDeclarator> Declarators { get; }
+
+        public override IEnumerable<Node> Children => Declarators;
+
+        public InitDeclaratorList(IEnumerable<InitDeclarator> declarators, SourceRange source) : base(source)
+            => Declarators = declarators.ToImmutableArray();
+
+        public override string ToString() => string.Join(", ", Declarators);
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitInitDeclaratorList(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitInitDeclaratorList(this);
+
+        public IEnumerator<InitDeclarator> GetEnumerator() => ((IEnumerable<InitDeclarator>)Declarators).GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)Declarators).GetEnumerator();
     }
 
     public sealed class ParameterList : Node
     {
-        public ImmutableArray<VariableDeclaration> Parameters { get; }
+        public ImmutableArray<SingleDeclaration> Parameters { get; }
 
         public override IEnumerable<Node> Children => Parameters;
 
-        public ParameterList(IEnumerable<VariableDeclaration> parameters, SourceRange source) : base(source)
+        public ParameterList(IEnumerable<SingleDeclaration> parameters, SourceRange source) : base(source)
             => Parameters = parameters.ToImmutableArray();
 
         public override string ToString() => $"({string.Join(", ", Parameters)})";
@@ -106,11 +141,11 @@ namespace ScTools.ScriptLang.Ast
 
     public sealed class StructFieldList : Node
     {
-        public ImmutableArray<VariableDeclarationWithInitializer> Fields { get; }
+        public ImmutableArray<Declaration> Fields { get; }
 
         public override IEnumerable<Node> Children => Fields;
 
-        public StructFieldList(IEnumerable<VariableDeclarationWithInitializer> fields, SourceRange source) : base(source)
+        public StructFieldList(IEnumerable<Declaration> fields, SourceRange source) : base(source)
             => Fields = fields.ToImmutableArray();
 
         public override string ToString() => $"{string.Join('\n', Fields)}";
