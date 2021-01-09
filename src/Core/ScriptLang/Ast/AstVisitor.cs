@@ -29,6 +29,7 @@ namespace ScTools.ScriptLang.Ast
         public virtual void VisitAssignmentStatement(AssignmentStatement node) => DefaultVisit(node);
         public virtual void VisitIfStatement(IfStatement node) => DefaultVisit(node);
         public virtual void VisitWhileStatement(WhileStatement node) => DefaultVisit(node);
+        public virtual void VisitRepeatStatement(RepeatStatement node) => DefaultVisit(node);
         public virtual void VisitSwitchStatement(SwitchStatement node) => DefaultVisit(node);
         public virtual void VisitValueSwitchCase(ValueSwitchCase node) => DefaultVisit(node);
         public virtual void VisitDefaultSwitchCase(DefaultSwitchCase node) => DefaultVisit(node);
@@ -82,6 +83,7 @@ namespace ScTools.ScriptLang.Ast
         [return: MaybeNull] public virtual TResult VisitAssignmentStatement(AssignmentStatement node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitIfStatement(IfStatement node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitWhileStatement(WhileStatement node) => DefaultVisit(node);
+        [return: MaybeNull] public virtual TResult VisitRepeatStatement(RepeatStatement node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitSwitchStatement(SwitchStatement node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitValueSwitchCase(ValueSwitchCase node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitDefaultSwitchCase(DefaultSwitchCase node) => DefaultVisit(node);

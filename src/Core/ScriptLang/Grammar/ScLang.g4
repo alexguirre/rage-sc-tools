@@ -45,6 +45,10 @@ statement
       statementBlock
       K_ENDWHILE                                                #whileStatement
     
+    | K_REPEAT limit=expression counter=expression EOL
+      statementBlock
+      K_ENDREPEAT                                               #repeatStatement
+    
     | K_SWITCH expression EOL
       switchCase*
       K_ENDSWITCH                                               #switchStatement
@@ -164,6 +168,8 @@ K_ELSE : E L S E;
 K_ENDIF : E N D I F;
 K_WHILE : W H I L E;
 K_ENDWHILE : E N D W H I L E;
+K_REPEAT : R E P E A T;
+K_ENDREPEAT : E N D R E P E A T;
 K_SWITCH : S W I T C H;
 K_ENDSWITCH : E N D S W I T C H;
 K_CASE : C A S E;

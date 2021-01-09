@@ -161,7 +161,7 @@ namespace ScTools.ScriptLang.Semantics
             public override void VisitIfStatement(IfStatement node)
             {
                 var conditionType = TypeOf(node.Condition);
-                if (!(conditionType is BasicType { TypeCode: BasicTypeCode.Bool }))
+                if (conditionType?.UnderlyingType is not BasicType { TypeCode: BasicTypeCode.Bool })
                 {
                     Diagnostics.AddError(FilePath, $"IF statement condition requires BOOL type", node.Condition.Source);
                 }
@@ -181,9 +181,28 @@ namespace ScTools.ScriptLang.Semantics
             public override void VisitWhileStatement(WhileStatement node)
             {
                 var conditionType = TypeOf(node.Condition);
-                if (!(conditionType is BasicType { TypeCode: BasicTypeCode.Bool }))
+                if (conditionType?.UnderlyingType is not BasicType { TypeCode: BasicTypeCode.Bool })
                 {
                     Diagnostics.AddError(FilePath, $"WHILE statement condition requires BOOL type", node.Condition.Source);
+                }
+
+                Symbols = Symbols.EnterScope(node.Block);
+                node.Block.Accept(this);
+                Symbols = Symbols.ExitScope();
+            }
+
+            public override void VisitRepeatStatement(RepeatStatement node)
+            {
+                var limitType = TypeOf(node.Limit);
+                if (limitType?.UnderlyingType is not BasicType { TypeCode: BasicTypeCode.Int })
+                {
+                    Diagnostics.AddError(FilePath, $"REPEAT statement limit requires INT type", node.Limit.Source);
+                }
+
+                var counterType = TypeOf(node.Counter);
+                if (counterType?.UnderlyingType is not BasicType { TypeCode: BasicTypeCode.Int })
+                {
+                    Diagnostics.AddError(FilePath, $"REPEAT statement counter requires INT type", node.Counter.Source);
                 }
 
                 Symbols = Symbols.EnterScope(node.Block);
@@ -194,7 +213,7 @@ namespace ScTools.ScriptLang.Semantics
             public override void VisitSwitchStatement(SwitchStatement node)
             {
                 var exprType = TypeOf(node.Expression);
-                if (exprType is not BasicType { TypeCode: BasicTypeCode.Int })
+                if (exprType?.UnderlyingType is not BasicType { TypeCode: BasicTypeCode.Int })
                 {
                     Diagnostics.AddError(FilePath, $"SWITCH statement value requires INT type", node.Expression.Source);
                 }
