@@ -166,16 +166,16 @@
         {
             var module = Util.ParseAndAnalyze($@"
                 PROC MAIN()
-                    VEC3 a = <<1.0, 2.0, 3.0>>
+                    VECTOR a = <<1.0, 2.0, 3.0>>
                     DO_SOMETHING(a)
 
-                    VEC3& b = a
+                    VECTOR& b = a
                     DO_SOMETHING(b)
                     b.y = 5.0
                     b.z = 6.0
                 ENDPROC
 
-                PROC DO_SOMETHING(VEC3& b)
+                PROC DO_SOMETHING(VECTOR& b)
                     b.x = 4.0
                 ENDPROC
             ");
@@ -216,9 +216,9 @@
         {
             var module = Util.ParseAndAnalyze($@"
                 PROC MAIN()
-                    VEC3 a = <<1.0, 2.0, 3.0>>
-                    VEC3& b = a
-                    VEC3 c = <<4.0, 5.0, 6.0>>
+                    VECTOR a = <<1.0, 2.0, 3.0>>
+                    VECTOR& b = a
+                    VECTOR c = <<4.0, 5.0, 6.0>>
                     b = c
                     b = <<7.0, 8.0, 9.0>>
                 ENDPROC

@@ -1,4 +1,4 @@
-NATIVE FUNC PED_INDEX CREATE_PED(INT pedType, INT modelHash, VEC3 position, FLOAT heading, BOOL isNetwork, BOOL netMissionEntity)
+NATIVE FUNC PED_INDEX CREATE_PED(INT pedType, INT modelHash, VECTOR position, FLOAT heading, BOOL isNetwork, BOOL netMissionEntity)
 NATIVE PROC DELETE_PED(PED_INDEX& ped)
 
 CONST INT PED_TYPE_PLAYER_0 = 0

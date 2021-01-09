@@ -131,7 +131,7 @@
         {
             var module = Util.ParseAndAnalyze($@"
                 PROC MAIN()
-                    VEC3 a[3]
+                    VECTOR a[3]
                     a[0] = <<1.0, 2.0, 3.0>>
                     a[1] = <<4.0, 5.0, 6.0>>
                     a[2] = <<7.0, 8.0, 9.0>>

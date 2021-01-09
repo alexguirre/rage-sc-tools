@@ -183,7 +183,7 @@ namespace ScTools.ScriptLang.Semantics
             static Field F(Type ty, string name) => new Field(ty, name);
             var structTypes = new[]
             {
-                new StructType("VEC3", F(flTy, "x"), F(flTy, "y"), F(flTy, "z")),
+                new StructType("VECTOR", F(flTy, "x"), F(flTy, "y"), F(flTy, "z")),
                 new StructType("PLAYER_INDEX", F(intTy, "value")),
                 new StructType("ENTITY_INDEX", F(intTy, "value")),
                 new StructType("PED_INDEX", F(intTy, "value")),

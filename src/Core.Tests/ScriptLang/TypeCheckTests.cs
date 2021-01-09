@@ -13,8 +13,8 @@
         [InlineData("INT v = TRUE")]
         [InlineData("FLOAT v = 2")]
         [InlineData("INT v = <<1, 2, 3>>")]
-        [InlineData("VEC3 v = 4.0")]
-        [InlineData("VEC3 v = <<1.0, 2.0>>")]
+        [InlineData("VECTOR v = 4.0")]
+        [InlineData("VECTOR v = <<1.0, 2.0>>")]
         public void TestStaticInitializersIncorrectTypes(string staticDecl)
         {
             var module = Util.ParseAndAnalyze($@"
@@ -34,7 +34,7 @@
         [InlineData("INT v = 3")]
         [InlineData("FLOAT v = 1.0")]
         [InlineData("FLOAT v = 2.0 + 3.0")]
-        [InlineData("VEC3 v = <<1.0, 2.0, 3.0>>")]
+        [InlineData("VECTOR v = <<1.0, 2.0, 3.0>>")]
         public void TestStaticInitializersCorrectTypes(string staticDecl)
         {
             var module = Util.ParseAndAnalyze($@"

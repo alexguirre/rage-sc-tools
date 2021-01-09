@@ -54,7 +54,7 @@ PROC SPAWN_ENEMIES()
     INT enemyModel = GET_ENEMY_MODEL()
     IF IS_MODEL_AVAILABLE(enemyModel)
         nEnemyCount = GET_RANDOM_INT_IN_RANGE(1, MAX_ENEMIES + 1)
-        VEC3 spawnPos = <<0.0, 0.0, 70.0>>
+        VECTOR spawnPos = <<0.0, 0.0, 70.0>>
         INT i
         REPEAT nEnemyCount i
             PED_INDEX ped = CREATE_PED(PED_TYPE_CRIMINAL, enemyModel, spawnPos, 0.0, FALSE, FALSE)
