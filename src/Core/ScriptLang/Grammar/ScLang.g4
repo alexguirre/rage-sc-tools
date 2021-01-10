@@ -88,14 +88,6 @@ switchCase
       statementBlock                                                #defaultSwitchCase
     ;
 
-// variableDeclarationWithInitializer
-//     : decl=variableDeclaration ('=' initializer=expression)?
-//     ;
-
-// variableDeclaration
-//     : type=identifier declarator
-//     ;
-
 declaration
     : type=identifier initDeclaratorList
     ;
