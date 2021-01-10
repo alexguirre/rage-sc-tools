@@ -54,10 +54,17 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitAssignmentStatement(AssignmentStatement node)
             {
-                stmts!.Add(new BoundAssignmentStatement(
-                    Bind(node.Left)!,
-                    Bind(node.Right)!
-                ));
+                var left = Bind(node.Left)!;
+                var right = Bind(node.Right)!;
+
+                if (node.Op != null)
+                {
+                    // transform 'left op= right' to 'left = left op right'
+                    // TODO: this may cause 'left' to be evaluated twice (e.g. function call that returns a reference)
+                    right = new BoundBinaryExpression(left, right, node.Op.Value);
+                }
+
+                stmts!.Add(new BoundAssignmentStatement(left, right));
             }
 
             public override void VisitIfStatement(IfStatement node)

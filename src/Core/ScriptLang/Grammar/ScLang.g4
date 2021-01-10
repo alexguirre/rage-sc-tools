@@ -33,8 +33,8 @@ topLevelStatement
 
 statement
     : declaration                                               #variableDeclarationStatement
-    | left=expression '=' right=expression                      #assignmentStatement // TODO: more assignment operators (+=, -=, *=, /=, ...)
-    
+    | left=expression op=('=' | '*=' | '/=' | '%=' | '+=' | '-=' | '&=' | '^=' | '|=') right=expression   #assignmentStatement
+
     | K_IF condition=expression EOL
       thenBlock=statementBlock
       (K_ELSE EOL
@@ -201,6 +201,15 @@ OP_GREATER: '>';
 OP_GREATER_OR_EQUAL: '>=';
 OP_LESS: '<';
 OP_LESS_OR_EQUAL: '<=';
+OP_ASSIGN: '=';
+OP_ASSIGN_ADD: '+=';
+OP_ASSIGN_SUBTRACT: '-=';
+OP_ASSIGN_MULTIPLY: '*=';
+OP_ASSIGN_DIVIDE: '/=';
+OP_ASSIGN_MODULO: '%=';
+OP_ASSIGN_OR: '|=';
+OP_ASSIGN_AND: '&=';
+OP_ASSIGN_XOR: '^=';
 
 IDENTIFIER
     :   [a-zA-Z_] [a-zA-Z_0-9]*

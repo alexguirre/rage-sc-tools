@@ -80,7 +80,20 @@ namespace ScTools.ScriptLang.Ast
                                                 Source(context));
 
         public override Node VisitAssignmentStatement([NotNull] ScLangParser.AssignmentStatementContext context)
-            => new AssignmentStatement((Expression)Visit(context.left),
+            => new AssignmentStatement(context.op.Type switch
+                                      {
+                                          ScLangLexer.OP_ASSIGN => null,
+                                          ScLangLexer.OP_ASSIGN_ADD => BinaryOperator.Add,
+                                          ScLangLexer.OP_ASSIGN_SUBTRACT => BinaryOperator.Subtract,
+                                          ScLangLexer.OP_ASSIGN_MULTIPLY => BinaryOperator.Multiply,
+                                          ScLangLexer.OP_ASSIGN_DIVIDE => BinaryOperator.Divide,
+                                          ScLangLexer.OP_ASSIGN_MODULO => BinaryOperator.Modulo,
+                                          ScLangLexer.OP_ASSIGN_OR => BinaryOperator.Or,
+                                          ScLangLexer.OP_ASSIGN_AND => BinaryOperator.And,
+                                          ScLangLexer.OP_ASSIGN_XOR => BinaryOperator.Xor,
+                                          _ => throw new NotImplementedException()
+                                       },
+                                       (Expression)Visit(context.left),
                                        (Expression)Visit(context.right),
                                        Source(context));
 

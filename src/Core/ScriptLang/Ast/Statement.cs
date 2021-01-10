@@ -58,15 +58,19 @@ namespace ScTools.ScriptLang.Ast
 
     public sealed class AssignmentStatement : Statement
     {
+        /// <summary>
+        /// Operator used in case of compound assignment; otherwise, <c>null</c>.
+        /// </summary>
+        public BinaryOperator? Op { get; }
         public Expression Left { get; }
         public Expression Right { get; }
 
         public override IEnumerable<Node> Children { get { yield return Left; yield return Right; } }
 
-        public AssignmentStatement(Expression left, Expression right, SourceRange source) : base(source)
-            => (Left, Right) = (left, right);
+        public AssignmentStatement(BinaryOperator? op, Expression left, Expression right, SourceRange source) : base(source)
+            => (Op, Left, Right) = (op, left, right);
 
-        public override string ToString() => $"{Left} = {Right}";
+        public override string ToString() => $"{Left} {(Op == null ? "" : BinaryExpression.OpToString(Op.Value))}= {Right}";
 
         public override void Accept(AstVisitor visitor) => visitor.VisitAssignmentStatement(this);
         [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitAssignmentStatement(this);
