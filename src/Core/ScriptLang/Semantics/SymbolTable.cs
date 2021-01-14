@@ -97,7 +97,12 @@ namespace ScTools.ScriptLang.Semantics
             IEnumerable<ISymbol> availableSymbols = symbols;
             if (IsGlobal)
             {
-                availableSymbols = availableSymbols.Concat(BuiltIns).Concat(imports.SelectMany(i => i.symbols));
+                if (BuiltIns.TryGetValue(name, out var symbol))
+                {
+                    return symbol;
+                }
+
+                availableSymbols = availableSymbols.Concat(imports.SelectMany(i => i.symbols));
             }
 
             foreach (var symbol in availableSymbols)
@@ -165,19 +170,20 @@ namespace ScTools.ScriptLang.Semantics
             return Parent;
         }
 
-        public static readonly ImmutableArray<ISymbol> BuiltIns = CreateBuiltIns();
+        public static readonly ImmutableDictionary<string, ISymbol> BuiltIns = CreateBuiltIns();
 
-        private static ImmutableArray<ISymbol> CreateBuiltIns()
+        private static ImmutableDictionary<string, ISymbol> CreateBuiltIns()
         {
-            var arr = ImmutableArray.CreateBuilder<ISymbol>();
+            var dict = ImmutableDictionary.CreateBuilder<string, ISymbol>();
+            void Add(ISymbol symbol) => dict.Add(symbol.Name, symbol);
 
             // basic types
             var flTy = new BasicType(BasicTypeCode.Float);
             var intTy = new BasicType(BasicTypeCode.Int);
-            arr.Add(new TypeSymbol("INT", SourceRange.Unknown, intTy));
-            arr.Add(new TypeSymbol("FLOAT", SourceRange.Unknown, flTy));
-            arr.Add(new TypeSymbol("BOOL", SourceRange.Unknown, new BasicType(BasicTypeCode.Bool)));
-            arr.Add(new TypeSymbol("STRING", SourceRange.Unknown, new BasicType(BasicTypeCode.String)));
+            Add(new TypeSymbol("INT", SourceRange.Unknown, intTy));
+            Add(new TypeSymbol("FLOAT", SourceRange.Unknown, flTy));
+            Add(new TypeSymbol("BOOL", SourceRange.Unknown, new BasicType(BasicTypeCode.Bool)));
+            Add(new TypeSymbol("STRING", SourceRange.Unknown, new BasicType(BasicTypeCode.String)));
 
             // struct types
             static Field F(Type ty, string name) => new Field(ty, name);
@@ -194,11 +200,21 @@ namespace ScTools.ScriptLang.Semantics
 
             foreach (var structTy in structTypes)
             {
-                arr.Add(new TypeSymbol(structTy.Name!, SourceRange.Unknown, structTy));
+                Add(new TypeSymbol(structTy.Name!, SourceRange.Unknown, structTy));
             }
 
-            arr.Capacity = arr.Count;
-            return arr.MoveToImmutable();
+            for (int len = TextLabelType.MinLength; len <= TextLabelType.MaxLength; len++)
+            {
+                var textLabelTy = new TextLabelType(len);
+                Add(new TypeSymbol(textLabelTy.ToString(), SourceRange.Unknown, textLabelTy));
+            }
+
+            Add(IntrinsicFunctionSymbol.AssignString);
+            Add(IntrinsicFunctionSymbol.AssignInt);
+            Add(IntrinsicFunctionSymbol.AppendString);
+            Add(IntrinsicFunctionSymbol.AppendInt);
+
+            return dict.ToImmutable();
         }
     }
 

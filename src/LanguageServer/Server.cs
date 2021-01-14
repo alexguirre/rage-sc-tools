@@ -189,7 +189,7 @@
             static IEnumerable<ISymbol> AllSymbols(SymbolTable table)
                 => table.Parent != null ?
                         AllSymbols(table.Parent).Concat(table.Symbols) :
-                        table.Symbols.Concat(table.Imports.SelectMany(i => i.Symbols)).Concat(SymbolTable.BuiltIns);
+                        table.Symbols.Concat(table.Imports.SelectMany(i => i.Symbols)).Concat(SymbolTable.BuiltIns.Values);
 
             return AllSymbols(scope).Select(s => new CompletionItem
             {

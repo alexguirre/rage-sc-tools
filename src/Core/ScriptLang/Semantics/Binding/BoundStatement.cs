@@ -297,6 +297,21 @@ namespace ScTools.ScriptLang.Semantics.Binding
         }
     }
 
+    public sealed class BoundIntrinsicStatement : BoundStatement
+    {   
+        public IntrinsicFunctionSymbol Intrinsic { get; }
+        public ImmutableArray<BoundExpression> Arguments { get; }
+
+        public BoundIntrinsicStatement(IntrinsicFunctionSymbol intrinsic, IEnumerable<BoundExpression> arguments)
+        {
+            Intrinsic = intrinsic;
+            Arguments = arguments.ToImmutableArray();
+        }
+
+        public override void Emit(ByteCodeBuilder code, BoundFunction parent)
+            => Intrinsic.Emit(code, Arguments);
+    }
+
     public sealed class BoundReturnStatement : BoundStatement
     {
         public BoundExpression? Expression { get; }
