@@ -41,10 +41,10 @@ namespace ScTools.ScriptLang.Semantics.Symbols
                     case 0 when ty?.UnderlyingType is not TextLabelType:
                         diagnostics.AddError(filePath, $"Mismatched type of argument #{n}, expected TEXT_LABEL", source);
                         break;
-                    case 1 when argIsString && ty?.UnderlyingType is not BasicType { TypeCode: BasicTypeCode.String }:
+                    case 1 when argIsString && (ty == null || !new BasicType(BasicTypeCode.String).IsAssignableFrom(ty, true)):
                         diagnostics.AddError(filePath, $"Mismatched type of argument #{n}, expected STRING", source);
                         break;
-                    case 1 when !argIsString && ty?.UnderlyingType is not BasicType { TypeCode: BasicTypeCode.Int }:
+                    case 1 when !argIsString && (ty == null || !new BasicType(BasicTypeCode.Int).IsAssignableFrom(ty, true)):
                         diagnostics.AddError(filePath, $"Mismatched type of argument #{n}, expected INT", source);
                         break;
                 }
@@ -64,7 +64,14 @@ namespace ScTools.ScriptLang.Semantics.Symbols
 
             var textLabelTy = (TextLabelType)args[0].Type!.UnderlyingType;
 
-            args[1].EmitLoad(code); // src string/int
+            if (args[1].Type?.UnderlyingType is TextLabelType)
+            {
+                args[1].EmitAddr(code); // src text label, convert to string
+            }
+            else
+            {
+                args[1].EmitLoad(code); // src string/int
+            }
             args[0].EmitAddr(code); // dest text label
             code.Emit(opcode, new[] { new Operand(unchecked((uint)textLabelTy.Length)) });
         }

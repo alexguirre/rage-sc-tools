@@ -1,5 +1,7 @@
 ﻿namespace ScTools.Tests.ScriptLang
 {
+    using System.Collections.Generic;
+
     using Xunit;
 
     public class TextLabelTests
@@ -31,8 +33,6 @@
             ");
 
             Assert.False(c.GetAllDiagnostics().HasErrors);
-            var s = Util.Dump(c.CompiledScript);
-            ;
         }
 
         [Fact]
@@ -61,7 +61,96 @@
                     ASSIGN_STRING(a, 'hello world')
                     ASSIGN_STRING(b, 'other string')
                     c = a
-                    //APPEND_STRING(c, b)
+                    APPEND_STRING(c, b)
+                ENDPROC
+            ");
+
+            Assert.False(c.GetAllDiagnostics().HasErrors);
+        }
+
+        [Fact]
+        public void TestConversionToStringInAssignment()
+        {
+            var c = Util.Compile($@"
+                PROC MAIN()
+                    TEXT_LABEL64 a
+                    ASSIGN_STRING(a, 'hello world')
+
+                    STRING s1 = a
+                    s1 = a
+                ENDPROC
+            ");
+
+            Assert.False(c.GetAllDiagnostics().HasErrors);
+        }
+
+        [Fact]
+        public void TestConversionToStringInRefAssignment()
+        {
+            var c = Util.Compile($@"
+                PROC MAIN()
+                    TEXT_LABEL64 a
+                    ASSIGN_STRING(a, 'hello world')
+
+                    STRING s1
+                    STRING& s1Ref = s1
+                    s1Ref = a
+                ENDPROC
+            ");
+
+            Assert.False(c.GetAllDiagnostics().HasErrors);
+        }
+
+        [Fact]
+        public void TestConversionToStringInInvocation()
+        {
+            var c = Util.Compile($@"
+                PROC MAIN()
+                    TEXT_LABEL64 a
+                    ASSIGN_STRING(a, 'hello world')
+
+                    SOMETHING(a)
+                    INT n = SOMETHING_ELSE(a)
+                ENDPROC
+
+                PROC SOMETHING(STRING str)
+                ENDPROC
+
+                FUNC INT SOMETHING_ELSE(STRING str)
+                    RETURN 1
+                ENDFUNC
+            ");
+
+            Assert.False(c.GetAllDiagnostics().HasErrors);
+        }
+
+        [Fact]
+        public void TestConversionToStringInReturn()
+        {
+            var c = Util.Compile($@"
+                PROC MAIN()
+                    STRING s = GET_STRING()
+                ENDPROC
+
+                TEXT_LABEL64 a
+                FUNC STRING GET_STRING()
+                    ASSIGN_STRING(a, 'hello world')
+                    RETURN a
+                ENDFUNC
+            ");
+
+            Assert.False(c.GetAllDiagnostics().HasErrors);
+        }
+
+        [Fact]
+        public void TestConversionToStringInAssignIntrinsic()
+        {
+            var c = Util.Compile($@"
+                PROC MAIN()
+                    TEXT_LABEL64 a, b
+                    ASSIGN_STRING(a, 'hello world')
+                    ASSIGN_STRING(b, a)
+                    APPEND_STRING(b, a)
                 ENDPROC
             ");
 

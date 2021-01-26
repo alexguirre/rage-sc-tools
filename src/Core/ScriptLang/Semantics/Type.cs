@@ -45,6 +45,10 @@ namespace ScTools.ScriptLang.Semantics
                 {
                     assignable = srcStructType.IsImplicitlyConvertibleTo(destStructType);
                 }
+                else if (dest is BasicType { TypeCode: BasicTypeCode.String } && src is TextLabelType)
+                {
+                    assignable = true;
+                }
                 else if (considerReferences)
                 {
                     assignable = (dest is RefType destRefType && destRefType.ElementType.IsAssignableFrom(src, considerReferences: false)) ||
