@@ -1,7 +1,5 @@
 ﻿namespace ScTools.Tests.ScriptLang
 {
-    using System.Collections.Generic;
-
     using Xunit;
 
     public class TextLabelTests
