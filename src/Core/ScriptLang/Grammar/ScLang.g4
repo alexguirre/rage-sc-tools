@@ -73,7 +73,7 @@ expression
     | left=expression op='^' right=expression                       #binaryExpression
     | left=expression op='|' right=expression                       #binaryExpression
     | left=expression op=('<' | '>' | '<=' | '>=') right=expression #binaryExpression
-    | left=expression op=('==' | '!=') right=expression             #binaryExpression
+    | left=expression op=('==' | '<>') right=expression             #binaryExpression
     | left=expression op=K_AND right=expression                     #binaryExpression
     | left=expression op=K_OR right=expression                      #binaryExpression
     | '<<' expression (',' expression)* '>>'                        #aggregateExpression
@@ -196,7 +196,7 @@ OP_OR: '|';
 OP_AND: '&';
 OP_XOR: '^';
 OP_EQUAL: '==';
-OP_NOT_EQUAL: '!=';
+OP_NOT_EQUAL: '<>';
 OP_GREATER: '>';
 OP_GREATER_OR_EQUAL: '>=';
 OP_LESS: '<';

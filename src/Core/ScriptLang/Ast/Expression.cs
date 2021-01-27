@@ -83,7 +83,7 @@ namespace ScTools.ScriptLang.Ast
             BinaryOperator.And => "&",
             BinaryOperator.Xor => "^",
             BinaryOperator.Equal => "==",
-            BinaryOperator.NotEqual => "!=",
+            BinaryOperator.NotEqual => "<>",
             BinaryOperator.Greater => ">",
             BinaryOperator.GreaterOrEqual => ">=",
             BinaryOperator.Less => "<",
