@@ -269,9 +269,15 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitInvocationStatement(InvocationStatement node)
             {
+                if (node.Expression is IdentifierExpression id && Symbols.Lookup(id.Identifier) is IntrinsicFunctionSymbol intrinsic)
+                {
+                    intrinsic.CheckArguments(node.ArgumentList.Arguments.Select( a => (TypeOf(a), a.Source)), Diagnostics, FilePath);
+                    return;
+                }
+
                 // TODO: very similar to TypeOf.VisitInvocationExpression, refactor
                 var callableType = TypeOf(node.Expression);
-                if (!(callableType is FunctionType f))
+                if (callableType is not FunctionType f)
                 {
                     if (callableType != null)
                     {

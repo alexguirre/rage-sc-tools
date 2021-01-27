@@ -45,6 +45,10 @@ namespace ScTools.ScriptLang.Semantics
                 {
                     assignable = srcStructType.IsImplicitlyConvertibleTo(destStructType);
                 }
+                else if (dest is BasicType { TypeCode: BasicTypeCode.String } && src is TextLabelType)
+                {
+                    assignable = true;
+                }
                 else if (considerReferences)
                 {
                     assignable = (dest is RefType destRefType && destRefType.ElementType.IsAssignableFrom(src, considerReferences: false)) ||
@@ -402,6 +406,33 @@ namespace ScTools.ScriptLang.Semantics
         }
 
         protected override string DoToString() => "";
+    }
+
+    public sealed class TextLabelType : Type
+    {
+        public const int MinLength = 1;
+        public const int MaxLength = byte.MaxValue;
+
+        private int length;
+
+        public override int SizeOf => (Length + 7) / 8;
+
+        public int Length
+        {
+            get => length;
+            set => length = (value >= MinLength && value <= MaxLength) ? value : throw new ArgumentException("Length value lower than 1 or greater than 255", nameof(value));
+        }
+
+        public TextLabelType(int length)
+        {
+            Length = length;
+        }
+
+        public override TextLabelType Clone() => new TextLabelType(Length);
+        public override TextLabelType? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics, string filePath) => this;
+        public override bool Equals(Type? other) => other is TextLabelType t && Length == t.Length;
+        protected override int DoGetHashCode() => HashCode.Combine(Length);
+        protected override string DoToString() => $"TEXT_LABEL{Length}";
     }
 
     public sealed class ArrayType : Type

@@ -429,7 +429,8 @@ namespace ScTools.ScriptLang.Semantics.Binding
             var functionType = (Callee.Type as FunctionType)!;
             foreach (var (arg, (paramType, _)) in Arguments.Zip(functionType.Parameters))
             {
-                if (paramType is RefType)
+                if (paramType is RefType ||
+                    (paramType is BasicType { TypeCode: BasicTypeCode.String } && arg.Type?.UnderlyingType is TextLabelType))
                 {
                     arg.EmitAddr(code);
                 }

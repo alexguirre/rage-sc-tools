@@ -54,7 +54,8 @@ namespace ScTools.ScriptLang.Semantics.Binding
             var initializer = Var.Initializer;
             if (initializer != null)
             {
-                if (Var.Type is RefType)
+                if (Var.Type is RefType ||
+                    (Var.Type is BasicType { TypeCode: BasicTypeCode.String } && initializer.Type?.UnderlyingType is TextLabelType))
                 {
                     initializer.EmitAddr(code);
                 }
@@ -111,7 +112,14 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
         public override void Emit(ByteCodeBuilder code, BoundFunction parent)
         {
-            Right.EmitLoad(code);
+            if (Left.Type?.UnderlyingType is BasicType { TypeCode: BasicTypeCode.String } && Right.Type?.UnderlyingType is TextLabelType)
+            {
+                Right.EmitAddr(code);
+            }
+            else
+            {
+                Right.EmitLoad(code);
+            }
             Left.EmitStore(code);
         }
     }
@@ -274,7 +282,8 @@ namespace ScTools.ScriptLang.Semantics.Binding
             var functionType = (Callee.Type as FunctionType)!;
             foreach (var (arg, (paramType, _)) in Arguments.Zip(functionType.Parameters))
             {
-                if (paramType is RefType)
+                if (paramType is RefType ||
+                    (paramType is BasicType { TypeCode: BasicTypeCode.String } && arg.Type?.UnderlyingType is TextLabelType))
                 {
                     arg.EmitAddr(code);
                 }
@@ -297,6 +306,21 @@ namespace ScTools.ScriptLang.Semantics.Binding
         }
     }
 
+    public sealed class BoundIntrinsicStatement : BoundStatement
+    {   
+        public IntrinsicFunctionSymbol Intrinsic { get; }
+        public ImmutableArray<BoundExpression> Arguments { get; }
+
+        public BoundIntrinsicStatement(IntrinsicFunctionSymbol intrinsic, IEnumerable<BoundExpression> arguments)
+        {
+            Intrinsic = intrinsic;
+            Arguments = arguments.ToImmutableArray();
+        }
+
+        public override void Emit(ByteCodeBuilder code, BoundFunction parent)
+            => Intrinsic.Emit(code, Arguments);
+    }
+
     public sealed class BoundReturnStatement : BoundStatement
     {
         public BoundExpression? Expression { get; }
@@ -308,7 +332,17 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
         public override void Emit(ByteCodeBuilder code, BoundFunction parent)
         {
-            Expression?.EmitLoad(code);
+            if (Expression != null)
+            {
+                if (parent.Function.Type.ReturnType is BasicType { TypeCode: BasicTypeCode.String } && Expression.Type?.UnderlyingType is TextLabelType)
+                {
+                    Expression.EmitAddr(code);
+                }
+                else
+                {
+                    Expression.EmitLoad(code);
+                }
+            }
             parent.EmitEpilogue(code);
         }
     }
