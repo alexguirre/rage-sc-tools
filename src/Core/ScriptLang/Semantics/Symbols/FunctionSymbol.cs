@@ -16,7 +16,7 @@ namespace ScTools.ScriptLang.Semantics.Symbols
         public IList<VariableSymbol> LocalArgs { get; } = new List<VariableSymbol>();
 
         public bool IsProcedure => Type.ReturnType == null;
-        public bool IsMain => IsProcedure && Type.Parameters.Count == 0 && Name == MainName;
+        public bool IsMain => IsProcedure && Type.Parameters.Count == 0 && SymbolTable.CaseInsensitiveComparer.Equals(Name, MainName);
         public Ast.StatementBlock? AstBlock => AstNode switch
         {
             Ast.ProcedureStatement s => s.Block,

@@ -11,7 +11,8 @@ namespace ScTools.ScriptLang.Semantics
 
     public sealed class SymbolTable
     {
-        private readonly Stack<ISymbol> symbols = new();
+        private readonly List<ISymbol> symbols = new(); // list to keep declaration order of the symbols
+        private readonly Dictionary<string, ISymbol> symbolsDictionary = new(CaseInsensitiveComparer);
         private readonly List<SymbolTable> children = new();
         private readonly List<SymbolTable> imports = new();
 
@@ -25,7 +26,7 @@ namespace ScTools.ScriptLang.Semantics
         /// <summary>
         /// Returns symbols in the order they were declared in.
         /// </summary>
-        public IEnumerable<ISymbol> Symbols => symbols.Reverse();
+        public IEnumerable<ISymbol> Symbols => ((IEnumerable<ISymbol>)symbols).Reverse();
 
 
         public SymbolTable(Ast.Root astNode)
@@ -62,7 +63,8 @@ namespace ScTools.ScriptLang.Semantics
                 throw new InvalidOperationException($"Symbol with name '{symbol.Name}' already exists in the current scope.");
             }
 
-            symbols.Push(symbol);
+            symbols.Add(symbol);
+            symbolsDictionary.Add(symbol.Name, symbol);
         }
 
         public bool Exists(string name) => Lookup(name) != null;
@@ -94,22 +96,25 @@ namespace ScTools.ScriptLang.Semantics
         /// </summary>
         private ISymbol? LocalLookup(string name)
         {
-            IEnumerable<ISymbol> availableSymbols = symbols;
+            ISymbol? symbol;
+            if (symbolsDictionary.TryGetValue(name, out symbol))
+            {
+                return symbol;
+            }
+
             if (IsGlobal)
             {
-                if (BuiltIns.TryGetValue(name, out var symbol))
+                if (BuiltIns.TryGetValue(name, out symbol))
                 {
                     return symbol;
                 }
 
-                availableSymbols = availableSymbols.Concat(imports.SelectMany(i => i.symbols));
-            }
-
-            foreach (var symbol in availableSymbols)
-            {
-                if (symbol.Name == name)
+                foreach (var import in imports)
                 {
-                    return symbol;
+                    if (import.symbolsDictionary.TryGetValue(name, out symbol))
+                    {
+                        return symbol;
+                    }
                 }
             }
 
@@ -174,7 +179,7 @@ namespace ScTools.ScriptLang.Semantics
 
         private static ImmutableDictionary<string, ISymbol> CreateBuiltIns()
         {
-            var dict = ImmutableDictionary.CreateBuilder<string, ISymbol>();
+            var dict = ImmutableDictionary.CreateBuilder<string, ISymbol>(CaseInsensitiveComparer);
             void Add(ISymbol symbol) => dict.Add(symbol.Name, symbol);
 
             // basic types
@@ -218,6 +223,8 @@ namespace ScTools.ScriptLang.Semantics
 
             return dict.ToImmutable();
         }
+
+        public static StringComparer CaseInsensitiveComparer => StringComparer.OrdinalIgnoreCase;
     }
 
     public interface ISymbol
