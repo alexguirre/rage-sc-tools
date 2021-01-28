@@ -49,9 +49,13 @@ namespace ScTools.ScriptLang.Semantics
                 {
                     assignable = true;
                 }
+                else if (dest is AnyType && src is BasicType)
+                {
+                    assignable = true;
+                }
                 else if (considerReferences)
                 {
-                    assignable = (dest is RefType destRefType && destRefType.ElementType.IsAssignableFrom(src, considerReferences: false)) ||
+                    assignable = (dest is RefType destRefType && (destRefType.ElementType is AnyType || destRefType.ElementType.IsAssignableFrom(src, considerReferences: false))) ||
                                  (src is RefType srcRefType && dest.IsAssignableFrom(srcRefType.ElementType, considerReferences: false));
                 }
             }
@@ -94,6 +98,21 @@ namespace ScTools.ScriptLang.Semantics
             => HashCode.Combine(ElementType);
 
         protected override string DoToString() => $"{ElementType}&";
+    }
+
+    public sealed class AnyType : Type
+    {
+        public static readonly AnyType Instance = new AnyType();
+
+        public override int SizeOf => 1;
+
+        private AnyType() {}
+
+        public override AnyType Clone() => Instance;
+        public override AnyType? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics, string filePath) => this;
+        public override bool Equals(Type? other) => other is AnyType;
+        protected override int DoGetHashCode() => typeof(AnyType).GetHashCode();
+        protected override string DoToString() => $"ANY";
     }
 
     public sealed class BasicType : Type

@@ -209,6 +209,8 @@ namespace ScTools.ScriptLang.Semantics
                 Add(new TypeSymbol(textLabelTy.ToString(), SourceRange.Unknown, textLabelTy));
             }
 
+            Add(new TypeSymbol(AnyType.Instance.ToString(), SourceRange.Unknown, AnyType.Instance));
+
             Add(IntrinsicFunctionSymbol.AssignString);
             Add(IntrinsicFunctionSymbol.AssignInt);
             Add(IntrinsicFunctionSymbol.AppendString);

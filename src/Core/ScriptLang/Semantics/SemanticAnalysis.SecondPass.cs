@@ -165,6 +165,11 @@ namespace ScTools.ScriptLang.Semantics
                 {
                     Diagnostics.AddError(FilePath, "Mismatched types in assigment", node.Source);
                 }
+
+                if (destType is RefType refTy && refTy.ElementType is AnyType)
+                {
+                    Diagnostics.AddError(FilePath, "Cannot modify references of type ANY", node.Source);
+                }
             }
 
             public override void VisitIfStatement(IfStatement node)
