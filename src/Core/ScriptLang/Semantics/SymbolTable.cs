@@ -201,6 +201,8 @@ namespace ScTools.ScriptLang.Semantics
                 new StructType("VEHICLE_INDEX", F(intTy, "value")),
                 new StructType("OBJECT_INDEX", F(intTy, "value")),
                 new StructType("CAMERA_INDEX", F(intTy, "value")),
+                new StructType("PICKUP_INDEX", F(intTy, "value")),
+                new StructType("BLIP_INFO_ID", F(intTy, "value")),
             };
 
             foreach (var structTy in structTypes)

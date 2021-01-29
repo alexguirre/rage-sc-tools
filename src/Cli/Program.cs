@@ -87,11 +87,20 @@
                     .ExistingOnly(),
                 new Option<FileInfo>(
                     new[] { "--nativedb", "-n" },
-                    "The SCNDB file containing the native commands definitions.")
+                    "The JSON file containing the native commands definitions.")
                     .ExistingOnly(),
                 new Option(new[] { "--unencrypted", "-u" }, "Output unencrypted files of the compiled scripts."),
             };
             compile.Handler = CommandHandler.Create<CompileOptions>(Compile);
+
+            Command genNatives = new Command("gen-natives")
+            {
+                new Argument<FileInfo>(
+                    "nativedb",
+                    "The JSON file containing the native commands definitions.")
+                    .ExistingOnly(),
+            };
+            genNatives.Handler = CommandHandler.Create<FileInfo>(GenNatives);
 
             Command fetchNativeDbOld = new Command("fetch-nativedb-old")
             {
@@ -133,6 +142,7 @@
             rootCmd.AddCommand(disassemble);
             rootCmd.AddCommand(assemble);
             rootCmd.AddCommand(compile);
+            rootCmd.AddCommand(genNatives);
             rootCmd.AddCommand(fetchNativeDbOld);
             rootCmd.AddCommand(fetchNativeDb);
 
@@ -310,6 +320,12 @@
 
             totalTime.Stop();
             Print($"Total time: {totalTime.Elapsed}");
+        }
+
+        private static void GenNatives(FileInfo nativeDB)
+        {
+            var db = NativeDB.FromJson(File.ReadAllText(nativeDB.FullName));
+            NativeCommandsGen.Generate(Console.Out, db);
         }
 
         private class DisassembleOptions

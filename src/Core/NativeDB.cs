@@ -80,10 +80,10 @@ namespace ScTools
     {
         private readonly ulong[,] translationTable;
         private readonly Dictionary<ulong, ImmutableArray<int>> hashToRows;
-        private readonly ImmutableArray<NativeCommandDefinition> commands;
+        public ImmutableArray<NativeCommandDefinition> Commands { get; }
 
         private NativeDB(ulong[,] translationTable, Dictionary<ulong, ImmutableArray<int>> hashToRows, ImmutableArray<NativeCommandDefinition> commands)
-            => (this.translationTable, this.hashToRows, this.commands) = (translationTable, hashToRows, commands);
+            => (this.translationTable, this.hashToRows, Commands) = (translationTable, hashToRows, commands);
 
         public ulong TranslateHash(ulong origHash, GameBuild build)
         {
@@ -106,7 +106,7 @@ namespace ScTools
 
         public ulong? FindOriginalHash(string name)
         {
-            foreach (var def in commands)
+            foreach (var def in Commands)
             {
                 if (def.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
                 {
@@ -117,23 +117,13 @@ namespace ScTools
             return null;
         }
 
-        public void ForEachCommand(ForEachCommandCallback cb)
-        {
-            for (int i = 0; i < commands.Length; i++)
-            {
-                cb(in commands.ItemRef(i));
-            }
-        }
-
-        public delegate void ForEachCommandCallback(in NativeCommandDefinition cmd);
-
         public string ToJson()
         {
             var model = new JsonModel
             {
                 TranslationTable = ToJaggedArray(translationTable),
                 HashToRows = hashToRows.Select(kvp => new JsonModel.HashToRowsEntry { Hash = kvp.Key, Rows = kvp.Value.ToArray() }).ToArray(),
-                Commands = commands.Select(cmd => new JsonModel.Command
+                Commands = Commands.Select(cmd => new JsonModel.Command
                 {
                     Hash = cmd.Hash,
                     Name = cmd.Name,
@@ -204,7 +194,7 @@ namespace ScTools
             {
                 json.WriteStartObject("ALL");
                 {
-                    ForEachCommand((in NativeCommandDefinition cmd) =>
+                    foreach (var cmd in Commands)
                     {
                         json.WriteStartObject($"0x{cmd.Hash:X16}");
                         {
@@ -234,7 +224,7 @@ namespace ScTools
                             json.WriteString("build", cmd.Build.ToString());
                         }
                         json.WriteEndObject();
-                    });
+                    }
                 }
                 json.WriteEndObject();
             }
