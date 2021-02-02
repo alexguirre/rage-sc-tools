@@ -1,0 +1,12 @@
+﻿<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:pages="clr-namespace:ScTools.UI.Pages">
+  <Design.PreviewWith>
+    <Border Padding="20">
+      <pages:ProgramsPage/>
+    </Border>
+  </Design.PreviewWith>
+  <Style Selector=":is(UserControl).page">
+    <Setter Property="Background" Value="#1fffffff"/>
+  </Style>
+</Styles>

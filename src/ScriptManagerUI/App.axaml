@@ -1,0 +1,20 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="ScTools.UI.App">
+    <Application.Styles>
+        <StyleInclude Source="avares://Avalonia.Themes.Default/DefaultTheme.xaml"/>
+        <StyleInclude Source="avares://Avalonia.Themes.Default/Accents/BaseDark.xaml"/>
+        <Style Selector="TextBlock.h1">
+          <Setter Property="FontSize" Value="16" />
+          <Setter Property="FontWeight" Value="Medium" />
+        </Style>
+        <Style Selector="TextBlock.h2">
+          <Setter Property="FontSize" Value="14" />
+        </Style>
+        <Style Selector="TextBlock.h3">
+          <Setter Property="FontSize" Value="12" />
+        </Style>
+        <StyleInclude Source="/Styles/SideBar.axaml"/>
+        <StyleInclude Source="/Styles/Page.axaml"/>
+    </Application.Styles>
+</Application>
