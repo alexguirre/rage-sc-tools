@@ -9,5 +9,9 @@
         public static bool IsInGame => Process.GetCurrentProcess().MainModule!.ModuleName == "GTA5.exe";
 
         public static IntPtr RVA(long offset) => (IntPtr)(BaseAddress.ToInt64() + offset);
+
+        public static event Action? AfterGameUpdate;
+
+        public static void RaiseAfterGameUpdate() => AfterGameUpdate?.Invoke();
     }
 }

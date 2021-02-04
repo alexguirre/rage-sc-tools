@@ -4,8 +4,11 @@
     using System.ComponentModel;
     using System.Runtime.CompilerServices;
 
+    using Avalonia.Controls;
+
     public class ViewModelBase : INotifyPropertyChanged
     {
+        public Control? View { get; set; }
         public event PropertyChangedEventHandler? PropertyChanged;
 
         protected bool RaiseAndSetIfChanged<T>(ref T field, T value, [CallerMemberName] string propertyName = null)

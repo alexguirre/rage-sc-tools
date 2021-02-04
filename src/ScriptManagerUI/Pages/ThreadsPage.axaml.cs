@@ -1,5 +1,7 @@
 namespace ScTools.UI.Pages
 {
+    using System;
+
     using Avalonia.Controls;
     using Avalonia.Markup.Xaml;
 
@@ -19,6 +21,16 @@ namespace ScTools.UI.Pages
                 DataContext = new ThreadsViewModel();
             }
             AvaloniaXamlLoader.Load(this);
+        }
+
+        protected override void OnDataContextChanged(EventArgs e)
+        {
+            if (DataContext is ViewModelBase model)
+            {
+                model.View = this;
+            }
+
+            base.OnDataContextChanged(e);
         }
     }
 }

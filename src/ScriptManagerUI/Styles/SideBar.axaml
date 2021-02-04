@@ -59,7 +59,7 @@
     <Setter Property="Width" Value="160" />
     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     <Setter Property="(ScrollViewer.HorizontalScrollBarVisibility)" Value="Auto"/>
-    <Setter Property="(ScrollViewer.VerticalScrollBarVisibility)" Value="Auto"/>
+    <Setter Property="(ScrollViewer.VerticalScrollBarVisibility)" Value="Disabled"/>
   </Style>
   <Style Selector="TabControl.sidebar > TabItem:selected /template/ Border#PART_SelectedPipe">
     <Setter Property="IsVisible" Value="False" />

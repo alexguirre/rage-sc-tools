@@ -2,28 +2,35 @@
 {
     using System;
     using System.Collections.ObjectModel;
+    using System.IO;
 
+    using Avalonia.Controls;
     using Avalonia.Threading;
+    using Avalonia.VisualTree;
 
-    public record ScriptDef(string Name, uint Index);
+    public record ScriptDef(string Name, int Index);
 
     public class ProgramsViewModel : ViewModelBase
     {
-        private uint storeSize, storeUsed;
+        private int storeSize, storeUsed;
 
-        public uint StoreSize
+        public int StoreSize
         {
             get => storeSize;
             set => RaiseAndSetIfChanged(ref storeSize, value);
         }
 
-        public uint StoreUsed
+        public int StoreUsed
         {
             get => storeUsed;
             set => RaiseAndSetIfChanged(ref storeUsed, value);
         }
 
         public ObservableCollection<ScriptDef> Scripts { get; } = new();
+
+        public virtual void RegisterScript()
+        {
+        }
     }
 
     public sealed class DummyProgramsViewModel : ProgramsViewModel
@@ -35,7 +42,7 @@
             StoreSize = 50;
             StoreUsed = 30;
 
-            for (uint i = 1; i <= 1000; i++)
+            for (int i = 0; i < 1000; i++)
             {
                 Scripts.Add(new ScriptDef($"script_{i}", i));
             }
@@ -54,6 +61,20 @@
             StoreUsed++;
 
             return true;
+        }
+
+        public override async void RegisterScript()
+        {
+            if (View?.GetVisualRoot() is Window w)
+            {
+                var dialog = new OpenFileDialog { AllowMultiple = true };
+                dialog.Filters.Add(new FileDialogFilter { Name = "Script", Extensions = new() { "ysc" } });
+                var file = await dialog.ShowAsync(w);
+                if (file != null && file.Length > 0)
+                {
+
+                }
+            }
         }
     }
 }

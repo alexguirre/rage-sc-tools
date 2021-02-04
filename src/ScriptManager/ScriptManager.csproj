@@ -18,9 +18,9 @@
   <PropertyGroup>
     <!-- these can help when debugging weird exceptions especially when reflection is involved. See https://github.com/dotnet/corert/blob/master/Documentation/using-corert/optimizing-corert.md -->
     <TrimMode>link</TrimMode>
-    <IlcGenerateCompleteTypeMetadata>false</IlcGenerateCompleteTypeMetadata>
-    <IlcGenerateStackTraceData>false</IlcGenerateStackTraceData>
-    <IlcDisableUnhandledExceptionExperience>true</IlcDisableUnhandledExceptionExperience>
+    <IlcGenerateCompleteTypeMetadata>true</IlcGenerateCompleteTypeMetadata>
+    <IlcGenerateStackTraceData>true</IlcGenerateStackTraceData>
+    <IlcDisableUnhandledExceptionExperience>false</IlcDisableUnhandledExceptionExperience>
   </PropertyGroup>
 
   <ItemGroup Condition="$(RuntimeIdentifier.StartsWith('win'))">

@@ -49,8 +49,8 @@
       "Microsoft.DotNet.ILCompiler": {
         "type": "Direct",
         "requested": "[6.0.0-*, )",
-        "resolved": "6.0.0-preview.2.21081.2",
-        "contentHash": "y/yjj+CUFwGwP2m0DaSlf/SmFva/Kjqwklteev/cHFNiIq+Bn17oKJM2iYw/j/c7R6yGIPvHu6a/1HErf2oG0Q=="
+        "resolved": "6.0.0-preview.2.21103.1",
+        "contentHash": "R/Xlij5d116ISgYbaEyTIY9EGdlf9gcoZMLfZ6Gzi2qrYZfXFbD9/QF3vdtjNVspGqGT/4KipIwibA9dPwUzXA=="
       },
       "System.Reactive": {
         "type": "Direct",
@@ -2013,10 +2013,10 @@
       "Microsoft.DotNet.ILCompiler": {
         "type": "Direct",
         "requested": "[6.0.0-*, )",
-        "resolved": "6.0.0-preview.2.21081.2",
-        "contentHash": "y/yjj+CUFwGwP2m0DaSlf/SmFva/Kjqwklteev/cHFNiIq+Bn17oKJM2iYw/j/c7R6yGIPvHu6a/1HErf2oG0Q==",
+        "resolved": "6.0.0-preview.2.21103.1",
+        "contentHash": "R/Xlij5d116ISgYbaEyTIY9EGdlf9gcoZMLfZ6Gzi2qrYZfXFbD9/QF3vdtjNVspGqGT/4KipIwibA9dPwUzXA==",
         "dependencies": {
-          "runtime.win-x64.Microsoft.DotNet.ILCompiler": "6.0.0-preview.2.21081.2"
+          "runtime.win-x64.Microsoft.DotNet.ILCompiler": "6.0.0-preview.2.21103.1"
         }
       },
       "Avalonia.Native": {
@@ -2228,8 +2228,8 @@
       },
       "runtime.win-x64.Microsoft.DotNet.ILCompiler": {
         "type": "Transitive",
-        "resolved": "6.0.0-preview.2.21081.2",
-        "contentHash": "Qcja/SSIkxclWp0wmTab1mM6o74scE9BOREXnc50ZLHRDcbwvcNBiSvUtwoUxnHrqTlnDv12jYq++blnhQqwCA=="
+        "resolved": "6.0.0-preview.2.21103.1",
+        "contentHash": "k01h6Tkeqb2FShp9zKfaePZ07h872/kwhlbSrNSGR0HJh/0qDD7ofjQXin9rdOSCNNmiTO5O19WJSNpc2yxyxw=="
       },
       "runtime.win.Microsoft.Win32.Primitives": {
         "type": "Transitive",

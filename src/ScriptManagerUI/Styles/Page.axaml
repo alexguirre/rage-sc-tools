@@ -9,4 +9,14 @@
   <Style Selector=":is(UserControl).page">
     <Setter Property="Background" Value="#1fffffff"/>
   </Style>
+  <Style Selector=":is(UserControl).page Button">
+    <Setter Property="Background" Value="#007acc"/>
+    <Setter Property="BorderThickness" Value="0"/>
+  </Style>
+  <Style Selector=":is(UserControl).page Button /template/ ContentPresenter">
+    <Setter Property="CornerRadius" Value="3"/>
+  </Style>
+  <Style Selector=":is(UserControl).page Button:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="#1C97EA"/>
+  </Style>
 </Styles>
