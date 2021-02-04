@@ -14,57 +14,25 @@
     <NativeLib>Shared</NativeLib>
   </PropertyGroup>
 
-  <!-- based on https://github.com/teobugslayer/AvaloniaCoreRTDemo/blob/master/src/AvaloniaCoreRTDemo.csproj -->
   <PropertyGroup>
-    <!-- these can help when debugging weird exceptions especially when reflection is involved. See https://github.com/dotnet/corert/blob/master/Documentation/using-corert/optimizing-corert.md -->
+    <!-- these can help when debugging weird exceptions especially when reflection is involved. See https://github.com/dotnet/runtimelab/blob/feature/NativeAOT/docs/using-nativeaot/optimizing.md -->
     <TrimMode>link</TrimMode>
     <IlcGenerateCompleteTypeMetadata>true</IlcGenerateCompleteTypeMetadata>
     <IlcGenerateStackTraceData>true</IlcGenerateStackTraceData>
     <IlcDisableUnhandledExceptionExperience>false</IlcDisableUnhandledExceptionExperience>
   </PropertyGroup>
-
-  <ItemGroup Condition="$(RuntimeIdentifier.StartsWith('win'))">
-    <!-- Instruct CoreRT to use this native dependency, required to build Avalonia. This library comes from the Windows SDK. -->
-    <NativeLibrary Include="WindowsApp.lib" />
-  </ItemGroup>
-
+  
   <ItemGroup>
-    <Compile Update="**\*.xaml.cs">
-      <DependentUpon>%(Filename)</DependentUpon>
-    </Compile>
-    <AvaloniaResource Include="**\*.xaml">
-      <SubType>Designer</SubType>
-    </AvaloniaResource>
-    <!--<AvaloniaResource Include="app.ico" />
-    <EmbeddedResource Include="linux.png" />
-    <EmbeddedResource Include="macos.png" />
-    <EmbeddedResource Include="windows.png" />-->
-  </ItemGroup>
-  <ItemGroup>
-    <!-- NOTE: Avalonia 0.10.0 seems to hang when starting the App, no window shows -->
-    <PackageReference Include="Avalonia" Version="0.9.11" />
-    <PackageReference Include="Avalonia.Desktop" Version="0.9.11" />
-    <PackageReference Include="Avalonia.ReactiveUI" Version="0.9.11" />
     <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="6.0.0-*" />
-    <!-- This is a hack. Avalonia 0.9.10 depends on a version of System.Reactive prior 4.4.1, which contains a critical fix for building with CoreRT -->
-    <PackageReference Include="System.Reactive" Version="5.0" />
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.20574.7" />
+    <PackageReference Include="System.CommandLine.Rendering" Version="0.3.0-alpha.20574.7" />
   </ItemGroup>
+  
   <ItemGroup>
-    <ProjectReference Include="..\ScriptManagerUI\ScriptManagerUI.csproj">
-      <Private></Private>
-    </ProjectReference>
+    <ProjectReference Include="..\Cli\Cli.csproj" />
   </ItemGroup>
+
   <ItemGroup>
-    <!-- Avalonia relies heavily on reflection. Describe types reflected upon here. -->
     <RdXmlFile Include="rd.xml" />
   </ItemGroup>
-  <!--<ItemGroup>
-    <None Update="avalonia.png" CopyToPublishDirectory="PreserveNewest">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="dotnet.png" CopyToPublishDirectory="PreserveNewest">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>-->
-
 </Project>

@@ -3,7 +3,7 @@
     using System.CommandLine;
     using System.Linq;
 
-    internal static class ArgumentExtensions
+    public static class ArgumentExtensions
     {
         public static Argument<FileGlob> AtLeastOne(this Argument<FileGlob> argument)
         {

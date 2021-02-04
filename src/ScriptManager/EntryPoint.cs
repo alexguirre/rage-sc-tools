@@ -1,23 +1,23 @@
 ﻿namespace ScTools
 {
     using System;
+    using System.CommandLine;
+    using System.CommandLine.Builder;
+    using System.CommandLine.Help;
+    using System.CommandLine.Invocation;
+    using System.CommandLine.Parsing;
     using System.Diagnostics;
+    using System.IO;
+    using System.Linq;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using System.Threading;
 
-    using Avalonia;
-
-    using ScTools.UI;
-    using ScTools.UI.ViewModels;
-    using ScTools.ViewModels;
+    using ScTools.Cli;
 
     internal static unsafe class EntryPoint
     {
         static IntPtr uiThreadHandle;
-
-        [DllImport("kernel32.dll")]
-        static extern IntPtr CreateThread(IntPtr lpThreadAttributes, ulong dwStackSize, delegate* unmanaged[Stdcall]<IntPtr, int> lpStartAddress, IntPtr lpParameter, uint dwCreationFlags, IntPtr lpThreadId);
 
         [UnmanagedCallersOnly(EntryPoint = nameof(DllMain), CallConvs = new[] { typeof(CallConvStdcall) })]
         public static bool DllMain(IntPtr hDllHandle, uint nReason, IntPtr Reserved)
@@ -31,7 +31,7 @@
                 SetupGameUpdateCallback();
 
                 // CreateThread instead of System.Threading.Thread because it gets stuck in Thread.Start
-                uiThreadHandle = CreateThread(IntPtr.Zero, 0, &Init, IntPtr.Zero, 0, IntPtr.Zero);
+                uiThreadHandle = Kernel32.CreateThread(IntPtr.Zero, 0, &Init, IntPtr.Zero, 0, IntPtr.Zero);
 
                 Console.WriteLine($"Thread created (handle: {uiThreadHandle.ToString("X")})");
             }
@@ -48,25 +48,33 @@
             Console.WriteLine($"Init (in-game: {Util.IsInGame})");
             if (Util.IsInGame)
             {
-                while (Process.GetCurrentProcess().MainWindowHandle == IntPtr.Zero)
+                while (System.Diagnostics.Process.GetCurrentProcess().MainWindowHandle == IntPtr.Zero)
                 {
                     Console.WriteLine("Waiting for game window");
                     Thread.Sleep(5000);
                 }
                 Thread.Sleep(5000);
+
+                Kernel32.AllocConsole();
+
+                Console.SetOut(new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = true });
+                Console.SetIn(new StreamReader(Console.OpenStandardInput()));
+                Console.SetError(new StreamWriter(Console.OpenStandardError()) { AutoFlush = true });
             }
 
-            BuildAvaloniaApp()
-                .StartWithClassicDesktopLifetime(Array.Empty<string>());
+            var scriptMgr = new ScriptManager();
+            var cmdMgr = new CommandManager(scriptMgr);
+
+            cmdMgr.MainLoop();
 
             Console.WriteLine("Init End");
+
+            if (Util.IsInGame)
+            {
+                Kernel32.FreeConsole();
+            }
             return 0;
         }
-
-        private static AppBuilder BuildAvaloniaApp() =>
-            Util.IsInGame ? 
-                App.BuildApp<ProgramsViewModelImpl, ThreadsViewModel>() :
-                App.BuildApp<DummyProgramsViewModel, ThreadsViewModel>();
 
         private static void SetupGameUpdateCallback()
         {

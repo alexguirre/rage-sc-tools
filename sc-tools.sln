@@ -15,8 +15,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LanguageServer", "src\Langu
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ScriptManager", "src\ScriptManager\ScriptManager.csproj", "{E9249AA8-6EF0-4259-BA36-5A78FF0718E8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ScriptManagerUI", "src\ScriptManagerUI\ScriptManagerUI.csproj", "{4692FA91-4E54-49C8-A8E3-9AAA30BC57C2}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -47,10 +45,6 @@ Global
 		{E9249AA8-6EF0-4259-BA36-5A78FF0718E8}.Debug|x64.Build.0 = Debug|x64
 		{E9249AA8-6EF0-4259-BA36-5A78FF0718E8}.Release|x64.ActiveCfg = Release|x64
 		{E9249AA8-6EF0-4259-BA36-5A78FF0718E8}.Release|x64.Build.0 = Release|x64
-		{4692FA91-4E54-49C8-A8E3-9AAA30BC57C2}.Debug|x64.ActiveCfg = Debug|x64
-		{4692FA91-4E54-49C8-A8E3-9AAA30BC57C2}.Debug|x64.Build.0 = Debug|x64
-		{4692FA91-4E54-49C8-A8E3-9AAA30BC57C2}.Release|x64.ActiveCfg = Release|Any CPU
-		{4692FA91-4E54-49C8-A8E3-9AAA30BC57C2}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

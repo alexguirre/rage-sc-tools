@@ -10,9 +10,9 @@
       },
       "System.CommandLine": {
         "type": "Direct",
-        "requested": "[2.0.0-beta1.20371.2, )",
-        "resolved": "2.0.0-beta1.20371.2",
-        "contentHash": "L6cnw4QgaLAOpUPSW1TjYGJGKsUvyDYvdQ/Gqv0/EnOSzByEf+IlAK1sRu+bcAhBrdws+eNPcOarg1Qj33oNDA==",
+        "requested": "[2.0.0-beta1.20574.7, )",
+        "resolved": "2.0.0-beta1.20574.7",
+        "contentHash": "fGqXtGd0UWyVTYRz5hU0fyjR1w7VlrdjmkdADreE9JXMzhWYgYJNxaHWVum40qJjtAT3RLlI0dBf37jmRBh43Q==",
         "dependencies": {
           "Microsoft.CSharp": "4.4.1",
           "system.memory": "4.5.4"
