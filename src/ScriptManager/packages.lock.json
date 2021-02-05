@@ -5,8 +5,8 @@
       "Microsoft.DotNet.ILCompiler": {
         "type": "Direct",
         "requested": "[6.0.0-*, )",
-        "resolved": "6.0.0-preview.2.21103.1",
-        "contentHash": "R/Xlij5d116ISgYbaEyTIY9EGdlf9gcoZMLfZ6Gzi2qrYZfXFbD9/QF3vdtjNVspGqGT/4KipIwibA9dPwUzXA=="
+        "resolved": "6.0.0-preview.2.21104.2",
+        "contentHash": "EnJ9tBnMkXPFnvMc+epARSYBnVS3h8gTzon8yKVVqn6lmm8RrGHqDvvgK+DkYBwD8QF1pTkMcW9Me7yigKIevQ=="
       },
       "System.CommandLine": {
         "type": "Direct",
@@ -985,10 +985,10 @@
       "Microsoft.DotNet.ILCompiler": {
         "type": "Direct",
         "requested": "[6.0.0-*, )",
-        "resolved": "6.0.0-preview.2.21103.1",
-        "contentHash": "R/Xlij5d116ISgYbaEyTIY9EGdlf9gcoZMLfZ6Gzi2qrYZfXFbD9/QF3vdtjNVspGqGT/4KipIwibA9dPwUzXA==",
+        "resolved": "6.0.0-preview.2.21104.2",
+        "contentHash": "EnJ9tBnMkXPFnvMc+epARSYBnVS3h8gTzon8yKVVqn6lmm8RrGHqDvvgK+DkYBwD8QF1pTkMcW9Me7yigKIevQ==",
         "dependencies": {
-          "runtime.win-x64.Microsoft.DotNet.ILCompiler": "6.0.0-preview.2.21103.1"
+          "runtime.win-x64.Microsoft.DotNet.ILCompiler": "6.0.0-preview.2.21104.2"
         }
       },
       "Microsoft.Win32.Primitives": {
@@ -1150,8 +1150,8 @@
       },
       "runtime.win-x64.Microsoft.DotNet.ILCompiler": {
         "type": "Transitive",
-        "resolved": "6.0.0-preview.2.21103.1",
-        "contentHash": "k01h6Tkeqb2FShp9zKfaePZ07h872/kwhlbSrNSGR0HJh/0qDD7ofjQXin9rdOSCNNmiTO5O19WJSNpc2yxyxw=="
+        "resolved": "6.0.0-preview.2.21104.2",
+        "contentHash": "dFpw/2XS0PYjtzCI9pqXo8e2xYvD0sNCFHsvQ2L9qWlFuWUDIKvGsFR3QqYi9q8mFspKnE0JhD2UEIHPqpCb7Q=="
       },
       "runtime.win.Microsoft.Win32.Primitives": {
         "type": "Transitive",

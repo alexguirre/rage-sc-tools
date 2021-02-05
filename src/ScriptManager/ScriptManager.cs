@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Concurrent;
+    using System.Collections.Generic;
     using System.IO;
 
     using ScTools.Five;
@@ -52,6 +53,29 @@
             }
 
             scriptsToRegister.Enqueue(scriptFile);
+        }
+
+        public IEnumerable<(string Name, int Index)> EnumerateRegisteredScripts()
+        {
+            if (Util.IsInGame)
+            {
+                var size = CStreamedScripts.Instance.GetSize();
+                for (int i = 0; i < size; i++)
+                {
+                    var name = CStreamedScripts.Instance.GetAssetName(i);
+                    if (name != "-undefined-")
+                    {
+                        yield return (name, i);
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < 100; i++)
+                {
+                    yield return ($"script_{i}", i);
+                }
+            }
         }
     }
 }
