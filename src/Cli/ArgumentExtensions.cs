@@ -19,6 +19,7 @@
 
         public static Argument<FileGlob[]> AtLeastOne(this Argument<FileGlob[]> argument)
         {
+            argument.Arity = ArgumentArity.OneOrMore;
             argument.AddValidator(symbol =>
                                       new FileGlob(symbol.Tokens.Select(t => t.Value)).HasMatches ?
                                             null :

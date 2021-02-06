@@ -11,7 +11,7 @@
 
     using ScTools.Cli;
 
-    public sealed class CommandManager
+    internal sealed class CommandManager
     {
         private readonly IConsole console;
         private readonly ScriptManager scriptMgr;
@@ -24,13 +24,19 @@
             console = new SystemConsole();
             scriptMgr = scriptManager;
             rootCommand = BuildCommands();
-            parser = new CommandLineBuilder(rootCommand).Build();
+            parser = new CommandLineBuilder(rootCommand)
+                            .UseTypoCorrections()
+                            .UseParseErrorReporting()
+                            .UseExceptionHandler()
+                            .Build();
+
+            scriptMgr.Output += OnScriptManagerOutput;
         }
 
         private Command BuildCommands()
         {
             var exit = new Command("exit") { };
-            exit.Handler = CommandHandler.Create(() => running = false);
+            exit.Handler = CommandHandler.Create(Command_Exit);
 
             var help = new Command("help")
             {
@@ -38,13 +44,16 @@
             };
             help.Handler = CommandHandler.Create<string>(Command_Help);
 
-            var list = new Command("list", "List registered scripts") { };
+            var list = new Command("list", "List registered script programs.") { };
             list.Handler = CommandHandler.Create(Command_List);
 
-            var listThreads = new Command("list-threads", "List executing script threads") { };
+            var listThreads = new Command("list-threads", "List executing script threads.") { };
             listThreads.Handler = CommandHandler.Create(Command_ListThreads);
 
-            var register = new Command("register", "Register external scripts")
+            var listStacks = new Command("list-stacks", "List script stacks.") { };
+            listStacks.Handler = CommandHandler.Create(Command_ListStacks);
+
+            var register = new Command("register", "Register external scripts.")
             {
                 new Argument<FileGlob[]>(
                     "scripts",
@@ -53,20 +62,20 @@
             };
             register.Handler = CommandHandler.Create<FileGlob[]>(Command_Register);
 
-            var unregister = new Command("unregister", "Unregister a script")
+            var unregister = new Command("unregister", "Unregister a script.")
             {
-                new Argument<string>("script"),
+                new Argument<string>("script", "The name of the script to unregister."),
             };
             unregister.Handler = CommandHandler.Create<string>(Command_Unregister);
 
-            var start = new Command("start", "Start a new script thread")
+            var start = new Command("start", "Start a new script thread.")
             {
                 new Argument<string>("script"),
                 new Argument<uint>("stack-size"),
             };
             start.Handler = CommandHandler.Create<string, uint>(Command_Start);
 
-            var kill = new Command("kill", "Kill a script thread")
+            var kill = new Command("kill", "Kill a script thread.")
             {
                 new Argument<uint>("thread-id"),
             };
@@ -74,7 +83,7 @@
 
             return new Command(">")
             {
-                exit, help, list, listThreads, register, unregister, start, kill
+                exit, help, list, listThreads, listStacks, register, unregister, start, kill
             };
         }
 
@@ -91,6 +100,13 @@
                 }
             }
         }
+
+        private void OnScriptManagerOutput(string s)
+        {
+            WriteLine(s);
+        }
+
+        private void Command_Exit() => running = false;
 
         private void Command_Help(string? command)
         {
@@ -116,7 +132,24 @@
 
         private void Command_ListThreads()
         {
-            WriteLine("\tNOT IMPLEMENTED");
+            WriteLine($"\tID\tProgram ID (Name)\tState");
+            foreach (var thread in scriptMgr.EnumerateScriptThreads())
+            {
+                WriteLine($"\t{thread.ThreadId}\t{thread.ProgramId} ({thread.ProgramName})\t{thread.State}");
+            }
+        }
+
+        private void Command_ListStacks()
+        {
+            WriteLine($"\tSize\tAvailable");
+            foreach (var stackGroup in scriptMgr.EnumerateScriptStacks()
+                                                .GroupBy(s => s.Size)
+                                                .OrderBy(g => g.Key))
+            {
+                var available = stackGroup.Count(s => !s.Used);
+                var total = stackGroup.Count();
+                WriteLine($"\t{stackGroup.Key}\t{available}/{total}");
+            }
         }
 
         private void Command_Register(FileGlob[] scripts)
@@ -129,7 +162,7 @@
 
         private void Command_Unregister(string script)
         {
-            WriteLine("\tNOT IMPLEMENTED");
+            scriptMgr.UnregisterScript(script);
         }
 
         private void Command_Start(string script, uint stackSize)

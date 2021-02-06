@@ -7,6 +7,17 @@
     [StructLayout(LayoutKind.Explicit)]
     internal unsafe struct CStreamedScripts
     {
+        [StructLayout(LayoutKind.Explicit)]
+        public struct VTableDef
+        {
+            [FieldOffset(0x040)] public delegate* unmanaged[Thiscall]<ref CStreamedScripts, out strLocalIndex, IntPtr, ref strLocalIndex> FindSlot;
+
+            [FieldOffset(0x040)] public delegate* unmanaged[Thiscall]<ref CStreamedScripts, int, scrProgram*> GetPtr;
+
+            [FieldOffset(0x100)] public delegate* unmanaged[Thiscall]<ref CStreamedScripts, int> GetSize;
+            [FieldOffset(0x108)] public delegate* unmanaged[Thiscall]<ref CStreamedScripts, int> GetNumUsedSlots;
+        }
+
         [FieldOffset(0x00)] public VTableDef* VTable;
         [FieldOffset(0x08)] public int ObjectsBaseIndex;
         [FieldOffset(0x0C)] public int ModuleIndex;
@@ -33,17 +44,6 @@
         private static readonly void* StreamingBlockingLoadAddress = Util.IsInGame ? (void*)Util.RVA(0x15D5D74/*b2189*/) : null;
         public bool StreamingBlockingLoad(strLocalIndex index, uint flags)
             => ((delegate* unmanaged[Thiscall]<ref CStreamedScripts, int, uint, bool>)StreamingBlockingLoadAddress)(ref this, index.Value, flags);
-
-        [StructLayout(LayoutKind.Explicit)]
-        public struct VTableDef
-        {
-            [FieldOffset(0x040)] public delegate* unmanaged[Thiscall]<ref CStreamedScripts, out strLocalIndex, IntPtr, ref strLocalIndex> FindSlot;
-
-            [FieldOffset(0x040)] public delegate* unmanaged[Thiscall]<ref CStreamedScripts, int, scrProgram*> GetPtr;
-
-            [FieldOffset(0x100)] public delegate* unmanaged[Thiscall]<ref CStreamedScripts, int> GetSize;
-            [FieldOffset(0x108)] public delegate* unmanaged[Thiscall]<ref CStreamedScripts, int> GetNumUsedSlots;
-        }
 
         // TODO: use patterns
         public static readonly CStreamedScripts* InstancePtr = Util.IsInGame ? (CStreamedScripts*)Util.RVA(0x2610240/*b2189*/) : null;
