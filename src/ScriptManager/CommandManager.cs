@@ -168,12 +168,12 @@
 
         private void Command_Start(string script, uint stackSize)
         {
-            WriteLine("\tNOT IMPLEMENTED");
+            scriptMgr.StartThread(script, stackSize);
         }
 
         private void Command_Kill(uint threadId)
         {
-            WriteLine("\tNOT IMPLEMENTED");
+            scriptMgr.KillThread(threadId);
         }
 
         private sealed class RootHelpBuilder : HelpBuilder

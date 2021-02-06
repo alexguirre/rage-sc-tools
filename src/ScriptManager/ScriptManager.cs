@@ -48,6 +48,16 @@
             jobs.Enqueue(new UnregisterScriptJob(script));
         }
 
+        public void StartThread(string script, uint stackSize)
+        {
+            jobs.Enqueue(new StartThreadJob(script, stackSize));
+        }
+
+        public void KillThread(scrThreadId id)
+        {
+            jobs.Enqueue(new KillThreadJob(id));
+        }
+
         public IEnumerable<(string Name, uint NumRefs, bool Loaded)> EnumerateRegisteredScripts()
         {
             if (Util.IsInGame)
@@ -200,6 +210,63 @@
                 else
                 {
                     mgr.OnOutput($"Script program '{Name}' does not exist");
+                }
+            }
+        }
+
+        private sealed class StartThreadJob : IJob
+        {
+            public string ScriptName { get; }
+            public uint StackSize { get; }
+
+            public StartThreadJob(string scriptName, uint stackSize) => (ScriptName, StackSize) = (scriptName, stackSize);
+
+            public void Execute(ScriptManager mgr)
+            {
+                // TODO: load script if not loaded
+
+                var threadId = scrThread.StartNewThreadWithName(ScriptName, IntPtr.Zero, 0, StackSize);
+                if (threadId.Value != 0)
+                {
+                    mgr.OnOutput($"Started script thread with ID {threadId.Value}");
+                }
+                else
+                {
+                    mgr.OnOutput($"Failed to start a new script thread");
+                }
+            }
+        }
+
+        private sealed class KillThreadJob : IJob
+        {
+            public scrThreadId Id { get; }
+
+            public KillThreadJob(scrThreadId id) => Id = id;
+
+            public void Execute(ScriptManager mgr)
+            {
+                ref var threads = ref scrThread.Threads;
+                var exists = false;
+                if (Id.Value != 0)
+                {
+                    for (int i = 0; i < threads.Count; i++)
+                    {
+                        if (!threads.IsItemNull(i) && threads.ItemDeref(i).Info.ThreadId.Value == Id.Value)
+                        {
+                            exists = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (exists)
+                {
+                    scrThread.KillThread(Id);
+                    mgr.OnOutput($"Script thread with ID {Id.Value} killed");
+                }
+                else
+                {
+                    mgr.OnOutput($"Script thread with ID {Id.Value} does not exist");
                 }
             }
         }
