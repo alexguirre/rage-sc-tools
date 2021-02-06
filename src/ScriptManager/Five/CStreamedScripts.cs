@@ -10,9 +10,13 @@
         [StructLayout(LayoutKind.Explicit)]
         public struct VTableDef
         {
-            [FieldOffset(0x040)] public delegate* unmanaged[Thiscall]<ref CStreamedScripts, out strLocalIndex, IntPtr, ref strLocalIndex> FindSlot;
+            [FieldOffset(0x010)] public delegate* unmanaged[Thiscall]<ref CStreamedScripts, ref int, IntPtr, int*> FindSlot;
 
+            [FieldOffset(0x020)] public delegate* unmanaged[Thiscall]<ref CStreamedScripts, int, void> RemoveSlot;
+            
             [FieldOffset(0x040)] public delegate* unmanaged[Thiscall]<ref CStreamedScripts, int, scrProgram*> GetPtr;
+
+            [FieldOffset(0x098)] public delegate* unmanaged[Thiscall]<ref CStreamedScripts, int, uint> GetNumRefs;
 
             [FieldOffset(0x100)] public delegate* unmanaged[Thiscall]<ref CStreamedScripts, int> GetSize;
             [FieldOffset(0x108)] public delegate* unmanaged[Thiscall]<ref CStreamedScripts, int> GetNumUsedSlots;
@@ -26,11 +30,14 @@
         public strLocalIndex FindSlot(string name)
         {
             var namePtr = Marshal.StringToHGlobalAnsi(name);
-            VTable->FindSlot(ref this, out strLocalIndex index, namePtr);
+            int index = -1;
+            VTable->FindSlot(ref this, ref index, namePtr);
             Marshal.FreeHGlobal(namePtr);
             return index;
         }
+        public void RemoveSlot(strLocalIndex index) => VTable->RemoveSlot(ref this, index.Value);
         public ref scrProgram GetPtr(strLocalIndex index) => ref Unsafe.AsRef<scrProgram>(VTable->GetPtr(ref this, index.Value));
+        public uint GetNumRefs(strLocalIndex index) => VTable->GetNumRefs(ref this, index.Value);
         public int GetSize() => VTable->GetSize(ref this);
         public int GetNumUsedSlots() => VTable->GetNumUsedSlots(ref this);
 

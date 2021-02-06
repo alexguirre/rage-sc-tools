@@ -4,6 +4,7 @@
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.IO;
+    using System.Runtime.CompilerServices;
 
     using ScTools.Five;
 
@@ -13,6 +14,7 @@
         /// Queue of jobs to run on the main game thread.
         /// </summary>
         private readonly ConcurrentQueue<IJob> jobs = new();
+        private readonly HashSet<strLocalIndex> externalRegisteredScripts = new();
 
         public event Action<string>? Output;
 
@@ -46,7 +48,7 @@
             jobs.Enqueue(new UnregisterScriptJob(script));
         }
 
-        public IEnumerable<(string Name, int Index)> EnumerateRegisteredScripts()
+        public IEnumerable<(string Name, uint NumRefs, bool Loaded)> EnumerateRegisteredScripts()
         {
             if (Util.IsInGame)
             {
@@ -56,7 +58,7 @@
                     var name = CStreamedScripts.Instance.GetAssetName(i);
                     if (name != "-undefined-")
                     {
-                        yield return (name, i);
+                        yield return (name, CStreamedScripts.Instance.GetNumRefs(i), !Unsafe.IsNullRef(ref CStreamedScripts.Instance.GetPtr(i)));
                     }
                 }
             }
@@ -64,7 +66,7 @@
             {
                 for (int i = 0; i < 100; i++)
                 {
-                    yield return ($"script_{i}", i);
+                    yield return ($"script_{i}", 1, i % 2 == 0);
                 }
             }
         }
@@ -141,7 +143,8 @@
                         var localIndex = scriptIndex.ToLocal(CStreamedScripts.Instance.ObjectsBaseIndex);
                         mgr.OnOutput($"Registered '{ScriptFile}' (index: {scriptIndex.Value}, local: {localIndex.Value})");
                         var loaded = CStreamedScripts.Instance.StreamingBlockingLoad(localIndex, 17);
-                        mgr.OnOutput($"    Loaded: {loaded}");
+                        mgr.OnOutput($"\tLoaded: {loaded}");
+                        mgr.externalRegisteredScripts.Add(localIndex);
                     }
                     else
                     {
@@ -163,8 +166,41 @@
 
             public void Execute(ScriptManager mgr)
             {
-                // TODO
-                mgr.OnOutput($"{nameof(UnregisterScriptJob)} not implemented");
+                ref var scripts = ref CStreamedScripts.Instance;
+                var index = scripts.FindSlot(Name);
+                if (index.Value != -1)
+                {
+                    var refs = scripts.GetNumRefs(index);
+                    if (refs == 0)
+                    {
+                        var globalIndex = index.ToGlobal(CStreamedScripts.Instance.ObjectsBaseIndex);
+
+                        if (!Unsafe.IsNullRef(ref scripts.GetPtr(index)))
+                        {
+                            mgr.OnOutput("Script program still loaded, removing it...");
+                            strStreaming.Instance.ClearRequiredFlag(globalIndex, 17);
+                            strStreaming.Instance.RemoveObject(globalIndex);
+                        }
+
+                        if (mgr.externalRegisteredScripts.Contains(index))
+                        {
+                            strPackfileManager.InvalidateIndividualFile(Name + ".ysc");
+                        }
+
+                        strStreaming.Instance.UnregisterObject(globalIndex);
+                        CStreamedScripts.Instance.RemoveSlot(index);
+
+                        mgr.OnOutput($"Unregistered script program '{Name}'");
+                    }
+                    else
+                    {
+                        mgr.OnOutput($"Script program '{Name}' still has {refs} reference(s)");
+                    }
+                }
+                else
+                {
+                    mgr.OnOutput($"Script program '{Name}' does not exist");
+                }
             }
         }
     }

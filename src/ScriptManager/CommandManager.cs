@@ -103,7 +103,7 @@
 
         private void OnScriptManagerOutput(string s)
         {
-            WriteLine(s);
+            WriteLine("\t" + s);
         }
 
         private void Command_Exit() => running = false;
@@ -124,9 +124,10 @@
 
         private void Command_List()
         {
-            foreach (var (name, i) in scriptMgr.EnumerateRegisteredScripts())
+            WriteLine($"\tName\tNum Refs\tLoaded");
+            foreach (var (name, numRefs, loaded) in scriptMgr.EnumerateRegisteredScripts())
             {
-                WriteLine($"\t{name}\t{i}");
+                WriteLine($"\t{name}\t{numRefs}\t{loaded}");
             }
         }
 
