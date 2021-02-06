@@ -13,6 +13,8 @@
 
     internal sealed class CommandManager
     {
+        private const string Prompt = ">";
+
         private readonly IConsole console;
         private readonly ScriptManager scriptMgr;
         private readonly Command rootCommand;
@@ -81,18 +83,21 @@
             };
             kill.Handler = CommandHandler.Create<uint>(Command_Kill);
 
-            return new Command(">")
+            return new Command(Prompt)
             {
                 exit, help, list, listThreads, listStacks, register, unregister, start, kill
             };
         }
 
+        private void Write(string text) => console.Out.Write(text);
         private void WriteLine(string text) => console.Out.WriteLine(text);
 
         public void MainLoop()
         {
             while (running)
             {
+                Write(Prompt);
+                Write(" ");
                 var cmd = Console.ReadLine();
                 if (cmd != null)
                 {
