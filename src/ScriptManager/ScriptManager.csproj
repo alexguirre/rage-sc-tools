@@ -21,7 +21,11 @@
     <IlcGenerateStackTraceData>true</IlcGenerateStackTraceData>
     <IlcDisableUnhandledExceptionExperience>false</IlcDisableUnhandledExceptionExperience>
   </PropertyGroup>
-  
+
+  <Target Name="CreateASI" AfterTargets="Publish">
+    <Copy SourceFiles="$(PublishDir)/$(AssemblyName).dll" DestinationFiles="$(PublishDir)/$(AssemblyName).asi" />
+  </Target>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="6.0.0-*" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.20574.7" />
