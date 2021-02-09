@@ -1,23 +1,14 @@
 ﻿namespace ScTools
 {
     using System;
-    using System.CommandLine;
-    using System.CommandLine.Builder;
-    using System.CommandLine.Help;
-    using System.CommandLine.Invocation;
-    using System.CommandLine.Parsing;
-    using System.Diagnostics;
     using System.IO;
-    using System.Linq;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using System.Threading;
 
-    using ScTools.Cli;
-
     internal static unsafe class EntryPoint
     {
-        static IntPtr uiThreadHandle;
+        private static IntPtr UIThreadHandle;
 
         [UnmanagedCallersOnly(EntryPoint = nameof(DllMain), CallConvs = new[] { typeof(CallConvStdcall) })]
         public static bool DllMain(IntPtr hDllHandle, uint nReason, IntPtr Reserved)
@@ -31,16 +22,16 @@
                 SetupGameUpdateCallback();
 
                 // CreateThread instead of System.Threading.Thread because it gets stuck in Thread.Start
-                uiThreadHandle = Kernel32.CreateThread(IntPtr.Zero, 0, &Init, IntPtr.Zero, 0, IntPtr.Zero);
+                UIThreadHandle = Kernel32.CreateThread(IntPtr.Zero, 0, &Init, IntPtr.Zero, 0, IntPtr.Zero);
 
-                Console.WriteLine($"Thread created (handle: {uiThreadHandle.ToString("X")})");
+                Console.WriteLine($"Thread created (handle: {UIThreadHandle.ToString("X")})");
             }
 
             return true;
         }
 
         [UnmanagedCallersOnly(EntryPoint = nameof(GetUIThreadHandle))]
-        public static IntPtr GetUIThreadHandle() => uiThreadHandle;
+        public static IntPtr GetUIThreadHandle() => UIThreadHandle;
 
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
         private static int Init(IntPtr parameter)

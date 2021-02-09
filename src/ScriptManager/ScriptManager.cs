@@ -195,6 +195,7 @@
                         if (mgr.externalRegisteredScripts.Contains(index))
                         {
                             strPackfileManager.InvalidateIndividualFile(Name + ".ysc");
+                            mgr.externalRegisteredScripts.Remove(index);
                         }
 
                         strStreaming.Instance.UnregisterObject(globalIndex);
