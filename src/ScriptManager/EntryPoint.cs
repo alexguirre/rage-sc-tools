@@ -53,7 +53,7 @@
                 Console.SetError(new StreamWriter(Console.OpenStandardError()) { AutoFlush = true });
             }
 
-            var scriptMgr = new ScriptManager();
+            using var scriptMgr = new ScriptManager();
             var cmdMgr = new CommandManager(scriptMgr);
 
             cmdMgr.MainLoop();

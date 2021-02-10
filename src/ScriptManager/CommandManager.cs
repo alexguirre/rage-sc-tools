@@ -96,6 +96,8 @@
         {
             while (running)
             {
+                scriptMgr.WaitForJobs();
+
                 Write(Prompt);
                 Write(" ");
                 var cmd = Console.ReadLine();

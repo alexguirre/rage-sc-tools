@@ -5,15 +5,17 @@
     using System.Collections.Generic;
     using System.IO;
     using System.Runtime.CompilerServices;
+    using System.Threading;
 
     using ScTools.Five;
 
-    internal sealed class ScriptManager
+    internal sealed class ScriptManager : IDisposable
     {
         /// <summary>
         /// Queue of jobs to run on the main game thread.
         /// </summary>
         private readonly ConcurrentQueue<IJob> jobs = new();
+        private readonly ManualResetEvent jobsDoneEvent = new(initialState: true);
         private readonly HashSet<strLocalIndex> externalRegisteredScripts = new();
 
         public event Action<string>? Output;
@@ -21,6 +23,23 @@
         public ScriptManager()
         {
             Util.AfterGameUpdate += Update;
+        }
+
+        public void Dispose()
+        {
+            jobsDoneEvent.Dispose();
+        }
+
+        public void WaitForJobs() => jobsDoneEvent.WaitOne();
+
+        private void QueueJob(IJob job)
+        {
+            jobs.Enqueue(job);
+            if (Util.IsInGame)
+            {
+                // jobs are only processed if we are in-game
+                jobsDoneEvent.Reset();
+            }
         }
 
         private void OnOutput(string s) => Output?.Invoke(s);
@@ -31,6 +50,7 @@
             {
                 job.Execute(this);
             }
+            jobsDoneEvent.Set();
         }
 
         public void RegisterScript(FileInfo scriptFile)
@@ -40,22 +60,22 @@
                 throw new ArgumentException($"File '{scriptFile}' does not exist", nameof(scriptFile));
             }
 
-            jobs.Enqueue(new RegisterScriptJob(scriptFile));
+            QueueJob(new RegisterScriptJob(scriptFile));
         }
 
         public void UnregisterScript(string script)
         {
-            jobs.Enqueue(new UnregisterScriptJob(script));
+            QueueJob(new UnregisterScriptJob(script));
         }
 
         public void StartThread(string script, uint stackSize)
         {
-            jobs.Enqueue(new StartThreadJob(script, stackSize));
+            QueueJob(new StartThreadJob(script, stackSize));
         }
 
         public void KillThread(scrThreadId id)
         {
-            jobs.Enqueue(new KillThreadJob(id));
+            QueueJob(new KillThreadJob(id));
         }
 
         public IEnumerable<(string Name, uint NumRefs, bool Loaded)> EnumerateRegisteredScripts()
