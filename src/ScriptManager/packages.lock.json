@@ -5,8 +5,8 @@
       "Microsoft.DotNet.ILCompiler": {
         "type": "Direct",
         "requested": "[6.0.0-*, )",
-        "resolved": "6.0.0-preview.2.21104.2",
-        "contentHash": "EnJ9tBnMkXPFnvMc+epARSYBnVS3h8gTzon8yKVVqn6lmm8RrGHqDvvgK+DkYBwD8QF1pTkMcW9Me7yigKIevQ=="
+        "resolved": "6.0.0-preview.2.21108.1",
+        "contentHash": "RrvjkPlPdI6VdbSRORYxaLs64iHeJYvhhRv8nnamcjKeytH9rpIUBlMoo+Jelkp5pjRDNS9KcZKLr+/CbnHFkQ=="
       },
       "System.CommandLine": {
         "type": "Direct",
@@ -16,15 +16,6 @@
         "dependencies": {
           "Microsoft.CSharp": "4.4.1",
           "system.memory": "4.5.4"
-        }
-      },
-      "System.CommandLine.Rendering": {
-        "type": "Direct",
-        "requested": "[0.3.0-alpha.20574.7, )",
-        "resolved": "0.3.0-alpha.20574.7",
-        "contentHash": "pOWfH0p+2+R+ZLDauxt8iCuqKZRTXc+70+qIJ/L7w402dKfwUOKwwy8BP6bAkOflHvT+5F9uownB8X7TN6OYVw==",
-        "dependencies": {
-          "System.CommandLine": "2.0.0-beta1.20574.7"
         }
       },
       "Antlr4.Runtime.Standard": {
@@ -985,10 +976,10 @@
       "Microsoft.DotNet.ILCompiler": {
         "type": "Direct",
         "requested": "[6.0.0-*, )",
-        "resolved": "6.0.0-preview.2.21104.2",
-        "contentHash": "EnJ9tBnMkXPFnvMc+epARSYBnVS3h8gTzon8yKVVqn6lmm8RrGHqDvvgK+DkYBwD8QF1pTkMcW9Me7yigKIevQ==",
+        "resolved": "6.0.0-preview.2.21108.1",
+        "contentHash": "RrvjkPlPdI6VdbSRORYxaLs64iHeJYvhhRv8nnamcjKeytH9rpIUBlMoo+Jelkp5pjRDNS9KcZKLr+/CbnHFkQ==",
         "dependencies": {
-          "runtime.win-x64.Microsoft.DotNet.ILCompiler": "6.0.0-preview.2.21104.2"
+          "runtime.win-x64.Microsoft.DotNet.ILCompiler": "6.0.0-preview.2.21108.1"
         }
       },
       "Microsoft.Win32.Primitives": {
@@ -1150,8 +1141,8 @@
       },
       "runtime.win-x64.Microsoft.DotNet.ILCompiler": {
         "type": "Transitive",
-        "resolved": "6.0.0-preview.2.21104.2",
-        "contentHash": "dFpw/2XS0PYjtzCI9pqXo8e2xYvD0sNCFHsvQ2L9qWlFuWUDIKvGsFR3QqYi9q8mFspKnE0JhD2UEIHPqpCb7Q=="
+        "resolved": "6.0.0-preview.2.21108.1",
+        "contentHash": "MF9KLeTzJyhKR1MIq32Vbf34GOJjhvKj00/D6+6yUjy14TfU8bsFGNeKN1YkTAixwvC1gKpcr5TmZIzxs4SvOQ=="
       },
       "runtime.win.Microsoft.Win32.Primitives": {
         "type": "Transitive",
