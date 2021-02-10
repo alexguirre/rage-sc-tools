@@ -56,15 +56,15 @@
             }
         }
 
-        public static readonly atArrayOfPtrs<scrThread>* ThreadsPtr = Util.IsInGame ? (atArrayOfPtrs<scrThread>*)Util.RVA(0x2D9C368/*b2189*/) : null;
-        public static readonly atArray<ThreadStack>* StacksPtr = Util.IsInGame ? (atArray<ThreadStack>*)Util.RVA(0x2D9C378/*b2189*/) : null;
+        public static readonly atArrayOfPtrs<scrThread>* ThreadsPtr = Util.IsInGame ? (atArrayOfPtrs<scrThread>*)Util.RVA(0x2DA43D8/*b2215*/) : null;
+        public static readonly atArray<ThreadStack>* StacksPtr = Util.IsInGame ? (atArray<ThreadStack>*)Util.RVA(0x2DA43E8/*b2215*/) : null;
         public static ref atArrayOfPtrs<scrThread> Threads => ref Unsafe.AsRef<atArrayOfPtrs<scrThread>>(ThreadsPtr);
         public static ref atArray<ThreadStack> Stacks => ref Unsafe.AsRef<atArray<ThreadStack>>(StacksPtr);
 
-        private static readonly void* KillThreadAddress = Util.IsInGame ? (void*)Util.RVA(0x15A9F68/*b2189*/) : null;
+        private static readonly void* KillThreadAddress = Util.IsInGame ? (void*)Util.RVA(0x15AB158/*b2215*/) : null;
         public static void KillThread(scrThreadId id) => ((delegate* unmanaged<uint, void>)KillThreadAddress)(id.Value);
 
-        private static readonly void* StartNewThreadWithNameAddress = Util.IsInGame ? (void**)Util.RVA(0xA30984/*b2189*/) : null;
+        private static readonly void* StartNewThreadWithNameAddress = Util.IsInGame ? (void**)Util.RVA(0xA31EC0/*b2215*/) : null;
         public static scrThreadId StartNewThreadWithName(string programName, IntPtr args, int argsSize, uint stackSize)
         {
             var programNameCopy = Marshal.StringToHGlobalAnsi(programName);

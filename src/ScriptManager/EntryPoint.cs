@@ -88,7 +88,7 @@
         }
 
         // a graphics-related function ptr called after CApp::GameUpdate
-        private static void* GameUpdateFuncPtr = Util.IsInGame ? (void*)Util.RVA(0x1DE3230/*b2189*/) : null;
+        private static void* GameUpdateFuncPtr = Util.IsInGame ? (void*)Util.RVA(0x1DE32B0/*b2215*/) : null;
         private static delegate* unmanaged<void> PrevGameUpdateFunc = null;
     }
 }

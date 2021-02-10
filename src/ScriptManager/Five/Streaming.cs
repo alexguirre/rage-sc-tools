@@ -35,26 +35,26 @@
     [StructLayout(LayoutKind.Explicit)]
     internal unsafe struct strStreaming
     {
-        private static readonly void* ClearRequiredFlagAddress = Util.IsInGame ? (void*)Util.RVA(0x15C2700/*b2189*/) : null;
+        private static readonly void* ClearRequiredFlagAddress = Util.IsInGame ? (void*)Util.RVA(0x15C3920/*b2215*/) : null;
         public void ClearRequiredFlag(strIndex index, uint flags)
             => ((delegate* unmanaged[Thiscall]<ref strStreaming, int, uint, void>)ClearRequiredFlagAddress)(ref this, index.Value, flags);
 
-        private static readonly void* RemoveObjectAddress = Util.IsInGame ? (void*)Util.RVA(0x15D30E4/*b2189*/) : null;
+        private static readonly void* RemoveObjectAddress = Util.IsInGame ? (void*)Util.RVA(0x15D4434/*b2215*/) : null;
         public bool RemoveObject(strIndex index)
             => ((delegate* unmanaged[Thiscall]<ref strStreaming, int, bool>)RemoveObjectAddress)(ref this, index.Value);
 
-        private static readonly void* UnregisterObjectAddress = Util.IsInGame ? (void*)Util.RVA(0x15D6A10/*b2189*/) : null;
+        private static readonly void* UnregisterObjectAddress = Util.IsInGame ? (void*)Util.RVA(0x15D7E1C/*b2215*/) : null;
         public bool UnregisterObject(strIndex index)
             => ((delegate* unmanaged[Thiscall]<ref strStreaming, int, bool>)UnregisterObjectAddress)(ref this, index.Value);
 
 
-        public static readonly strStreaming* InstancePtr = Util.IsInGame ? (strStreaming*)Util.RVA(0x2DA0AF0/*b2189*/) : null;
+        public static readonly strStreaming* InstancePtr = Util.IsInGame ? (strStreaming*)Util.RVA(0x2DA8B60/*b2215*/) : null;
         public static ref strStreaming Instance => ref Unsafe.AsRef<strStreaming>(InstancePtr);
     }
 
     internal static unsafe class strPackfileManager
     {
-        private static readonly void* RegisterIndividualFileAddress = Util.IsInGame ? (void*)Util.RVA(0x15D23B0/*b2189*/) : null;
+        private static readonly void* RegisterIndividualFileAddress = Util.IsInGame ? (void*)Util.RVA(0x15D3730/*b2215*/) : null;
         public static strIndex RegisterIndividualFile(string fullPath, bool a3, string registerAs, bool errorIfFailed)
         {
             var fn = (delegate* unmanaged[Thiscall]<strIndex*, IntPtr, bool, IntPtr, bool, strIndex*>)RegisterIndividualFileAddress;
@@ -67,7 +67,7 @@
             return result;
         }
 
-        private static readonly void* InvalidateIndividualFileAddress = Util.IsInGame ? (void*)Util.RVA(0x15CDDF0/*b2189*/) : null;
+        private static readonly void* InvalidateIndividualFileAddress = Util.IsInGame ? (void*)Util.RVA(0x15CF010/*b2215*/) : null;
         public static void InvalidateIndividualFile(string registeredAs)
         {
             var fn = (delegate* unmanaged[Thiscall]<IntPtr, void>)InvalidateIndividualFileAddress;
