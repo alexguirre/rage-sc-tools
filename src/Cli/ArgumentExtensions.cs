@@ -3,7 +3,7 @@
     using System.CommandLine;
     using System.Linq;
 
-    internal static class ArgumentExtensions
+    public static class ArgumentExtensions
     {
         public static Argument<FileGlob> AtLeastOne(this Argument<FileGlob> argument)
         {
@@ -19,6 +19,7 @@
 
         public static Argument<FileGlob[]> AtLeastOne(this Argument<FileGlob[]> argument)
         {
+            argument.Arity = ArgumentArity.OneOrMore;
             argument.AddValidator(symbol =>
                                       new FileGlob(symbol.Tokens.Select(t => t.Value)).HasMatches ?
                                             null :

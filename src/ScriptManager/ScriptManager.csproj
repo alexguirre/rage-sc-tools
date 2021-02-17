@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <AssemblyName>script-manager</AssemblyName>
+    <Nullable>enable</Nullable>
+    <RootNamespace>ScTools</RootNamespace>
+    <LangVersion>9.0</LangVersion>
+    <Platforms>x64</Platforms>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <NativeLib>Shared</NativeLib>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- these can help when debugging weird exceptions especially when reflection is involved. See https://github.com/dotnet/runtimelab/blob/feature/NativeAOT/docs/using-nativeaot/optimizing.md -->
+    <TrimMode>link</TrimMode>
+    <IlcGenerateCompleteTypeMetadata>true</IlcGenerateCompleteTypeMetadata>
+    <IlcGenerateStackTraceData>true</IlcGenerateStackTraceData>
+    <IlcDisableUnhandledExceptionExperience>false</IlcDisableUnhandledExceptionExperience>
+  </PropertyGroup>
+
+  <Target Name="CreateASI" AfterTargets="Publish">
+    <Copy SourceFiles="$(PublishDir)/$(AssemblyName).dll" DestinationFiles="$(PublishDir)/$(AssemblyName).asi" />
+  </Target>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="6.0.0-*" />
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.20574.7" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\Cli\Cli.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <RdXmlFile Include="rd.xml" />
+  </ItemGroup>
+</Project>

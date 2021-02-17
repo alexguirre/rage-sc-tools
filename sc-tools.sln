@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Core.Tests", "src\Core.Test
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LanguageServer", "src\LanguageServer\LanguageServer.csproj", "{BDC8A6FC-E28B-4C7C-BAA5-B7671E7CE3D8}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ScriptManager", "src\ScriptManager\ScriptManager.csproj", "{E9249AA8-6EF0-4259-BA36-5A78FF0718E8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -39,6 +41,10 @@ Global
 		{BDC8A6FC-E28B-4C7C-BAA5-B7671E7CE3D8}.Debug|x64.Build.0 = Debug|x64
 		{BDC8A6FC-E28B-4C7C-BAA5-B7671E7CE3D8}.Release|x64.ActiveCfg = Release|x64
 		{BDC8A6FC-E28B-4C7C-BAA5-B7671E7CE3D8}.Release|x64.Build.0 = Release|x64
+		{E9249AA8-6EF0-4259-BA36-5A78FF0718E8}.Debug|x64.ActiveCfg = Debug|x64
+		{E9249AA8-6EF0-4259-BA36-5A78FF0718E8}.Debug|x64.Build.0 = Debug|x64
+		{E9249AA8-6EF0-4259-BA36-5A78FF0718E8}.Release|x64.ActiveCfg = Release|x64
+		{E9249AA8-6EF0-4259-BA36-5A78FF0718E8}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

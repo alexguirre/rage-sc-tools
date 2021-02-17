@@ -1,0 +1,6 @@
+<Directives>
+  <Application>
+    <Assembly Name="script-manager" Dynamic="Required All"></Assembly>
+    <Assembly Name="sc-tools" Dynamic="Required All"></Assembly>
+  </Application>
+</Directives>
