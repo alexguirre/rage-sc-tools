@@ -161,26 +161,33 @@
             {
                 // TODO: include parameter names in function symbol detail
                 var sb = new StringBuilder();
-                if (!f.IsProcedure)
+                if (!f.Type.IsProcedure)
                 {
                     sb.Append(f.Type.ReturnType!.ToString());
                     sb.Append(' ');
                 }
                 sb.Append("(");
-                var addComma = false;
-                foreach (var (type, name) in f.Type.Parameters)
+                if (f.Type is ExplicitFunctionType funcTy)
                 {
-                    if (addComma)
+                    var addComma = false;
+                    foreach (var (type, name) in funcTy.Parameters)
                     {
-                        sb.Append(", ");
+                        if (addComma)
+                        {
+                            sb.Append(", ");
+                        }
+                        sb.Append(type);
+                        if (name != null)
+                        {
+                            sb.Append(' ');
+                            sb.Append(name);
+                        }
+                        addComma = true;
                     }
-                    sb.Append(type);
-                    if (name != null)
-                    {
-                        sb.Append(' ');
-                        sb.Append(name);
-                    }
-                    addComma = true;
+                }
+                else
+                {
+                    sb.Append("...");
                 }
                 sb.Append(")");
                 return sb.ToString();
@@ -204,7 +211,7 @@
                         Detail = f.Type.ToString(),
                         Children = Array.Empty<DocumentSymbol>(),
                     }).ToArray();
-                case FunctionSymbol f when !f.IsNative:
+                case DefinedFunctionSymbol f:
                     Debug.Assert(compilation.MainModule.SymbolTable != null);
                     var funcScope = compilation.MainModule.SymbolTable.GetScope(f.AstBlock!);
                     return GetAllSymbols(funcScope)!.Select(ToLspSymbol).ToArray();

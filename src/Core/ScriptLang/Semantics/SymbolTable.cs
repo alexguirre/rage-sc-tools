@@ -183,45 +183,31 @@ namespace ScTools.ScriptLang.Semantics
             void Add(ISymbol symbol) => dict.Add(symbol.Name, symbol);
 
             // basic types
-            var flTy = new BasicType(BasicTypeCode.Float);
-            var intTy = new BasicType(BasicTypeCode.Int);
-            Add(new TypeSymbol("INT", SourceRange.Unknown, intTy));
-            Add(new TypeSymbol("FLOAT", SourceRange.Unknown, flTy));
-            Add(new TypeSymbol("BOOL", SourceRange.Unknown, new BasicType(BasicTypeCode.Bool)));
-            Add(new TypeSymbol("STRING", SourceRange.Unknown, new BasicType(BasicTypeCode.String)));
+            Add(new TypeSymbol(nameof(BuiltInTypes.INT), SourceRange.Unknown, BuiltInTypes.INT));
+            Add(new TypeSymbol(nameof(BuiltInTypes.FLOAT), SourceRange.Unknown, BuiltInTypes.FLOAT));
+            Add(new TypeSymbol(nameof(BuiltInTypes.BOOL), SourceRange.Unknown, BuiltInTypes.BOOL));
+            Add(new TypeSymbol(nameof(BuiltInTypes.STRING), SourceRange.Unknown, BuiltInTypes.STRING));
 
             // struct types
-            static Field F(Type ty, string name) => new Field(ty, name);
-            var structTypes = new[]
-            {
-                new StructType("VECTOR", F(flTy, "x"), F(flTy, "y"), F(flTy, "z")),
-                new StructType("PLAYER_INDEX", F(intTy, "value")),
-                new StructType("ENTITY_INDEX", F(intTy, "value")),
-                new StructType("PED_INDEX", F(intTy, "value")),
-                new StructType("VEHICLE_INDEX", F(intTy, "value")),
-                new StructType("OBJECT_INDEX", F(intTy, "value")),
-                new StructType("CAMERA_INDEX", F(intTy, "value")),
-                new StructType("PICKUP_INDEX", F(intTy, "value")),
-                new StructType("BLIP_INFO_ID", F(intTy, "value")),
-            };
-
-            foreach (var structTy in structTypes)
+            foreach (var structTy in BuiltInTypes.STRUCTS)
             {
                 Add(new TypeSymbol(structTy.Name!, SourceRange.Unknown, structTy));
             }
 
-            for (int len = TextLabelType.MinLength; len <= TextLabelType.MaxLength; len++)
+            foreach (var textLabelTy in BuiltInTypes.TEXT_LABELS)
             {
-                var textLabelTy = new TextLabelType(len);
                 Add(new TypeSymbol(textLabelTy.ToString(), SourceRange.Unknown, textLabelTy));
             }
 
-            Add(new TypeSymbol(AnyType.Instance.ToString(), SourceRange.Unknown, AnyType.Instance));
+            Add(new TypeSymbol(BuiltInTypes.ANY.ToString(), SourceRange.Unknown, BuiltInTypes.ANY));
 
             Add(IntrinsicFunctionSymbol.AssignString);
             Add(IntrinsicFunctionSymbol.AssignInt);
             Add(IntrinsicFunctionSymbol.AppendString);
             Add(IntrinsicFunctionSymbol.AppendInt);
+            Add(IntrinsicFunctionSymbol.I2F);
+            Add(IntrinsicFunctionSymbol.F2I);
+            Add(IntrinsicFunctionSymbol.F2V);
 
             return dict.ToImmutable();
         }

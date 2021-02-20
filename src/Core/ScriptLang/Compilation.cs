@@ -48,14 +48,14 @@ namespace ScTools.ScriptLang
             MainModule.Parse(input);
             MainModule.DoFirstSemanticAnalysisPass(this);
 
-            var main = MainModule.SymbolTable!.Lookup(FunctionSymbol.MainName) as FunctionSymbol;
+            var main = MainModule.SymbolTable!.Lookup(DefinedFunctionSymbol.MainName) as DefinedFunctionSymbol;
             if (main == null)
             {
-                MainModule.Diagnostics.AddError(MainModule.FilePath, $"Missing '{FunctionSymbol.MainName}' procedure", SourceRange.Unknown);
+                MainModule.Diagnostics.AddError(MainModule.FilePath, $"Missing '{DefinedFunctionSymbol.MainName}' procedure", SourceRange.Unknown);
             }
             else if (!main.IsMain)
             {
-                MainModule.Diagnostics.AddError(MainModule.FilePath, $"Incorrect signature for '{FunctionSymbol.MainName}' procedure, expected 'PROC {FunctionSymbol.MainName}()'", main.Source);
+                MainModule.Diagnostics.AddError(MainModule.FilePath, $"Incorrect signature for '{DefinedFunctionSymbol.MainName}' procedure, expected 'PROC {DefinedFunctionSymbol.MainName}()'", main.Source);
             }
 
             NeedsRecompilation = true;

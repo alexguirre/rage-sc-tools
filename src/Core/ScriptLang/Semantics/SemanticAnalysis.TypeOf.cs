@@ -96,13 +96,13 @@ namespace ScTools.ScriptLang.Semantics
                     return null;
                 }
 
-                if (f.ReturnType == null)
+                if (f.IsProcedure)
                 {
-                    diagnostics.AddError(filePath, $"Cannot call '{node.Expression}'. It is a procedure, it has no return value", node.Source);
+                    diagnostics.AddError(filePath, $"Cannot call '{node.Expression}' in an expression. It is a procedure, it has no return value", node.Source);
                     return null;
                 }
 
-                int expected = f.Parameters.Count;
+                int expected = f.ParameterCount;
                 int found = node.ArgumentList.Arguments.Length;
                 if (found != expected)
                 {
@@ -112,10 +112,8 @@ namespace ScTools.ScriptLang.Semantics
                 int argCount = Math.Min(expected, found);
                 for (int i = 0; i < argCount; i++)
                 {
-                    var expectedType = f.Parameters[i].Type;
                     var foundType = node.ArgumentList.Arguments[i].Accept(this);
-
-                    if (foundType == null || !expectedType.IsAssignableFrom(foundType, considerReferences: true))
+                    if (!f.DoesParameterTypeMatch(i, foundType))
                     {
                         diagnostics.AddError(filePath, $"Mismatched type of argument #{i}", node.ArgumentList.Arguments[i].Source);
                     }

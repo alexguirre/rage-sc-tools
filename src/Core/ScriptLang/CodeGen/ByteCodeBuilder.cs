@@ -377,15 +377,14 @@ namespace ScTools.ScriptLang.CodeGen
 
         public void EmitDrop() => Emit(Opcode.DROP);
 
-        public void EmitCall(FunctionSymbol function) => Emit(Opcode.CALL, new[] { new Operand(function.Name, OperandType.Identifier) });
+        public void EmitCall(DefinedFunctionSymbol function) => Emit(Opcode.CALL, new[] { new Operand(function.Name, OperandType.Identifier) });
 
         public void EmitIndirectCall() => Emit(Opcode.CALLINDIRECT);
 
-        public void EmitNative(FunctionSymbol function)
+        public void EmitNative(NativeFunctionSymbol function)
         {
             var nativeDB = compilation.NativeDB;
             Debug.Assert(nativeDB != null);
-            Debug.Assert(function.IsNative);
 
             var hash = nativeDB.FindOriginalHash(function.Name) ?? throw new InvalidOperationException($"Unknown native '{function.Name}'");
             var translatedHash = nativeDB.TranslateHash(hash, GameBuild.Latest);

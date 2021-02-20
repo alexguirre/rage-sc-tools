@@ -44,7 +44,7 @@ namespace ScTools.ScriptLang.Semantics
 
             private void VisitFunc(string name, StatementBlock block)
             {
-                var func = Symbols.Lookup(name) as FunctionSymbol;
+                var func = Symbols.Lookup(name) as DefinedFunctionSymbol;
                 Debug.Assert(func != null);
 
                 var boundFunc = new BoundFunction(func);
@@ -170,20 +170,10 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitInvocationStatement(InvocationStatement node)
             {
-                if (node.Expression is IdentifierExpression id && Symbols.Lookup(id.Identifier) is IntrinsicFunctionSymbol intrinsic)
-                {
-                    stmts!.Add(new BoundIntrinsicStatement(
-                        intrinsic,
-                        node.ArgumentList.Arguments.Select(a => Bind(a)!)
-                    ));
-                }
-                else
-                {
-                    stmts!.Add(new BoundInvocationStatement(
-                        Bind(node.Expression)!,
-                        node.ArgumentList.Arguments.Select(a => Bind(a)!)
-                    ));
-                }
+                stmts!.Add(new BoundInvocationStatement(
+                    Bind(node.Expression)!,
+                    node.ArgumentList.Arguments.Select(a => Bind(a)!)
+                ));
             }
 
             public override void VisitVariableDeclarationStatement(VariableDeclarationStatement node)
@@ -310,10 +300,6 @@ namespace ScTools.ScriptLang.Semantics
                 {
                     case FunctionSymbol fn: return new BoundFunctionExpression(fn);
                     case VariableSymbol v: return new BoundVariableExpression(v);
-                    case IntrinsicFunctionSymbol i:
-                        var err = $"Cannot use intrinsic '{i.Name}' as a expression";
-                        Diagnostics?.AddError(FilePath!, err, node.Source);
-                        return new BoundInvalidExpression(err);
                     case null: // TODO: unresolved symbols?
                         Diagnostics?.AddError(FilePath!, $"Unknown symbol '{node.Identifier}'", node.Source);
                         return new BoundUnknownSymbolExpression(node.Identifier);

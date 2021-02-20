@@ -125,29 +125,29 @@ namespace ScTools.ScriptLang.Semantics
                     switch (symbol)
                     {
                         case VariableSymbol s: s.Type = Resolve(s.Type, s.Source, ref anyUnresolved); break;
-                        case FunctionSymbol s: ResolveFunc(s.Type, s.Source, ref anyUnresolved); break;
+                        case FunctionSymbol s when s.Type is ExplicitFunctionType funcTy: ResolveFunc(funcTy, s.Source, ref anyUnresolved); break;
                         case TypeSymbol s when s.Type is StructType struc: ResolveStruct(struc, s.Source, ref anyUnresolved); break;
-                        case TypeSymbol s when s.Type is FunctionType func: ResolveFunc(func, s.Source, ref anyUnresolved); break;
+                        case TypeSymbol s when s.Type is ExplicitFunctionType func: ResolveFunc(func, s.Source, ref anyUnresolved); break;
                     }
                 }
 
                 return !anyUnresolved;
             }
 
-            private FunctionType CreateUnresolvedFunctionType(string? returnType, IEnumerable<SingleDeclaration> parameters)
+            private ExplicitFunctionType CreateUnresolvedFunctionType(string? returnType, IEnumerable<SingleDeclaration> parameters)
             {
                 var r = returnType != null ? TypeFromAst(returnType, null) : null;
-                return new FunctionType(r, parameters.Select(p => (TypeFromAst(p.Type, p.Declarator.Declarator), (string?)p.Declarator.Declarator.Identifier)));
+                return new ExplicitFunctionType(r, parameters.Select(p => (TypeFromAst(p.Type, p.Declarator.Declarator), (string?)p.Declarator.Declarator.Identifier)));
             }
 
             public override void VisitFunctionStatement(FunctionStatement node)
             {
-                Symbols.Add(new FunctionSymbol(node, CreateUnresolvedFunctionType(node.ReturnType, node.ParameterList.Parameters)));
+                Symbols.Add(new DefinedFunctionSymbol(node, CreateUnresolvedFunctionType(node.ReturnType, node.ParameterList.Parameters)));
             }
 
             public override void VisitProcedureStatement(ProcedureStatement node)
             {
-                Symbols.Add(new FunctionSymbol(node, CreateUnresolvedFunctionType(null, node.ParameterList.Parameters)));
+                Symbols.Add(new DefinedFunctionSymbol(node, CreateUnresolvedFunctionType(null, node.ParameterList.Parameters)));
             }
 
             public override void VisitFunctionPrototypeStatement(FunctionPrototypeStatement node)
@@ -167,13 +167,13 @@ namespace ScTools.ScriptLang.Semantics
             public override void VisitFunctionNativeStatement(FunctionNativeStatement node)
             {
                 // TODO: check that native exists, if not report it in diagnostics
-                Symbols.Add(new FunctionSymbol(node, CreateUnresolvedFunctionType(node.ReturnType, node.ParameterList.Parameters)));
+                Symbols.Add(new NativeFunctionSymbol(node, CreateUnresolvedFunctionType(node.ReturnType, node.ParameterList.Parameters)));
             }
 
             public override void VisitProcedureNativeStatement(ProcedureNativeStatement node)
             {
                 // TODO: check that native exists, if not report it in diagnostics
-                Symbols.Add(new FunctionSymbol(node, CreateUnresolvedFunctionType(null, node.ParameterList.Parameters)));
+                Symbols.Add(new NativeFunctionSymbol(node, CreateUnresolvedFunctionType(null, node.ParameterList.Parameters)));
             }
 
             public override void VisitStaticVariableStatement(StaticVariableStatement node)

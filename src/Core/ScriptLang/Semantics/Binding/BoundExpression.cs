@@ -32,7 +32,6 @@ namespace ScTools.ScriptLang.Semantics.Binding
         public abstract void EmitLoad(ByteCodeBuilder code);
         public abstract void EmitStore(ByteCodeBuilder code);
         public abstract void EmitAddr(ByteCodeBuilder code);
-        public abstract void EmitCall(ByteCodeBuilder code);
     }
 
     public class BoundInvalidExpression : BoundExpression
@@ -51,7 +50,6 @@ namespace ScTools.ScriptLang.Semantics.Binding
         public override void EmitLoad(ByteCodeBuilder code) => throw new NotSupportedException();
         public override void EmitStore(ByteCodeBuilder code) => throw new NotSupportedException();
         public override void EmitAddr(ByteCodeBuilder code) => throw new NotSupportedException();
-        public override void EmitCall(ByteCodeBuilder code) => throw new NotSupportedException();
     }
 
     public sealed class BoundUnknownSymbolExpression : BoundInvalidExpression
@@ -126,7 +124,6 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
         public override void EmitStore(ByteCodeBuilder code) => throw new NotSupportedException();
         public override void EmitAddr(ByteCodeBuilder code) => throw new NotSupportedException();
-        public override void EmitCall(ByteCodeBuilder code) => throw new NotSupportedException();
     }
 
     public sealed class BoundBinaryExpression : BoundExpression
@@ -237,7 +234,6 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
         public override void EmitStore(ByteCodeBuilder code) => throw new NotSupportedException();
         public override void EmitAddr(ByteCodeBuilder code) => throw new NotSupportedException();
-        public override void EmitCall(ByteCodeBuilder code) => throw new NotSupportedException();
     }
 
     public sealed class BoundVariableExpression : BoundExpression
@@ -356,17 +352,6 @@ namespace ScTools.ScriptLang.Semantics.Binding
                 throw new NotSupportedException();
             }
         }
-
-        public override void EmitCall(ByteCodeBuilder code)
-        {
-            if (Type is not FunctionType)
-            {
-                throw new InvalidOperationException("Only function types can be called");
-            }
-
-            EmitLoad(code);
-            code.EmitIndirectCall();
-        }
     }
 
     public sealed class BoundFunctionExpression : BoundExpression
@@ -385,18 +370,6 @@ namespace ScTools.ScriptLang.Semantics.Binding
         public override void EmitLoad(ByteCodeBuilder code) => code.EmitFuncAddr(Function);
         public override void EmitStore(ByteCodeBuilder code) => throw new NotSupportedException();
         public override void EmitAddr(ByteCodeBuilder code) => throw new NotSupportedException();
-
-        public override void EmitCall(ByteCodeBuilder code)
-        {
-            if (Function.IsNative)
-            {
-                code.EmitNative(Function);
-            }
-            else
-            {
-                code.EmitCall(Function);
-            }
-        }
     }
 
     public sealed class BoundInvocationExpression : BoundExpression
@@ -426,25 +399,11 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
         public override void EmitLoad(ByteCodeBuilder code)
         {
-            var functionType = (Callee.Type as FunctionType)!;
-            foreach (var (arg, (paramType, _)) in Arguments.Zip(functionType.Parameters))
-            {
-                if (paramType is RefType ||
-                    (paramType is BasicType { TypeCode: BasicTypeCode.String } && arg.Type?.UnderlyingType is TextLabelType))
-                {
-                    arg.EmitAddr(code);
-                }
-                else
-                {
-                    arg.EmitLoad(code);
-                }
-            }
-            Callee.EmitCall(code);
+            InvocationEmitter.Emit(code, Callee, Arguments, dropReturnValue: false);
         }
 
         public override void EmitStore(ByteCodeBuilder code) => throw new NotSupportedException();
         public override void EmitAddr(ByteCodeBuilder code) => throw new NotSupportedException();
-        public override void EmitCall(ByteCodeBuilder code) => throw new NotSupportedException();
     }
 
     public sealed class BoundMemberAccessExpression : BoundExpression
@@ -517,17 +476,6 @@ namespace ScTools.ScriptLang.Semantics.Binding
             Expression.EmitAddr(code);
             code.EmitOffsetAddr(MemberOffset);
         }
-
-        public override void EmitCall(ByteCodeBuilder code)
-        {
-            if (Type is not FunctionType)
-            {
-                throw new InvalidOperationException("Only function types can be called");
-            }
-
-            EmitLoad(code);
-            code.EmitIndirectCall();
-        }
     }
 
     public sealed class BoundArrayAccessExpression : BoundExpression
@@ -589,17 +537,6 @@ namespace ScTools.ScriptLang.Semantics.Binding
             Expression.EmitAddr(code);
             code.EmitArrayAddr(Type!.SizeOf);
         }
-
-        public override void EmitCall(ByteCodeBuilder code)
-        {
-            if (Type is not FunctionType)
-            {
-                throw new InvalidOperationException("Only function types can be called");
-            }
-
-            EmitLoad(code);
-            code.EmitIndirectCall();
-        }
     }
 
     public sealed class BoundAggregateExpression : BoundExpression
@@ -625,7 +562,6 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
         public override void EmitStore(ByteCodeBuilder code) => throw new NotSupportedException();
         public override void EmitAddr(ByteCodeBuilder code) => throw new NotSupportedException();
-        public override void EmitCall(ByteCodeBuilder code) => throw new NotSupportedException();
     }
 
     public sealed class BoundFloatLiteralExpression : BoundExpression
@@ -646,7 +582,6 @@ namespace ScTools.ScriptLang.Semantics.Binding
         public override void EmitLoad(ByteCodeBuilder code) => code.EmitPushFloat(Value);
         public override void EmitStore(ByteCodeBuilder code) => throw new NotSupportedException();
         public override void EmitAddr(ByteCodeBuilder code) => throw new NotSupportedException();
-        public override void EmitCall(ByteCodeBuilder code) => throw new NotSupportedException();
     }
 
     public sealed class BoundIntLiteralExpression : BoundExpression
@@ -667,7 +602,6 @@ namespace ScTools.ScriptLang.Semantics.Binding
         public override void EmitLoad(ByteCodeBuilder code) => code.EmitPushInt(Value);
         public override void EmitStore(ByteCodeBuilder code) => throw new NotSupportedException();
         public override void EmitAddr(ByteCodeBuilder code) => throw new NotSupportedException();
-        public override void EmitCall(ByteCodeBuilder code) => throw new NotSupportedException();
     }
 
     public sealed class BoundStringLiteralExpression : BoundExpression
@@ -688,7 +622,6 @@ namespace ScTools.ScriptLang.Semantics.Binding
         public override void EmitLoad(ByteCodeBuilder code) => code.EmitPushString(Value);
         public override void EmitStore(ByteCodeBuilder code) => throw new NotSupportedException();
         public override void EmitAddr(ByteCodeBuilder code) => throw new NotSupportedException();
-        public override void EmitCall(ByteCodeBuilder code) => throw new NotSupportedException();
     }
 
     public sealed class BoundBoolLiteralExpression : BoundExpression
@@ -709,6 +642,5 @@ namespace ScTools.ScriptLang.Semantics.Binding
         public override void EmitLoad(ByteCodeBuilder code) => code.EmitPushInt(Value ? 1 : 0);
         public override void EmitStore(ByteCodeBuilder code) => throw new NotSupportedException();
         public override void EmitAddr(ByteCodeBuilder code) => throw new NotSupportedException();
-        public override void EmitCall(ByteCodeBuilder code) => throw new NotSupportedException();
     }
 }

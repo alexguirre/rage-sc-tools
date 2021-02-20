@@ -352,22 +352,35 @@ namespace ScTools.ScriptLang.Semantics
         public static bool operator !=(Field lhs, Field rhs) => !(lhs == rhs);
     }
 
-    public sealed class FunctionType : Type
+    public abstract class FunctionType : Type
     {
-        public Type? ReturnType { get; set; }
-        public IList<(Type Type, string? Name)> Parameters { get; set; }
-        public override int SizeOf => 1;
+        public sealed override int SizeOf => 1;
 
-        public FunctionType(Type? returnType, IEnumerable<Type> parameters)
+        public Type? ReturnType { get; set; }
+        public bool IsProcedure => ReturnType == null;
+        public abstract int ParameterCount { get; }
+
+        public abstract bool DoesParameterTypeMatch(int parameterIndex, Type? argType);
+    }
+
+    public sealed class ExplicitFunctionType : FunctionType
+    {
+        public IList<(Type Type, string? Name)> Parameters { get; set; }
+        public override int ParameterCount => Parameters.Count;
+
+        public ExplicitFunctionType(Type? returnType, IEnumerable<Type> parameters)
             : this(returnType, parameters.Select(t => (t, (string?)null)))
         { }
 
-        public FunctionType(Type? returnType, IEnumerable<(Type, string?)> parameters)
+        public ExplicitFunctionType(Type? returnType, IEnumerable<(Type, string?)> parameters)
             => (ReturnType, Parameters) = (returnType, new List<(Type, string?)>(parameters));
 
-        public override FunctionType Clone() => new FunctionType(ReturnType, Parameters);
+        public override bool DoesParameterTypeMatch(int parameterIndex, Type? argType)
+            => argType != null && Parameters[parameterIndex].Type.IsAssignableFrom(argType, considerReferences: true);
 
-        public override FunctionType? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics, string filePath)
+        public override ExplicitFunctionType Clone() => new ExplicitFunctionType(ReturnType, Parameters);
+
+        public override ExplicitFunctionType? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics, string filePath)
         {
             var resolvedReturnType = ReturnType?.Resolve(symbols, diagnostics, filePath);
             if (resolvedReturnType == null && ReturnType != null)
@@ -381,12 +394,12 @@ namespace ScTools.ScriptLang.Semantics
                 return null;
             }
 
-            return new FunctionType(resolvedReturnType, resolvedParameters!);
+            return new ExplicitFunctionType(resolvedReturnType, resolvedParameters!);
         }
 
         public override bool Equals(Type? other)
         {
-            if (other is not FunctionType f)
+            if (other is not ExplicitFunctionType f)
             {
                 return false;
             }

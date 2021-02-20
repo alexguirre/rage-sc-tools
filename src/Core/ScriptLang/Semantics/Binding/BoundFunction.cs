@@ -13,10 +13,10 @@ namespace ScTools.ScriptLang.Semantics.Binding
         private int localsSize = 0;
         private int localArgsSize = 0;
 
-        public FunctionSymbol Function { get; }
+        public DefinedFunctionSymbol Function { get; }
         public IList<BoundStatement> Body { get; } = new List<BoundStatement>();
 
-        public BoundFunction(FunctionSymbol function)
+        public BoundFunction(DefinedFunctionSymbol function)
         {
             Function = function;
         }

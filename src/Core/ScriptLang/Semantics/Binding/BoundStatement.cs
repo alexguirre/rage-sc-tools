@@ -279,46 +279,8 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
         public override void Emit(ByteCodeBuilder code, BoundFunction parent)
         {
-            var functionType = (Callee.Type as FunctionType)!;
-            foreach (var (arg, (paramType, _)) in Arguments.Zip(functionType.Parameters))
-            {
-                if (paramType is RefType ||
-                    (paramType is BasicType { TypeCode: BasicTypeCode.String } && arg.Type?.UnderlyingType is TextLabelType))
-                {
-                    arg.EmitAddr(code);
-                }
-                else
-                {
-                    arg.EmitLoad(code);
-                }
-            }
-            Callee.EmitCall(code);
-
-            // since this is a statement, drop the returned values if any
-            var returnType = functionType.ReturnType;
-            if (returnType != null)
-            {
-                for (int i = 0; i < returnType.SizeOf; i++)
-                {
-                    code.Emit(ScriptAssembly.Opcode.DROP);
-                }
-            }
+            InvocationEmitter.Emit(code, Callee, Arguments, dropReturnValue: true);
         }
-    }
-
-    public sealed class BoundIntrinsicStatement : BoundStatement
-    {   
-        public IntrinsicFunctionSymbol Intrinsic { get; }
-        public ImmutableArray<BoundExpression> Arguments { get; }
-
-        public BoundIntrinsicStatement(IntrinsicFunctionSymbol intrinsic, IEnumerable<BoundExpression> arguments)
-        {
-            Intrinsic = intrinsic;
-            Arguments = arguments.ToImmutableArray();
-        }
-
-        public override void Emit(ByteCodeBuilder code, BoundFunction parent)
-            => Intrinsic.Emit(code, Arguments);
     }
 
     public sealed class BoundReturnStatement : BoundStatement

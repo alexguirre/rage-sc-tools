@@ -116,7 +116,7 @@ namespace ScTools.ScriptLang.Semantics
                 }
             }
 
-            protected void ResolveFunc(FunctionType func, SourceRange source, ref bool unresolved)
+            protected void ResolveFunc(ExplicitFunctionType func, SourceRange source, ref bool unresolved)
             {
                 // TODO: be more specific with SourceRange for funcs return type and parameters
                 if (func.ReturnType != null)
@@ -160,7 +160,7 @@ namespace ScTools.ScriptLang.Semantics
                     }
                     case RefType ty: ResolveRef(ty, source, ref unresolved); return ty;
                     case StructType ty: ResolveStruct(ty, source, ref unresolved); return ty;
-                    case FunctionType ty: ResolveFunc(ty, source, ref unresolved); return ty;
+                    case ExplicitFunctionType ty: ResolveFunc(ty, source, ref unresolved); return ty;
                     case ArrayType ty: ResolveArray(ty, source, ref unresolved); return ty;
                     default: return t;
                 }

@@ -15,7 +15,7 @@ namespace ScTools.ScriptLang.Semantics
         /// </summary>
         private sealed class SecondPass : Pass
         {
-            private FunctionSymbol? func = null;
+            private DefinedFunctionSymbol? func = null;
 
             public SecondPass(DiagnosticsReport diagnostics, string filePath, SymbolTable symbols)
                 : base(diagnostics, filePath, symbols)
@@ -32,7 +32,7 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitFunctionStatement(FunctionStatement node)
             {
-                var funcSymbol = Symbols.Lookup(node.Name) as FunctionSymbol;
+                var funcSymbol = Symbols.Lookup(node.Name) as DefinedFunctionSymbol;
                 Debug.Assert(funcSymbol != null);
 
                 VisitFunc(funcSymbol, node.ParameterList, node.Block);
@@ -40,13 +40,13 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitProcedureStatement(ProcedureStatement node)
             {
-                var funcSymbol = Symbols.Lookup(node.Name) as FunctionSymbol;
+                var funcSymbol = Symbols.Lookup(node.Name) as DefinedFunctionSymbol;
                 Debug.Assert(funcSymbol != null);
 
                 VisitFunc(funcSymbol, node.ParameterList, node.Block);
             }
 
-            private void VisitFunc(FunctionSymbol func, ParameterList parameters, StatementBlock block)
+            private void VisitFunc(DefinedFunctionSymbol func, ParameterList parameters, StatementBlock block)
             {
                 this.func = func;
 
@@ -274,12 +274,6 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitInvocationStatement(InvocationStatement node)
             {
-                if (node.Expression is IdentifierExpression id && Symbols.Lookup(id.Identifier) is IntrinsicFunctionSymbol intrinsic)
-                {
-                    intrinsic.CheckArguments(node.ArgumentList.Arguments.Select( a => (TypeOf(a), a.Source)), Diagnostics, FilePath);
-                    return;
-                }
-
                 // TODO: very similar to TypeOf.VisitInvocationExpression, refactor
                 var callableType = TypeOf(node.Expression);
                 if (callableType is not FunctionType f)
@@ -291,7 +285,7 @@ namespace ScTools.ScriptLang.Semantics
                     return;
                 }
 
-                int expected = f.Parameters.Count;
+                int expected = f.ParameterCount;
                 int found = node.ArgumentList.Arguments.Length;
                 if (found != expected)
                 {
@@ -301,10 +295,8 @@ namespace ScTools.ScriptLang.Semantics
                 int argCount = Math.Min(expected, found);
                 for (int i = 0; i < argCount; i++)
                 {
-                    var expectedType = f.Parameters[i].Type;
                     var foundType = TypeOf(node.ArgumentList.Arguments[i]);
-
-                    if (foundType == null || !expectedType.IsAssignableFrom(foundType, considerReferences: true))
+                    if (!f.DoesParameterTypeMatch(i, foundType))
                     {
                         Diagnostics.AddError(FilePath, $"Mismatched type of argument #{i}", node.ArgumentList.Arguments[i].Source);
                     }
