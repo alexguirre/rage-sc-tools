@@ -15,6 +15,8 @@ namespace ScTools.ScriptLang
 
     public class Compilation : IUsingModuleResolver
     {
+        public const string DefaultScriptName = "unknown";
+
         private readonly Dictionary<VariableSymbol, int /*location*/> allocatedStatics = new();
 
         public Script? CompiledScript { get; private set; }
@@ -102,16 +104,17 @@ namespace ScTools.ScriptLang
                             .Concat(ImportedModules.SelectMany(m => m.BoundModule!.Statics));
             var staticsTotalSize = AllocateStatics(statics);
 
+            var scName = MainModule.BoundModule.Name ?? DefaultScriptName;
             var sc = new Script
             {
-                Hash = 0,
+                Hash = (uint)MainModule.BoundModule.Hash,
                 ArgsCount = 0,
                 StaticsCount = (uint)staticsTotalSize,
                 Statics = new ScriptValue[staticsTotalSize],
                 GlobalsLengthAndBlock = 0,
                 NativesCount = 0,
-                Name = MainModule.BoundModule.Name,
-                NameHash = MainModule.BoundModule.Name.ToHash(),
+                Name = scName,
+                NameHash = scName.ToHash(),
                 StringsLength = 0,
             };
 

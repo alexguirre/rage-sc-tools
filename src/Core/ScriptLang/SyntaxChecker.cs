@@ -20,6 +20,7 @@ namespace ScTools.ScriptLang
             private bool InProcedure { get; set; }
             private bool InFunction { get; set; }
             private bool FoundScriptName { get; set; }
+            private bool FoundScriptHash { get; set; }
 
             public Visitor(Root root, string filePath, DiagnosticsReport diagnostics)
                 => (Root, FilePath, Diagnostics) = (root, filePath, diagnostics);
@@ -74,6 +75,18 @@ namespace ScTools.ScriptLang
                 else
                 {
                     FoundScriptName = true;
+                }
+            }
+
+            public override void VisitScriptHashStatement(ScriptHashStatement node)
+            {
+                if (FoundScriptHash)
+                {
+                    Error("SCRIPT_HASH statement is repeated", node);
+                }
+                else
+                {
+                    FoundScriptHash = true;
                 }
             }
 

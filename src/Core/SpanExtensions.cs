@@ -133,5 +133,19 @@
         }
 
         public static string Unescape(this string s) => s.AsSpan().Unescape();
+
+        public static int ParseAsInt(this ReadOnlySpan<char> str)
+            => str.StartsWith("0x") ?
+                int.Parse(str[2..], System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture) :
+                int.Parse(str, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture);
+
+        public static int ParseAsInt(this string s) => s.AsSpan().ParseAsInt();
+
+        public static float ParseAsFloat(this ReadOnlySpan<char> str)
+            => float.Parse(str, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
+
+        public static float ParseAsFloat(this string s) => s.AsSpan().ParseAsFloat();
+
+        
     }
 }

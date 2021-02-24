@@ -25,6 +25,7 @@ namespace ScTools.ScriptLang.Semantics
             }
 
             public override void VisitScriptNameStatement(ScriptNameStatement node) => Module.Name = node.Name;
+            public override void VisitScriptHashStatement(ScriptHashStatement node) => Module.Hash = node.Hash;
 
             public override void VisitStaticVariableStatement(StaticVariableStatement node)
             {

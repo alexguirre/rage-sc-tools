@@ -24,6 +24,19 @@ namespace ScTools.ScriptLang.Ast
         [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitScriptNameStatement(this);
     }
 
+    public sealed class ScriptHashStatement : TopLevelStatement
+    {
+        public int Hash { get; }
+
+        public ScriptHashStatement(int hash, SourceRange source) : base(source)
+            => Hash = hash;
+
+        public override string ToString() => $"SCRIPT_HASH 0x{Hash:X8}";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitScriptHashStatement(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitScriptHashStatement(this);
+    }
+
     public sealed class UsingStatement : TopLevelStatement
     {
         public string PathRaw { get; }

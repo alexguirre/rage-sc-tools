@@ -12,7 +12,8 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
     public sealed class BoundModule : BoundNode
     {
-        public string Name { get; set; } = "unknown";
+        public string? Name { get; set; }
+        public int Hash { get; set; }
         public IList<VariableSymbol> Statics { get; } = new List<VariableSymbol>();
         public IList<BoundFunction> Functions { get; } = new List<BoundFunction>();
 

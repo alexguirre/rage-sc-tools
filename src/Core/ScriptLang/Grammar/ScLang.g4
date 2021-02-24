@@ -6,6 +6,7 @@ script
 
 topLevelStatement
     : K_SCRIPT_NAME identifier                                  #scriptNameStatement
+    | K_SCRIPT_HASH integer                                     #scriptHashStatement
 
     | K_USING string                                            #usingStatement
 
@@ -184,6 +185,7 @@ K_CASE : C A S E;
 K_DEFAULT : D E F A U L T;
 K_RETURN : R E T U R N;
 K_SCRIPT_NAME : S C R I P T '_' N A M E;
+K_SCRIPT_HASH : S C R I P T '_' H A S H;
 K_USING : U S I N G;
 K_CONST : C O N S T;
 

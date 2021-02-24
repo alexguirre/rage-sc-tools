@@ -211,8 +211,8 @@ namespace ScTools.ScriptLang.Ast
         public LiteralKind Kind { get; }
         public string ValueText { get; }
 
-        public int IntValue { get { Debug.Assert(Kind == LiteralKind.Int); return int.Parse(ValueText, System.Globalization.CultureInfo.InvariantCulture); } }
-        public float FloatValue { get { Debug.Assert(Kind == LiteralKind.Float); return float.Parse(ValueText, System.Globalization.CultureInfo.InvariantCulture); } }
+        public int IntValue { get { Debug.Assert(Kind == LiteralKind.Int); return ValueText.ParseAsInt(); } }
+        public float FloatValue { get { Debug.Assert(Kind == LiteralKind.Float); return ValueText.ParseAsFloat(); } }
         public string StringValue
         { 
             get 
