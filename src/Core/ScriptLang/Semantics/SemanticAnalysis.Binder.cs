@@ -29,15 +29,12 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitStaticVariableStatement(StaticVariableStatement node)
             {
-                foreach (var decl in node.Declaration.Declarators)
-                {
-                    var s = Symbols.Lookup(decl.Declarator.Identifier) as VariableSymbol;
-                    Debug.Assert(s != null);
-                    Debug.Assert(s.IsStatic);
+                var s = Symbols.Lookup(node.Declaration.Declarator.Identifier) as VariableSymbol;
+                Debug.Assert(s != null);
+                Debug.Assert(s.IsStatic);
 
-                    s.Initializer = Bind(decl.Initializer);
-                    Module.Statics.Add(s);
-                }
+                s.Initializer = Bind(node.Declaration.Initializer);
+                Module.Statics.Add(s);
             }
 
             public override void VisitFunctionStatement(FunctionStatement node) => VisitFunc(node.Name, node.Block);
@@ -173,46 +170,40 @@ namespace ScTools.ScriptLang.Semantics
             {
                 stmts!.Add(new BoundInvocationStatement(
                     Bind(node.Expression)!,
-                    node.ArgumentList.Arguments.Select(a => Bind(a)!)
+                    node.Arguments.Select(a => Bind(a)!)
                 ));
             }
 
             public override void VisitVariableDeclarationStatement(VariableDeclarationStatement node)
             {
-                foreach (var decl in node.Declaration.Declarators)
+                var varSymbol = Symbols.Lookup(node.Declaration.Declarator.Identifier) as VariableSymbol;
+                Debug.Assert(varSymbol != null);
+
+                varSymbol.Initializer = Bind(node.Declaration.Initializer);
+
+                if (varSymbol.Type is RefType)
                 {
-                    var varSymbol = Symbols.Lookup(decl.Declarator.Identifier) as VariableSymbol;
-                    Debug.Assert(varSymbol != null);
-
-                    varSymbol.Initializer = Bind(decl.Initializer);
-
-                    if (varSymbol.Type is RefType)
+                    var err = false;
+                    if (varSymbol.Initializer is null)
                     {
-                        var err = false;
-                        if (varSymbol.Initializer is null)
-                        {
-                            Diagnostics.AddError(FilePath, $"Reference variable '{varSymbol.Name}' is missing an initializer", node.Source);
-                            err = true;
-                        }
-                        else if (!varSymbol.Initializer.IsAddressable)
-                        {
-                            Diagnostics.AddError(FilePath, $"Cannot take reference of expression", decl.Initializer!.Source);
-                            err = true;
-                        }
-
-                        if (err)
-                        {
-                            stmts!.Add(new BoundInvalidStatement());
-                            return;
-                        }
+                        Diagnostics.AddError(FilePath, $"Reference variable '{varSymbol.Name}' is missing an initializer", node.Source);
+                        err = true;
+                    }
+                    else if (!varSymbol.Initializer.IsAddressable)
+                    {
+                        Diagnostics.AddError(FilePath, $"Cannot take reference of expression", node.Declaration.Initializer!.Source);
+                        err = true;
                     }
 
-                    stmts!.Add(new BoundVariableDeclarationStatement(varSymbol));
+                    if (err)
+                    {
+                        stmts!.Add(new BoundInvalidStatement());
+                        return;
+                    }
                 }
-            }
 
-            public override void VisitArgumentList(ArgumentList node) => throw new NotSupportedException();
-            public override void VisitArrayIndexer(ArrayIndexer node) => throw new NotSupportedException();
+                stmts!.Add(new BoundVariableDeclarationStatement(varSymbol));
+            }
 
             public override void VisitAggregateExpression(AggregateExpression node) => throw new NotSupportedException();
             public override void VisitArrayAccessExpression(ArrayAccessExpression node) => throw new NotSupportedException();
@@ -231,15 +222,11 @@ namespace ScTools.ScriptLang.Semantics
             public override void VisitProcedureNativeStatement(ProcedureNativeStatement node) { /* empty */ }
             public override void VisitFunctionNativeStatement(FunctionNativeStatement node) { /* empty */ }
             public override void VisitParameterList(ParameterList node) { /* empty */ }
-            public override void VisitStructFieldList(StructFieldList node) { /* empty */ }
             public override void VisitStructStatement(StructStatement node) { /* empty */ }
             public override void VisitRefDeclarator(RefDeclarator node) { /* empty */ }
             public override void VisitSimpleDeclarator(SimpleDeclarator node) { /* empty */ }
             public override void VisitArrayDeclarator(ArrayDeclarator node) { /* empty */ }
-            public override void VisitInitDeclarator(InitDeclarator node) { /* empty */ }
-            public override void VisitInitDeclaratorList(InitDeclaratorList node) { /* empty */ }
             public override void VisitDeclaration(Declaration node) { /* empty */ }
-            public override void VisitSingleDeclaration(SingleDeclaration node) { /* empty */ }
 
             public override void DefaultVisit(Node node)
             {
@@ -318,7 +305,7 @@ namespace ScTools.ScriptLang.Semantics
 
                 return new BoundInvocationExpression(
                     callee,
-                    node.ArgumentList.Arguments.Select(a => Bind(a)!)
+                    node.Arguments.Select(a => Bind(a)!)
                 );
             }
 
@@ -337,7 +324,7 @@ namespace ScTools.ScriptLang.Semantics
             public override BoundExpression VisitArrayAccessExpression(ArrayAccessExpression node)
                 => new BoundArrayAccessExpression(
                     Bind(node.Expression)!,
-                    Bind(node.Indexer.Expression)!
+                    Bind(node.Index)!
                 );
 
             public override BoundExpression VisitAggregateExpression(AggregateExpression node)

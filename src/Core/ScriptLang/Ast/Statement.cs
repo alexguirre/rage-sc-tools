@@ -207,14 +207,14 @@ namespace ScTools.ScriptLang.Ast
     public sealed class InvocationStatement : Statement
     {
         public Expression Expression { get; }
-        public ArgumentList ArgumentList { get; }
+        public ImmutableArray<Expression> Arguments { get; }
 
-        public override IEnumerable<Node> Children { get { yield return Expression; yield return ArgumentList; } }
+        public override IEnumerable<Node> Children => Arguments.Prepend(Expression);
 
-        public InvocationStatement(Expression expression, ArgumentList argumentList, SourceRange source) : base(source)
-            => (Expression, ArgumentList) = (expression, argumentList);
+        public InvocationStatement(Expression expression, IEnumerable<Expression> arguments, SourceRange source) : base(source)
+            => (Expression, Arguments) = (expression, arguments.ToImmutableArray());
 
-        public override string ToString() => $"{Expression}{ArgumentList}";
+        public override string ToString() => $"{Expression}({string.Join(", ", Arguments)})";
 
         public override void Accept(AstVisitor visitor) => visitor.VisitInvocationStatement(this);
         [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitInvocationStatement(this);

@@ -92,20 +92,17 @@ namespace ScTools.ScriptLang
 
             public override void VisitConstantVariableStatement(ConstantVariableStatement node)
             {
-                foreach (var d in node.Declaration.Declarators)
+                if (node.Declaration.Initializer == null)
                 {
-                    if (d.Initializer == null)
-                    {
-                        Error($"A constant requires an initializer", node);
-                    }
+                    Error($"A constant requires an initializer", node);
                 }
 
                 DefaultVisit(node);
             }
 
-            public override void VisitStructFieldList(StructFieldList node)
+            public override void VisitStructStatement(StructStatement node)
             {
-                foreach (var d in node.Fields.SelectMany(f => f.Declarators))
+                foreach (var d in node.Fields)
                 {
                     if (d.Initializer != null)
                     {
@@ -120,9 +117,9 @@ namespace ScTools.ScriptLang
             {
                 foreach (var p in node.Parameters)
                 {
-                    if (p.Declarator.Initializer != null)
+                    if (p.Initializer != null)
                     {
-                        Error($"Parameters cannot be initialized", p.Declarator.Initializer);
+                        Error($"Parameters cannot be initialized", p.Initializer);
                     }
                 }
 

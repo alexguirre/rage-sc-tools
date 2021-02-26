@@ -6,6 +6,7 @@ namespace ScTools.ScriptLang.Ast
     using System.Collections.Immutable;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Linq;
 
     public abstract class Expression : Node
     {
@@ -177,14 +178,14 @@ namespace ScTools.ScriptLang.Ast
     public sealed class ArrayAccessExpression : Expression
     {
         public Expression Expression { get; }
-        public ArrayIndexer Indexer { get; }
+        public Expression Index { get; }
 
-        public override IEnumerable<Node> Children { get { yield return Expression; yield return Indexer; } }
+        public override IEnumerable<Node> Children { get { yield return Expression; yield return Index; } }
 
-        public ArrayAccessExpression(Expression expression, ArrayIndexer indexer, SourceRange source) : base(source)
-            => (Expression, Indexer) = (expression, indexer);
+        public ArrayAccessExpression(Expression expression, Expression index, SourceRange source) : base(source)
+            => (Expression, Index) = (expression, index);
 
-        public override string ToString() => $"{Expression}{Indexer}";
+        public override string ToString() => $"{Expression}[{Index}]";
 
         public override void Accept(AstVisitor visitor) => visitor.VisitArrayAccessExpression(this);
         [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitArrayAccessExpression(this);
@@ -193,14 +194,14 @@ namespace ScTools.ScriptLang.Ast
     public sealed class InvocationExpression : Expression
     {
         public Expression Expression { get; }
-        public ArgumentList ArgumentList { get; }
+        public ImmutableArray<Expression> Arguments { get; }
 
-        public override IEnumerable<Node> Children { get { yield return Expression; yield return ArgumentList; } }
+        public override IEnumerable<Node> Children => Arguments.Prepend(Expression);
 
-        public InvocationExpression(Expression expression, ArgumentList argumentList, SourceRange source) : base(source)
-            => (Expression, ArgumentList) = (expression, argumentList);
+        public InvocationExpression(Expression expression, IEnumerable<Expression> arguments, SourceRange source) : base(source)
+            => (Expression, Arguments) = (expression, arguments.ToImmutableArray());
 
-        public override string ToString() => $"{Expression}{ArgumentList}";
+        public override string ToString() => $"{Expression}({string.Join(", ", Arguments)})";
 
         public override void Accept(AstVisitor visitor) => visitor.VisitInvocationExpression(this);
         [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitInvocationExpression(this);

@@ -103,19 +103,19 @@ namespace ScTools.ScriptLang.Semantics
                 }
 
                 int expected = f.ParameterCount;
-                int found = node.ArgumentList.Arguments.Length;
+                int found = node.Arguments.Length;
                 if (found != expected)
                 {
-                    diagnostics.AddError(filePath, $"Mismatched number of arguments. Expected {expected}, found {found}", node.ArgumentList.Source);
+                    diagnostics.AddError(filePath, $"Mismatched number of arguments. Expected {expected}, found {found}", node.Source);
                 }
 
                 int argCount = Math.Min(expected, found);
                 for (int i = 0; i < argCount; i++)
                 {
-                    var foundType = node.ArgumentList.Arguments[i].Accept(this);
+                    var foundType = node.Arguments[i].Accept(this);
                     if (!f.DoesParameterTypeMatch(i, foundType))
                     {
-                        diagnostics.AddError(filePath, $"Mismatched type of argument #{i}", node.ArgumentList.Arguments[i].Source);
+                        diagnostics.AddError(filePath, $"Mismatched type of argument #{i}", node.Arguments[i].Source);
                     }
                 }
 

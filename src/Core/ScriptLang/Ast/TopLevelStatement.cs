@@ -2,6 +2,7 @@
 namespace ScTools.ScriptLang.Ast
 {
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Diagnostics.CodeAnalysis;
 
     public abstract class TopLevelStatement : Node
@@ -155,14 +156,14 @@ namespace ScTools.ScriptLang.Ast
     public sealed class StructStatement : TopLevelStatement
     {
         public string Name { get; }
-        public StructFieldList FieldList { get; }
+        public ImmutableArray<Declaration> Fields { get; }
 
-        public override IEnumerable<Node> Children { get { yield return FieldList; } }
+        public override IEnumerable<Node> Children => Fields;
 
-        public StructStatement(string name, StructFieldList fieldList, SourceRange source) : base(source)
-            => (Name, FieldList) = (name, fieldList);
+        public StructStatement(string name, IEnumerable<Declaration> fields, SourceRange source) : base(source)
+            => (Name, Fields) = (name, fields.ToImmutableArray());
 
-        public override string ToString() => $"STRUCT {Name}\n{FieldList}\nENDSTRUCT";
+        public override string ToString() => $"STRUCT {Name}\n{string.Join('\n', Fields)}\nENDSTRUCT";
 
         public override void Accept(AstVisitor visitor) => visitor.VisitStructStatement(this);
         [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitStructStatement(this);

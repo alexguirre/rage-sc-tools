@@ -40,19 +40,19 @@ namespace ScTools.ScriptLang.Semantics
 
             protected virtual void OnEnd() { }
 
-            protected Type TryResolveVarDecl(string type, Declarator varDecl)
+            protected Type ResolveTypeFromDecl(Declaration varDecl)
             {
                 bool unresolved = false;
-                return Resolve(TypeFromAst(type, varDecl), varDecl.Source, ref unresolved);
+                return Resolve(TypeFromDecl(varDecl), varDecl.Source, ref unresolved);
             }
 
-            protected Type TypeFromAst(string type, Declarator? decl)
+            protected Type TypeFromDecl(Declaration decl)
             {
-                var unresolved = new UnresolvedType(type);
-                return decl != null ? TypeFromDecl(decl, unresolved) : unresolved;
+                var unresolved = new UnresolvedType(decl.Type);
+                return decl != null ? TypeFromDeclarator(decl.Declarator, unresolved) : unresolved;
             }
 
-            protected Type TypeFromDecl(Declarator decl, Type baseType)
+            protected Type TypeFromDeclarator(Declarator decl, Type baseType)
             {
                 var source = decl.Source;
                 var ty = baseType;

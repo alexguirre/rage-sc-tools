@@ -78,29 +78,26 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitStaticVariableStatement(StaticVariableStatement node)
             {
-                foreach (var decl in node.Declaration.Declarators)
-                {
-                    var v = Symbols.Lookup(decl.Declarator.Identifier) as VariableSymbol;
-                    Debug.Assert(v != null);
-                    Debug.Assert(v.IsStatic);
+                var v = Symbols.Lookup(node.Declaration.Declarator.Identifier) as VariableSymbol;
+                Debug.Assert(v != null);
+                Debug.Assert(v.IsStatic);
 
-                    if (v.Type is RefType)
+                if (v.Type is RefType)
+                {
+                    Diagnostics.AddError(FilePath, $"Static variables cannot be reference types", node.Declaration.Declarator.Source);
+                }
+
+                if (node.Declaration.Initializer != null)
+                {
+                    if (v.Type is BasicType { TypeCode: BasicTypeCode.String })
                     {
-                        Diagnostics.AddError(FilePath, $"Static variables cannot be reference types", decl.Declarator.Source);
+                        Diagnostics.AddError(FilePath, $"Static variables of type STRING cannot have an initializer", node.Declaration.Initializer.Source);
                     }
 
-                    if (decl.Initializer != null)
+                    var initializerType = TypeOf(node.Declaration.Initializer);
+                    if (initializerType == null || !v.Type.IsAssignableFrom(initializerType, considerReferences: false))
                     {
-                        if (v.Type is BasicType { TypeCode: BasicTypeCode.String })
-                        {
-                            Diagnostics.AddError(FilePath, $"Static variables of type STRING cannot have an initializer", decl.Initializer.Source);
-                        }
-
-                        var initializerType = TypeOf(decl.Initializer);
-                        if (initializerType == null || !v.Type.IsAssignableFrom(initializerType, considerReferences: false))
-                        {
-                            Diagnostics.AddError(FilePath, $"Mismatched initializer type and type of static variable '{v.Name}'", decl.Initializer.Source);
-                        }
+                        Diagnostics.AddError(FilePath, $"Mismatched initializer type and type of static variable '{v.Name}'", node.Declaration.Initializer.Source);
                     }
                 }
             }
@@ -119,9 +116,9 @@ namespace ScTools.ScriptLang.Semantics
             {
                 foreach (var p in node.Parameters)
                 {
-                    var v = new VariableSymbol(p.Declarator.Declarator.Identifier,
+                    var v = new VariableSymbol(p.Declarator.Identifier,
                                                p.Source,
-                                               TryResolveVarDecl(p.Type, p.Declarator.Declarator),
+                                               ResolveTypeFromDecl(p),
                                                VariableKind.LocalArgument);
                     Symbols.Add(v);
                     func?.LocalArgs.Add(v);
@@ -130,25 +127,22 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitVariableDeclarationStatement(VariableDeclarationStatement node)
             {
-                foreach (var decl in node.Declaration.Declarators)
+                var v = new VariableSymbol(node.Declaration.Declarator.Identifier,
+                                           node.Source,
+                                           ResolveTypeFromDecl(node.Declaration),
+                                           VariableKind.Local);
+
+                if (node.Declaration.Initializer != null)
                 {
-                    var v = new VariableSymbol(decl.Declarator.Identifier,
-                                               node.Source,
-                                               TryResolveVarDecl(node.Declaration.Type, decl.Declarator),
-                                               VariableKind.Local);
-
-                    if (decl.Initializer != null)
+                    var initializerType = TypeOf(node.Declaration.Initializer);
+                    if (initializerType == null || !v.Type.IsAssignableFrom(initializerType, considerReferences: true))
                     {
-                        var initializerType = TypeOf(decl.Initializer);
-                        if (initializerType == null || !v.Type.IsAssignableFrom(initializerType, considerReferences: true))
-                        {
-                            Diagnostics.AddError(FilePath, $"Mismatched initializer type and type of variable '{v.Name}'", decl.Initializer.Source);
-                        }
+                        Diagnostics.AddError(FilePath, $"Mismatched initializer type and type of variable '{v.Name}'", node.Declaration.Initializer.Source);
                     }
-
-                    Symbols.Add(v);
-                    func?.Locals.Add(v);
                 }
+
+                Symbols.Add(v);
+                func?.Locals.Add(v);
             }
 
             public override void VisitAssignmentStatement(AssignmentStatement node)
@@ -286,19 +280,19 @@ namespace ScTools.ScriptLang.Semantics
                 }
 
                 int expected = f.ParameterCount;
-                int found = node.ArgumentList.Arguments.Length;
+                int found = node.Arguments.Length;
                 if (found != expected)
                 {
-                    Diagnostics.AddError(FilePath, $"Mismatched number of arguments. Expected {expected}, found {found}", node.ArgumentList.Source);
+                    Diagnostics.AddError(FilePath, $"Mismatched number of arguments. Expected {expected}, found {found}", node.Source);
                 }
 
                 int argCount = Math.Min(expected, found);
                 for (int i = 0; i < argCount; i++)
                 {
-                    var foundType = TypeOf(node.ArgumentList.Arguments[i]);
+                    var foundType = TypeOf(node.Arguments[i]);
                     if (!f.DoesParameterTypeMatch(i, foundType))
                     {
-                        Diagnostics.AddError(FilePath, $"Mismatched type of argument #{i}", node.ArgumentList.Arguments[i].Source);
+                        Diagnostics.AddError(FilePath, $"Mismatched type of argument #{i}", node.Arguments[i].Source);
                     }
                 }
             }
