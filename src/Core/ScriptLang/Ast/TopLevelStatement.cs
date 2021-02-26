@@ -4,6 +4,7 @@ namespace ScTools.ScriptLang.Ast
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Diagnostics.CodeAnalysis;
+    using System.Linq;
 
     public abstract class TopLevelStatement : Node
     {
@@ -55,15 +56,15 @@ namespace ScTools.ScriptLang.Ast
     public sealed class ProcedureStatement : TopLevelStatement
     {
         public string Name { get; }
-        public ParameterList ParameterList { get; }
+        public ImmutableArray<Declaration> Parameters { get; }
         public StatementBlock Block { get; }
 
-        public override IEnumerable<Node> Children { get { yield return ParameterList; yield return Block; } }
+        public override IEnumerable<Node> Children => Parameters.Cast<Node>().Append(Block);
 
-        public ProcedureStatement(string name, ParameterList parameterList, StatementBlock block, SourceRange source) : base(source)
-            => (Name, ParameterList, Block) = (name, parameterList, block);
+        public ProcedureStatement(string name, IEnumerable<Declaration> parameters, StatementBlock block, SourceRange source) : base(source)
+            => (Name, Parameters, Block) = (name, parameters.ToImmutableArray(), block);
 
-        public override string ToString() => $"PROC {Name}{ParameterList}\n{Block}\nENDPROC";
+        public override string ToString() => $"PROC {Name}({string.Join(", ", Parameters)})\n{Block}\nENDPROC";
 
         public override void Accept(AstVisitor visitor) => visitor.VisitProcedureStatement(this);
         [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitProcedureStatement(this);
@@ -72,14 +73,14 @@ namespace ScTools.ScriptLang.Ast
     public sealed class ProcedurePrototypeStatement : TopLevelStatement
     {
         public string Name { get; }
-        public ParameterList ParameterList { get; }
+        public ImmutableArray<Declaration> Parameters { get; }
 
-        public override IEnumerable<Node> Children { get { yield return ParameterList; } }
+        public override IEnumerable<Node> Children => Parameters;
 
-        public ProcedurePrototypeStatement(string name, ParameterList parameterList, SourceRange source) : base(source)
-            => (Name, ParameterList) = (name, parameterList);
+        public ProcedurePrototypeStatement(string name, IEnumerable<Declaration> parameters, SourceRange source) : base(source)
+            => (Name, Parameters) = (name, parameters.ToImmutableArray());
 
-        public override string ToString() => $"PROTO PROC {Name}{ParameterList}";
+        public override string ToString() => $"PROTO PROC {Name}({string.Join(", ", Parameters)})";
 
         public override void Accept(AstVisitor visitor) => visitor.VisitProcedurePrototypeStatement(this);
         [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitProcedurePrototypeStatement(this);
@@ -88,14 +89,14 @@ namespace ScTools.ScriptLang.Ast
     public sealed class ProcedureNativeStatement : TopLevelStatement
     {
         public string Name { get; }
-        public ParameterList ParameterList { get; }
+        public ImmutableArray<Declaration> Parameters { get; }
 
-        public override IEnumerable<Node> Children { get { yield return ParameterList; } }
+        public override IEnumerable<Node> Children => Parameters;
 
-        public ProcedureNativeStatement(string name, ParameterList parameterList, SourceRange source) : base(source)
-            => (Name, ParameterList) = (name, parameterList);
+        public ProcedureNativeStatement(string name, IEnumerable<Declaration> parameters, SourceRange source) : base(source)
+            => (Name, Parameters) = (name, parameters.ToImmutableArray());
 
-        public override string ToString() => $"NATIVE PROC {Name}{ParameterList}";
+        public override string ToString() => $"NATIVE PROC {Name}({string.Join(", ", Parameters)})";
 
         public override void Accept(AstVisitor visitor) => visitor.VisitProcedureNativeStatement(this);
         [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitProcedureNativeStatement(this);
@@ -105,15 +106,15 @@ namespace ScTools.ScriptLang.Ast
     {
         public string Name { get; }
         public string ReturnType { get; }
-        public ParameterList ParameterList { get; }
+        public ImmutableArray<Declaration> Parameters { get; }
         public StatementBlock Block { get; }
 
-        public override IEnumerable<Node> Children { get { yield return ParameterList; yield return Block; } }
+        public override IEnumerable<Node> Children => Parameters.Cast<Node>().Append(Block);
 
-        public FunctionStatement(string name, string returnType, ParameterList parameterList, StatementBlock block, SourceRange source) : base(source)
-            => (Name, ReturnType, ParameterList, Block) = (name, returnType, parameterList, block);
+        public FunctionStatement(string name, string returnType, IEnumerable<Declaration> parameters, StatementBlock block, SourceRange source) : base(source)
+            => (Name, ReturnType, Parameters, Block) = (name, returnType, parameters.ToImmutableArray(), block);
 
-        public override string ToString() => $"FUNC {ReturnType} {Name}{ParameterList}\n{Block}\nENDFUNC";
+        public override string ToString() => $"FUNC {ReturnType} {Name}({string.Join(", ", Parameters)})\n{Block}\nENDFUNC";
 
         public override void Accept(AstVisitor visitor) => visitor.VisitFunctionStatement(this);
         [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitFunctionStatement(this);
@@ -123,14 +124,14 @@ namespace ScTools.ScriptLang.Ast
     {
         public string Name { get; }
         public string ReturnType { get; }
-        public ParameterList ParameterList { get; }
+        public ImmutableArray<Declaration> Parameters { get; }
 
-        public override IEnumerable<Node> Children { get { yield return ParameterList; } }
+        public override IEnumerable<Node> Children => Parameters;
 
-        public FunctionPrototypeStatement(string name, string returnType, ParameterList parameterList, SourceRange source) : base(source)
-            => (Name, ReturnType, ParameterList) = (name, returnType, parameterList);
+        public FunctionPrototypeStatement(string name, string returnType, IEnumerable<Declaration> parameters, SourceRange source) : base(source)
+            => (Name, ReturnType, Parameters) = (name, returnType, parameters.ToImmutableArray());
 
-        public override string ToString() => $"PROTO FUNC {ReturnType} {Name}{ParameterList}";
+        public override string ToString() => $"PROTO FUNC {ReturnType} {Name}({string.Join(", ", Parameters)})";
 
         public override void Accept(AstVisitor visitor) => visitor.VisitFunctionPrototypeStatement(this);
         [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitFunctionPrototypeStatement(this);
@@ -140,14 +141,14 @@ namespace ScTools.ScriptLang.Ast
     {
         public string Name { get; }
         public string ReturnType { get; }
-        public ParameterList ParameterList { get; }
+        public ImmutableArray<Declaration> Parameters { get; }
 
-        public override IEnumerable<Node> Children { get { yield return ParameterList; } }
+        public override IEnumerable<Node> Children => Parameters;
 
-        public FunctionNativeStatement(string name, string returnType, ParameterList parameterList, SourceRange source) : base(source)
-            => (Name, ReturnType, ParameterList) = (name, returnType, parameterList);
+        public FunctionNativeStatement(string name, string returnType, IEnumerable<Declaration> parameters, SourceRange source) : base(source)
+            => (Name, ReturnType, Parameters) = (name, returnType, parameters.ToImmutableArray());
 
-        public override string ToString() => $"NATIVE FUNC {ReturnType} {Name}{ParameterList}";
+        public override string ToString() => $"NATIVE FUNC {ReturnType} {Name}({string.Join(", ", Parameters)})";
 
         public override void Accept(AstVisitor visitor) => visitor.VisitFunctionNativeStatement(this);
         [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitFunctionNativeStatement(this);

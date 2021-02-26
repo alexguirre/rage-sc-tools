@@ -221,7 +221,6 @@ namespace ScTools.ScriptLang.Semantics
             public override void VisitFunctionPrototypeStatement(FunctionPrototypeStatement node) { /* empty */ }
             public override void VisitProcedureNativeStatement(ProcedureNativeStatement node) { /* empty */ }
             public override void VisitFunctionNativeStatement(FunctionNativeStatement node) { /* empty */ }
-            public override void VisitParameterList(ParameterList node) { /* empty */ }
             public override void VisitStructStatement(StructStatement node) { /* empty */ }
             public override void VisitRefDeclarator(RefDeclarator node) { /* empty */ }
             public override void VisitSimpleDeclarator(SimpleDeclarator node) { /* empty */ }

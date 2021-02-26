@@ -142,24 +142,24 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitFunctionStatement(FunctionStatement node)
             {
-                Symbols.Add(new DefinedFunctionSymbol(node, CreateUnresolvedFunctionType(node.ReturnType, node.ParameterList.Parameters)));
+                Symbols.Add(new DefinedFunctionSymbol(node, CreateUnresolvedFunctionType(node.ReturnType, node.Parameters)));
             }
 
             public override void VisitProcedureStatement(ProcedureStatement node)
             {
-                Symbols.Add(new DefinedFunctionSymbol(node, CreateUnresolvedFunctionType(null, node.ParameterList.Parameters)));
+                Symbols.Add(new DefinedFunctionSymbol(node, CreateUnresolvedFunctionType(null, node.Parameters)));
             }
 
             public override void VisitFunctionPrototypeStatement(FunctionPrototypeStatement node)
             {
-                var func = CreateUnresolvedFunctionType(node.ReturnType, node.ParameterList.Parameters);
+                var func = CreateUnresolvedFunctionType(node.ReturnType, node.Parameters);
 
                 Symbols.Add(new TypeSymbol(node.Name, node.Source, func));
             }
 
             public override void VisitProcedurePrototypeStatement(ProcedurePrototypeStatement node)
             {
-                var func = CreateUnresolvedFunctionType(null, node.ParameterList.Parameters);
+                var func = CreateUnresolvedFunctionType(null, node.Parameters);
 
                 Symbols.Add(new TypeSymbol(node.Name, node.Source, func));
             }
@@ -167,13 +167,13 @@ namespace ScTools.ScriptLang.Semantics
             public override void VisitFunctionNativeStatement(FunctionNativeStatement node)
             {
                 // TODO: check that native exists, if not report it in diagnostics
-                Symbols.Add(new NativeFunctionSymbol(node, CreateUnresolvedFunctionType(node.ReturnType, node.ParameterList.Parameters)));
+                Symbols.Add(new NativeFunctionSymbol(node, CreateUnresolvedFunctionType(node.ReturnType, node.Parameters)));
             }
 
             public override void VisitProcedureNativeStatement(ProcedureNativeStatement node)
             {
                 // TODO: check that native exists, if not report it in diagnostics
-                Symbols.Add(new NativeFunctionSymbol(node, CreateUnresolvedFunctionType(null, node.ParameterList.Parameters)));
+                Symbols.Add(new NativeFunctionSymbol(node, CreateUnresolvedFunctionType(null, node.Parameters)));
             }
 
             public override void VisitStaticVariableStatement(StaticVariableStatement node)

@@ -100,32 +100,6 @@ namespace ScTools.ScriptLang
                 DefaultVisit(node);
             }
 
-            public override void VisitStructStatement(StructStatement node)
-            {
-                foreach (var d in node.Fields)
-                {
-                    if (d.Initializer != null)
-                    {
-                        Error($"Struct fields cannot be initialized", d.Initializer);
-                    }
-                }
-
-                DefaultVisit(node);
-            }
-
-            public override void VisitParameterList(ParameterList node)
-            {
-                foreach (var p in node.Parameters)
-                {
-                    if (p.Initializer != null)
-                    {
-                        Error($"Parameters cannot be initialized", p.Initializer);
-                    }
-                }
-
-                DefaultVisit(node);
-            }
-
             public override void VisitErrorStatement(ErrorStatement node)
                 => Error($"Expected statement, found '{node.Text}'", node);
 

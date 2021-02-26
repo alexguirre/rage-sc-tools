@@ -35,19 +35,4 @@ namespace ScTools.ScriptLang.Ast
         public override void Accept(AstVisitor visitor) => visitor.VisitDeclaration(this);
         [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitDeclaration(this);
     }
-
-    public sealed class ParameterList : Node
-    {
-        public ImmutableArray<Declaration> Parameters { get; }
-
-        public override IEnumerable<Node> Children => Parameters;
-
-        public ParameterList(IEnumerable<Declaration> parameters, SourceRange source) : base(source)
-            => Parameters = parameters.ToImmutableArray();
-
-        public override string ToString() => $"({string.Join(", ", Parameters)})";
-
-        public override void Accept(AstVisitor visitor) => visitor.VisitParameterList(this);
-        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitParameterList(this);
-    }
 }

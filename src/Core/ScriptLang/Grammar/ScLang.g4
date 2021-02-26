@@ -93,8 +93,16 @@ declaration
     : type=identifier initDeclaratorList
     ;
 
-singleDeclaration
-    : type=identifier initDeclarator
+declarationNoInit
+    : type=identifier declaratorList
+    ;
+
+singleDeclarationNoInit
+    : type=identifier declarator
+    ;
+    
+declaratorList
+    : declarator (',' declarator)*
     ;
 
 initDeclaratorList
@@ -121,7 +129,7 @@ noRefDeclarator
     ;
 
 structFieldList
-    : (declaration? EOL)*
+    : (declarationNoInit? EOL)*
     ;
 
 argumentList
@@ -129,7 +137,7 @@ argumentList
     ;
 
 parameterList
-    : '(' (singleDeclaration (',' singleDeclaration)*)? ')'
+    : '(' (singleDeclarationNoInit (',' singleDeclarationNoInit)*)? ')'
     ;
 
 arrayIndexer

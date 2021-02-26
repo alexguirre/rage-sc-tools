@@ -73,13 +73,13 @@ namespace ScTools.ScriptLang.Ast
                                                                                              Build(c.parameterList()),
                                                                                              Source(c)),
                 ScLangParser.StructStatementContext c => new StructStatement(c.identifier().GetText(),
-                                                                             c.structFieldList().declaration().SelectMany(Build),
+                                                                             c.structFieldList().declarationNoInit().SelectMany(Build),
                                                                              Source(c)),
                 _ => throw new NotSupportedException(),
             };
 
-        private static ParameterList Build(ScLangParser.ParameterListContext context)
-            => new ParameterList(context.singleDeclaration().Select(Build), Source(context));
+        private static IEnumerable<Declaration> Build(ScLangParser.ParameterListContext context)
+            => context.singleDeclarationNoInit().Select(Build);
 
         private static IEnumerable<Declaration> Build(ScLangParser.DeclarationContext context)
         {
@@ -90,10 +90,19 @@ namespace ScTools.ScriptLang.Ast
                                                                                              Source(context)));
         }
 
-        private static Declaration Build(ScLangParser.SingleDeclarationContext context)
+        private static IEnumerable<Declaration> Build(ScLangParser.DeclarationNoInitContext context)
+        {
+            var type = context.type.GetText();
+            return context.declaratorList().declarator().Select(d => new Declaration(type,
+                                                                                     Build(d),
+                                                                                     null,
+                                                                                     Source(context)));
+        }
+
+        private static Declaration Build(ScLangParser.SingleDeclarationNoInitContext context)
             => new Declaration(context.type.GetText(),
-                               Build(context.initDeclarator().declarator()),
-                               BuildOrNull(context.initDeclarator().initializer),
+                               Build(context.declarator()),
+                               null,
                                Source(context));
 
         private static Declarator Build(ScLangParser.DeclaratorContext context)

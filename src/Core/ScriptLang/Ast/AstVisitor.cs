@@ -52,7 +52,6 @@ namespace ScTools.ScriptLang.Ast
         public virtual void VisitArrayDeclarator(ArrayDeclarator node) => DefaultVisit(node);
 
         public virtual void VisitDeclaration(Declaration node) => DefaultVisit(node);
-        public virtual void VisitParameterList(ParameterList node) => DefaultVisit(node);
     }
 
     public abstract class AstVisitor<TResult>
@@ -103,6 +102,5 @@ namespace ScTools.ScriptLang.Ast
         [return: MaybeNull] public virtual TResult VisitArrayDeclarator(ArrayDeclarator node) => DefaultVisit(node);
 
         [return: MaybeNull] public virtual TResult VisitDeclaration(Declaration node) => DefaultVisit(node);
-        [return: MaybeNull] public virtual TResult VisitParameterList(ParameterList node) => DefaultVisit(node);
     }
 }

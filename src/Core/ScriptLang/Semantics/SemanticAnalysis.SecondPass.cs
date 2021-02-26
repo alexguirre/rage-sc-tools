@@ -2,6 +2,7 @@
 namespace ScTools.ScriptLang.Semantics
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
 
@@ -35,7 +36,7 @@ namespace ScTools.ScriptLang.Semantics
                 var funcSymbol = Symbols.Lookup(node.Name) as DefinedFunctionSymbol;
                 Debug.Assert(funcSymbol != null);
 
-                VisitFunc(funcSymbol, node.ParameterList, node.Block);
+                VisitFunc(funcSymbol, node.Parameters, node.Block);
             }
 
             public override void VisitProcedureStatement(ProcedureStatement node)
@@ -43,15 +44,15 @@ namespace ScTools.ScriptLang.Semantics
                 var funcSymbol = Symbols.Lookup(node.Name) as DefinedFunctionSymbol;
                 Debug.Assert(funcSymbol != null);
 
-                VisitFunc(funcSymbol, node.ParameterList, node.Block);
+                VisitFunc(funcSymbol, node.Parameters, node.Block);
             }
 
-            private void VisitFunc(DefinedFunctionSymbol func, ParameterList parameters, StatementBlock block)
+            private void VisitFunc(DefinedFunctionSymbol func, IEnumerable<Declaration> parameters, StatementBlock block)
             {
                 this.func = func;
 
                 Symbols = Symbols.EnterScope(block);
-                parameters.Accept(this);
+                VisitParameters(parameters);
                 block.Accept(this);
                 Symbols = Symbols.ExitScope();
             }
@@ -112,9 +113,9 @@ namespace ScTools.ScriptLang.Semantics
                 //}
             }
 
-            public override void VisitParameterList(ParameterList node)
+            public void VisitParameters(IEnumerable<Declaration> parameters)
             {
-                foreach (var p in node.Parameters)
+                foreach (var p in parameters)
                 {
                     var v = new VariableSymbol(p.Declarator.Identifier,
                                                p.Source,
