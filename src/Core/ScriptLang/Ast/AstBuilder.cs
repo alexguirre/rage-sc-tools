@@ -75,6 +75,10 @@ namespace ScTools.ScriptLang.Ast
                 ScLangParser.StructStatementContext c => new StructStatement(c.identifier().GetText(),
                                                                              c.structFieldList().declarationNoInit().SelectMany(Build),
                                                                              Source(c)),
+                ScLangParser.GlobalBlockStatementContext c => new GlobalBlockStatement(c.block.GetText().ParseAsInt(),
+                                                                                       c.owner.GetText(),
+                                                                                       c.declaration().SelectMany(Build),
+                                                                                       Source(c)),
                 _ => throw new NotSupportedException(),
             };
 
