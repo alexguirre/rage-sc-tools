@@ -273,6 +273,17 @@ namespace ScTools.ScriptLang.Semantics.Binding
                     code.EmitStaticLoad(Var);
                 }
             }
+            else if (Var.IsGlobal)
+            {
+                if (Type is RefType)
+                {
+                    throw new NotSupportedException("Global variables cannot be references");
+                }
+                else
+                {
+                    code.EmitGlobalLoad(Var);
+                }
+            }
             else if (Var.IsConstant)
             {
                 Debug.Assert(Var.Initializer != null);
@@ -308,6 +319,17 @@ namespace ScTools.ScriptLang.Semantics.Binding
                     code.EmitStaticStore(Var);
                 }
             }
+            else if (Var.IsGlobal)
+            {
+                if (Type is RefType)
+                {
+                    throw new NotSupportedException("Global variables cannot be references");
+                }
+                else
+                {
+                    code.EmitGlobalStore(Var);
+                }
+            }
             else if (Var.IsConstant)
             {
                 throw new NotSupportedException("Constants cannot be written to");
@@ -341,6 +363,17 @@ namespace ScTools.ScriptLang.Semantics.Binding
                 else
                 {
                     code.EmitStaticAddr(Var);
+                }
+            }
+            else if (Var.IsGlobal)
+            {
+                if (Type is RefType)
+                {
+                    throw new NotSupportedException("Global variables cannot be references");
+                }
+                else
+                {
+                    code.EmitGlobalAddr(Var);
                 }
             }
             else if (Var.IsConstant)

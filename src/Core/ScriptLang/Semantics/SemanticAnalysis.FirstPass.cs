@@ -205,6 +205,22 @@ namespace ScTools.ScriptLang.Semantics
                 }
             }
 
+            public override void VisitGlobalBlockStatement(GlobalBlockStatement node)
+            {
+                var vars = new List<VariableSymbol>(node.Variables.Length);
+                foreach (var decl in node.Variables)
+                {
+                    var v = new VariableSymbol(decl.Declarator.Identifier,
+                                               decl.Source,
+                                               TypeFromDecl(decl),
+                                               VariableKind.Global);
+
+                    Symbols.Add(v);
+                    vars.Add(v);
+                }
+                Symbols.Add(new GlobalBlock(node.Block, node.Owner, vars, node.Source));
+            }
+
             public override void VisitStructStatement(StructStatement node)
             {
                 var struc = new StructType(node.Name,

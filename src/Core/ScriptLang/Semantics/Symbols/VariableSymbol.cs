@@ -11,6 +11,7 @@ namespace ScTools.ScriptLang.Semantics.Symbols
 
         public bool IsLocal => Kind == VariableKind.Local || Kind == VariableKind.LocalArgument;
         public bool IsStatic => Kind == VariableKind.Static;
+        public bool IsGlobal => Kind == VariableKind.Global;
         public bool IsConstant => Kind == VariableKind.Constant;
 
         public VariableSymbol(string name, SourceRange source, Type type, VariableKind kind)
@@ -20,6 +21,7 @@ namespace ScTools.ScriptLang.Semantics.Symbols
     public enum VariableKind
     {
         Constant,
+        Global,
         Static,
         Local,
         LocalArgument,

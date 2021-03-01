@@ -27,8 +27,8 @@ namespace ScTools.ScriptLang.Semantics
                 Debug.Assert(Symbols.Parent == null);
                 Debug.Assert(Symbols.Symbols.Where(sym => sym is VariableSymbol)
                                             .Cast<VariableSymbol>()
-                                            .All(s => s.Kind is VariableKind.Static or VariableKind.Constant),
-                             "All variables in global scope must be static or constant");
+                                            .All(s => s.Kind is VariableKind.Global or VariableKind.Static or VariableKind.Constant),
+                             "All variables in global scope must be global, static or constant");
             }
 
             public override void VisitFunctionStatement(FunctionStatement node)
