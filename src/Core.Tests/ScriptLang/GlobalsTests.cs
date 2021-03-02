@@ -24,8 +24,6 @@
                 ENDPROC
             ");
 
-            var s = Util.Dump(c.CompiledScript);
-
             Assert.False(c.GetAllDiagnostics().HasErrors);
             Assert.Equal("my_script", c.CompiledScript.Name);
             Assert.Equal(0x1234ABCDu, c.CompiledScript.Hash);
@@ -57,8 +55,6 @@
                 ENDPROC
             ");
 
-            var s = Util.Dump(c.CompiledScript);
-
             Assert.False(c.GetAllDiagnostics().HasErrors);
             Assert.Equal("my_script", c.CompiledScript.Name);
             Assert.Equal(0x1234ABCDu, c.CompiledScript.Hash);
@@ -73,6 +69,74 @@
             Assert.Equal(20,        c.CompiledScript.GlobalsPages[1][1].AsInt32);
             Assert.Equal(0x3FFF,    c.CompiledScript.GlobalsPages[1][2].AsInt32);
             Assert.Equal(30,        c.CompiledScript.GlobalsPages[2][2].AsInt32);
+        }
+
+        [Fact]
+        public void TestFuncProtos()
+        {
+            var c = Util.Compile($@"
+                SCRIPT_NAME my_script
+                SCRIPT_HASH 0x1234ABCD
+                GLOBAL 1 my_script
+                    MY_FUNC_PROTO myFunc = MY_FUNC
+                ENDGLOBAL
+
+                PROTO FUNC INT MY_FUNC_PROTO()
+
+                PROC MAIN()
+                ENDPROC
+
+                FUNC INT MY_FUNC()
+                    RETURN 10
+                ENDFUNC
+            ");
+
+            Assert.True(c.GetAllDiagnostics().HasErrors, "Function prototypes are not allowed in global variables");
+        }
+
+        [Fact]
+        public void TestMultipleBlocks()
+        {
+            const string Globals = @"
+                GLOBAL 1 my_script
+                    INT g_nValue = 10
+                ENDGLOBAL
+
+                GLOBAL 2 other_script
+                    INT g_nOtherValue = 5
+                ENDGLOBAL
+
+                GLOBAL 3 another_script
+                    INT g_nAnotherValue = 5
+                ENDGLOBAL
+            ";
+
+            const string Script = @"
+                SCRIPT_NAME my_script
+                SCRIPT_HASH 0x1234ABCD
+
+                USING 'globals.sch'
+
+                PROC MAIN()
+                    g_nOtherValue = g_nValue + g_nAnotherValue
+                ENDPROC
+            ";
+
+            var c = Util.Compile(
+                Script,
+                sourceResolver: new DelegatedUsingResolver(p => p switch
+                {
+                    "globals.sch" => Globals,
+                    _ => null
+                }));
+
+            var s = Util.Dump(c.CompiledScript);
+            Assert.False(c.GetAllDiagnostics().HasErrors);
+            Assert.Equal("my_script", c.CompiledScript.Name);
+            Assert.Equal(0x1234ABCDu, c.CompiledScript.Hash);
+            Assert.Equal(1u, c.CompiledScript.GlobalsBlock);
+            Assert.Equal(1u, c.CompiledScript.GlobalsLength);
+            Assert.Equal(10, c.CompiledScript.GlobalsPages[0][0].AsInt32);
         }
     }
 }

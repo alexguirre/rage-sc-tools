@@ -147,7 +147,7 @@ namespace ScTools.ScriptLang
 
             // initialize global vars values
             var matchingGlobalBlocks = globalBlocks.FindAll(b => SymbolTable.CaseInsensitiveComparer.Equals(b.Owner, sc.Name));
-            Debug.Assert(matchingGlobalBlocks.Count == 1, $"Script '{sc.Name}' is owner of more than one global block"); // TODO: report this as diagnostic error
+            Debug.Assert(matchingGlobalBlocks.Count <= 1, $"Script '{sc.Name}' is owner of more than one global block"); // TODO: report this as diagnostic error
             var globalBlock = matchingGlobalBlocks.SingleOrDefault();
             if (globalBlock != null)
             {

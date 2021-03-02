@@ -18,9 +18,9 @@
             return m;
         }
 
-        public static Compilation Compile(string src, string path = "test.sc")
+        public static Compilation Compile(string src, string path = "test.sc", IUsingSourceResolver? sourceResolver = null)
         {
-            var c = new Compilation();
+            var c = new Compilation { SourceResolver = sourceResolver };
             using var r = new StringReader(src);
             c.SetMainModule(r, path);
             c.Compile();

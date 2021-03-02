@@ -79,38 +79,51 @@ namespace ScTools.ScriptLang.Semantics
 
             public override void VisitStaticVariableStatement(StaticVariableStatement node)
             {
-                var v = Symbols.Lookup(node.Declaration.Declarator.Identifier) as VariableSymbol;
-                Debug.Assert(v != null);
-                Debug.Assert(v.IsStatic);
-
-                if (v.Type is RefType)
-                {
-                    Diagnostics.AddError(FilePath, $"Static variables cannot be reference types", node.Declaration.Declarator.Source);
-                }
-
-                if (node.Declaration.Initializer != null)
-                {
-                    if (v.Type is BasicType { TypeCode: BasicTypeCode.String })
-                    {
-                        Diagnostics.AddError(FilePath, $"Static variables of type STRING cannot have an initializer", node.Declaration.Initializer.Source);
-                    }
-
-                    var initializerType = TypeOf(node.Declaration.Initializer);
-                    if (initializerType == null || !v.Type.IsAssignableFrom(initializerType, considerReferences: false))
-                    {
-                        Diagnostics.AddError(FilePath, $"Mismatched initializer type and type of static variable '{v.Name}'", node.Declaration.Initializer.Source);
-                    }
-                }
+                CheckGlobalOrStaticVariableType(node.Declaration);
             }
 
             public override void VisitConstantVariableStatement(ConstantVariableStatement node)
             {
-                //foreach (var decl in node.Declaration.Declarators)
-                //{
-                //    var v = Symbols.Lookup(decl.Declarator.Identifier) as VariableSymbol;
-                //    Debug.Assert(v != null);
-                //    Debug.Assert(v.IsConstant);
-                //}
+                // empty
+            }
+
+            public override void VisitGlobalBlockStatement(GlobalBlockStatement node)
+            {
+                foreach (var decl in node.Variables)
+                {
+                    CheckGlobalOrStaticVariableType(decl);
+                }
+            }
+
+            private void CheckGlobalOrStaticVariableType(Declaration decl)
+            {
+                var v = Symbols.Lookup(decl.Declarator.Identifier) as VariableSymbol;
+                Debug.Assert(v != null);
+                Debug.Assert(v.IsGlobal || v.IsStatic);
+
+                if (v.Type is RefType)
+                {
+                    Diagnostics.AddError(FilePath, $"{(v.IsGlobal ? "Global" : "Static")} variables cannot be reference types", decl.Declarator.Source);
+                }
+
+                if (v.IsGlobal && v.Type is FunctionType)
+                {
+                    Diagnostics.AddError(FilePath, $"Global variables cannot be function/procedure types", decl.Declarator.Source);
+                }
+
+                if (decl.Initializer != null)
+                {
+                    if (v.Type is BasicType { TypeCode: BasicTypeCode.String })
+                    {
+                        Diagnostics.AddError(FilePath, $"{(v.IsGlobal ? "Global" : "Static")} variables of type STRING cannot have an initializer", decl.Initializer.Source);
+                    }
+
+                    var initializerType = TypeOf(decl.Initializer);
+                    if (initializerType == null || !v.Type.IsAssignableFrom(initializerType, considerReferences: false))
+                    {
+                        Diagnostics.AddError(FilePath, $"Mismatched initializer type and type of {(v.IsGlobal ? "global" : "static")} variable '{v.Name}'", decl.Initializer.Source);
+                    }
+                }
             }
 
             public void VisitParameters(IEnumerable<Declaration> parameters)

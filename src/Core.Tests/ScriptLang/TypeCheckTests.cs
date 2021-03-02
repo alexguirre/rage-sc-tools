@@ -48,6 +48,49 @@
         }
 
         [Theory]
+        [InlineData("BOOL v = 4")]
+        [InlineData("INT v = TRUE")]
+        [InlineData("FLOAT v = 2")]
+        [InlineData("INT v = <<1, 2, 3>>")]
+        [InlineData("VECTOR v = 4.0")]
+        [InlineData("VECTOR v = <<1.0, 2.0>>")]
+        public void TestGlobalInitializersIncorrectTypes(string decl)
+        {
+            var module = Util.ParseAndAnalyze($@"
+                GLOBAL 1 test
+                    {decl}
+                ENDGLOBAL
+
+                PROC MAIN()
+                ENDPROC
+            ");
+
+            Assert.True(module.Diagnostics.HasErrors, $"Expected errors due to incorrect type in global initializer '{decl}'");
+        }
+
+        [Theory]
+        [InlineData("BOOL v = TRUE")]
+        [InlineData("BOOL v = FALSE")]
+        [InlineData("BOOL v = 3 == 6")]
+        [InlineData("INT v = 3")]
+        [InlineData("FLOAT v = 1.0")]
+        [InlineData("FLOAT v = 2.0 + 3.0")]
+        [InlineData("VECTOR v = <<1.0, 2.0, 3.0>>")]
+        public void TestGlobalInitializersCorrectTypes(string decl)
+        {
+            var module = Util.ParseAndAnalyze($@"
+                GLOBAL 1 test
+                    {decl}
+                ENDGLOBAL
+
+                PROC MAIN()
+                ENDPROC
+            ");
+
+            Assert.False(module.Diagnostics.HasErrors, $"Expected no errors due to incorrect type in global initializer '{decl}'");
+        }
+
+        [Theory]
         [InlineData("INT v = DUMMY(5)")]
         [InlineData("DUMMY(DUMMY(5))")]
         [InlineData("INT v = 5 + DUMMY(5)")]
