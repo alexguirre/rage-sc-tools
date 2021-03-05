@@ -57,24 +57,17 @@ namespace ScTools.ScriptLang.Semantics
                 Symbols = Symbols.ExitScope();
             }
 
-            public override void VisitProcedurePrototypeStatement(ProcedurePrototypeStatement node)
+            public void VisitParameters(IEnumerable<Declaration> parameters)
             {
-                // empty to avoid visiting its ParameterList
-            }
-
-            public override void VisitFunctionPrototypeStatement(FunctionPrototypeStatement node)
-            {
-                // empty to avoid visiting its ParameterList
-            }
-
-            public override void VisitProcedureNativeStatement(ProcedureNativeStatement node)
-            {
-                // empty to avoid visiting its ParameterList
-            }
-
-            public override void VisitFunctionNativeStatement(FunctionNativeStatement node)
-            {
-                // empty to avoid visiting its ParameterList
+                foreach (var p in parameters)
+                {
+                    var v = new VariableSymbol(p.Declarator.Identifier,
+                                               p.Source,
+                                               ResolveTypeFromDecl(p),
+                                               VariableKind.LocalArgument);
+                    Symbols.Add(v);
+                    func?.LocalArgs.Add(v);
+                }
             }
 
             public override void VisitStaticVariableStatement(StaticVariableStatement node)
@@ -123,19 +116,6 @@ namespace ScTools.ScriptLang.Semantics
                     {
                         Diagnostics.AddError(FilePath, $"Mismatched initializer type and type of {(v.IsGlobal ? "global" : "static")} variable '{v.Name}'", decl.Initializer.Source);
                     }
-                }
-            }
-
-            public void VisitParameters(IEnumerable<Declaration> parameters)
-            {
-                foreach (var p in parameters)
-                {
-                    var v = new VariableSymbol(p.Declarator.Identifier,
-                                               p.Source,
-                                               ResolveTypeFromDecl(p),
-                                               VariableKind.LocalArgument);
-                    Symbols.Add(v);
-                    func?.LocalArgs.Add(v);
                 }
             }
 

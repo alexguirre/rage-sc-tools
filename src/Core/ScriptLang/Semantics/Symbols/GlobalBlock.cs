@@ -7,33 +7,36 @@
     public sealed class GlobalBlock : ISymbol
     {
         public const int MaxBlockCount = 64; // limit hardcoded in the game .exe (and max value that fits in GLOBAL_U24* instructions)
+        public const int MaxSize = 0x3FFFF;
 
         private readonly Dictionary<VariableSymbol, int> offsets = new();
-        private int sizeOf = -1;
+        private int size = -1;
 
         public string Name { get; }
         public SourceRange Source { get; }
         public int Block { get; }
         public string Owner { get; }
         public ImmutableArray<VariableSymbol> Variables { get; }
-        public int SizeOf
+        public int Size
         {
             get
             {
-                if (sizeOf == -1)
+                if (size == -1)
                 {
                     AllocateVariables();
                 }
 
-                return sizeOf;
+                return size;
             }
         }
+
+        public bool ExceedsMaxSize => Size > MaxSize;
 
         public GlobalBlock(int block, string owner, IEnumerable<VariableSymbol> variables, SourceRange source)
         {
             if (block < 0 || block >= MaxBlockCount)
             {
-                throw new ArgumentOutOfRangeException(nameof(block), "Block is negative or greater than or equal to 64");
+                throw new ArgumentOutOfRangeException(nameof(block), $"Block is negative or greater than or equal to {MaxBlockCount}");
             }
 
             Block = block;
@@ -70,7 +73,7 @@
                 offsets.Add(v, location);
                 location += v.Type.SizeOf;
             }
-            sizeOf = location;
+            size = location;
         }
     }
 }

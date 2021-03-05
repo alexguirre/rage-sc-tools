@@ -152,9 +152,10 @@ namespace ScTools.ScriptLang
             if (globalBlock != null)
             {
                 sc.GlobalsBlock = (uint)globalBlock.Block;
-                sc.GlobalsLength = (uint)globalBlock.SizeOf; // TODO
+                sc.GlobalsLength = (uint)globalBlock.Size;
 
-                var globals = new ScriptValue[globalBlock.SizeOf];
+                // initialize globals values
+                var globals = new ScriptValue[globalBlock.Size];
                 int location = 0;
                 foreach (var v in globalBlock.Variables)
                 {
@@ -170,6 +171,7 @@ namespace ScTools.ScriptLang
                     }
                     location += sizeOf;
                 }
+                Debug.Assert(location == globalBlock.Size);
 
                 // create pages
                 {

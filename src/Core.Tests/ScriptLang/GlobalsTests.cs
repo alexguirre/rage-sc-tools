@@ -1,6 +1,7 @@
 ﻿namespace ScTools.Tests.ScriptLang
 {
     using ScTools.GameFiles;
+    using ScTools.ScriptLang.Semantics.Symbols;
 
     using Xunit;
 
@@ -137,6 +138,45 @@
             Assert.Equal(1u, c.CompiledScript.GlobalsBlock);
             Assert.Equal(1u, c.CompiledScript.GlobalsLength);
             Assert.Equal(10, c.CompiledScript.GlobalsPages[0][0].AsInt32);
+        }
+
+        [Fact]
+        public void TestMaximumSize()
+        {
+            var c = Util.Compile($@"
+                SCRIPT_NAME my_script
+                SCRIPT_HASH 0x1234ABCD
+                GLOBAL 1 my_script
+                    INT g_aValues[{GlobalBlock.MaxSize - 1}]
+                ENDGLOBAL
+
+                PROC MAIN()
+                ENDPROC
+            ");
+
+            Assert.False(c.GetAllDiagnostics().HasErrors);
+            Assert.Equal("my_script", c.CompiledScript.Name);
+            Assert.Equal(0x1234ABCDu, c.CompiledScript.Hash);
+            Assert.Equal(1u, c.CompiledScript.GlobalsBlock);
+            Assert.Equal((uint)GlobalBlock.MaxSize, c.CompiledScript.GlobalsLength);
+            Assert.Equal(GlobalBlock.MaxSize - 1, c.CompiledScript.GlobalsPages[0][0].AsInt32);
+        }
+
+        [Fact]
+        public void TestExceedMaximumSize()
+        {
+            var c = Util.Compile($@"
+                SCRIPT_NAME my_script
+                SCRIPT_HASH 0x1234ABCD
+                GLOBAL 1 my_script
+                    INT g_aValues[{GlobalBlock.MaxSize}]
+                ENDGLOBAL
+
+                PROC MAIN()
+                ENDPROC
+            ");
+
+            Assert.True(c.GetAllDiagnostics().HasErrors, "Global block exceeds max size");
         }
     }
 }

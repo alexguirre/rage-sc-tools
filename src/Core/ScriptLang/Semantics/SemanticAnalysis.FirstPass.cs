@@ -29,6 +29,7 @@ namespace ScTools.ScriptLang.Semantics
             {
                 ResolveConstants();
                 ResolveTypes();
+                CheckGlobalBlocks();
             }
 
             private void ResolveConstants()
@@ -132,6 +133,20 @@ namespace ScTools.ScriptLang.Semantics
                 }
 
                 return !anyUnresolved;
+            }
+
+            private void CheckGlobalBlocks()
+            {
+                foreach (var globalBlock in Symbols.Symbols.OfType<GlobalBlock>())
+                {
+                    if (globalBlock.ExceedsMaxSize)
+                    {
+                        Diagnostics.AddError(
+                            FilePath,
+                            $"Global block {globalBlock.Block} (owner: {globalBlock.Owner}, size: 0x{globalBlock.Size:X}) exceeds maximum size (0x{GlobalBlock.MaxSize:X})",
+                            globalBlock.Source);
+                    }
+                }
             }
 
             private ExplicitFunctionType CreateUnresolvedFunctionType(string? returnType, IEnumerable<Declaration> parameters)
