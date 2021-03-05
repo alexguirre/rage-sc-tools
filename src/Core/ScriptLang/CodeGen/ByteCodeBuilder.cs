@@ -173,8 +173,8 @@ namespace ScTools.ScriptLang.CodeGen
             var v = unchecked((uint)location);
             var inst = v switch
             {
-                var l when l >= 0 && l <= 0x00FF => (opcodeU8, new[] { new Operand(v) }),
-                var l when l >= 0 && l <= 0xFFFF => (opcodeU16, new[] { new Operand(v) }),
+                _ when v <= 0x00FF => (opcodeU8, new[] { new Operand(v) }),
+                _ when v <= 0xFFFF => (opcodeU16, new[] { new Operand(v) }),
                 _ => throw new InvalidOperationException($"{(local ? "Local" : "Static")} at '{location}' out of bounds")
             };
 
@@ -183,6 +183,18 @@ namespace ScTools.ScriptLang.CodeGen
 
         private void EmitLocal(int location, Opcode opcodeU8, Opcode opcodeU16) => EmitVarInst(location, opcodeU8, opcodeU16, true);
         private void EmitStatic(int location, Opcode opcodeU8, Opcode opcodeU16) => EmitVarInst(location, opcodeU8, opcodeU16, false);
+        private void EmitGlobal(int location, Opcode opcodeU16, Opcode opcodeU24)
+        {
+            var v = unchecked((uint)location);
+            var inst = v switch
+            {
+                _ when v <= 0x00FFFF => (opcodeU16, new[] { new Operand(v) }),
+                _ when v <= 0xFFFFFF => (opcodeU24, new[] { new Operand(v) }),
+                _ => throw new InvalidOperationException($"Global at '{location}' out of bounds")
+            };
+
+            Emit(inst.Item1, inst.Item2);
+        }
 
         public void EmitLocalAddr(int location) => EmitLocal(location, Opcode.LOCAL_U8, Opcode.LOCAL_U16);
         public void EmitLocalLoad(int location) => EmitLocal(location, Opcode.LOCAL_U8_LOAD, Opcode.LOCAL_U16_LOAD);
@@ -272,6 +284,52 @@ namespace ScTools.ScriptLang.CodeGen
             Debug.Assert(var.IsStatic);
 
             var res = compilation.GetStaticLocation(var);
+            Debug.Assert(res.HasValue);
+            return res.Value;
+        }
+
+        public void EmitGlobalAddr(int location) => EmitGlobal(location, Opcode.GLOBAL_U16, Opcode.GLOBAL_U24);
+        public void EmitGlobalLoad(int location) => EmitGlobal(location, Opcode.GLOBAL_U16_LOAD, Opcode.GLOBAL_U24_LOAD);
+        public void EmitGlobalStore(int location) => EmitGlobal(location, Opcode.GLOBAL_U16_STORE, Opcode.GLOBAL_U24_STORE);
+
+        public void EmitGlobalStoreN(int location, int n)
+        {
+            if (n == 1)
+            {
+                EmitGlobalStore(location);
+            }
+            else
+            {
+                EmitPushUInt(unchecked((uint)n));
+                EmitGlobalAddr(location);
+                Emit(Opcode.STORE_N, ReadOnlySpan<Operand>.Empty);
+            }
+        }
+
+        public void EmitGlobalLoadN(int location, int n)
+        {
+            if (n == 1)
+            {
+                EmitGlobalLoad(location);
+            }
+            else
+            {
+                EmitPushUInt(unchecked((uint)n));
+                EmitGlobalAddr(location);
+                Emit(Opcode.LOAD_N, ReadOnlySpan<Operand>.Empty);
+            }
+        }
+
+        public void EmitGlobalAddr(VariableSymbol var) => EmitGlobalAddr(GetGlobalLocation(var));
+        public void EmitGlobalStore(VariableSymbol var) => EmitGlobalStoreN(GetGlobalLocation(var), var.Type.SizeOf);
+        public void EmitGlobalLoad(VariableSymbol var) => EmitGlobalLoadN(GetGlobalLocation(var), var.Type.SizeOf);
+
+        private int GetGlobalLocation(VariableSymbol var)
+        {
+            Debug.Assert(InModule);
+            Debug.Assert(var.IsGlobal);
+
+            var res = compilation.GetGlobalLocation(var);
             Debug.Assert(res.HasValue);
             return res.Value;
         }

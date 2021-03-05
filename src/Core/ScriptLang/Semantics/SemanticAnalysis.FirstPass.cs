@@ -29,6 +29,7 @@ namespace ScTools.ScriptLang.Semantics
             {
                 ResolveConstants();
                 ResolveTypes();
+                CheckGlobalBlocks();
             }
 
             private void ResolveConstants()
@@ -134,6 +135,42 @@ namespace ScTools.ScriptLang.Semantics
                 return !anyUnresolved;
             }
 
+            private void CheckGlobalBlocks()
+            {
+                var globalBlocksFromThisModule = Symbols.Symbols.OfType<GlobalBlock>();
+                foreach (var globalBlock in globalBlocksFromThisModule)
+                {
+                    if (globalBlock.ExceedsMaxSize)
+                    {
+                        Diagnostics.AddError(
+                            FilePath,
+                            $"Global block {globalBlock.Block} (owner: {globalBlock.Owner}, size: 0x{globalBlock.Size:X}) exceeds maximum size (0x{GlobalBlock.MaxSize:X})",
+                            globalBlock.Source);
+                    }
+                }
+
+                var usedOwners = new HashSet<string>();
+                var usedBlocks = new HashSet<int>();
+                foreach (var globalBlock in globalBlocksFromThisModule.Concat(Symbols.Imports.SelectMany(i => i.Symbols.OfType<GlobalBlock>())))
+                {
+                    if (!usedOwners.Add(globalBlock.Owner))
+                    {
+                        Diagnostics.AddError(
+                            FilePath, // TODO: the global block may have been defined in a different file from the one we are currently analyzing
+                            $"Script '{globalBlock.Owner}' is owner of more than one global block",
+                            globalBlock.Source);
+                    }
+
+                    if (!usedBlocks.Add(globalBlock.Block))
+                    {
+                        Diagnostics.AddError(
+                            FilePath,
+                            $"Global block {globalBlock.Block} is repeated",
+                            globalBlock.Source);
+                    }
+                }
+            }
+
             private ExplicitFunctionType CreateUnresolvedFunctionType(string? returnType, IEnumerable<Declaration> parameters)
             {
                 var r = returnType != null ? new UnresolvedType(returnType) : null;
@@ -203,6 +240,22 @@ namespace ScTools.ScriptLang.Semantics
                 {
                     constantsToResolve.Enqueue((v, node.Declaration.Initializer, int.MaxValue));
                 }
+            }
+
+            public override void VisitGlobalBlockStatement(GlobalBlockStatement node)
+            {
+                var vars = new List<VariableSymbol>(node.Variables.Length);
+                foreach (var decl in node.Variables)
+                {
+                    var v = new VariableSymbol(decl.Declarator.Identifier,
+                                               decl.Source,
+                                               TypeFromDecl(decl),
+                                               VariableKind.Global);
+
+                    Symbols.Add(v);
+                    vars.Add(v);
+                }
+                Symbols.Add(new GlobalBlock(node.Block, node.Owner, vars, node.Source));
             }
 
             public override void VisitStructStatement(StructStatement node)

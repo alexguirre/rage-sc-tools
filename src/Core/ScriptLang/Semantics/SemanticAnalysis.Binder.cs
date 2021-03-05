@@ -37,6 +37,18 @@ namespace ScTools.ScriptLang.Semantics
                 Module.Statics.Add(s);
             }
 
+            public override void VisitGlobalBlockStatement(GlobalBlockStatement node)
+            {
+                foreach (var v in node.Variables)
+                {
+                    var s = Symbols.Lookup(v.Declarator.Identifier) as VariableSymbol;
+                    Debug.Assert(s != null);
+                    Debug.Assert(s.IsGlobal);
+
+                    s.Initializer = Bind(v.Initializer);
+                }
+            }
+
             public override void VisitFunctionStatement(FunctionStatement node) => VisitFunc(node.Name, node.Block);
             public override void VisitProcedureStatement(ProcedureStatement node) => VisitFunc(node.Name, node.Block);
 

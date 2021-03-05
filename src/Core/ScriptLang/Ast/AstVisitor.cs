@@ -23,6 +23,7 @@ namespace ScTools.ScriptLang.Ast
         public virtual void VisitStructStatement(StructStatement node) => DefaultVisit(node);
         public virtual void VisitStaticVariableStatement(StaticVariableStatement node) => DefaultVisit(node);
         public virtual void VisitConstantVariableStatement(ConstantVariableStatement node) => DefaultVisit(node);
+        public virtual void VisitGlobalBlockStatement(GlobalBlockStatement node) => DefaultVisit(node);
 
         public virtual void VisitStatementBlock(StatementBlock node) => DefaultVisit(node);
         public virtual void VisitErrorStatement(ErrorStatement node) => DefaultVisit(node);
@@ -73,6 +74,7 @@ namespace ScTools.ScriptLang.Ast
         [return: MaybeNull] public virtual TResult VisitStructStatement(StructStatement node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitStaticVariableStatement(StaticVariableStatement node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitConstantVariableStatement(ConstantVariableStatement node) => DefaultVisit(node);
+        [return: MaybeNull] public virtual TResult VisitGlobalBlockStatement(GlobalBlockStatement node) => DefaultVisit(node);
 
         [return: MaybeNull] public virtual TResult VisitStatementBlock(StatementBlock node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitErrorStatement(ErrorStatement node) => DefaultVisit(node);

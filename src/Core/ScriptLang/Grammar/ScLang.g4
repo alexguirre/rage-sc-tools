@@ -30,6 +30,10 @@ topLevelStatement
     
     | K_CONST declaration                                       #constantVariableStatement
     | declaration                                               #staticVariableStatement
+
+    | K_GLOBAL block=integer owner=identifier EOL
+      (declaration? EOL)*
+      K_ENDGLOBAL                                               #globalBlockStatement
     ;
 
 statement
@@ -196,6 +200,8 @@ K_SCRIPT_NAME : S C R I P T '_' N A M E;
 K_SCRIPT_HASH : S C R I P T '_' H A S H;
 K_USING : U S I N G;
 K_CONST : C O N S T;
+K_GLOBAL : G L O B A L;
+K_ENDGLOBAL : E N D G L O B A L;
 
 OP_ADD: '+';
 OP_SUBTRACT: '-';

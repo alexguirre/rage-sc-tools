@@ -199,4 +199,21 @@ namespace ScTools.ScriptLang.Ast
         public override void Accept(AstVisitor visitor) => visitor.VisitConstantVariableStatement(this);
         [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitConstantVariableStatement(this);
     }
+
+    public sealed class GlobalBlockStatement : TopLevelStatement
+    {
+        public int Block { get; }
+        public string Owner { get; }
+        public ImmutableArray<Declaration> Variables { get; }
+
+        public override IEnumerable<Node> Children => Variables;
+
+        public GlobalBlockStatement(int block, string owner, IEnumerable<Declaration> variables, SourceRange source) : base(source)
+            => (Block, Owner, Variables) = (block, owner, variables.ToImmutableArray());
+
+        public override string ToString() => $"GLOBAL {Block} {Owner}\n{string.Join('\n', Variables)}\nENDGLOBAL";
+
+        public override void Accept(AstVisitor visitor) => visitor.VisitGlobalBlockStatement(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitGlobalBlockStatement(this);
+    }
 }

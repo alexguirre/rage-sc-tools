@@ -26,7 +26,7 @@ namespace ScTools.ScriptLang.Semantics
         /// <summary>
         /// Returns symbols in the order they were declared in.
         /// </summary>
-        public IEnumerable<ISymbol> Symbols => ((IEnumerable<ISymbol>)symbols).Reverse();
+        public IEnumerable<ISymbol> Symbols => symbols;
 
 
         public SymbolTable(Ast.Root astNode)

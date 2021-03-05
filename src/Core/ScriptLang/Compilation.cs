@@ -18,6 +18,7 @@ namespace ScTools.ScriptLang
         public const string DefaultScriptName = "unknown";
 
         private readonly Dictionary<VariableSymbol, int /*location*/> allocatedStatics = new();
+        private readonly List<GlobalBlock> globalBlocks = new();
 
         public Script? CompiledScript { get; private set; }
         public bool NeedsRecompilation { get; private set; }
@@ -100,6 +101,10 @@ namespace ScTools.ScriptLang
             Debug.Assert(MainModule.State == ModuleState.Bound);
             Debug.Assert(ImportedModules.All(m => m.State == ModuleState.Bound));
 
+            globalBlocks.Clear();
+            globalBlocks.AddRange(MainModule.SymbolTable!.Symbols.OfType<GlobalBlock>()
+                                    .Concat(ImportedModules.SelectMany(m => m.SymbolTable!.Symbols.OfType<GlobalBlock>())));
+
             var statics = MainModule.BoundModule!.Statics
                             .Concat(ImportedModules.SelectMany(m => m.BoundModule!.Statics));
             var staticsTotalSize = AllocateStatics(statics);
@@ -140,6 +145,51 @@ namespace ScTools.ScriptLang
                 }
             }
 
+            // initialize global vars values
+            var globalBlock = globalBlocks.SingleOrDefault(b => SymbolTable.CaseInsensitiveComparer.Equals(b.Owner, sc.Name));
+            if (globalBlock != null)
+            {
+                sc.GlobalsBlock = (uint)globalBlock.Block;
+                sc.GlobalsLength = (uint)globalBlock.Size;
+
+                // initialize globals values
+                var globals = new ScriptValue[globalBlock.Size];
+                int location = 0;
+                foreach (var v in globalBlock.Variables)
+                {
+                    InitializeStaticArraysLengths(v.Type, location, globals.AsSpan());
+                    var sizeOf = v.Type.SizeOf;
+                    if (v.Initializer != null)
+                    {
+                        var defaultValue = Evaluator.Evaluate(v.Initializer);
+                        Debug.Assert(defaultValue.Length == sizeOf);
+
+                        var dest = globals.AsSpan(location, sizeOf);
+                        defaultValue.CopyTo(dest);
+                    }
+                    location += sizeOf;
+                }
+                Debug.Assert(location == globalBlock.Size);
+
+                // create pages
+                {
+                    var pageCount = (globals.Length + Script.MaxPageLength) / Script.MaxPageLength;
+                    var p = new ScriptPage<ScriptValue>[pageCount];
+                    if (pageCount > 0)
+                    {
+                        for (int i = 0; i < pageCount - 1; i++)
+                        {
+                            p[i] = new ScriptPage<ScriptValue> { Data = new ScriptValue[Script.MaxPageLength] };
+                            globals.AsSpan(i * (int)Script.MaxPageLength, (int)Script.MaxPageLength).CopyTo(p[i].Data);
+                        }
+
+                        p[^1] = new ScriptPage<ScriptValue> { Data = new ScriptValue[globals.Length & 0x3FFF] };
+                        globals.AsSpan((int)((pageCount - 1) * Script.MaxPageLength), p[^1].Data.Length).CopyTo(p[^1].Data);
+                    }
+                    sc.GlobalsPages = new ScriptPageArray<ScriptValue> { Items = p };
+                }
+            }
+
             sc.CodePages = new ScriptPageArray<byte>
             {
                 Items = code.ToPages(out uint codeLength),
@@ -156,6 +206,14 @@ namespace ScTools.ScriptLang
             sc.NativesCount = (uint)sc.Natives.Length;
 
             return sc;
+        }
+
+        public int? GetGlobalLocation(VariableSymbol var) 
+        {
+            Debug.Assert(var.IsGlobal);
+
+            var block = globalBlocks.Find(b => b.Contains(var));
+            return block?.GetLocation(var);
         }
 
         public int? GetStaticLocation(VariableSymbol var)
