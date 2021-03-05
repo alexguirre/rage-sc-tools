@@ -36,24 +36,7 @@
                 ENDPROC
             ");
 
-            Assert.False(module.Diagnostics.HasErrors);
-        }
-
-        [Fact]
-        public void TestRefInStructInStaticVariable()
-        {
-            var module = Util.ParseAndAnalyze($@"
-                STRUCT MY_STRUCT
-                    FLOAT& v
-                ENDSTRUCT
-
-                MY_STRUCT s
-
-                PROC MAIN()
-                ENDPROC
-            ");
-
-            Assert.True(module.Diagnostics.HasErrors, $"Ref types are not supported as static variables");
+            Assert.True(module.Diagnostics.HasErrors, $"Ref types are not supported as struct fields");
         }
 
         [Fact]

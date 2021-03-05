@@ -261,7 +261,16 @@ namespace ScTools.ScriptLang.Semantics
             public override void VisitStructStatement(StructStatement node)
             {
                 var struc = new StructType(node.Name,
-                                           node.Fields.Select(decl => new Field(TypeFromDecl(decl), decl.Declarator.Identifier)));
+                                           node.Fields.Select(decl =>
+                                           {
+                                               var ty = TypeFromDecl(decl);
+                                               if (ty is RefType)
+                                               {
+                                                   Diagnostics.AddError(FilePath, $"Struct fields cannot be reference types", decl.Source);
+                                               }
+
+                                               return new Field(TypeFromDecl(decl), decl.Declarator.Identifier);
+                                           }));
 
                 Symbols.Add(new TypeSymbol(node.Name, node.Source, struc));
             }
