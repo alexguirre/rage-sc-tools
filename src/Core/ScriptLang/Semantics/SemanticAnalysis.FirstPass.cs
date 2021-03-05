@@ -137,13 +137,35 @@ namespace ScTools.ScriptLang.Semantics
 
             private void CheckGlobalBlocks()
             {
-                foreach (var globalBlock in Symbols.Symbols.OfType<GlobalBlock>())
+                var globalBlocksFromThisModule = Symbols.Symbols.OfType<GlobalBlock>();
+                foreach (var globalBlock in globalBlocksFromThisModule)
                 {
                     if (globalBlock.ExceedsMaxSize)
                     {
                         Diagnostics.AddError(
                             FilePath,
                             $"Global block {globalBlock.Block} (owner: {globalBlock.Owner}, size: 0x{globalBlock.Size:X}) exceeds maximum size (0x{GlobalBlock.MaxSize:X})",
+                            globalBlock.Source);
+                    }
+                }
+
+                var usedOwners = new HashSet<string>();
+                var usedBlocks = new HashSet<int>();
+                foreach (var globalBlock in globalBlocksFromThisModule.Concat(Symbols.Imports.SelectMany(i => i.Symbols.OfType<GlobalBlock>())))
+                {
+                    if (!usedOwners.Add(globalBlock.Owner))
+                    {
+                        Diagnostics.AddError(
+                            FilePath, // TODO: the global block may have been defined in a different file from the one we are currently analyzing
+                            $"Script '{globalBlock.Owner}' is owner of more than one global block",
+                            globalBlock.Source);
+                    }
+
+                    if (!usedBlocks.Add(globalBlock.Block))
+                    {
+                        Diagnostics.AddError(
+                            FilePath,
+                            $"Global block {globalBlock.Block} is repeated",
                             globalBlock.Source);
                     }
                 }

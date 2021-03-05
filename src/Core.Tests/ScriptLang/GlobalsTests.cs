@@ -131,13 +131,86 @@
                     _ => null
                 }));
 
-            var s = Util.Dump(c.CompiledScript);
             Assert.False(c.GetAllDiagnostics().HasErrors);
             Assert.Equal("my_script", c.CompiledScript.Name);
             Assert.Equal(0x1234ABCDu, c.CompiledScript.Hash);
             Assert.Equal(1u, c.CompiledScript.GlobalsBlock);
             Assert.Equal(1u, c.CompiledScript.GlobalsLength);
             Assert.Equal(10, c.CompiledScript.GlobalsPages[0][0].AsInt32);
+        }
+
+        [Fact]
+        public void TestMultipleBlocksRepeatedOwners()
+        {
+            const string Globals1 = @"
+                GLOBAL 1 my_script
+                    INT g_nValue = 10
+                ENDGLOBAL
+            ";
+            const string Globals2 = @"
+                GLOBAL 2 my_script
+                    INT g_nOtherValue = 5
+                ENDGLOBAL
+            ";
+            const string Script = @"
+                SCRIPT_NAME my_script
+                SCRIPT_HASH 0x1234ABCD
+
+                USING 'globals1.sch'
+                USING 'globals2.sch'
+
+                PROC MAIN()
+                    g_nOtherValue = g_nValue + g_nOtherValue
+                ENDPROC
+            ";
+
+            var c = Util.Compile(
+                Script,
+                sourceResolver: new DelegatedUsingResolver(p => p switch
+                {
+                    "globals1.sch" => Globals1,
+                    "globals2.sch" => Globals2,
+                    _ => null
+                }));
+
+            Assert.True(c.GetAllDiagnostics().HasErrors);
+        }
+
+        [Fact]
+        public void TestMultipleBlocksRepeatedIds()
+        {
+            const string Globals1 = @"
+                GLOBAL 1 my_script
+                    INT g_nValue = 10
+                ENDGLOBAL
+            ";
+            const string Globals2 = @"
+                GLOBAL 1 other_script
+                    INT g_nOtherValue = 5
+                ENDGLOBAL
+            ";
+            const string Script = @"
+                SCRIPT_NAME my_script
+                SCRIPT_HASH 0x1234ABCD
+
+                USING 'globals1.sch'
+                USING 'globals2.sch'
+
+                PROC MAIN()
+                    g_nOtherValue = g_nValue + g_nOtherValue
+                ENDPROC
+            ";
+
+            var c = Util.Compile(
+                Script,
+                sourceResolver: new DelegatedUsingResolver(p => p switch
+                {
+                    "globals1.sch" => Globals1,
+                    "globals2.sch" => Globals2,
+                    _ => null
+                }));
+
+            Assert.True(c.GetAllDiagnostics().HasErrors);
         }
 
         [Fact]
