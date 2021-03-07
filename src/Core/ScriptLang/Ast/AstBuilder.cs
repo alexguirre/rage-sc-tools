@@ -237,7 +237,7 @@ namespace ScTools.ScriptLang.Ast
                                                                                Build(c.left),
                                                                                Build(c.right),
                                                                                Source(c)),
-                ScLangParser.AggregateExpressionContext c => new AggregateExpression(c.expression().Select(Build), Source(c)),
+                ScLangParser.VectorExpressionContext c => new VectorExpression(Build(c.expression(0)), Build(c.expression(1)), Build(c.expression(2)), Source(c)),
                 ScLangParser.IdentifierExpressionContext c => new IdentifierExpression(c.identifier().GetText(), Source(c)),
                 ScLangParser.MemberAccessExpressionContext c => new MemberAccessExpression(Build(c.expression()), 
                                                                                            c.identifier().GetText(),

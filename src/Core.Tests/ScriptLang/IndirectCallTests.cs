@@ -100,7 +100,10 @@
                 ENDSTRUCT
 
                 PROC MAIN()
-                    MY_STRUCTURE myStruct = <<1, MY_PROCEDURE>>
+                    MY_STRUCTURE myStruct
+                    myStruct.arg1 = 1
+                    myStruct.cb = MY_PROCEDURE
+
                     myStruct.cb(myStruct.arg1, 2)
                 ENDPROC
 

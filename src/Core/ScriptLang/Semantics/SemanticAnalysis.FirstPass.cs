@@ -101,7 +101,6 @@ namespace ScTools.ScriptLang.Semantics
 
                     switch (expr)
                     {
-                        case BoundAggregateExpression x: count += x.Expressions.Sum(CountUnresolvedDependencies); break;
                         case BoundUnaryExpression x: count += CountUnresolvedDependencies(x.Operand); break;
                         case BoundBinaryExpression x: count += CountUnresolvedDependencies(x.Left) + CountUnresolvedDependencies(x.Right);break;
                         case BoundVariableExpression x:

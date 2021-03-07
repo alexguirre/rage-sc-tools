@@ -44,10 +44,10 @@ namespace ScTools.ScriptLang.Semantics
             public override Type? VisitLiteralExpression(LiteralExpression node)
                 => node.Kind switch
                 {
-                    LiteralKind.Int => (symbols.Lookup("INT") as TypeSymbol)!.Type,
-                    LiteralKind.Float => (symbols.Lookup("FLOAT") as TypeSymbol)!.Type,
-                    LiteralKind.Bool => (symbols.Lookup("BOOL") as TypeSymbol)!.Type,
-                    LiteralKind.String => (symbols.Lookup("STRING") as TypeSymbol)!.Type,
+                    LiteralKind.Int => BuiltInTypes.INT,
+                    LiteralKind.Float => BuiltInTypes.FLOAT,
+                    LiteralKind.Bool => BuiltInTypes.BOOL,
+                    LiteralKind.String => BuiltInTypes.STRING,
                     _ => null,
                 };
 
@@ -78,7 +78,7 @@ namespace ScTools.ScriptLang.Semantics
 
                 if (BinaryExpression.OpIsComparison(node.Op))
                 {
-                    return (symbols.Lookup("BOOL") as TypeSymbol)!.Type;
+                    return BuiltInTypes.BOOL;
                 }
 
                 return left;
@@ -135,7 +135,7 @@ namespace ScTools.ScriptLang.Semantics
                         return null;
                     }
 
-                    return (symbols.Lookup("INT") as TypeSymbol)!.Type;
+                    return BuiltInTypes.INT;
                 }
                 
                 if (underlyingTy is not StructType struc)
@@ -157,17 +157,32 @@ namespace ScTools.ScriptLang.Semantics
                 return field.Type;
             }
 
-            public override Type? VisitAggregateExpression(AggregateExpression node)
+            public override Type? VisitVectorExpression(VectorExpression node)
             {
-                var fieldTypes = node.Expressions.Select(expr => expr.Accept(this)!);
+                var xTy = CheckComponentType(node.X, "X");
+                var yTy = CheckComponentType(node.Y, "Y");
+                var zTy = CheckComponentType(node.Z, "Z");
 
-                if (fieldTypes.All(t => t != null))
+
+                if (xTy != null && yTy != null && zTy != null)
                 {
-                    return StructType.NewAggregate(fieldTypes);
+                    return BuiltInTypes.VECTOR;
                 }
                 else
                 {
                     return null;
+                }
+
+                Type? CheckComponentType(Node node, string name)
+                {
+                    var ty = node.Accept(this);
+                    if (ty?.UnderlyingType is not BasicType { TypeCode: BasicTypeCode.Float })
+                    {
+                        diagnostics.AddError(filePath, $"Mismatched type of component {name}, expected FLOAT", node.Source);
+                        ty = null;
+                    }
+
+                    return ty;
                 }
             }
 

@@ -572,25 +572,26 @@ namespace ScTools.ScriptLang.Semantics.Binding
         }
     }
 
-    public sealed class BoundAggregateExpression : BoundExpression
+    public sealed class BoundVectorExpression : BoundExpression
     {
-        public override bool IsConstant => Expressions.All(expr => expr.IsConstant);
+        public override bool IsConstant => X.IsConstant && Y.IsConstant && Z.IsConstant;
         public override bool IsAddressable => false;
-        public override bool IsInvalid => Expressions.Any(expr => expr.IsInvalid);
-        public ImmutableArray<BoundExpression> Expressions { get; }
+        public override bool IsInvalid => X.IsInvalid || Y.IsInvalid || Z.IsInvalid;
+        public BoundExpression X { get; }
+        public BoundExpression Y { get; }
+        public BoundExpression Z { get; }
 
-        public BoundAggregateExpression(IEnumerable<BoundExpression> expressions)
+        public BoundVectorExpression(BoundExpression x, BoundExpression y, BoundExpression z)
         {
-            Expressions = expressions.ToImmutableArray();
-            Type = StructType.NewAggregate(Expressions.Select(e => e.Type!));
+            (X, Y, Z) = (x, y, z);
+            Type = BuiltInTypes.VECTOR;
         }
 
         public override void EmitLoad(ByteCodeBuilder code)
         {
-            foreach (var expr in Expressions)
-            {
-                expr.EmitLoad(code);
-            }
+            X.EmitLoad(code);
+            Y.EmitLoad(code);
+            Z.EmitLoad(code);
         }
 
         public override void EmitStore(ByteCodeBuilder code) => throw new NotSupportedException();
@@ -599,8 +600,6 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
     public sealed class BoundFloatLiteralExpression : BoundExpression
     {
-        private static readonly Type FloatType = new BasicType(BasicTypeCode.Float);
-
         public override bool IsConstant => true;
         public override bool IsAddressable => false;
         public override bool IsInvalid => false;
@@ -609,7 +608,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
         public BoundFloatLiteralExpression(float value)
         {
             Value = value;
-            Type = FloatType;
+            Type = BuiltInTypes.FLOAT;
         }
 
         public override void EmitLoad(ByteCodeBuilder code) => code.EmitPushFloat(Value);
@@ -619,8 +618,6 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
     public sealed class BoundIntLiteralExpression : BoundExpression
     {
-        private static readonly Type IntType = new BasicType(BasicTypeCode.Int);
-
         public override bool IsConstant => true;
         public override bool IsAddressable => false;
         public override bool IsInvalid => false;
@@ -629,7 +626,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
         public BoundIntLiteralExpression(int value)
         {
             Value = value;
-            Type = IntType;
+            Type = BuiltInTypes.INT;
         }
 
         public override void EmitLoad(ByteCodeBuilder code) => code.EmitPushInt(Value);
@@ -639,8 +636,6 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
     public sealed class BoundStringLiteralExpression : BoundExpression
     {
-        private static readonly Type StringType = new BasicType(BasicTypeCode.String);
-
         public override bool IsConstant => false;
         public override bool IsAddressable => false;
         public override bool IsInvalid => false;
@@ -649,7 +644,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
         public BoundStringLiteralExpression(string value)
         {
             Value = value;
-            Type = StringType;
+            Type = BuiltInTypes.STRING;
         }
 
         public override void EmitLoad(ByteCodeBuilder code) => code.EmitPushString(Value);
@@ -659,8 +654,6 @@ namespace ScTools.ScriptLang.Semantics.Binding
 
     public sealed class BoundBoolLiteralExpression : BoundExpression
     {
-        private static readonly Type BoolType = new BasicType(BasicTypeCode.Bool);
-
         public override bool IsConstant => true;
         public override bool IsAddressable => false;
         public override bool IsInvalid => false;
@@ -669,7 +662,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
         public BoundBoolLiteralExpression(bool value)
         {
             Value = value;
-            Type = BoolType;
+            Type = BuiltInTypes.BOOL;
         }
 
         public override void EmitLoad(ByteCodeBuilder code) => code.EmitPushInt(Value ? 1 : 0);

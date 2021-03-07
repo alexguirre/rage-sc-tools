@@ -131,19 +131,29 @@ namespace ScTools.ScriptLang.Ast
         LogicalOr,
     }
 
-    public sealed class AggregateExpression : Expression
+    public sealed class VectorExpression : Expression
     {
-        public ImmutableArray<Expression> Expressions { get; }
+        public Expression X { get; }
+        public Expression Y { get; }
+        public Expression Z { get; }
 
-        public override IEnumerable<Node> Children => Expressions;
+        public override IEnumerable<Node> Children
+        {
+            get
+            {
+                yield return X;
+                yield return Y;
+                yield return Z;
+            }
+        }
 
-        public AggregateExpression(IEnumerable<Expression> expressions, SourceRange source) : base(source)
-            => Expressions = expressions.ToImmutableArray();
+        public VectorExpression(Expression x, Expression y, Expression z, SourceRange source) : base(source)
+            => (X, Y, Z) = (x, y, z);
 
-        public override string ToString() => $"<<{string.Join(", ", Expressions)}>>";
+        public override string ToString() => $"<<{X}, {Y}, {Z}>>";
 
-        public override void Accept(AstVisitor visitor) => visitor.VisitAggregateExpression(this);
-        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitAggregateExpression(this);
+        public override void Accept(AstVisitor visitor) => visitor.VisitVectorExpression(this);
+        [return: MaybeNull] public override T Accept<T>(AstVisitor<T> visitor) => visitor.VisitVectorExpression(this);
     }
 
     public sealed class IdentifierExpression : Expression

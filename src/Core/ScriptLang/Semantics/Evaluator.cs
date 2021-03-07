@@ -42,7 +42,7 @@ namespace ScTools.ScriptLang.Semantics
                 case BoundIntLiteralExpression x: EvaluateIntLiteral(dest, x); break;
                 case BoundFloatLiteralExpression x: EvaluateFloatLiteral(dest, x); break;
                 case BoundBoolLiteralExpression x: EvaluateBoolLiteral(dest, x); break;
-                case BoundAggregateExpression x: EvaluateAggregate(dest, x); break;
+                case BoundVectorExpression x: EvaluateVector(dest, x); break;
                 case BoundUnaryExpression x: EvaluateUnary(dest, x); break;
                 case BoundBinaryExpression x: EvaluateBinary(dest, x); break;
                 case BoundVariableExpression x:
@@ -80,13 +80,13 @@ namespace ScTools.ScriptLang.Semantics
             dest[0].AsInt64 = expr.Value ? 1 : 0;
         }
 
-        private void EvaluateAggregate(Span<ScriptValue> dest, BoundAggregateExpression expr)
+        private void EvaluateVector(Span<ScriptValue> dest, BoundVectorExpression expr)
         {
-            foreach(var subExpr in expr.Expressions)
+            foreach(var comp in new[] { expr.X, expr.Y, expr.Z })
             {
-                var size = subExpr.Type!.SizeOf;
+                var size = comp.Type!.SizeOf;
                 var subDest = dest[0..size];
-                Evaluate(subDest, subExpr);
+                Evaluate(subDest, comp);
                 dest = dest[size..];
             }
         }

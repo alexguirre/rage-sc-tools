@@ -144,14 +144,14 @@ namespace ScTools.ScriptLang.Semantics
 
     public sealed class StructType : Type
     {
-        public string? Name { get; set; }
+        public string Name { get; set; }
         public IList<Field> Fields { get; set; }
         public override int SizeOf => Fields.Sum(f => f.Type.SizeOf);
 
-        public StructType(string? name, IEnumerable<Field> fields)
+        public StructType(string name, IEnumerable<Field> fields)
             => (Name, Fields) = (name, new List<Field>(fields));
 
-        public StructType(string? name, params Field[] fields) : this(name, (IEnumerable<Field>)fields) { }
+        public StructType(string name, params Field[] fields) : this(name, (IEnumerable<Field>)fields) { }
 
         public override StructType Clone() => new StructType(Name, Fields);
 
@@ -210,37 +210,9 @@ namespace ScTools.ScriptLang.Semantics
             throw new ArgumentException($"No field with name '{name}' exists in struct '{Name}'");
         }
 
-        public bool Equals(Type? other, bool ignoreNames)
-        {
-            if (!(other is StructType s))
-            {
-                return false;
-            }
-
-            if (s.Name != Name)
-            {
-                return false;
-            }
-
-            if (s.Fields.Count != Fields.Count)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < Fields.Count; i++)
-            {
-                if (s.Fields[i] != Fields[i])
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
         public override bool Equals(Type? other)
         {
-            if (!(other is StructType s))
+            if (other is not StructType s)
             {
                 return false;
             }
@@ -264,39 +236,6 @@ namespace ScTools.ScriptLang.Semantics
             }
 
             return true;
-        }
-
-        public bool HasSameFieldLayout(StructType other)
-        {
-            if (other.Fields.Count != Fields.Count)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < Fields.Count; i++)
-            {
-                if (!SameTypeIgnoreFieldNames(other.Fields[i].Type, Fields[i].Type))
-                {
-                    return false;
-                }
-            }
-
-            return true;
-
-            static bool SameTypeIgnoreFieldNames(Type left, Type right)
-            {
-                if (left == right)
-                {
-                    return true;
-                }
-
-                if (left is StructType leftStruct && right is StructType rightStruct)
-                {
-                    return leftStruct.HasSameFieldLayout(rightStruct);
-                }
-
-                return false;
-            }
         }
 
         protected override int DoGetHashCode()
@@ -315,10 +254,6 @@ namespace ScTools.ScriptLang.Semantics
         {
             switch (Name)
             {
-                // aggregate to concrete structure
-                case null: // source type is aggregate
-                    return HasSameFieldLayout(destTy);
-
                 // implicit conversion from PED/VEHICLE/OBJECT_INDEX to ENTITY_INDEX
                 case "PED_INDEX" or "VEHICLE_INDEX" or "OBJECT_INDEX" when destTy.Name is "ENTITY_INDEX":
                     Debug.Assert(SizeOf == destTy.SizeOf);

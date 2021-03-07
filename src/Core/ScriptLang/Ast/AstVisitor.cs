@@ -41,7 +41,7 @@ namespace ScTools.ScriptLang.Ast
         public virtual void VisitErrorExpression(ErrorExpression node) => DefaultVisit(node);
         public virtual void VisitUnaryExpression(UnaryExpression node) => DefaultVisit(node);
         public virtual void VisitBinaryExpression(BinaryExpression node) => DefaultVisit(node);
-        public virtual void VisitAggregateExpression(AggregateExpression node) => DefaultVisit(node);
+        public virtual void VisitVectorExpression(VectorExpression node) => DefaultVisit(node);
         public virtual void VisitIdentifierExpression(IdentifierExpression node) => DefaultVisit(node);
         public virtual void VisitMemberAccessExpression(MemberAccessExpression node) => DefaultVisit(node);
         public virtual void VisitArrayAccessExpression(ArrayAccessExpression node) => DefaultVisit(node);
@@ -92,7 +92,7 @@ namespace ScTools.ScriptLang.Ast
         [return: MaybeNull] public virtual TResult VisitErrorExpression(ErrorExpression node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitUnaryExpression(UnaryExpression node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitBinaryExpression(BinaryExpression node) => DefaultVisit(node);
-        [return: MaybeNull] public virtual TResult VisitAggregateExpression(AggregateExpression node) => DefaultVisit(node);
+        [return: MaybeNull] public virtual TResult VisitVectorExpression(VectorExpression node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitIdentifierExpression(IdentifierExpression node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitMemberAccessExpression(MemberAccessExpression node) => DefaultVisit(node);
         [return: MaybeNull] public virtual TResult VisitArrayAccessExpression(ArrayAccessExpression node) => DefaultVisit(node);

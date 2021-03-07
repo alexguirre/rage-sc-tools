@@ -217,7 +217,7 @@ namespace ScTools.ScriptLang.Semantics
                 stmts!.Add(new BoundVariableDeclarationStatement(varSymbol));
             }
 
-            public override void VisitAggregateExpression(AggregateExpression node) => throw new NotSupportedException();
+            public override void VisitVectorExpression(VectorExpression node) => throw new NotSupportedException();
             public override void VisitArrayAccessExpression(ArrayAccessExpression node) => throw new NotSupportedException();
             public override void VisitBinaryExpression(BinaryExpression node) => throw new NotSupportedException();
             public override void VisitIdentifierExpression(IdentifierExpression node) => throw new NotSupportedException();
@@ -338,10 +338,8 @@ namespace ScTools.ScriptLang.Semantics
                     Bind(node.Index)!
                 );
 
-            public override BoundExpression VisitAggregateExpression(AggregateExpression node)
-                => new BoundAggregateExpression(
-                    node.Expressions.Select(Bind)!
-                );
+            public override BoundExpression VisitVectorExpression(VectorExpression node)
+                => new BoundVectorExpression(Bind(node.X)!, Bind(node.Y)!, Bind(node.Z)!);
 
             public override BoundExpression VisitLiteralExpression(LiteralExpression node)
                 => node.Kind switch

@@ -81,7 +81,7 @@ expression
     | left=expression op=('==' | '<>') right=expression             #binaryExpression
     | left=expression op=K_AND right=expression                     #binaryExpression
     | left=expression op=K_OR right=expression                      #binaryExpression
-    | '<<' expression (',' expression)* '>>'                        #aggregateExpression
+    | '<<' expression ',' expression ',' expression '>>'            #vectorExpression
     | identifier                                                    #identifierExpression
     | (integer | float | string | bool)                             #literalExpression
     ;
