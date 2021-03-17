@@ -18,10 +18,10 @@ namespace ScTools.ScriptLang.Semantics
             private IList<BoundStatement>? stmts = null; // statements of the current block
             private readonly ExpressionBinder exprBinder;
 
-            public Binder(DiagnosticsReport diagnostics, string filePath, SymbolTable symbols)
-                : base(diagnostics, filePath, symbols)
+            public Binder(DiagnosticsReport diagnostics, SymbolTable symbols)
+                : base(diagnostics, symbols)
             {
-                exprBinder = new ExpressionBinder(Symbols, Diagnostics, FilePath);
+                exprBinder = new ExpressionBinder(Symbols, Diagnostics);
             }
 
             public override void VisitScriptNameStatement(ScriptNameStatement node) => Module.Name = node.Name;
@@ -147,7 +147,7 @@ namespace ScTools.ScriptLang.Semantics
 
                         if (!boundExpr.IsConstant)
                         {
-                            Diagnostics.AddError(FilePath, $"Expected constant expression", v.Value.Source);
+                            Diagnostics.AddError($"Expected constant expression", v.Value.Source);
                             continue;
                         }
                         else if (boundExpr.Type is not BasicType { TypeCode: BasicTypeCode.Int })
@@ -162,7 +162,7 @@ namespace ScTools.ScriptLang.Semantics
 
                     if (!handledCases.Add(value))
                     {
-                        Diagnostics.AddError(FilePath, value == null ? $"Default case already handled" : $"Case '{value.Value}' already handled", c.Source);
+                        Diagnostics.AddError(value == null ? $"Default case already handled" : $"Case '{value.Value}' already handled", c.Source);
                     }
 
                     var boundCase = new BoundSwitchCase(value);
@@ -198,12 +198,12 @@ namespace ScTools.ScriptLang.Semantics
                     var err = false;
                     if (varSymbol.Initializer is null)
                     {
-                        Diagnostics.AddError(FilePath, $"Reference variable '{varSymbol.Name}' is missing an initializer", node.Source);
+                        Diagnostics.AddError($"Reference variable '{varSymbol.Name}' is missing an initializer", node.Source);
                         err = true;
                     }
                     else if (!varSymbol.Initializer.IsAddressable)
                     {
-                        Diagnostics.AddError(FilePath, $"Cannot take reference of expression", node.Declaration.Initializer!.Source);
+                        Diagnostics.AddError($"Cannot take reference of expression", node.Declaration.Initializer!.Source);
                         err = true;
                     }
 
@@ -268,13 +268,12 @@ namespace ScTools.ScriptLang.Semantics
         {
             public SymbolTable? Symbols { get; set; }
             private DiagnosticsReport? Diagnostics { get; }
-            private string? FilePath { get; }
 
             public ExpressionBinder()
-                => (Symbols, Diagnostics, FilePath) = (null, null, null);
+                => (Symbols, Diagnostics) = (null, null);
 
-            public ExpressionBinder(SymbolTable symbols, DiagnosticsReport diagnostics, string filePath)
-                => (Symbols, Diagnostics, FilePath) = (symbols, diagnostics, filePath);
+            public ExpressionBinder(SymbolTable symbols, DiagnosticsReport diagnostics)
+                => (Symbols, Diagnostics) = (symbols, diagnostics);
 
             private BoundExpression? Bind(Expression? expr) => expr?.Accept(this);
 
@@ -300,7 +299,7 @@ namespace ScTools.ScriptLang.Semantics
                     case FunctionSymbol fn: return new BoundFunctionExpression(fn);
                     case VariableSymbol v: return new BoundVariableExpression(v);
                     case null: // TODO: unresolved symbols?
-                        Diagnostics?.AddError(FilePath!, $"Unknown symbol '{node.Identifier}'", node.Source);
+                        Diagnostics?.AddError($"Unknown symbol '{node.Identifier}'", node.Source);
                         return new BoundUnknownSymbolExpression(node.Identifier);
                     default: throw new NotSupportedException();
                 };

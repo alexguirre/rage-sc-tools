@@ -38,7 +38,7 @@ namespace ScTools.ScriptLang
 
         public Module(string filePath)
         {
-            Diagnostics = new DiagnosticsReport();
+            Diagnostics = new DiagnosticsReport(filePath);
             FilePath = filePath;
         }
 
@@ -61,7 +61,7 @@ namespace ScTools.ScriptLang
             parser.RemoveErrorListeners();
             parser.AddErrorListener(new SyntaxErrorListener<IToken>(this));
             Ast = AstBuilder.Build(parser.script());
-            SyntaxChecker.Check(Ast, FilePath, Diagnostics);
+            SyntaxChecker.Check(Ast, Diagnostics);
             State = ModuleState.Parsed;
         }
 
@@ -75,7 +75,7 @@ namespace ScTools.ScriptLang
             Debug.Assert(Ast != null);
             SymbolTable = new SymbolTable(Ast);
 
-            SemanticAnalysis.DoFirstPass(Ast, FilePath, SymbolTable, usingResolver, Diagnostics);
+            SemanticAnalysis.DoFirstPass(Ast, SymbolTable, usingResolver, Diagnostics);
             State = ModuleState.SemanticAnalysisFirstPassDone;
         }
 
@@ -89,7 +89,7 @@ namespace ScTools.ScriptLang
             Debug.Assert(Ast != null);
             Debug.Assert(SymbolTable != null);
 
-            SemanticAnalysis.DoSecondPass(Ast, FilePath, SymbolTable, Diagnostics);
+            SemanticAnalysis.DoSecondPass(Ast, SymbolTable, Diagnostics);
             State = ModuleState.SemanticAnalysisSecondPassDone;
         }
 
@@ -103,7 +103,7 @@ namespace ScTools.ScriptLang
             Debug.Assert(Ast != null);
             Debug.Assert(SymbolTable != null);
 
-            BoundModule = SemanticAnalysis.DoBinding(Ast, FilePath, SymbolTable, Diagnostics);
+            BoundModule = SemanticAnalysis.DoBinding(Ast, SymbolTable, Diagnostics);
             State = ModuleState.Bound;
         }
 
@@ -122,7 +122,7 @@ namespace ScTools.ScriptLang
                                 SourceRange.FromTokens(t, null) :
                                 new SourceRange(new SourceLocation(line, charPositionInLine),
                                                 new SourceLocation(line, charPositionInLine));
-                mod.Diagnostics.AddError(mod.FilePath, msg, source);
+                mod.Diagnostics.AddError(msg, source);
             }
         }
     }

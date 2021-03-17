@@ -13,18 +13,17 @@ namespace ScTools.ScriptLang.Semantics
         private sealed class TypeOf : AstVisitor<Type?>
         {
             private readonly DiagnosticsReport diagnostics;
-            private readonly string filePath;
             private readonly SymbolTable symbols;
 
-            public TypeOf(DiagnosticsReport diagnostics, string filePath, SymbolTable symbols)
-                => (this.diagnostics, this.filePath, this.symbols) = (diagnostics, filePath, symbols);
+            public TypeOf(DiagnosticsReport diagnostics, SymbolTable symbols)
+                => (this.diagnostics, this.symbols) = (diagnostics, symbols);
 
             public override Type? VisitIdentifierExpression(IdentifierExpression node)
             {
                 var symbol = symbols.Lookup(node.Identifier);
                 if (symbol == null)
                 {
-                    diagnostics.AddError(filePath, $"Unknown symbol '{node.Identifier}'", node.Source);
+                    diagnostics.AddError($"Unknown symbol '{node.Identifier}'", node.Source);
                     return null;
                 }
 
@@ -37,7 +36,7 @@ namespace ScTools.ScriptLang.Semantics
                     return f.Type;
                 }
 
-                diagnostics.AddError(filePath, $"Identifier '{node.Identifier}' must refer to a variable, procedure or function", node.Source);
+                diagnostics.AddError($"Identifier '{node.Identifier}' must refer to a variable, procedure or function", node.Source);
                 return null;
             }
 
@@ -72,7 +71,7 @@ namespace ScTools.ScriptLang.Semantics
                 // TODO: allow some conversions (e.g. INT -> FLOAT, aggregate -> struct)
                 if (left.UnderlyingType != right.UnderlyingType)
                 {
-                    diagnostics.AddError(filePath, $"Mismatched type in binary operation '{BinaryExpression.OpToString(node.Op)}'", node.Source);
+                    diagnostics.AddError($"Mismatched type in binary operation '{BinaryExpression.OpToString(node.Op)}'", node.Source);
                     return null;
                 }
 
@@ -91,14 +90,14 @@ namespace ScTools.ScriptLang.Semantics
                 {
                     if (callableType != null)
                     {
-                        diagnostics.AddError(filePath, $"Cannot call '{node.Expression}', it is not a function", node.Expression.Source);
+                        diagnostics.AddError($"Cannot call '{node.Expression}', it is not a function", node.Expression.Source);
                     }
                     return null;
                 }
 
                 if (f.IsProcedure)
                 {
-                    diagnostics.AddError(filePath, $"Cannot call '{node.Expression}' in an expression. It is a procedure, it has no return value", node.Source);
+                    diagnostics.AddError($"Cannot call '{node.Expression}' in an expression. It is a procedure, it has no return value", node.Source);
                     return null;
                 }
 
@@ -106,7 +105,7 @@ namespace ScTools.ScriptLang.Semantics
                 int found = node.Arguments.Length;
                 if (found != expected)
                 {
-                    diagnostics.AddError(filePath, $"Mismatched number of arguments. Expected {expected}, found {found}", node.Source);
+                    diagnostics.AddError($"Mismatched number of arguments. Expected {expected}, found {found}", node.Source);
                 }
 
                 int argCount = Math.Min(expected, found);
@@ -115,7 +114,7 @@ namespace ScTools.ScriptLang.Semantics
                     var foundType = node.Arguments[i].Accept(this);
                     if (!f.DoesParameterTypeMatch(i, foundType))
                     {
-                        diagnostics.AddError(filePath, $"Mismatched type of argument #{i}", node.Arguments[i].Source);
+                        diagnostics.AddError($"Mismatched type of argument #{i}", node.Arguments[i].Source);
                     }
                 }
 
@@ -131,7 +130,7 @@ namespace ScTools.ScriptLang.Semantics
                 {
                     if (node.Member != ArrayType.LengthFieldName)
                     {
-                        diagnostics.AddError(filePath, $"Unknown field '{node.Member}', arrays only have a 'length' field", node.Source);
+                        diagnostics.AddError($"Unknown field '{node.Member}', arrays only have a 'length' field", node.Source);
                         return null;
                     }
 
@@ -142,7 +141,7 @@ namespace ScTools.ScriptLang.Semantics
                 {
                     if (type != null)
                     {
-                        diagnostics.AddError(filePath, "Only structs have members", node.Expression.Source);
+                        diagnostics.AddError("Only structs have members", node.Expression.Source);
                     }
                     return null;
                 }
@@ -150,7 +149,7 @@ namespace ScTools.ScriptLang.Semantics
                 var field = struc.Fields.SingleOrDefault(f => f.Name == node.Member);
                 if (field == default)
                 {
-                    diagnostics.AddError(filePath, $"Unknown field '{struc.Name}.{node.Member}'", node.Source);
+                    diagnostics.AddError($"Unknown field '{struc.Name}.{node.Member}'", node.Source);
                     return null;
                 }
 
@@ -178,7 +177,7 @@ namespace ScTools.ScriptLang.Semantics
                     var ty = node.Accept(this);
                     if (ty?.UnderlyingType is not BasicType { TypeCode: BasicTypeCode.Float })
                     {
-                        diagnostics.AddError(filePath, $"Mismatched type of component {name}, expected FLOAT", node.Source);
+                        diagnostics.AddError($"Mismatched type of component {name}, expected FLOAT", node.Source);
                         ty = null;
                     }
 
@@ -193,7 +192,7 @@ namespace ScTools.ScriptLang.Semantics
                 {
                     if (type != null)
                     {
-                        diagnostics.AddError(filePath, $"Cannot index '{node.Expression}' of type '{type}'", node.Expression.Source);
+                        diagnostics.AddError($"Cannot index '{node.Expression}' of type '{type}'", node.Expression.Source);
                     }
                     return null;
                 }

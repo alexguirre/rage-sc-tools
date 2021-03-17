@@ -13,7 +13,7 @@ namespace ScTools.ScriptLang.Semantics
         public abstract int SizeOf { get; }
 
         public abstract Type Clone();
-        public abstract Type? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics, string filePath);
+        public abstract Type? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics);
         public virtual bool HasField(string name) { return false; }
 
         public abstract bool Equals(Type? other);
@@ -80,9 +80,9 @@ namespace ScTools.ScriptLang.Semantics
 
         public override RefType Clone() => new RefType(ElementType);
 
-        public override RefType? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics, string filePath)
+        public override RefType? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics)
         {
-            var resolvedElementType = ElementType.Resolve(symbols, diagnostics, filePath);
+            var resolvedElementType = ElementType.Resolve(symbols, diagnostics);
             if (resolvedElementType == null)
             {
                 return null;
@@ -109,7 +109,7 @@ namespace ScTools.ScriptLang.Semantics
         private AnyType() {}
 
         public override AnyType Clone() => Instance;
-        public override AnyType? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics, string filePath) => this;
+        public override AnyType? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics) => this;
         public override bool Equals(Type? other) => other is AnyType;
         protected override int DoGetHashCode() => typeof(AnyType).GetHashCode();
         protected override string DoToString() => $"ANY";
@@ -123,7 +123,7 @@ namespace ScTools.ScriptLang.Semantics
         public BasicType(BasicTypeCode typeCode) => TypeCode = typeCode;
 
         public override BasicType Clone() => new BasicType(TypeCode);
-        public override BasicType? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics, string filePath) => this;
+        public override BasicType? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics) => this;
 
         public override bool Equals(Type? other)
             => other is BasicType b && b.TypeCode == TypeCode;
@@ -155,9 +155,9 @@ namespace ScTools.ScriptLang.Semantics
 
         public override StructType Clone() => new StructType(Name, Fields);
 
-        public override StructType? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics, string filePath)
+        public override StructType? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics)
         {
-            var resolvedFields = Fields.Select(f => (Type: f.Type.Resolve(symbols, diagnostics, filePath), f.Name)).ToArray();
+            var resolvedFields = Fields.Select(f => (Type: f.Type.Resolve(symbols, diagnostics), f.Name)).ToArray();
             if (resolvedFields.Any(f => f.Type == null))
             {
                 return null;
@@ -315,15 +315,15 @@ namespace ScTools.ScriptLang.Semantics
 
         public override ExplicitFunctionType Clone() => new ExplicitFunctionType(ReturnType, Parameters);
 
-        public override ExplicitFunctionType? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics, string filePath)
+        public override ExplicitFunctionType? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics)
         {
-            var resolvedReturnType = ReturnType?.Resolve(symbols, diagnostics, filePath);
+            var resolvedReturnType = ReturnType?.Resolve(symbols, diagnostics);
             if (resolvedReturnType == null && ReturnType != null)
             {
                 return null;
             }
 
-            var resolvedParameters = Parameters.Select(p => (Type: p.Type.Resolve(symbols, diagnostics, filePath), p.Name)).ToArray();
+            var resolvedParameters = Parameters.Select(p => (Type: p.Type.Resolve(symbols, diagnostics), p.Name)).ToArray();
             if (resolvedParameters.Any(p => p.Type == null))
             {
                 return null;
@@ -396,7 +396,7 @@ namespace ScTools.ScriptLang.Semantics
         }
 
         public override TextLabelType Clone() => new TextLabelType(Length);
-        public override TextLabelType? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics, string filePath) => this;
+        public override TextLabelType? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics) => this;
         public override bool Equals(Type? other) => other is TextLabelType t && Length == t.Length;
         protected override int DoGetHashCode() => HashCode.Combine(Length);
         protected override string DoToString() => $"TEXT_LABEL{Length}";
@@ -428,9 +428,9 @@ namespace ScTools.ScriptLang.Semantics
 
         public override ArrayType Clone() => new ArrayType(ItemType, Length);
 
-        public override ArrayType? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics, string filePath)
+        public override ArrayType? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics)
         {
-            var resolvedItemType = ItemType.Resolve(symbols, diagnostics, filePath);
+            var resolvedItemType = ItemType.Resolve(symbols, diagnostics);
             if (resolvedItemType == null)
             {
                 return null;
@@ -459,18 +459,18 @@ namespace ScTools.ScriptLang.Semantics
 
         public override UnresolvedArrayType Clone() => new UnresolvedArrayType(ItemType, LengthExpression);
 
-        public override Type? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics, string filePath)
+        public override Type? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics)
         {
-            var lengthExpr = new SemanticAnalysis.ExpressionBinder(symbols, diagnostics, filePath).Visit(LengthExpression)!;
+            var lengthExpr = new SemanticAnalysis.ExpressionBinder(symbols, diagnostics).Visit(LengthExpression)!;
             var length = Evaluator.Evaluate(lengthExpr)[0].AsInt32;
 
             if (length < 0)
             {
-                diagnostics.AddError(filePath, $"Arrays cannot have negative length", LengthExpression.Source);
+                diagnostics.AddError($"Arrays cannot have negative length", LengthExpression.Source);
                 return null;
             }
 
-            var itemType = ItemType.Resolve(symbols, diagnostics, filePath);
+            var itemType = ItemType.Resolve(symbols, diagnostics);
             if (itemType == null)
             {
                 return null;
@@ -498,14 +498,14 @@ namespace ScTools.ScriptLang.Semantics
 
         public override UnresolvedType Clone() => new UnresolvedType(TypeName);
 
-        public override Type? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics, string filePath)
+        public override Type? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics)
         {
             var symbol = symbols.Lookup(TypeName);
             var ty = (symbol as TypeSymbol)?.Type;
 
             if (ty == null)
             {
-                diagnostics.AddError(filePath, $"Unknown type '{TypeName}'", SourceRange.Unknown); // TODO: specify error source range
+                diagnostics.AddError($"Unknown type '{TypeName}'", SourceRange.Unknown); // TODO: specify error source range
             }
 
             return ty;

@@ -29,20 +29,15 @@ namespace ScTools.ScriptLang
 
         public bool HasErrors => (MainModule?.Diagnostics.HasErrors ?? false) || ImportedModules.Any(m => m.Diagnostics.HasErrors);
 
-        public DiagnosticsReport GetAllDiagnostics()
+        public Diagnostics GetAllDiagnostics()
         {
-            var d = new DiagnosticsReport();
+            var reports = ImportedModules.Select(m => m.Diagnostics);
             if (MainModule != null)
             {
-                d.AddFrom(MainModule.Diagnostics);
+                reports = reports.Append(MainModule.Diagnostics);
             }
 
-            foreach (var m in ImportedModules)
-            {
-                d.AddFrom(m.Diagnostics);
-            }
-
-            return d;
+            return new Diagnostics(reports);
         }
 
         public void SetMainModule(TextReader input, string filePath = "tmp.sc")
@@ -54,11 +49,11 @@ namespace ScTools.ScriptLang
             var main = MainModule.SymbolTable!.Lookup(DefinedFunctionSymbol.MainName) as DefinedFunctionSymbol;
             if (main == null)
             {
-                MainModule.Diagnostics.AddError(MainModule.FilePath, $"Missing '{DefinedFunctionSymbol.MainName}' procedure", SourceRange.Unknown);
+                MainModule.Diagnostics.AddError($"Missing '{DefinedFunctionSymbol.MainName}' procedure", SourceRange.Unknown);
             }
             else if (!main.IsMain)
             {
-                MainModule.Diagnostics.AddError(MainModule.FilePath, $"Incorrect signature for '{DefinedFunctionSymbol.MainName}' procedure, expected 'PROC {DefinedFunctionSymbol.MainName}()'", main.Source);
+                MainModule.Diagnostics.AddError($"Incorrect signature for '{DefinedFunctionSymbol.MainName}' procedure, expected 'PROC {DefinedFunctionSymbol.MainName}()'", main.Source);
             }
 
             NeedsRecompilation = true;

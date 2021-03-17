@@ -10,15 +10,15 @@ namespace ScTools.ScriptLang.Semantics
 
     public static partial class SemanticAnalysis
     {
-        public static void DoFirstPass(Root root, string filePath, SymbolTable symbols, IUsingModuleResolver? usingResolver, DiagnosticsReport diagnostics)
-            => new FirstPass(diagnostics, filePath, symbols, usingResolver).Run(root);
+        public static void DoFirstPass(Root root, SymbolTable symbols, IUsingModuleResolver? usingResolver, DiagnosticsReport diagnostics)
+            => new FirstPass(diagnostics, symbols, usingResolver).Run(root);
 
-        public static void DoSecondPass(Root root, string filePath, SymbolTable symbols, DiagnosticsReport diagnostics)
-            => new SecondPass(diagnostics, filePath, symbols).Run(root);
+        public static void DoSecondPass(Root root, SymbolTable symbols, DiagnosticsReport diagnostics)
+            => new SecondPass(diagnostics, symbols).Run(root);
 
-        public static BoundModule DoBinding(Root root, string filePath, SymbolTable symbols, DiagnosticsReport diagnostics)
+        public static BoundModule DoBinding(Root root, SymbolTable symbols, DiagnosticsReport diagnostics)
         {
-            var pass = new Binder(diagnostics, filePath, symbols);
+            var pass = new Binder(diagnostics, symbols);
             pass.Run(root);
             return pass.Module;
         }
@@ -26,11 +26,10 @@ namespace ScTools.ScriptLang.Semantics
         private abstract class Pass : AstVisitor
         {
             public DiagnosticsReport Diagnostics { get; set; }
-            public string FilePath { get; set; }
             public SymbolTable Symbols { get; set; }
 
-            public Pass(DiagnosticsReport diagnostics, string filePath, SymbolTable symbols)
-                => (Diagnostics, FilePath, Symbols) = (diagnostics, filePath, symbols);
+            public Pass(DiagnosticsReport diagnostics, SymbolTable symbols)
+                => (Diagnostics, Symbols) = (diagnostics, symbols);
 
             public void Run(Root root)
             {
@@ -61,7 +60,7 @@ namespace ScTools.ScriptLang.Semantics
                     switch (decl)
                     {
                         case ArrayDeclarator when ty is RefType:
-                            Diagnostics.AddError(FilePath, $"Array of references is not valid", source);
+                            Diagnostics.AddError($"Array of references is not valid", source);
                             return baseType;
                         case ArrayDeclarator d:
                             ty = new UnresolvedArrayType(ty, d.Length);
@@ -69,7 +68,7 @@ namespace ScTools.ScriptLang.Semantics
                             break;
 
                         case RefDeclarator when ty is RefType:
-                            Diagnostics.AddError(FilePath, $"Reference to reference is not valid", source);
+                            Diagnostics.AddError($"Reference to reference is not valid", source);
                             return baseType;
                         case RefDeclarator d:
                             ty = new RefType(ty);
@@ -92,7 +91,7 @@ namespace ScTools.ScriptLang.Semantics
                     var newType = Resolve(f.Type, source, ref unresolved);
                     if (IsCyclic(newType, struc))
                     {
-                        Diagnostics.AddError(FilePath, $"Circular type reference in '{struc.Name}'", source);
+                        Diagnostics.AddError($"Circular type reference in '{struc.Name}'", source);
                         unresolved = true;
                     }
                     else
@@ -147,7 +146,7 @@ namespace ScTools.ScriptLang.Semantics
                 {
                     case UnresolvedType or UnresolvedArrayType:
                     {
-                        var newType = t.Resolve(Symbols, Diagnostics, FilePath);
+                        var newType = t.Resolve(Symbols, Diagnostics);
                         if (newType == null)
                         {
                             unresolved = true;
@@ -166,7 +165,7 @@ namespace ScTools.ScriptLang.Semantics
                 }
             }
 
-            protected Type? TypeOf(Expression expr) => expr.Accept(new TypeOf(Diagnostics, FilePath, Symbols));
+            protected Type? TypeOf(Expression expr) => expr.Accept(new TypeOf(Diagnostics, Symbols));
         }
     }
 }

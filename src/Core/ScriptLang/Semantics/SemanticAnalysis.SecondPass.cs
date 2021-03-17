@@ -18,8 +18,8 @@ namespace ScTools.ScriptLang.Semantics
         {
             private DefinedFunctionSymbol? func = null;
 
-            public SecondPass(DiagnosticsReport diagnostics, string filePath, SymbolTable symbols)
-                : base(diagnostics, filePath, symbols)
+            public SecondPass(DiagnosticsReport diagnostics, SymbolTable symbols)
+                : base(diagnostics, symbols)
             { }
 
             protected override void OnEnd()
@@ -96,25 +96,25 @@ namespace ScTools.ScriptLang.Semantics
 
                 if (v.Type is RefType)
                 {
-                    Diagnostics.AddError(FilePath, $"{(v.IsGlobal ? "Global" : "Static")} variables cannot be reference types", decl.Declarator.Source);
+                    Diagnostics.AddError($"{(v.IsGlobal ? "Global" : "Static")} variables cannot be reference types", decl.Declarator.Source);
                 }
 
                 if (v.IsGlobal && v.Type is FunctionType)
                 {
-                    Diagnostics.AddError(FilePath, $"Global variables cannot be function/procedure types", decl.Declarator.Source);
+                    Diagnostics.AddError($"Global variables cannot be function/procedure types", decl.Declarator.Source);
                 }
 
                 if (decl.Initializer != null)
                 {
                     if (v.Type is BasicType { TypeCode: BasicTypeCode.String })
                     {
-                        Diagnostics.AddError(FilePath, $"{(v.IsGlobal ? "Global" : "Static")} variables of type STRING cannot have an initializer", decl.Initializer.Source);
+                        Diagnostics.AddError($"{(v.IsGlobal ? "Global" : "Static")} variables of type STRING cannot have an initializer", decl.Initializer.Source);
                     }
 
                     var initializerType = TypeOf(decl.Initializer);
                     if (initializerType == null || !v.Type.IsAssignableFrom(initializerType, considerReferences: false))
                     {
-                        Diagnostics.AddError(FilePath, $"Mismatched initializer type and type of {(v.IsGlobal ? "global" : "static")} variable '{v.Name}'", decl.Initializer.Source);
+                        Diagnostics.AddError($"Mismatched initializer type and type of {(v.IsGlobal ? "global" : "static")} variable '{v.Name}'", decl.Initializer.Source);
                     }
                 }
             }
@@ -131,7 +131,7 @@ namespace ScTools.ScriptLang.Semantics
                     var initializerType = TypeOf(node.Declaration.Initializer);
                     if (initializerType == null || !v.Type.IsAssignableFrom(initializerType, considerReferences: true))
                     {
-                        Diagnostics.AddError(FilePath, $"Mismatched initializer type and type of variable '{v.Name}'", node.Declaration.Initializer.Source);
+                        Diagnostics.AddError($"Mismatched initializer type and type of variable '{v.Name}'", node.Declaration.Initializer.Source);
                     }
                 }
 
@@ -151,12 +151,12 @@ namespace ScTools.ScriptLang.Semantics
 
                 if (!destType.IsAssignableFrom(srcType, considerReferences: true))
                 {
-                    Diagnostics.AddError(FilePath, "Mismatched types in assigment", node.Source);
+                    Diagnostics.AddError("Mismatched types in assigment", node.Source);
                 }
 
                 if (destType is RefType refTy && refTy.ElementType is AnyType)
                 {
-                    Diagnostics.AddError(FilePath, "Cannot modify references of type ANY", node.Source);
+                    Diagnostics.AddError("Cannot modify references of type ANY", node.Source);
                 }
             }
 
@@ -165,7 +165,7 @@ namespace ScTools.ScriptLang.Semantics
                 var conditionType = TypeOf(node.Condition);
                 if (conditionType?.UnderlyingType is not BasicType { TypeCode: BasicTypeCode.Bool })
                 {
-                    Diagnostics.AddError(FilePath, $"IF statement condition requires BOOL type", node.Condition.Source);
+                    Diagnostics.AddError($"IF statement condition requires BOOL type", node.Condition.Source);
                 }
 
                 Symbols = Symbols.EnterScope(node.ThenBlock);
@@ -185,7 +185,7 @@ namespace ScTools.ScriptLang.Semantics
                 var conditionType = TypeOf(node.Condition);
                 if (conditionType?.UnderlyingType is not BasicType { TypeCode: BasicTypeCode.Bool })
                 {
-                    Diagnostics.AddError(FilePath, $"WHILE statement condition requires BOOL type", node.Condition.Source);
+                    Diagnostics.AddError($"WHILE statement condition requires BOOL type", node.Condition.Source);
                 }
 
                 Symbols = Symbols.EnterScope(node.Block);
@@ -198,13 +198,13 @@ namespace ScTools.ScriptLang.Semantics
                 var limitType = TypeOf(node.Limit);
                 if (limitType?.UnderlyingType is not BasicType { TypeCode: BasicTypeCode.Int })
                 {
-                    Diagnostics.AddError(FilePath, $"REPEAT statement limit requires INT type", node.Limit.Source);
+                    Diagnostics.AddError($"REPEAT statement limit requires INT type", node.Limit.Source);
                 }
 
                 var counterType = TypeOf(node.Counter);
                 if (counterType?.UnderlyingType is not BasicType { TypeCode: BasicTypeCode.Int })
                 {
-                    Diagnostics.AddError(FilePath, $"REPEAT statement counter requires INT type", node.Counter.Source);
+                    Diagnostics.AddError($"REPEAT statement counter requires INT type", node.Counter.Source);
                 }
 
                 Symbols = Symbols.EnterScope(node.Block);
@@ -217,7 +217,7 @@ namespace ScTools.ScriptLang.Semantics
                 var exprType = TypeOf(node.Expression);
                 if (exprType?.UnderlyingType is not BasicType { TypeCode: BasicTypeCode.Int })
                 {
-                    Diagnostics.AddError(FilePath, $"SWITCH statement value requires INT type", node.Expression.Source);
+                    Diagnostics.AddError($"SWITCH statement value requires INT type", node.Expression.Source);
                 }
 
                 DefaultVisit(node);
@@ -228,7 +228,7 @@ namespace ScTools.ScriptLang.Semantics
                 var valueType = TypeOf(node.Value);
                 if (valueType is not BasicType { TypeCode: BasicTypeCode.Int })
                 {
-                    Diagnostics.AddError(FilePath, $"SWITCH case value requires INT type", node.Value.Source);
+                    Diagnostics.AddError($"SWITCH case value requires INT type", node.Value.Source);
                 }
 
                 Symbols = Symbols.EnterScope(node.Block);
@@ -256,7 +256,7 @@ namespace ScTools.ScriptLang.Semantics
                 var returnType = TypeOf(node.Expression);
                 if (returnType == null || !func.Type.ReturnType!.IsAssignableFrom(returnType, considerReferences: true))
                 {
-                    Diagnostics.AddError(FilePath, $"Returned type does not match the specified function return type", node.Expression.Source);
+                    Diagnostics.AddError($"Returned type does not match the specified function return type", node.Expression.Source);
                 }
             }
 
@@ -268,7 +268,7 @@ namespace ScTools.ScriptLang.Semantics
                 {
                     if (callableType != null)
                     {
-                        Diagnostics.AddError(FilePath, $"Cannot call '{node.Expression}', it is not a procedure or a function", node.Expression.Source);
+                        Diagnostics.AddError($"Cannot call '{node.Expression}', it is not a procedure or a function", node.Expression.Source);
                     }
                     return;
                 }
@@ -277,7 +277,7 @@ namespace ScTools.ScriptLang.Semantics
                 int found = node.Arguments.Length;
                 if (found != expected)
                 {
-                    Diagnostics.AddError(FilePath, $"Mismatched number of arguments. Expected {expected}, found {found}", node.Source);
+                    Diagnostics.AddError($"Mismatched number of arguments. Expected {expected}, found {found}", node.Source);
                 }
 
                 int argCount = Math.Min(expected, found);
@@ -286,7 +286,7 @@ namespace ScTools.ScriptLang.Semantics
                     var foundType = TypeOf(node.Arguments[i]);
                     if (!f.DoesParameterTypeMatch(i, foundType))
                     {
-                        Diagnostics.AddError(FilePath, $"Mismatched type of argument #{i}", node.Arguments[i].Source);
+                        Diagnostics.AddError($"Mismatched type of argument #{i}", node.Arguments[i].Source);
                     }
                 }
             }

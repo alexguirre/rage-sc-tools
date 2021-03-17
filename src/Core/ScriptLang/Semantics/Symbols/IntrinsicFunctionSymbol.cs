@@ -49,7 +49,7 @@ namespace ScTools.ScriptLang.Semantics.Symbols
                    ParameterCount == ty.ParameterCount &&
                    DoesParameterTypeMatchCallback == ty.DoesParameterTypeMatchCallback;
 
-            public override Type? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics, string filePath)
+            public override Type? Resolve(SymbolTable symbols, DiagnosticsReport diagnostics)
                 => throw new System.NotImplementedException(nameof(IntrinsicFunctionType) + " does not need to be resolved");
 
             protected override int DoGetHashCode() => System.HashCode.Combine(ParameterCount, DoesParameterTypeMatchCallback);

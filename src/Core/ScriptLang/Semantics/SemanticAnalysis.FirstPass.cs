@@ -19,8 +19,8 @@ namespace ScTools.ScriptLang.Semantics
             private readonly IUsingModuleResolver? usingResolver;
             private readonly Queue<(VariableSymbol Constant, Expression Initializer, int NumUnresolved)> constantsToResolve = new();
 
-            public FirstPass(DiagnosticsReport diagnostics, string filePath, SymbolTable symbols, IUsingModuleResolver? usingResolver)
-                : base(diagnostics, filePath, symbols)
+            public FirstPass(DiagnosticsReport diagnostics, SymbolTable symbols, IUsingModuleResolver? usingResolver)
+                : base(diagnostics, symbols)
             {
                 this.usingResolver = usingResolver;
             }
@@ -34,7 +34,7 @@ namespace ScTools.ScriptLang.Semantics
 
             private void ResolveConstants()
             {
-                var exprBinder = new ExpressionBinder(Symbols, new DiagnosticsReport(), FilePath);
+                var exprBinder = new ExpressionBinder(Symbols, new DiagnosticsReport(Diagnostics.FilePath));
                 while (constantsToResolve.Count > 0)
                 {
                     var c = constantsToResolve.Dequeue();
@@ -71,7 +71,7 @@ namespace ScTools.ScriptLang.Semantics
                             }
                             else
                             {
-                                Diagnostics.AddError(FilePath, $"The constant '{c.Constant.Name}' involves a circular definition", c.Initializer.Source);
+                                Diagnostics.AddError($"The constant '{c.Constant.Name}' involves a circular definition", c.Initializer.Source);
                             }
                         }
                     }
@@ -84,10 +84,10 @@ namespace ScTools.ScriptLang.Semantics
                         switch (Symbols.Lookup(idExpr.Identifier))
                         {
                             case VariableSymbol v when !v.IsConstant:
-                                Diagnostics.AddError(FilePath, $"The expression assigned to '{targetConstant.Name}' must be constant. The variable '{idExpr.Identifier}' is not constant", idExpr.Source);
+                                Diagnostics.AddError($"The expression assigned to '{targetConstant.Name}' must be constant. The variable '{idExpr.Identifier}' is not constant", idExpr.Source);
                                 return false;
                             case null:
-                                Diagnostics.AddError(FilePath, $"Unknown symbol '{idExpr.Identifier}'", idExpr.Source);
+                                Diagnostics.AddError($"Unknown symbol '{idExpr.Identifier}'", idExpr.Source);
                                 return false;
                         }
                     }
@@ -142,7 +142,6 @@ namespace ScTools.ScriptLang.Semantics
                     if (globalBlock.ExceedsMaxSize)
                     {
                         Diagnostics.AddError(
-                            FilePath,
                             $"Global block {globalBlock.Block} (owner: {globalBlock.Owner}, size: 0x{globalBlock.Size:X}) exceeds maximum size (0x{GlobalBlock.MaxSize:X})",
                             globalBlock.Source);
                     }
@@ -154,8 +153,7 @@ namespace ScTools.ScriptLang.Semantics
                 {
                     if (!usedOwners.Add(globalBlock.Owner))
                     {
-                        Diagnostics.AddError(
-                            FilePath, // TODO: the global block may have been defined in a different file from the one we are currently analyzing
+                        Diagnostics.AddError( // TODO: the global block may have been defined in a different file from the one we are currently analyzing
                             $"Script '{globalBlock.Owner}' is owner of more than one global block",
                             globalBlock.Source);
                     }
@@ -163,7 +161,6 @@ namespace ScTools.ScriptLang.Semantics
                     if (!usedBlocks.Add(globalBlock.Block))
                     {
                         Diagnostics.AddError(
-                            FilePath,
                             $"Global block {globalBlock.Block} is repeated",
                             globalBlock.Source);
                     }
@@ -227,7 +224,7 @@ namespace ScTools.ScriptLang.Semantics
                 var error = unresolved || ty is not BasicType;
                 if (error)
                 {
-                    Diagnostics.AddError(FilePath, $"The type '{ty}' cannot be CONST. Only INT, FLOAT, BOOL or STRING can be CONST.", node.Source);
+                    Diagnostics.AddError($"The type '{ty}' cannot be CONST. Only INT, FLOAT, BOOL or STRING can be CONST.", node.Source);
                 }
 
                 var v = new VariableSymbol(node.Declaration.Declarator.Identifier,
@@ -265,7 +262,7 @@ namespace ScTools.ScriptLang.Semantics
                                                var ty = TypeFromDecl(decl);
                                                if (ty is RefType)
                                                {
-                                                   Diagnostics.AddError(FilePath, $"Struct fields cannot be reference types", decl.Source);
+                                                   Diagnostics.AddError($"Struct fields cannot be reference types", decl.Source);
                                                }
 
                                                return new Field(TypeFromDecl(decl), decl.Declarator.Identifier);
@@ -278,14 +275,14 @@ namespace ScTools.ScriptLang.Semantics
             {
                 if (usingResolver == null)
                 {
-                    Diagnostics.AddError(FilePath, $"No USING resolver provided", node.Source);
+                    Diagnostics.AddError($"No USING resolver provided", node.Source);
                     return;
                 }
 
                 var importedModule = usingResolver.Resolve(node.Path);
                 if (importedModule == null)
                 {
-                    Diagnostics.AddError(FilePath, $"Invalid USING path '{node.Path}'", node.Source);
+                    Diagnostics.AddError($"Invalid USING path '{node.Path}'", node.Source);
                     return;
                 }
 

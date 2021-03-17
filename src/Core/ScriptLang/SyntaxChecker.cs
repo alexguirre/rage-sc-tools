@@ -8,13 +8,12 @@ namespace ScTools.ScriptLang
 
     public static class SyntaxChecker
     {
-        public static void Check(Root root, string filePath, DiagnosticsReport diagnostics)
-            => root.Accept(new Visitor(root, filePath, diagnostics));
+        public static void Check(Root root, DiagnosticsReport diagnostics)
+            => root.Accept(new Visitor(root, diagnostics));
 
         private sealed class Visitor : AstVisitor
         {
             public Root Root { get; }
-            public string FilePath { get; }
             public DiagnosticsReport Diagnostics { get; }
 
             private bool InProcedure { get; set; }
@@ -22,10 +21,10 @@ namespace ScTools.ScriptLang
             private bool FoundScriptName { get; set; }
             private bool FoundScriptHash { get; set; }
 
-            public Visitor(Root root, string filePath, DiagnosticsReport diagnostics)
-                => (Root, FilePath, Diagnostics) = (root, filePath, diagnostics);
+            public Visitor(Root root, DiagnosticsReport diagnostics)
+                => (Root, Diagnostics) = (root, diagnostics);
 
-            private void Error(string message, Node node) => Diagnostics.AddError(FilePath, message, node.Source);
+            private void Error(string message, Node node) => Diagnostics.AddError(message, node.Source);
 
             public override void VisitFunctionStatement(FunctionStatement node)
             {

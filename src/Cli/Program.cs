@@ -280,10 +280,7 @@
                         {
                             Console.ForegroundColor = ConsoleColor.Red;
                             Console.Error.WriteLine($"Compilation of '{inputFile}' failed (time: {compilationTime.Elapsed}):");
-                            foreach (var d in diagnostics.Errors)
-                            {
-                                d.Print(Console.Error);
-                            }
+                            diagnostics.PrintAll(Console.Error);
                             Console.Error.WriteLine();
                             Console.ForegroundColor = ConsoleColor.White;
                         }
