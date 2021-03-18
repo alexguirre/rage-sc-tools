@@ -27,14 +27,14 @@ myIntArray: .int 5, 1, 2, 3, 4, 5
 myFloatArray:
             .const MY_FLOAT_ARRAY_SIZE 10       ; .const directive is compile-time only
             .int MY_FLOAT_ARRAY_SIZE
-            .float 1 dup MY_FLOAT_ARRAY_SIZE
+            .float MY_FLOAT_ARRAY_SIZE dup (1)
 
 myVector:   .float 1.0, 2.0, 3.0
 
 myOtherVector:
-            .float MY_DEFAULT_VALUE dup 3
+            .float 3 dup (MY_DEFAULT_VALUE)
 
-emptySpace: .int 0 dup 32
+emptySpace: .int 32 dup (0)
 
 
             .arg        ; segment for script args
@@ -47,24 +47,60 @@ str2:       .str 'Another string'
 
 
             .code       ; segment for code
-main:       ENTER
-            JMP label2
-            LEAVE
+main:       ENTER 0, 2   ; argsSize localsSize (localsSize = actualLocalsSize + argsSize + 2)
+            J label2
+            LEAVE 0, 0   ; argsSize returnSize
 
-func1:      ENTER
+func1:      ENTER 0, 2
 label1:
 label2:
 func1_label3:
-            LEAVE
+            STATIC_U8_LOAD myInt    ; access statics through labels
+            STATIC_U8_LOAD myInt2
+            IADD
+            STATIC_U8_STORE myInt
+
+            STATIC_U8_LOAD 0        ; access statics through their offsets
+            STATIC_U8_LOAD 1
+            IADD
+            STATIC_U8_STORE 0
+
+            STATIC_U8_LOAD myArg    ; access args
+            DROP
+
+            GLOBAL_U24_LOAD gInt    ; access globals through labels
+            IADD_U8 1
+            GLOBAL_U24_STORE gInt
+
+            GLOBAL_U24_LOAD 262144  ; access globals through their offsets
+            IADD_U8 1
+            GLOBAL_U24_STORE 262144
+
+            PUSH_CONST_U8 str1
+            STRING
+            PUSH_CONST_U8 str2
+            STRING
+            DROP
+            DROP
+
+            PUSH_CONST_U24 getMyFloat
+            STATIC_U8_STORE getMyFloatRef
+
+            PUSH_CONST_S16 1000
+            NATIVE 1 0 WAIT
+
+            LEAVE 0, 0
 
 
             .static     ; continue the static segment
 myFloat:    .float 5.0
-
+getMyFloatRef:
+            .int 0
 
             .code       ; continue the code segment
-func2:      ENTER
-            LEAVE
+getMyFloat: ENTER 0, 2
+            STATIC_U8_LOAD myFloat
+            LEAVE 0, 1
 
             .include    ; segment to define used natives
 WAIT:                   .native 0x4EDE34FBADD967A6
@@ -84,7 +120,7 @@ _0x9614299DCB53E54B:    .native 0x9614299DCB53E54B
             Assert.Equal(3.0f, sc.GlobalsPages[0][3].AsFloat);
 
             // statics
-            Assert.Equal(59u, sc.StaticsCount); // includes args
+            Assert.Equal(60u, sc.StaticsCount); // includes args
             Assert.Equal(1u, sc.ArgsCount);
             Assert.Equal(5, sc.Statics[0].AsInt32); // myInt
             Assert.Equal(0xF, sc.Statics[1].AsInt32); // myInt2
@@ -110,7 +146,8 @@ _0x9614299DCB53E54B:    .native 0x9614299DCB53E54B
                 Assert.Equal(0, sc.Statics[25 + i].AsInt32); // emptySpace
             }
             Assert.Equal(5.0f, sc.Statics[57].AsFloat); // myFloat
-            Assert.Equal(1, sc.Statics[58].AsInt32); // myArg1
+            Assert.Equal(0, sc.Statics[58].AsInt32); // getMyFloatRef
+            Assert.Equal(1, sc.Statics[59].AsInt32); // myArg1
 
             // strings
             Assert.Equal(12u + 1 + 14 + 1, sc.StringsLength);
