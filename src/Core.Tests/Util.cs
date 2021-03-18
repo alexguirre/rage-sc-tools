@@ -27,6 +27,11 @@
             return c;
         }
 
+        public static GameFiles.Script Assemble(string src)
+        {
+            return new GameFiles.Script();
+        }
+
         public static string Dump(GameFiles.Script sc)
         {
             var d = new Dumper(sc);
