@@ -146,6 +146,11 @@
 
         public static float ParseAsFloat(this string s) => s.AsSpan().ParseAsFloat();
 
-        
+        public static ulong ParseAsUInt64(this ReadOnlySpan<char> str)
+            => str.StartsWith("0x") ?
+                ulong.Parse(str[2..], System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture) :
+                ulong.Parse(str, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture);
+
+        public static ulong ParseAsUInt64(this string s) => s.AsSpan().ParseAsUInt64();
     }
 }

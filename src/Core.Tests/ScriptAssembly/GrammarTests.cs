@@ -13,7 +13,8 @@
 
             .const MY_DEFAULT_VALUE 4.0
 
-            .global 1   ; segment for global variables, the integer is the block ID
+            .global_block 1
+            .global     ; segment for global variables, the integer is the block ID
 gInt:       .int 10
 gVector:    .float 1.0, 2.0, 3.0
 
@@ -45,6 +46,7 @@ myArg1:     .int 1
             .string     ; segment for strings
 str1:       .str 'Hello, World'
 str2:       .str 'Another string'
+str3:       .str 'Multi\nLine'
 
 
             .code       ; segment for code
@@ -88,7 +90,7 @@ func1_label3:
             STATIC_U8_STORE getMyFloatRef
 
             PUSH_CONST_S16 1000
-            NATIVE 1 0 WAIT
+            NATIVE 1, 0, WAIT
 
             LEAVE 0, 0
 
@@ -113,6 +115,34 @@ _0x9614299DCB53E54B:    .native 0x9614299DCB53E54B
 
             Assert.Equal(4.0f, asm.Constants["MY_DEFAULT_VALUE"].Float);
             Assert.Equal(10, asm.Constants["MY_FLOAT_ARRAY_SIZE"].Integer);
+
+            // globals
+            Assert.Equal(0, asm.Labels["gInt"].Offset);
+            Assert.Equal(1, asm.Labels["gVector"].Offset);
+            // statics
+            Assert.Equal(0, asm.Labels["myInt"].Offset);
+            Assert.Equal(1, asm.Labels["myInt2"].Offset);
+            Assert.Equal(2, asm.Labels["myIntArray"].Offset);
+            Assert.Equal(8, asm.Labels["myFloatArray"].Offset);
+            Assert.Equal(19, asm.Labels["myVector"].Offset);
+            Assert.Equal(22, asm.Labels["myOtherVector"].Offset);
+            Assert.Equal(25, asm.Labels["randomData"].Offset);
+            Assert.Equal(41, asm.Labels["emptySpace"].Offset);
+            Assert.Equal(57, asm.Labels["myFloat"].Offset);
+            Assert.Equal(58, asm.Labels["getMyFloatRef"].Offset);
+            // args
+            Assert.Equal(59, asm.Labels["myArg1"].Offset);
+            // strings
+            Assert.Equal(0, asm.Labels["str1"].Offset);
+            Assert.Equal(13, asm.Labels["str2"].Offset);
+            Assert.Equal(28, asm.Labels["str3"].Offset);
+            // code
+            Assert.Equal(0, asm.Labels["main"].Offset);
+            // natives
+            Assert.Equal(0, asm.Labels["WAIT"].Offset);
+            Assert.Equal(1, asm.Labels["CREATE_PED"].Offset);
+            Assert.Equal(2, asm.Labels["_0x9614299DCB53E54B"].Offset);
+
 
             var sc = asm.OutputScript;
             Assert.Equal("my_script", sc.Name);
@@ -168,9 +198,10 @@ _0x9614299DCB53E54B:    .native 0x9614299DCB53E54B
             Assert.Equal(1, sc.Statics[59].AsInt32); // myArg1
 
             // strings
-            Assert.Equal(12u + 1 + 14 + 1, sc.StringsLength);
+            Assert.Equal(12u + 1 + 14 + 1 + 10 + 1, sc.StringsLength);
             Assert.Equal("Hello, World", sc.String(0));
-            Assert.Equal("Another String", sc.String(13));
+            Assert.Equal("Another string", sc.String(13));
+            Assert.Equal("Multi\nLine", sc.String(28));
 
             // natives
             Assert.Equal(3u, sc.NativesCount);
