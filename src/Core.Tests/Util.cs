@@ -3,6 +3,7 @@
     using System;
     using System.IO;
 
+    using ScTools.ScriptAssembly;
     using ScTools.ScriptLang;
 
     internal static class Util
@@ -27,9 +28,10 @@
             return c;
         }
 
-        public static GameFiles.Script Assemble(string src)
+        public static Assembler Assemble(string src, string path = "test.sc")
         {
-            return new GameFiles.Script();
+            using var r = new StringReader(src);
+            return Assembler.Assemble(r, path);
         }
 
         public static string Dump(GameFiles.Script sc)

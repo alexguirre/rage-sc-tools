@@ -7,7 +7,7 @@
         [Fact]
         public void TestEverything()
         {
-            var sc = Util.Assemble(@"
+            var asm = Util.Assemble(@"
             .script_name my_script
             .script_hash 0x1234ABCD
 
@@ -34,7 +34,8 @@ myVector:   .float 1.0, 2.0, 3.0
 myOtherVector:
             .float 3 dup (MY_DEFAULT_VALUE)
 
-emptySpace: .int 32 dup (0)
+randomData: .int 2 dup (22, 7 dup (33))
+emptySpace: .int 16 dup (0)
 
 
             .arg        ; segment for script args
@@ -108,6 +109,12 @@ CREATE_PED:             .native 0xD49F9B0955C367DE
 _0x9614299DCB53E54B:    .native 0x9614299DCB53E54B
             ");
 
+            Assert.False(asm.Diagnostics.HasErrors);
+
+            Assert.Equal(4.0f, asm.Constants["MY_DEFAULT_VALUE"].Float);
+            Assert.Equal(10, asm.Constants["MY_FLOAT_ARRAY_SIZE"].Integer);
+
+            var sc = asm.OutputScript;
             Assert.Equal("my_script", sc.Name);
             Assert.Equal(0x1234ABCDu, sc.Hash);
 
@@ -141,9 +148,20 @@ _0x9614299DCB53E54B:    .native 0x9614299DCB53E54B
             Assert.Equal(4.0f, sc.Statics[22].AsFloat); // myOtherVector.x
             Assert.Equal(4.0f, sc.Statics[23].AsFloat); // myOtherVector.y
             Assert.Equal(4.0f, sc.Statics[24].AsFloat); // myOtherVector.z
-            for (int i = 0; i < 32; i++)
+            for (int i = 0; i < 2; i++)
             {
-                Assert.Equal(0, sc.Statics[25 + i].AsInt32); // emptySpace
+                Assert.Equal(22, sc.Statics[25 + i * 8 + 0].AsInt32); // randomData
+                Assert.Equal(33, sc.Statics[25 + i * 8 + 1].AsInt32);
+                Assert.Equal(33, sc.Statics[25 + i * 8 + 2].AsInt32);
+                Assert.Equal(33, sc.Statics[25 + i * 8 + 3].AsInt32);
+                Assert.Equal(33, sc.Statics[25 + i * 8 + 4].AsInt32);
+                Assert.Equal(33, sc.Statics[25 + i * 8 + 5].AsInt32);
+                Assert.Equal(33, sc.Statics[25 + i * 8 + 6].AsInt32);
+                Assert.Equal(33, sc.Statics[25 + i * 8 + 7].AsInt32);
+            }
+            for (int i = 0; i < 16; i++)
+            {
+                Assert.Equal(0, sc.Statics[41 + i].AsInt32); // emptySpace
             }
             Assert.Equal(5.0f, sc.Statics[57].AsFloat); // myFloat
             Assert.Equal(0, sc.Statics[58].AsInt32); // getMyFloatRef

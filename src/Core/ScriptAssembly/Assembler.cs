@@ -1,365 +1,163 @@
-﻿namespace ScTools.ScriptAssembly
+﻿#nullable enable
+namespace ScTools.ScriptAssembly
 {
     using System;
     using System.Collections.Generic;
-    using System.Data;
-    using System.Linq;
+    using System.IO;
+
     using Antlr4.Runtime;
-    using Antlr4.Runtime.Misc;
+
     using ScTools.GameFiles;
-    using ScTools.ScriptAssembly.CodeGen;
-    using ScTools.ScriptAssembly.Definitions;
     using ScTools.ScriptAssembly.Grammar;
-    using ScTools.ScriptAssembly.Grammar.Visitors;
 
-    public sealed class AssemblerContext
+    public class Assembler
     {
-        private readonly Script sc;
-        private bool nameSet = false;
+        public const string DefaultScriptName = "unknown";
 
-        public NativeDBOld NativeDB { get; }
-        public CodeBuilder Code { get; }
-        public CodeGenOptions CodeGenOptions { get; }
-        public StringPagesBuilder Strings { get; } = new StringPagesBuilder();
-        public IList<ulong> NativeHashes { get; } = new List<ulong>();
-        public Dictionary<string, uint> Statics { get; } = new Dictionary<string, uint>();
-        public ScriptValue[] StaticValues => sc.Statics;
-        public Registry Symbols { get; } = new Registry();
+        public DiagnosticsReport Diagnostics { get; }
+        public Script OutputScript { get; }
+        public Dictionary<string, ConstantValue> Constants { get; }
+        public bool HasScriptName { get; private set; }
+        public bool HasScriptHash { get; private set; }
 
-        public AssemblerContext(Script sc, NativeDBOld nativeDB, CodeGenOptions codeGenOptions)
+        public Assembler(string filePath)
         {
-            this.sc = sc ?? throw new ArgumentNullException(nameof(sc));
-            Code = new CodeBuilder(this);
-            NativeDB = nativeDB;
-            CodeGenOptions = codeGenOptions;
+            Diagnostics = new(filePath);
+            OutputScript = new()
+            {
+                Name = DefaultScriptName,
+                NameHash = DefaultScriptName.ToLowercaseHash(),
+            };
+            Constants = new(CaseInsensitiveComparer);
         }
 
-        public void SetName(string name)
+        public void Assemble(TextReader input)
         {
-            if (nameSet)
-            {
-                throw new InvalidOperationException("Name was already set");
-            }
+            var inputStream = new AntlrInputStream(input);
 
-            sc.Name = name ?? throw new ArgumentNullException(nameof(name));
-            sc.NameHash = name.ToHash();
-            nameSet = true;
+            var lexer = new ScAsmLexer(inputStream);
+            lexer.RemoveErrorListeners();
+            lexer.AddErrorListener(new SyntaxErrorListener<int>(this));
+            var tokens = new CommonTokenStream(lexer);
+            var parser = new ScAsmParser(tokens);
+            parser.RemoveErrorListeners();
+            parser.AddErrorListener(new SyntaxErrorListener<IToken>(this));
+
+            var program = parser.program();
+            foreach (var line in program.line())
+            {
+                ProcessLine(line);
+            }
         }
 
-        public void SetHash(uint hash)
+        private void ProcessLine(ScAsmParser.LineContext line)
         {
-            if (sc.Hash != 0)
+            var label = line.label();
+            var segmentDirective = line.segmentDirective();
+            var directive = line.directive();
+            var instruction = line.instruction();
+
+            if (label is not null)
             {
-                throw new InvalidOperationException("Hash was already set");
+                // TODO: do something
             }
 
-            sc.Hash = hash;
+            if (segmentDirective is not null)
+            {
+                // TODO: do something
+            }
+            else if (directive is not null)
+            {
+                ProcessDirective(directive);
+            }
+            else if (instruction is not null)
+            {
+                // TODO: do something
+            }
         }
 
-        public void SetArgsCount(uint count)
+        private void ProcessDirective(ScAsmParser.DirectiveContext directive)
         {
-            if (sc.ArgsCount != 0)
+            switch (directive)
             {
-                throw new InvalidOperationException("Args count was already set");
-            }
-
-            sc.ArgsCount = count;
-        }
-
-        public void SetStaticsCount(uint count)
-        {
-            if (sc.Statics != null)
-            {
-                throw new InvalidOperationException("Statics count was already set");
-            }
-
-            sc.Statics = new ScriptValue[count];
-            sc.StaticsCount = count;
-        }
-
-        public void SetStaticValue(uint staticIndex, int value)
-        {
-            if (sc.Statics == null || staticIndex >= sc.Statics.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(staticIndex));
-            }
-
-            sc.Statics[staticIndex].AsInt32 = value;
-        }
-
-        public void SetStaticValue(uint staticIndex, float value)
-        {
-            if (sc.Statics == null || staticIndex >= sc.Statics.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(staticIndex));
-            }
-
-            sc.Statics[staticIndex].AsFloat = value;
-        }
-
-        public uint GetStaticOffset(string name) => Statics[name];
-
-        public void SetGlobals(byte block, uint length)
-        {
-            if (block >= 64) // limit hardcoded in the game .exe (and max value that fits in GLOBAL_U24* instructions)
-            {
-                throw new ArgumentOutOfRangeException(nameof(block), "Block is greater than or equal to 64");
-            }
-
-            if (sc.GlobalsPages != null)
-            {
-                throw new InvalidOperationException("Globals already set");
-            }
-
-            uint pageCount = (length + 0x3FFF) >> 14;
-            var pages = new ScriptPage<ScriptValue>[pageCount];
-            for (int i = 0; i < pageCount; i++)
-            {
-                uint pageSize = i == pageCount - 1 ? (length & (Script.MaxPageLength - 1)) : Script.MaxPageLength;
-                pages[i] = new ScriptPage<ScriptValue>() { Data = new ScriptValue[pageSize] };
-            }
-
-            sc.GlobalsPages = new ScriptPageArray<ScriptValue> { Items = pages };
-            sc.GlobalsBlock = block;
-            sc.GlobalsLength = length;
-        }
-
-        private ref ScriptValue GetGlobalValue(uint globalId)
-        {
-            if (sc.GlobalsPages == null)
-            {
-                throw new InvalidOperationException($"Globals block and length are undefined");
-            }
-
-            uint globalBlock = globalId >> 18;
-            uint pageIndex = (globalId >> 14) & 0xF;
-            uint pageOffset = globalId & 0x3FFF;
-
-            if (globalBlock != sc.GlobalsBlock)
-            {
-                throw new ArgumentException($"Block of global {globalId} (block {globalBlock}) does not match the block of this script (block {sc.GlobalsBlock})");
-            }
-
-            if (pageIndex >= sc.GlobalsPages.Count || pageOffset >= sc.GlobalsPages[pageIndex].Data.Length)
-            {
-                throw new ArgumentOutOfRangeException($"Global {globalId} exceeds the global block length");
-            }
-
-            return ref sc.GlobalsPages[pageIndex][pageOffset];
-        }
-
-        public void SetGlobalValue(uint globalId, int value) => GetGlobalValue(globalId).AsInt32 = value;
-        public void SetGlobalValue(uint globalId, float value) => GetGlobalValue(globalId).AsFloat = value;
-
-        public ushort AddNative(ulong hash)
-        {
-            if (NativeHashes.Contains(hash))
-            {
-                throw new ArgumentException($"Native hash {hash:X16} is repeated", nameof(hash));
-            }
-
-            int index = NativeHashes.Count;
-            NativeHashes.Add(hash);
-
-            if (NativeHashes.Count > ushort.MaxValue)
-            {
-                throw new InvalidOperationException("Too many natives");
-            }
-
-            return (ushort)index;
-        }
-
-        public ushort AddOrGetNative(ulong hash)
-        {
-            for (int i = 0; i < NativeHashes.Count; i++)
-            {
-                if (NativeHashes[i] == hash)
-                {
-                    return (ushort)i;
-                }
-            }
-
-            return AddNative(hash);
-        }
-
-        public uint AddString(string str) => Strings.Add(str);
-        public uint AddOrGetString(string str) => Strings.AddOrGet(str);
-    }
-
-    public static class Assembler
-    {
-        public static Script Assemble(string input, NativeDBOld nativeDB, CodeGenOptions codeGenOptions)
-        {
-            AntlrInputStream inputStream = new AntlrInputStream(input);
-
-            ScAsmLexer lexer = new ScAsmLexer(inputStream);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            ScAsmParser parser = new ScAsmParser(tokens);
-
-            return parser.script().Accept(new ScriptVisitor(nativeDB, codeGenOptions));
-        }
-
-        private sealed class ScriptVisitor : ScAsmBaseVisitor<Script>
-        {
-            private readonly NativeDBOld nativeDB;
-            private readonly CodeGenOptions codeGenOptions;
-
-            public ScriptVisitor(NativeDBOld nativeDB, CodeGenOptions codeGenOptions)
-            {
-                this.nativeDB = nativeDB;
-                this.codeGenOptions = codeGenOptions;
-            }
-
-            public override Script VisitScript([NotNull] ScAsmParser.ScriptContext context)
-            {
-                const string DefaultName = "unknown";
-
-                var sc = new Script
-                {
-                    Hash = 0, // TODO: how is this hash calculated?
-                    ArgsCount = 0,
-                    StaticsCount = 0,
-                    GlobalsLengthAndBlock = 0,
-                    NativesCount = 0,
-                    Name = DefaultName,
-                    NameHash = DefaultName.ToHash(),
-                    StringsLength = 0,
-                };
-
-                var assemblerContext = new AssemblerContext(sc, nativeDB, codeGenOptions);
-
-                var reg = assemblerContext.Symbols;
-                RegisterStructs.Visit(context, reg);
-                RegisterStaticFields.Visit(context, reg);
-                RegisterArgs.Visit(context, reg);
-                RegisterFunctions.Visit(context, reg);
-
-
-                {
-                    uint argsSize = (uint)reg.Args.Sum(a => a.Type.SizeOf);
-                    uint staticsSize = (uint)reg.StaticFields.Sum(sf => sf.Type.SizeOf) + argsSize;
-
-                    assemblerContext.SetStaticsCount(staticsSize);
-                    assemblerContext.SetArgsCount(argsSize);
-
-                    static void init(AssemblerContext c, StaticFieldDefinition sf, ref uint offset)
+                case ScAsmParser.ScriptNameDirectiveContext nameDirective:
+                    if (HasScriptName)
                     {
-                        c.Statics.Add(sf.Name, offset);
-
-                        uint size = sf.Type.SizeOf;
-                        sf.InitializeValue(c.StaticValues.AsSpan()[(int)offset..(int)(offset + size)]);
-                        offset += size;
-                    }
-
-                    uint offset = 0;
-                    foreach (StaticFieldDefinition sf in reg.StaticFields)
-                    {
-                        init(assemblerContext, sf, ref offset);
-                    }
-
-                    foreach (ArgDefinition a in reg.Args)
-                    {
-                        init(assemblerContext, a, ref offset);
-                    }
-                }
-
-                var directiveVisitor = new DirectiveVisitor(assemblerContext);
-                foreach (var d in context.statement().Select(stat => stat.directive()).Where(d => d != null))
-                {
-                    d.Accept(directiveVisitor);
-                }
-
-                // TODO: globals
-
-                if (!reg.Functions.Any(f => f.IsEntrypoint))
-                {
-                    throw new InvalidOperationException($"Missing entrypoint: no function named '{FunctionDefinition.EntrypointName}'");
-                }
-
-                var code = assemblerContext.Code;
-                foreach (var f in reg.Functions)
-                {
-                    code.BeginFunction(f);
-                    foreach (var statement in f.Statements)
-                    {
-                        if (statement.Label != null)
-                        {
-                            code.AddLabel(statement.Label);
-                        }
-
-                        if (statement.Mnemonic != null)
-                        {
-                            uint mnemonicHash = statement.Mnemonic.ToHash();
-                            ref readonly var inst = ref Instruction.FindByMnemonic(mnemonicHash);
-                            if (inst.IsValid)
-                            {
-                                code.Emit(inst, statement.Operands.AsSpan());
-                            }
-                            else
-                            {
-                                ref readonly var hlInst = ref HighLevelInstruction.FindByMnemonic(mnemonicHash);
-                                if (hlInst.IsValid)
-                                {
-                                    code.EmitHL(hlInst, statement.Operands.AsSpan());
-                                }
-                                else
-                                {
-                                    throw new ArgumentException($"Unknown instruction '{statement.Mnemonic}'");
-                                }
-                            }
-                        }
-                    }
-                    code.EndFunction();
-                }
-
-                sc.CodePages = new ScriptPageArray<byte>
-                {
-                    Items = assemblerContext.Code.ToPages(out uint codeLength),
-                };
-                sc.CodeLength = codeLength;
-
-                sc.StringsPages = new ScriptPageArray<byte>
-                {
-                    Items = assemblerContext.Strings.ToPages(out uint stringsLength),
-                };
-                sc.StringsLength = stringsLength;
-
-                static ulong RotateHash(ulong hash, int index, uint codeLength)
-                {
-                    byte rotate = (byte)(((uint)index + codeLength) & 0x3F);
-                    return hash >> rotate | hash << (64 - rotate);
-                }
-
-                sc.Natives = assemblerContext.NativeHashes.Select((h, i) => RotateHash(h, i, codeLength)).ToArray();
-                sc.NativesCount = (uint)sc.Natives.Length;
-
-                return sc;
-            }
-
-            private sealed class DirectiveVisitor : ScAsmBaseVisitor<bool>
-            {
-                private readonly AssemblerContext assemblerContext;
-
-                public DirectiveVisitor(AssemblerContext assemblerContext) => this.assemblerContext = assemblerContext ?? throw new ArgumentNullException(nameof(assemblerContext));
-
-                public override bool VisitDirective([NotNull] ScAsmParser.DirectiveContext context)
-                {
-                    string directive = context.identifier().GetText();
-                    int dirIndex = Directives.Find(directive.ToHash());
-
-                    if (dirIndex != -1)
-                    {
-                        Operand[] operands = ParseOperands.Visit(context.operandList(), null, null);
-                        Directive dir = Directives.Set[dirIndex];
-                        dir.Callback(dir, assemblerContext, operands);
-                        return true;
+                        Diagnostics.AddError($"Directive '.script_name' is repeated", Source(nameDirective));
                     }
                     else
                     {
-                        throw new ArgumentException($"Unknown directive '{directive}'");
+                        OutputScript.Name = nameDirective.identifier().GetText();
+                        OutputScript.NameHash = OutputScript.Name.ToLowercaseHash();
+                        HasScriptName = true;
                     }
-                }
+                    break;
+                case ScAsmParser.ScriptHashDirectiveContext hashDirective:
+                    if (HasScriptHash)
+                    {
+                        Diagnostics.AddError($"Directive '.script_hash' is repeated", Source(hashDirective));
+                    }
+                    else
+                    {
+                        OutputScript.Hash = (uint)hashDirective.integer().GetText().ParseAsInt();
+                        HasScriptHash = true;
+                    }
+                    break;
+                case ScAsmParser.ConstDirectiveContext constDirective:
+                    var constName = constDirective.identifier();
+                    var constInteger = constDirective.integer();
+                    var constFloat = constDirective.@float();
+
+                    var constValue = constInteger != null ?
+                                        new ConstantValue(constInteger.GetText().ParseAsInt()) :
+                                        new ConstantValue(constFloat.GetText().ParseAsFloat());
+
+                    if (!Constants.TryAdd(constName.GetText(), constValue))
+                    {
+                        Diagnostics.AddError($"Constant '{constName}' already defined", Source(constName));
+                    }
+                    break;
             }
+        }
+
+
+        public static Assembler Assemble(TextReader input, string filePath = "tmp.sc")
+        {
+            var a = new Assembler(filePath);
+            a.Assemble(input);
+            return a;
+        }
+
+        public static StringComparer CaseInsensitiveComparer => StringComparer.OrdinalIgnoreCase;
+
+        private static SourceRange Source(ParserRuleContext context) => SourceRange.FromTokens(context.Start, context.Stop);
+
+        /// <summary>
+        /// Adds syntax errors to diagnostics report.
+        /// </summary>
+        private sealed class SyntaxErrorListener<TSymbol> : IAntlrErrorListener<TSymbol>
+        {
+            private readonly Assembler assembler;
+
+            public SyntaxErrorListener(Assembler assembler) => this.assembler = assembler;
+
+            public void SyntaxError(TextWriter output, IRecognizer recognizer, TSymbol offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
+            {
+                var source = offendingSymbol is IToken t ?
+                                SourceRange.FromTokens(t, null) :
+                                new SourceRange(new SourceLocation(line, charPositionInLine),
+                                                new SourceLocation(line, charPositionInLine));
+                assembler.Diagnostics.AddError(msg, source);
+            }
+        }
+
+        public struct ConstantValue
+        {
+            public int Integer { get; }
+            public float Float { get; }
+
+            public ConstantValue(int value) => (Integer, Float) = (value, value);
+            public ConstantValue(float value) => (Integer, Float) = ((int)Math.Truncate(value), value);
         }
     }
 }
