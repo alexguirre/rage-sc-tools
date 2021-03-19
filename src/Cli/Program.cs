@@ -14,7 +14,6 @@
     using System.Linq;
     using ScTools.ScriptAssembly;
     using ScTools.ScriptAssembly.CodeGen;
-    using ScTools.ScriptAssembly.Disassembly;
     using ScTools.ScriptLang;
 
     internal static class Program
@@ -198,8 +197,9 @@
                 try
                 {
                     Print($"Assembling '{inputFile}'...");
-                    Script sc = Assembler.Assemble(source, nativeDB, new CodeGenOptions(includeFunctionNames: options.FunctionNames));
-                    ysc.Script = sc;
+                    // TODO
+                    //Script sc = Assembler.Assemble(source, nativeDB, new CodeGenOptions(includeFunctionNames: options.FunctionNames));
+                    //ysc.Script = sc;
                 }
                 catch (Exception e) // TODO: improve assembler error messages
                 {
@@ -354,12 +354,13 @@
 
                 Print($"Disassembling '{inputFile}'...");
                 Script sc = ysc.Script;
-                var disassembly = Disassembler.Disassemble(sc);
+                // TODO
+                //var disassembly = Disassembler.Disassemble(sc);
 
                 Print($"Writing '{inputFile}'...");
                 const int BufferSize = 1024 * 1024 * 32; // 32mb
                 using TextWriter w = new StreamWriter(outputFile.Open(FileMode.Create), Encoding.UTF8, BufferSize) { AutoFlush = false };
-                Disassembler.Print(w, sc, disassembly);
+                //Disassembler.Print(w, sc, disassembly);
             });
         }
 

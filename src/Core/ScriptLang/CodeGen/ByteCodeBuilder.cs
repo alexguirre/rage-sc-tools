@@ -435,7 +435,7 @@ namespace ScTools.ScriptLang.CodeGen
 
         public void EmitDrop() => Emit(Opcode.DROP);
 
-        public void EmitCall(DefinedFunctionSymbol function) => Emit(Opcode.CALL, new[] { new Operand(function.Name, OperandType.Identifier) });
+        public void EmitCall(DefinedFunctionSymbol function) => Emit(Opcode.CALL, new[] { new Operand(function.Name) });
 
         public void EmitIndirectCall() => Emit(Opcode.CALLINDIRECT);
 
@@ -479,8 +479,8 @@ namespace ScTools.ScriptLang.CodeGen
             return (ushort)index;
         }
 
-        public void EmitJump(string label) => Emit(Opcode.J, new[] { new Operand(label, OperandType.Identifier) });
-        public void EmitJumpIfZero(string label) => Emit(Opcode.JZ, new[] { new Operand(label, OperandType.Identifier) });
+        public void EmitJump(string label) => Emit(Opcode.J, new[] { new Operand(label) });
+        public void EmitJumpIfZero(string label) => Emit(Opcode.JZ, new[] { new Operand(label) });
 
         public void EmitSwitch(IEnumerable<(int Value, string Label)> cases) => Emit(Opcode.SWITCH, cases.Select(c => new Operand((unchecked((uint)c.Value), c.Label))).ToArray());
 
@@ -780,8 +780,8 @@ namespace ScTools.ScriptLang.CodeGen
         void IByteCodeBuilder.U32(uint v) => InstructionU32(v);
         void IByteCodeBuilder.S16(short v) => InstructionS16(v);
         void IByteCodeBuilder.F32(float v) => InstructionF32(v);
-        void IByteCodeBuilder.LabelTarget(string label) => InstructionLabelTarget(label);
-        void IByteCodeBuilder.FunctionTarget(string function) => InstructionFunctionTarget(function);
+        void IByteCodeBuilder.RelativeLabelTarget(string label) => InstructionLabelTarget(label);
+        void IByteCodeBuilder.AbsoluteLabelTarget(string function) => InstructionFunctionTarget(function);
         #endregion // IByteCodeBuilder Implementation
     }
 }

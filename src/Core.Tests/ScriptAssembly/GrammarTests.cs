@@ -7,7 +7,7 @@
         [Fact]
         public void TestEverything()
         {
-            var asm = Util.Assemble(@"
+            using var asm = Util.Assemble(@"
             .script_name my_script
             .script_hash 0x1234ABCD
 

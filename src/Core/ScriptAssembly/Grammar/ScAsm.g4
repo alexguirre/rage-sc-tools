@@ -21,9 +21,10 @@ operandList
     ;
 
 operand
-    : identifier
-    | integer
-    | float
+    : identifier                                    #identifierOperand
+    | integer                                       #integerOperand
+    | float                                         #floatOperand
+    | (integer | identifier) ':' labelId=identifier #switchCaseOperand
     ;
 
 directive

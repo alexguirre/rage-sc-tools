@@ -10,9 +10,10 @@ namespace ScTools.ScriptAssembly
     using Antlr4.Runtime;
 
     using ScTools.GameFiles;
+    using ScTools.ScriptAssembly.CodeGen;
     using ScTools.ScriptAssembly.Grammar;
 
-    public class Assembler
+    public class Assembler : IDisposable
     {
         public const string DefaultScriptName = "unknown";
 
@@ -30,12 +31,16 @@ namespace ScTools.ScriptAssembly
             _ => sizeof(byte),
         };
 
-        private SegmentBuilder globalSegmentBuilder = new(GetAddressingUnitByteSize(Segment.Global)),
-                               staticSegmentBuilder = new(GetAddressingUnitByteSize(Segment.Static)),
-                               argSegmentBuilder = new(GetAddressingUnitByteSize(Segment.Arg)), // appended to the end of the static segment
-                               stringSegmentBuilder = new(GetAddressingUnitByteSize(Segment.String)),
-                               codeSegmentBuilder = new(GetAddressingUnitByteSize(Segment.Code)),
-                               includeSegmentBuilder = new(GetAddressingUnitByteSize(Segment.Include));
+
+        private bool disposed;
+
+        private readonly SegmentBuilder globalSegmentBuilder = new(GetAddressingUnitByteSize(Segment.Global), isPaged: true),
+                                        staticSegmentBuilder = new(GetAddressingUnitByteSize(Segment.Static), isPaged: false),
+                                        argSegmentBuilder = new(GetAddressingUnitByteSize(Segment.Arg), isPaged: false), // appended to the end of the static segment
+                                        stringSegmentBuilder = new(GetAddressingUnitByteSize(Segment.String), isPaged: true),
+                                        codeSegmentBuilder = new(GetAddressingUnitByteSize(Segment.Code), isPaged: true),
+                                        includeSegmentBuilder = new(GetAddressingUnitByteSize(Segment.Include), isPaged: false);
+        private readonly CodeBuilder codeBuilder;
 
         private Segment CurrentSegment { get; set; } = Segment.None;
         private SegmentBuilder CurrentSegmentBuilder => CurrentSegment switch
@@ -67,6 +72,31 @@ namespace ScTools.ScriptAssembly
             };
             Constants = new(CaseInsensitiveComparer);
             Labels = new(CaseInsensitiveComparer);
+            codeBuilder = new CodeBuilder(codeSegmentBuilder);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposed)
+            {
+                if (disposing)
+                {
+                    globalSegmentBuilder.Dispose();
+                    staticSegmentBuilder.Dispose();
+                    argSegmentBuilder.Dispose();
+                    stringSegmentBuilder.Dispose();
+                    codeSegmentBuilder.Dispose();
+                    includeSegmentBuilder.Dispose();
+                }
+
+                disposed = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
 
         public void Assemble(TextReader input)
@@ -87,12 +117,19 @@ namespace ScTools.ScriptAssembly
                 ProcessLine(line);
             }
             FixArgLabels();
+            codeBuilder.FixupLabelTargets(Labels);
 
-            (OutputScript.GlobalsPages, OutputScript.GlobalsLength) = SegmentToGlobalsPages(globalSegmentBuilder);
+            OutputScript.CodePages = codeSegmentBuilder.ToPages<byte>();
+            OutputScript.CodeLength = OutputScript.CodePages.Length;
+
+            OutputScript.GlobalsPages = globalSegmentBuilder.ToPages<ScriptValue>();
+            OutputScript.GlobalsLength = OutputScript.GlobalsPages.Length;
+
             (OutputScript.Statics, OutputScript.StaticsCount, OutputScript.ArgsCount) = SegmentToStaticsArray(staticSegmentBuilder, argSegmentBuilder);
             (OutputScript.Natives, OutputScript.NativesCount) = SegmentToNativesArray(includeSegmentBuilder, OutputScript.CodeLength);
-            (OutputScript.StringsPages, OutputScript.StringsLength) = SegmentToStringsPages(stringSegmentBuilder);
-            // TODO: code segment
+
+            OutputScript.StringsPages = stringSegmentBuilder.ToPages<byte>();
+            OutputScript.StringsLength = OutputScript.StringsPages.Length;
         }
 
         private void ProcessLine(ScAsmParser.LineContext line)
@@ -135,6 +172,11 @@ namespace ScTools.ScriptAssembly
             if (!Labels.TryAdd(name, new Label(CurrentSegment, offset)))
             {
                 Diagnostics.AddError($"Label '{name}' already defined", Source(label));
+            }
+
+            if (CurrentSegment == Segment.Code)
+            {
+                codeBuilder.Label = name;
             }
         }
 
@@ -318,29 +360,6 @@ namespace ScTools.ScriptAssembly
             }
         }
 
-        private static (ScriptPageArray<ScriptValue> Pages, uint Length) SegmentToGlobalsPages(SegmentBuilder segment)
-        {
-            var globals = MemoryMarshal.Cast<byte, ScriptValue>(segment.RawDataBuffer);
-
-            // create pages
-            var pageCount = (globals.Length + Script.MaxPageLength) / Script.MaxPageLength;
-            var p = new ScriptPage<ScriptValue>[pageCount];
-            if (pageCount > 0)
-            {
-                for (int i = 0; i < pageCount - 1; i++)
-                {
-                    p[i] = new ScriptPage<ScriptValue> { Data = new ScriptValue[Script.MaxPageLength] };
-                    globals.Slice(i * (int)Script.MaxPageLength, (int)Script.MaxPageLength).CopyTo(p[i].Data);
-                }
-
-                p[^1] = new ScriptPage<ScriptValue> { Data = new ScriptValue[globals.Length & 0x3FFF] };
-                globals.Slice((int)((pageCount - 1) * Script.MaxPageLength), p[^1].Data.Length).CopyTo(p[^1].Data);
-            }
-            var pages = new ScriptPageArray<ScriptValue> { Items = p };
-
-            return (pages, (uint)globals.Length);
-        }
-
         private static (ScriptValue[] Statics, uint StaticsCount, uint ArgsCount) SegmentToStaticsArray(SegmentBuilder staticSegment, SegmentBuilder argSegment)
         {
             var statics = MemoryMarshal.Cast<byte, ScriptValue>(staticSegment.RawDataBuffer);
@@ -366,29 +385,6 @@ namespace ScTools.ScriptAssembly
                 byte rotate = (byte)(((uint)index + codeLength) & 0x3F);
                 return hash >> rotate | hash << (64 - rotate);
             }
-        }
-
-        private static (ScriptPageArray<byte> Pages, uint Length) SegmentToStringsPages(SegmentBuilder segment)
-        {
-            var strings = segment.RawDataBuffer;
-
-            // create pages
-            var pageCount = (strings.Length + Script.MaxPageLength) / Script.MaxPageLength;
-            var p = new ScriptPage<byte>[pageCount];
-            if (pageCount > 0)
-            {
-                for (int i = 0; i < pageCount - 1; i++)
-                {
-                    p[i] = new ScriptPage<byte> { Data = new byte[Script.MaxPageLength] };
-                    strings.Slice(i * (int)Script.MaxPageLength, (int)Script.MaxPageLength).CopyTo(p[i].Data);
-                }
-
-                p[^1] = new ScriptPage<byte> { Data = new byte[strings.Length & 0x3FFF] };
-                strings.Slice((int)((pageCount - 1) * Script.MaxPageLength), p[^1].Data.Length).CopyTo(p[^1].Data);
-            }
-            var pages = new ScriptPageArray<byte> { Items = p };
-
-            return (pages, (uint)strings.Length);
         }
 
         public static Assembler Assemble(TextReader input, string filePath = "tmp.sc")
@@ -436,6 +432,178 @@ namespace ScTools.ScriptAssembly
             public int Offset { get; }
 
             public Label(Segment segment, int offset) => (Segment, Offset) = (segment, offset);
+        }
+
+        private sealed class CodeBuilder : IByteCodeBuilder
+        {
+            private readonly SegmentBuilder segment;
+            private readonly List<byte> buffer = new();
+            private readonly List<(string TargetFunctionName, int IP)> absoluteLabelTargets = new List<(string, int)>();
+            private readonly List<(string TargetLabel, int IP)> relativeLabelTargets = new List<(string, int)>();
+            private readonly List<int> absoluteTargetsInCurrentInstruction = new List<int>(); // index of functionTargets
+            private readonly List<int> relativeLabelTargetsInCurrentInstruction = new List<int>(); // index of labelTargets
+
+            public string? Label { get; set; }
+            public CodeGenOptions Options { get; } = new(includeFunctionNames: true);
+
+            public CodeBuilder(SegmentBuilder segment) => this.segment = segment;
+
+            public void U8(byte v)
+            {
+                buffer.Add(v);
+            }
+
+            public void U16(ushort v)
+            {
+                buffer.Add((byte)(v & 0xFF));
+                buffer.Add((byte)(v >> 8));
+            }
+
+            public void S16(short v) => U16(unchecked((ushort)v));
+
+            public void U32(uint v)
+            {
+                buffer.Add((byte)(v & 0xFF));
+                buffer.Add((byte)((v >> 8) & 0xFF));
+                buffer.Add((byte)((v >> 16) & 0xFF));
+                buffer.Add((byte)(v >> 24));
+            }
+
+            public void U24(uint v)
+            {
+                buffer.Add((byte)(v & 0xFF));
+                buffer.Add((byte)((v >> 8) & 0xFF));
+                buffer.Add((byte)((v >> 16) & 0xFF));
+            }
+
+            public unsafe void F32(float v) => U32(*(uint*)&v);
+
+            public void AbsoluteLabelTarget(string function)
+            {
+                if (string.IsNullOrWhiteSpace(function))
+                {
+                    throw new ArgumentException("null or empty function name", nameof(function));
+                }
+
+                absoluteTargetsInCurrentInstruction.Add(absoluteLabelTargets.Count);
+                absoluteLabelTargets.Add((function, segment.Length + buffer.Count));
+                buffer.Add(0); // empty, will be filled later when we know the offsets of all labels
+                buffer.Add(0);
+                buffer.Add(0);
+            }
+
+            public void RelativeLabelTarget(string label)
+            {
+                if (string.IsNullOrWhiteSpace(label))
+                {
+                    throw new ArgumentException("null or empty label", nameof(label));
+                }
+
+                relativeLabelTargetsInCurrentInstruction.Add(relativeLabelTargets.Count);
+                relativeLabelTargets.Add((label, segment.Length + buffer.Count));
+                buffer.Add(0); // empty, will be filled later when we know the offsets of all labels
+                buffer.Add(0);
+            }
+
+            public void Opcode(Opcode v) => U8((byte)v);
+
+            public void Flush()
+            {
+                int offset = (int)(segment.Length & (Script.MaxPageLength - 1));
+
+                Opcode opcode = (Opcode)buffer[0];
+
+                // At page boundary a NOP may be required for the interpreter to switch to the next page,
+                // the interpreter only does this with control flow instructions and NOP
+                // If the NOP is needed, skip 1 byte at the end of the page
+                bool needsNopAtBoundary = !opcode.IsControlFlow() &&
+                                            opcode != ScriptAssembly.Opcode.NOP;
+
+                if (offset + buffer.Count > (Script.MaxPageLength - (needsNopAtBoundary ? 1u : 0))) // the instruction doesn't fit in the current page
+                {
+                    var bytesUntilNextPage = (int)Script.MaxPageLength - offset; // padding needed to skip to the next page
+                    var requiredNops = bytesUntilNextPage;
+
+                    const int JumpInstructionSize = 3;
+                    if (bytesUntilNextPage > JumpInstructionSize)
+                    {
+                        // if there is enough space for a J instruction, add it to jump to the next page
+                        short relIP = (short)(Script.MaxPageLength - (offset + JumpInstructionSize)); // get how many bytes until the next page
+                        segment.Byte((byte)ScriptAssembly.Opcode.J);
+                        segment.Byte((byte)(relIP & 0xFF));
+                        segment.Byte((byte)(relIP >> 8));
+                        requiredNops -= JumpInstructionSize;
+                    }
+
+                    // NOP what is left of the current page
+                    segment.Bytes(new byte[requiredNops]);
+
+                    // fix IPs of label/function targets in the current instruction
+                    foreach (int i in absoluteTargetsInCurrentInstruction)
+                    {
+                        absoluteLabelTargets[i] = (absoluteLabelTargets[i].TargetFunctionName, absoluteLabelTargets[i].IP + bytesUntilNextPage);
+                    }
+                    foreach (int i in relativeLabelTargetsInCurrentInstruction)
+                    {
+                        relativeLabelTargets[i] = (relativeLabelTargets[i].TargetLabel, relativeLabelTargets[i].IP + bytesUntilNextPage);
+                    }
+                }
+
+                segment.Bytes(CollectionsMarshal.AsSpan(buffer));
+                buffer.Clear();
+                absoluteTargetsInCurrentInstruction.Clear();
+                relativeLabelTargetsInCurrentInstruction.Clear();
+                Label = null;
+            }
+
+            private int GetLabelIP(Dictionary<string, Label> labels, string label)
+            {
+                if (!labels.TryGetValue(label, out var labelInfo))
+                {
+                    throw new ArgumentException($"Unknown label '{label}'", nameof(label));
+                }
+
+                if (labelInfo.Segment != Segment.Code)
+                {
+                    throw new ArgumentException($"Label '{label}' is not in code segment", nameof(label));
+                }
+
+                return labelInfo.Offset;
+            }
+
+            private void FixupAbsoluteLabelTargets(Dictionary<string, Label> labels)
+            {
+                foreach (var (targetLabel, targetIP) in absoluteLabelTargets)
+                {
+                    int ip = GetLabelIP(labels, targetLabel);
+
+                    segment.RawDataBuffer[targetIP + 0] = (byte)(ip & 0xFF);
+                    segment.RawDataBuffer[targetIP + 1] = (byte)((ip >> 8) & 0xFF);
+                    segment.RawDataBuffer[targetIP + 2] = (byte)(ip >> 16);
+                }
+
+                absoluteLabelTargets.Clear();
+            }
+
+            private void FixupRelativeLabelTargets(Dictionary<string, Label> labels)
+            {
+                foreach (var (targetLabel, targetIP) in relativeLabelTargets)
+                {
+                    int ip = GetLabelIP(labels, targetLabel);
+
+                    short relIP = (short)(ip - (targetIP + 2));
+                    segment.RawDataBuffer[targetIP + 0] = (byte)(relIP & 0xFF);
+                    segment.RawDataBuffer[targetIP + 1] = (byte)(relIP >> 8);
+                }
+
+                relativeLabelTargets.Clear();
+            }
+
+            public void FixupLabelTargets(Dictionary<string, Label> labels)
+            {
+                FixupAbsoluteLabelTargets(labels);
+                FixupRelativeLabelTargets(labels);
+            }
         }
     }
 }
