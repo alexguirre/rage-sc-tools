@@ -97,8 +97,8 @@ func1_label3:
             PUSH_CONST_U24 getMyFloat
             STATIC_U8_STORE getMyFloatRef
 
-            ;PUSH_CONST_S16 1000
-            ;NATIVE 1, 0, WAIT
+            PUSH_CONST_S16 1000
+            NATIVE 1, 0, WAIT
 
             .const MY_TEST_CONST 16
             PUSH_CONST_U8 MY_TEST_CONST     ; constants as operands
@@ -111,7 +111,7 @@ func1_label3:
             DROP
             DROP
 
-            ; PUSH_CONST_U8 myInt2    ; labels as operands (replaced with their absolute offset)
+            PUSH_CONST_U8 myInt2    ; labels as operands (replaced with their absolute offset)
             DROP
 
             PUSH_CONST_U8 10.5      ; warning: float number truncated
@@ -121,6 +121,46 @@ func1_label3:
             DROP
 
             PUSH_CONST_U8 256       ; warning: possible loss of data
+            DROP
+
+            .const MY_TEST_FLOAT 12.34
+            PUSH_CONST_F MY_TEST_FLOAT
+            PUSH_CONST_F 8
+            PUSH_CONST_F 8.9
+            DROP
+            DROP
+            DROP
+
+            CALL getMyFloat
+            DROP
+
+            PUSH_CONST_S16 1000
+            PUSH_CONST_S16 -1000
+            PUSH_CONST_S16 60000    ; warning: possible loss of data
+            PUSH_CONST_S16 -60000   ; warning: possible loss of data
+            DROP
+            DROP
+            DROP
+            DROP
+
+            .const CASE_1_VALUE 1
+            .const CASE_2_VALUE 2
+
+            PUSH_CONST_U8 1
+            SWITCH CASE_1_VALUE:case1, CASE_2_VALUE:case2, 3:case3, 4:0
+caseDefault:
+            PUSH_CONST_U8 0
+            J switchEnd
+case1:
+            PUSH_CONST_U8 1
+            J switchEnd
+case2:
+            PUSH_CONST_U8 2
+            J switchEnd
+case3:
+            PUSH_CONST_U8 3
+            J switchEnd
+switchEnd:
             DROP
 
             LEAVE 0, 0
@@ -170,6 +210,10 @@ _0x9614299DCB53E54B:    .native 0x9614299DCB53E54B
             Assert.Equal(28, asm.Labels["str3"].Offset);
             // code
             Assert.Equal(0, asm.Labels["main"].Offset);
+            Assert.Equal(11, asm.Labels["func1"].Offset);
+            Assert.Equal(16, asm.Labels["label1"].Offset);
+            Assert.Equal(16, asm.Labels["label2"].Offset);
+            Assert.Equal(16, asm.Labels["func1_label3"].Offset);
             // natives
             Assert.Equal(0, asm.Labels["WAIT"].Offset);
             Assert.Equal(1, asm.Labels["CREATE_PED"].Offset);

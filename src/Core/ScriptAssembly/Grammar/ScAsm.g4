@@ -24,7 +24,7 @@ operand
     : identifier                                    #identifierOperand
     | integer                                       #integerOperand
     | float                                         #floatOperand
-    | (integer | identifier) ':' labelId=identifier #switchCaseOperand
+    | value=operand ':' jumpTo=operand              #switchCaseOperand
     ;
 
 directive

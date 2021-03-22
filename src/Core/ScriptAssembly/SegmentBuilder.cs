@@ -93,6 +93,14 @@
             Align();
         }
 
+        public void UInt(uint value)
+        {
+            Align();
+            CheckPaging(sizeof(uint));
+            RawWriter.Write(value);
+            Align();
+        }
+
         public void UInt64(ulong value)
         {
             Align();

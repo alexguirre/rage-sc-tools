@@ -54,6 +54,8 @@ namespace ScTools.ScriptAssembly
             _ => throw new InvalidOperationException(), 
         };
 
+        private readonly List<Instruction> instructions = new();
+
         public DiagnosticsReport Diagnostics { get; }
         public Script OutputScript { get; }
         public Dictionary<string, ConstantValue> Constants { get; }
@@ -112,12 +114,8 @@ namespace ScTools.ScriptAssembly
             parser.AddErrorListener(new SyntaxErrorListener<IToken>(this));
 
             var program = parser.program();
-            foreach (var line in program.line())
-            {
-                ProcessLine(line);
-            }
-            FixArgLabels();
-            codeBuilder.ResolveLabelTargets(Labels, Constants, Diagnostics);
+            FirstPass(program);
+            SecondPass();
 
             OutputScript.CodePages = codeSegmentBuilder.ToPages<byte>();
             OutputScript.CodeLength = OutputScript.CodePages.Length;
@@ -130,6 +128,30 @@ namespace ScTools.ScriptAssembly
 
             OutputScript.StringsPages = stringSegmentBuilder.ToPages<byte>();
             OutputScript.StringsLength = OutputScript.StringsPages.Length;
+        }
+
+        /// <summary>
+        /// Traverses the parse tree. Allocates the space needed by each segment, initializes non-code segments, stores labels offsets
+        /// and collects the instructions from the code segment.
+        /// </summary>
+        private void FirstPass(ScAsmParser.ProgramContext program)
+        {
+            foreach (var line in program.line())
+            {
+                ProcessLine(line);
+            }
+            FixArgLabels();
+        }
+
+        /// <summary>
+        /// Assembles the instructions collected in the first pass, since now it knows the offsets of all labels.
+        /// </summary>
+        private void SecondPass()
+        {
+            foreach (var inst in instructions)
+            {
+                AssembleInstruction(inst);
+            }
         }
 
         private void ProcessLine(ScAsmParser.LineContext line)
@@ -174,14 +196,13 @@ namespace ScTools.ScriptAssembly
                 offset |= (int)(OutputScript.GlobalsBlock << 18);
             }
 
-            if (!Labels.TryAdd(name, new Label(CurrentSegment, offset)))
+            if (Constants.ContainsKey(name))
+            {
+                Diagnostics.AddError($"Constant named '{name}' already defined", Source(label));
+            }
+            else if (!Labels.TryAdd(name, new Label(CurrentSegment, offset)))
             {
                 Diagnostics.AddError($"Label '{name}' already defined", Source(label));
-            }
-
-            if (CurrentSegment == Segment.Code)
-            {
-                codeBuilder.Label = name;
             }
         }
 
@@ -244,6 +265,7 @@ namespace ScTools.ScriptAssembly
                     break;
                 case ScAsmParser.ConstDirectiveContext constDirective:
                     var constName = constDirective.identifier();
+                    var constNameStr = constName.GetText();
                     var constInteger = constDirective.integer();
                     var constFloat = constDirective.@float();
 
@@ -251,9 +273,13 @@ namespace ScTools.ScriptAssembly
                                         new ConstantValue(constInteger.GetText().ParseAsInt()) :
                                         new ConstantValue(constFloat.GetText().ParseAsFloat());
 
-                    if (!Constants.TryAdd(constName.GetText(), constValue))
+                    if (Labels.ContainsKey(constNameStr))
                     {
-                        Diagnostics.AddError($"Constant '{constName}' already defined", Source(constName));
+                        Diagnostics.AddError($"Label named '{constNameStr}' already defined", Source(constName));
+                    }
+                    else if (!Constants.TryAdd(constNameStr, constValue))
+                    {
+                        Diagnostics.AddError($"Constant '{constNameStr}' already defined", Source(constName));
                     }
                     break;
                 case ScAsmParser.IntDirectiveContext intDirective:
@@ -281,16 +307,16 @@ namespace ScTools.ScriptAssembly
 
             if (!Enum.TryParse<Opcode>(instruction.opcode().GetText(), out var opcode))
             {
+                // exception instead of diagnostic error because the opcodes should already be checked by the lexer
                 throw new InvalidOperationException($"Unknown opcode '{instruction.opcode().GetText()}'");
             }
 
-            var errorOccurred = false;
             var expectedNumOperands = opcode.GetNumberOfOperands();
             var operands = instruction.operandList()?.operand() ?? Array.Empty<ScAsmParser.OperandContext>();
             if (expectedNumOperands != -1 && operands.Length != expectedNumOperands)
             {
                 Diagnostics.AddError($"Expected {expectedNumOperands} operands for opcode {opcode} but found {operands.Length} operands", Source(instruction));
-                errorOccurred = true;
+                return;
             }
 
             codeBuilder.Opcode(opcode);
@@ -315,28 +341,32 @@ namespace ScTools.ScriptAssembly
                 case Opcode.TEXT_LABEL_ASSIGN_INT:
                 case Opcode.TEXT_LABEL_APPEND_STRING:
                 case Opcode.TEXT_LABEL_APPEND_INT:
-                    OperandToU8(operands[0], ref errorOccurred);
+                    codeBuilder.U8(0);
                     break;
                 case Opcode.PUSH_CONST_U8_U8:
                 case Opcode.LEAVE:
-                    OperandToU8(operands[0], ref errorOccurred);
-                    OperandToU8(operands[1], ref errorOccurred);
+                    codeBuilder.U8(0);
+                    codeBuilder.U8(0);
                     break;
                 case Opcode.PUSH_CONST_U8_U8_U8:
-                    OperandToU8(operands[0], ref errorOccurred);
-                    OperandToU8(operands[1], ref errorOccurred);
-                    OperandToU8(operands[2], ref errorOccurred);
+                    codeBuilder.U8(0);
+                    codeBuilder.U8(0);
+                    codeBuilder.U8(0);
                     break;
                 case Opcode.PUSH_CONST_U32:
-                    OperandToU32(operands[0], ref errorOccurred);
+                    codeBuilder.U32(0);
                     break;
-                case Opcode.PUSH_CONST_F: // TODO
+                case Opcode.PUSH_CONST_F:
+                    codeBuilder.F32(0);
                     break;
-                case Opcode.NATIVE: // TODO
+                case Opcode.NATIVE:
+                    codeBuilder.U8(0);
+                    codeBuilder.U8(0);
+                    codeBuilder.U8(0);
                     break;
                 case Opcode.ENTER:
-                    OperandToU8(operands[0], ref errorOccurred);
-                    OperandToU16(operands[1], ref errorOccurred);
+                    codeBuilder.U8(0);
+                    codeBuilder.U16(0);
                     codeBuilder.U8(0); // TODO: include label name here
                     break;
                 case Opcode.PUSH_CONST_S16:
@@ -344,7 +374,8 @@ namespace ScTools.ScriptAssembly
                 case Opcode.IMUL_S16:
                 case Opcode.IOFFSET_S16:
                 case Opcode.IOFFSET_S16_LOAD:
-                case Opcode.IOFFSET_S16_STORE: // TODO
+                case Opcode.IOFFSET_S16_STORE:
+                    codeBuilder.S16(0);
                     break;
                 case Opcode.ARRAY_U16:
                 case Opcode.ARRAY_U16_LOAD:
@@ -358,7 +389,7 @@ namespace ScTools.ScriptAssembly
                 case Opcode.GLOBAL_U16:
                 case Opcode.GLOBAL_U16_LOAD:
                 case Opcode.GLOBAL_U16_STORE:
-                    OperandToU16(operands[0], ref errorOccurred);
+                    codeBuilder.U16(0);
                     break;
                 case Opcode.J:
                 case Opcode.JZ:
@@ -367,32 +398,164 @@ namespace ScTools.ScriptAssembly
                 case Opcode.IGT_JZ:
                 case Opcode.IGE_JZ:
                 case Opcode.ILT_JZ:
-                case Opcode.ILE_JZ: // TODO
+                case Opcode.ILE_JZ:
+                    codeBuilder.S16(0);
                     break;
-                case Opcode.CALL: // TODO
-                    break;
+                case Opcode.CALL:
                 case Opcode.GLOBAL_U24:
                 case Opcode.GLOBAL_U24_LOAD:
                 case Opcode.GLOBAL_U24_STORE:
                 case Opcode.PUSH_CONST_U24:
-                    OperandToU24(operands[0], ref errorOccurred);
+                    codeBuilder.U24(0);
                     break;
-                case Opcode.SWITCH: // TODO
+                case Opcode.SWITCH:
+                    codeBuilder.U8(0);
+                    for (int i = 0; i < operands.Length; i++)
+                    {
+                        codeBuilder.U32(0);
+                        codeBuilder.S16(0);
+                    }
                     break;
             }
 
-            if (errorOccurred)
+            var (offset, length) = codeBuilder.Flush();
+            instructions.Add(new(instruction, opcode, offset, length));
+        }
+
+        private void AssembleInstruction(Instruction instruction)
+        {
+            var span = GetInstructionSpan(instruction);
+            span = span[1..]; // skip opcode byte, already set in the first pass
+
+            var operands = instruction.Context.operandList()?.operand() ?? Array.Empty<ScAsmParser.OperandContext>();
+
+            switch (instruction.Opcode)
             {
-                // don't write the instruction to the segment if an error occurred
-                codeBuilder.Drop();
-            }
-            else
-            {
-                codeBuilder.Flush();
+                case Opcode.PUSH_CONST_U8:
+                case Opcode.ARRAY_U8:
+                case Opcode.ARRAY_U8_LOAD:
+                case Opcode.ARRAY_U8_STORE:
+                case Opcode.LOCAL_U8:
+                case Opcode.LOCAL_U8_LOAD:
+                case Opcode.LOCAL_U8_STORE:
+                case Opcode.STATIC_U8:
+                case Opcode.STATIC_U8_LOAD:
+                case Opcode.STATIC_U8_STORE:
+                case Opcode.IADD_U8:
+                case Opcode.IMUL_U8:
+                case Opcode.IOFFSET_U8:
+                case Opcode.IOFFSET_U8_LOAD:
+                case Opcode.IOFFSET_U8_STORE:
+                case Opcode.TEXT_LABEL_ASSIGN_STRING:
+                case Opcode.TEXT_LABEL_ASSIGN_INT:
+                case Opcode.TEXT_LABEL_APPEND_STRING:
+                case Opcode.TEXT_LABEL_APPEND_INT:
+                    OperandToU8(span[0..], operands[0]);
+                    break;
+                case Opcode.PUSH_CONST_U8_U8:
+                case Opcode.LEAVE:
+                    OperandToU8(span[0..], operands[0]);
+                    OperandToU8(span[1..], operands[1]);
+                    break;
+                case Opcode.PUSH_CONST_U8_U8_U8:
+                    OperandToU8(span[0..], operands[0]);
+                    OperandToU8(span[1..], operands[1]);
+                    OperandToU8(span[2..], operands[2]);
+                    break;
+                case Opcode.PUSH_CONST_U32:
+                    OperandToU32(span[0..], operands[0]);
+                    break;
+                case Opcode.PUSH_CONST_F:
+                    OperandToF32(span[0..], operands[0]);
+                    break;
+                case Opcode.NATIVE:
+                    var argCount = ParseOperandToUInt(operands[0]);
+                    var returnCount = ParseOperandToUInt(operands[1]);
+                    var nativeIndex = ParseOperandToUInt(operands[2]);
+
+                    CheckLossOfDataInUInt(argCount, maxBits: 2, Diagnostics, operands[0]);
+                    CheckLossOfDataInUInt(returnCount, maxBits: 6, Diagnostics, operands[1]);
+                    CheckLossOfDataInUInt(nativeIndex, maxBits: 16, Diagnostics, operands[2]);
+
+                    span[0] = (byte)((argCount & 0x3F) << 2 | (returnCount & 0x3));
+                    span[1] = (byte)((nativeIndex >> 8) & 0xFF);
+                    span[2] = (byte)(nativeIndex & 0xFF);
+                    break;
+                case Opcode.ENTER:
+                    OperandToU8(span[0..], operands[0]);
+                    OperandToU16(span[1..], operands[1]);
+                    span[3] = 0; // TODO: include label name here
+                    break;
+                case Opcode.PUSH_CONST_S16:
+                case Opcode.IADD_S16:
+                case Opcode.IMUL_S16:
+                case Opcode.IOFFSET_S16:
+                case Opcode.IOFFSET_S16_LOAD:
+                case Opcode.IOFFSET_S16_STORE:
+                    OperandToS16(span[0..], operands[0]);
+                    break;
+                case Opcode.ARRAY_U16:
+                case Opcode.ARRAY_U16_LOAD:
+                case Opcode.ARRAY_U16_STORE:
+                case Opcode.LOCAL_U16:
+                case Opcode.LOCAL_U16_LOAD:
+                case Opcode.LOCAL_U16_STORE:
+                case Opcode.STATIC_U16:
+                case Opcode.STATIC_U16_LOAD:
+                case Opcode.STATIC_U16_STORE:
+                case Opcode.GLOBAL_U16:
+                case Opcode.GLOBAL_U16_LOAD:
+                case Opcode.GLOBAL_U16_STORE:
+                    OperandToU16(span[0..], operands[0]);
+                    break;
+                case Opcode.J:
+                case Opcode.JZ:
+                case Opcode.IEQ_JZ:
+                case Opcode.INE_JZ:
+                case Opcode.IGT_JZ:
+                case Opcode.IGE_JZ:
+                case Opcode.ILT_JZ:
+                case Opcode.ILE_JZ:
+                    OperandToRelativeLabelOffsetOrS16(span[0..], instruction.Offset + 1, operands[0]);
+                    break;
+                case Opcode.CALL:
+                case Opcode.GLOBAL_U24:
+                case Opcode.GLOBAL_U24_LOAD:
+                case Opcode.GLOBAL_U24_STORE:
+                case Opcode.PUSH_CONST_U24:
+                    OperandToU24(span[0..], operands[0]);
+                    break;
+                case Opcode.SWITCH:
+                    if (operands.Length > byte.MaxValue)
+                    {
+                        Diagnostics.AddError($"Too many switch-cases, maximum number is {byte.MaxValue}", Source(instruction.Context));
+                    }
+
+                    span[0] = (byte)operands.Length;
+                    span = span[1..];
+                    for (int i = 0, jumpToOperandOffset = instruction.Offset + 1 /*opcode*/ + 1 /*total case count*/ + 4 /*case value*/;
+                        i < operands.Length; 
+                        i++, jumpToOperandOffset += 6, span = span[6..])
+                    {
+                        if (operands[i] is ScAsmParser.SwitchCaseOperandContext operand)
+                        {
+                            // TODO: warning if cases are repeated
+                            OperandToU32(span[0..], operand.value);
+                            OperandToRelativeLabelOffsetOrS16(span[4..], jumpToOperandOffset, operand.jumpTo);
+                        }
+                        else
+                        {
+                            Diagnostics.AddError("Expected switch-case operand", Source(operands[i]));
+                        }
+                    }
+                    break;
             }
         }
 
-        private ulong ParseOperandToU32(ScAsmParser.OperandContext operand, ref bool error)
+        private Span<byte> GetInstructionSpan(Instruction instruction)
+            => codeSegmentBuilder.RawDataBuffer.Slice(instruction.Offset, instruction.Length);
+
+        private ulong ParseOperandToUInt(ScAsmParser.OperandContext operand)
         {
             long value = 0;
             switch (operand)
@@ -407,99 +570,211 @@ namespace ScTools.ScriptAssembly
                     break;
                 case ScAsmParser.SwitchCaseOperandContext:
                     Diagnostics.AddError("Unexpected switch-case operand", Source(operand));
-                    error = true;
                     break;
-                case ScAsmParser.IdentifierOperandContext: throw new InvalidOperationException();
+                case ScAsmParser.IdentifierOperandContext ctx:
+                    var name = ctx.identifier().GetText();
+                    if (Labels.TryGetValue(name, out var label))
+                    {
+                        value = label.Offset;
+                    }
+                    else if (Constants.TryGetValue(name, out var constValue))
+                    {
+                        if (constValue.DefinedAsFloat)
+                        {
+                            Diagnostics.AddWarning("Floating-point number truncated", Source(operand));
+                        }
+
+                        value = constValue.Integer;
+                    }
+                    else
+                    {
+                        Diagnostics.AddError($"'{name}' is undefined", Source(operand));
+                    }
+                    break;
             }
 
             if (value < 0)
             {
                 Diagnostics.AddError("Found negative integer, expected unsigned integer", Source(operand));
-                error = true;
             }
 
             return (ulong)value;
         }
 
-        private void OperandToTarget(ScAsmParser.IdentifierOperandContext operand, int byteSize, bool isRelative)
+        private long ParseOperandToInt(ScAsmParser.OperandContext operand)
         {
-            codeBuilder.ConstantOrLabelTarget(operand.identifier(), byteSize, isRelative);
+            long value = 0;
+            switch (operand)
+            {
+                case ScAsmParser.IntegerOperandContext ctx:
+                    value = ctx.integer().GetText().ParseAsInt64();
+                    break;
+                case ScAsmParser.FloatOperandContext ctx:
+                    var floatValue = ctx.@float().GetText().ParseAsFloat();
+                    value = (long)Math.Truncate(floatValue);
+                    Diagnostics.AddWarning("Floating-point number truncated", Source(operand));
+                    break;
+                case ScAsmParser.SwitchCaseOperandContext:
+                    Diagnostics.AddError("Unexpected switch-case operand", Source(operand));
+                    break;
+                case ScAsmParser.IdentifierOperandContext ctx:
+                    var name = ctx.identifier().GetText();
+                    if (Labels.TryGetValue(name, out var label))
+                    {
+                        value = label.Offset;
+                    }
+                    else if (Constants.TryGetValue(name, out var constValue))
+                    {
+                        if (constValue.DefinedAsFloat)
+                        {
+                            Diagnostics.AddWarning("Floating-point number truncated", Source(operand));
+                        }
+
+                        value = constValue.Integer;
+                    }
+                    else
+                    {
+                        Diagnostics.AddError($"'{name}' is undefined", Source(operand));
+                    }
+                    break;
+            }
+
+            return value;
         }
 
-        private void OperandToU32(ScAsmParser.OperandContext operand, ref bool error)
+        private float ParseOperandToFloat(ScAsmParser.OperandContext operand)
         {
-            if (operand is ScAsmParser.IdentifierOperandContext ident)
+            float value = 0;
+            switch (operand)
             {
-                OperandToTarget(ident, 4, false);
+                case ScAsmParser.IntegerOperandContext ctx:
+                    value = ctx.integer().GetText().ParseAsFloat();
+                    break;
+                case ScAsmParser.FloatOperandContext ctx:
+                    value = ctx.@float().GetText().ParseAsFloat();
+                    break;
+                case ScAsmParser.SwitchCaseOperandContext:
+                    Diagnostics.AddError("Unexpected switch-case operand", Source(operand));
+                    break;
+                case ScAsmParser.IdentifierOperandContext ctx:
+                    var name = ctx.identifier().GetText();
+                    if (Labels.TryGetValue(name, out _))
+                    {
+                        Diagnostics.AddError($"Expected floating-point number, cannot use label '{name}'", Source(operand));
+                    }
+                    else if (Constants.TryGetValue(name, out var constValue))
+                    {
+                        value = constValue.Float;
+                    }
+                    else
+                    {
+                        Diagnostics.AddError($"'{name}' is undefined", Source(operand));
+                    }
+                    break;
+            }
+
+            return value;
+        }
+
+        private void OperandToF32(Span<byte> dest, ScAsmParser.OperandContext operand)
+        {
+            var value = ParseOperandToFloat(operand);
+
+            MemoryMarshal.Write(dest, ref value);
+        }
+
+        private void OperandToU32(Span<byte> dest, ScAsmParser.OperandContext operand)
+        {
+            var value = ParseOperandToUInt(operand);
+            CheckLossOfDataInUInt(value, 32, Diagnostics, operand);
+
+            dest[0] = (byte)(value & 0xFF);
+            dest[1] = (byte)((value >> 8) & 0xFF);
+            dest[2] = (byte)((value >> 16) & 0xFF);
+            dest[3] = (byte)((value >> 24) & 0xFF);
+        }
+
+        private void OperandToU24(Span<byte> dest, ScAsmParser.OperandContext operand)
+        {
+            var value = ParseOperandToUInt(operand);
+            CheckLossOfDataInUInt(value, 24, Diagnostics, operand);
+
+            dest[0] = (byte)(value & 0xFF);
+            dest[1] = (byte)((value >> 8) & 0xFF);
+            dest[2] = (byte)((value >> 16) & 0xFF);
+        }
+
+        private void OperandToU16(Span<byte> dest, ScAsmParser.OperandContext operand)
+        {
+            var value = ParseOperandToUInt(operand);
+            CheckLossOfDataInUInt(value, 16, Diagnostics, operand);
+
+            dest[0] = (byte)(value & 0xFF);
+            dest[1] = (byte)((value >> 8) & 0xFF);
+        }
+
+        private void OperandToU8(Span<byte> dest, ScAsmParser.OperandContext operand)
+        {
+            var value = ParseOperandToUInt(operand);
+            CheckLossOfDataInUInt(value, 8, Diagnostics, operand);
+
+            dest[0] = (byte)(value & 0xFF);
+        }
+
+        private void OperandToS16(Span<byte> dest, ScAsmParser.OperandContext operand)
+        {
+            var value = ParseOperandToInt(operand);
+            CheckLossOfDataInInt(value, 16, Diagnostics, operand);
+
+            dest[0] = (byte)(value & 0xFF);
+            dest[1] = (byte)((value >> 8) & 0xFF);
+        }
+
+        private void OperandToRelativeLabelOffsetOrS16(Span<byte> dest, int operandOffset, ScAsmParser.OperandContext operand)
+        {
+            if (operand is ScAsmParser.IdentifierOperandContext ident && Labels.TryGetValue(ident.GetText(), out var label))
+            {
+                if (label.Segment != Segment.Code)
+                {
+                    Diagnostics.AddError($"Cannot jump to label '{ident.GetText()}' outside code segment", Source(operand));
+                    return;
+                }
+
+                var absOffset = label.Offset;
+                var relOffset = absOffset - (operandOffset + 2);
+                if (relOffset < short.MinValue || relOffset > short.MaxValue)
+                {
+                    Diagnostics.AddError($"Label '{ident.GetText()}' is too far", Source(operand));
+                    return;
+                }
+
+                dest[0] = (byte)(relOffset & 0xFF);
+                dest[1] = (byte)((relOffset >> 8) & 0xFF);
             }
             else
             {
-                var value = ParseOperandToU32(operand, ref error);
-                CheckLossOfDataInUInt(value, 4, Diagnostics, Source(operand));
-
-                codeBuilder.U32((uint)(value & 0xFFFFFFFF));
+                OperandToS16(dest, operand);
             }
         }
 
-        private void OperandToU24(ScAsmParser.OperandContext operand, ref bool error)
+        private static void CheckLossOfDataInUInt(ulong value, int maxBits, DiagnosticsReport diagnostics, ParserRuleContext context)
         {
-            if (operand is ScAsmParser.IdentifierOperandContext ident)
+            var maxValue = (1UL << maxBits) - 1;
+            
+            if (value > maxValue)
             {
-                OperandToTarget(ident, 3, false);
-            }
-            else
-            {
-                var value = ParseOperandToU32(operand, ref error);
-                CheckLossOfDataInUInt(value, 3, Diagnostics, Source(operand));
-
-                codeBuilder.U24((uint)(value & 0xFFFFFF));
+                diagnostics.AddWarning($"Possible loss of data, value converted to {maxBits}-bit unsigned integer (value was {value}, range is from 0 to {maxValue})", Source(context));
             }
         }
 
-        private void OperandToU16(ScAsmParser.OperandContext operand, ref bool error)
+        private static void CheckLossOfDataInInt(long value, int maxBits, DiagnosticsReport diagnostics, ParserRuleContext context)
         {
-            if (operand is ScAsmParser.IdentifierOperandContext ident)
-            {
-                OperandToTarget(ident, 2, false);
-            }
-            else
-            {
-                var value = ParseOperandToU32(operand, ref error);
-                CheckLossOfDataInUInt(value, 2, Diagnostics, Source(operand));
+            var maxValue = (1L << (maxBits - 1)) - 1;
+            var minValue = -(1L << (maxBits - 1));
 
-                codeBuilder.U16((ushort)(value & 0xFFFF));
-            }
-        }
-
-        private void OperandToU8(ScAsmParser.OperandContext operand, ref bool error)
-        {
-            if (operand is ScAsmParser.IdentifierOperandContext ident)
+            if (value < minValue || value > maxValue)
             {
-                OperandToTarget(ident, 1, false);
-            }
-            else
-            {
-                var value = ParseOperandToU32(operand, ref error);
-                CheckLossOfDataInUInt(value, 1, Diagnostics, Source(operand));
-
-                codeBuilder.U8((byte)(value & 0xFF));
-            }
-        }
-
-        private static void CheckLossOfDataInUInt(ulong value, int destByteSize, DiagnosticsReport diagnostics, SourceRange source)
-        {
-            var (mask, name) = destByteSize switch
-            {
-                1 => (0x000000FFu, "8-bit"),
-                2 => (0x0000FFFFu, "16-bit"),
-                3 => (0x00FFFFFFu, "24-bit"),
-                4 => (0xFFFFFFFFu, "32-bit"),
-                _ => throw new ArgumentOutOfRangeException(nameof(destByteSize)),
-            };
-
-            if ((value & mask) != value)
-            {
-                diagnostics.AddWarning($"Possible loss of data, value converted to {name} unsigned integer", source);
+                diagnostics.AddWarning($"Possible loss of data, value converted to {maxBits}-bit signed integer (value was {value}, range is from  {minValue} to {maxValue})", Source(context));
             }
         }
 
@@ -680,15 +955,21 @@ namespace ScTools.ScriptAssembly
             public Label(Segment segment, int offset) => (Segment, Offset) = (segment, offset);
         }
 
+        public readonly struct Instruction
+        {
+            public ScAsmParser.InstructionContext Context { get; }
+            public Opcode Opcode { get; }
+            public int Offset { get; }
+            public int Length { get; }
+
+            public Instruction(ScAsmParser.InstructionContext context, Opcode opcode, int offset, int length)
+                => (Context, Opcode, Offset, Length) = (context, opcode, offset, length);
+        }
+
         private sealed class CodeBuilder
         {
             private readonly SegmentBuilder segment;
             private readonly List<byte> buffer = new();
-            private readonly List<UnresolvedConstantOrLabelTarget> labelTargets = new List<UnresolvedConstantOrLabelTarget>();
-            private readonly List<int> labelTargetsInCurrentInstruction = new List<int>(); // index of labelTargets
-
-            public string? Label { get; set; }
-            public CodeGenOptions Options { get; } = new(includeFunctionNames: true);
 
             public CodeBuilder(SegmentBuilder segment) => this.segment = segment;
 
@@ -722,16 +1003,6 @@ namespace ScTools.ScriptAssembly
 
             public unsafe void F32(float v) => U32(*(uint*)&v);
 
-            public void ConstantOrLabelTarget(ScAsmParser.IdentifierContext identifier, int byteSize, bool isRelative)
-            {
-                labelTargetsInCurrentInstruction.Add(labelTargets.Count);
-                labelTargets.Add(new(identifier, segment.Length + buffer.Count, byteSize, isRelative));
-                for (int i = 0; i < byteSize; i++)
-                {
-                    buffer.Add(0); // empty, will be filled later when we know the offsets of all labels
-                }
-            }
-
             public void Opcode(Opcode v) => U8((byte)v);
 
             /// <summary>
@@ -740,14 +1011,12 @@ namespace ScTools.ScriptAssembly
             public void Drop()
             {
                 buffer.Clear();
-                labelTargetsInCurrentInstruction.Clear();
-                Label = null;
             }
 
             /// <summary>
             /// Writes the current instruction buffer to the segment.
             /// </summary>
-            public void Flush()
+            public (int InstructionOffset, int InstructionLength) Flush()
             {
                 int offset = (int)(segment.Length & (Script.MaxPageLength - 1));
 
@@ -777,84 +1046,14 @@ namespace ScTools.ScriptAssembly
 
                     // NOP what is left of the current page
                     segment.Bytes(new byte[requiredNops]);
-
-                    // fix IPs of label targets in the current instruction
-                    foreach (int i in labelTargetsInCurrentInstruction)
-                    {
-                        var orig = labelTargets[i];
-                        labelTargets[i] = new(orig.Identifier, orig.Offset + bytesUntilNextPage, orig.ByteSize, orig.IsRelative);
-                    }
                 }
 
+                var instOffset = segment.Length;
+                var instLength = buffer.Count;
                 segment.Bytes(CollectionsMarshal.AsSpan(buffer));
                 Drop();
-            }
 
-            public void ResolveLabelTargets(Dictionary<string, Label> labels, Dictionary<string, ConstantValue> constants, DiagnosticsReport diagnostics)
-            {
-                foreach (var labelTarget in labelTargets)
-                {
-                    labelTarget.Resolve(segment, labels, constants, diagnostics);
-                }
-                labelTargets.Clear();
-            }
-        }
-
-        private readonly struct UnresolvedConstantOrLabelTarget
-        {
-            public ScAsmParser.IdentifierContext Identifier { get; }
-            public int Offset { get; }
-            public int ByteSize { get; }
-            public bool IsRelative { get; }
-
-            public UnresolvedConstantOrLabelTarget(ScAsmParser.IdentifierContext identifier, int offset, int byteSize, bool isRelative)
-                => (Identifier, Offset, ByteSize, IsRelative) = (identifier, offset, byteSize, isRelative);
-
-            public void Resolve(SegmentBuilder segment, Dictionary<string, Label> labels, Dictionary<string, ConstantValue> constants, DiagnosticsReport diagnostics)
-            {
-                int val = GetValue(labels, constants, diagnostics);
-
-                if (IsRelative)
-                {
-                    val -= Offset + ByteSize;
-                }
-
-                segment.RawDataBuffer[Offset + 0] = (byte)(val & 0xFF);
-                if (ByteSize >= 2)
-                {
-                    segment.RawDataBuffer[Offset + 1] = (byte)((val >> 8) & 0xFF);
-                }
-                if (ByteSize >= 3)
-                {
-                    segment.RawDataBuffer[Offset + 2] = (byte)((val >> 16) & 0xFF);
-                }
-                if (ByteSize >= 4)
-                {
-                    segment.RawDataBuffer[Offset + 3] = (byte)((val >> 24) & 0xFF);
-                }
-            }
-
-            private int GetValue(Dictionary<string, Label> labels, Dictionary<string, ConstantValue> constants, DiagnosticsReport diagnostics)
-            {
-                var name = Identifier.GetText();
-                if (labels.TryGetValue(name, out var label))
-                {
-                    return label.Offset;
-                }
-
-                if (constants.TryGetValue(name, out var constValue))
-                {
-                    if (constValue.DefinedAsFloat)
-                    {
-                        diagnostics.AddWarning("Floating-point number truncated", Source(Identifier));
-                    }
-
-                    CheckLossOfDataInUInt((ulong)constValue.Integer, ByteSize, diagnostics, Source(Identifier)); // TODO: check for negative value
-                    return (int)constValue.Integer;
-                }
-
-                diagnostics.AddError($"'{name}' is undefined", Source(Identifier));
-                return 0;
+                return (instOffset, instLength);
             }
         }
     }
