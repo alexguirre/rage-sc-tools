@@ -43,10 +43,10 @@ directiveOperandList
     ;
 
 directiveOperand
-    : identifier                                                #identifierDirectiveOperand
-    | integer                                                   #integerDirectiveOperand
-    | float                                                     #floatDirectiveOperand
-    | (identifier | integer) K_DUP '(' directiveOperandList ')' #dupDirectiveOperand
+    : identifier                                                    #identifierDirectiveOperand
+    | integer                                                       #integerDirectiveOperand
+    | float                                                         #floatDirectiveOperand
+    | (identifier | integer) K_TIMES '(' directiveOperandList ')'   #dupDirectiveOperand // 'times' instead of 'dup' due to ambiguitiy with opcode DUP
     ;
 
 segmentDirective
@@ -96,7 +96,7 @@ D_FLOAT : '.' F L O A T;
 D_STR : '.' S T R;
 D_NATIVE : '.' N A T I V E;
 
-K_DUP : D U P;
+K_TIMES : T I M E S;
 
 OPCODE
     : N O P

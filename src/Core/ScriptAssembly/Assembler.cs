@@ -117,7 +117,7 @@ namespace ScTools.ScriptAssembly
                 ProcessLine(line);
             }
             FixArgLabels();
-            codeBuilder.FixupLabelTargets(Labels);
+            codeBuilder.ResolveLabelTargets(Labels, Constants, Diagnostics);
 
             OutputScript.CodePages = codeSegmentBuilder.ToPages<byte>();
             OutputScript.CodeLength = OutputScript.CodePages.Length;
@@ -167,7 +167,12 @@ namespace ScTools.ScriptAssembly
             }
 
             var name = label.identifier().GetText();
-            var offset = (int)(CurrentSegmentBuilder.ByteLength / GetAddressingUnitByteSize(CurrentSegment));
+            var offset = CurrentSegmentBuilder.ByteLength / GetAddressingUnitByteSize(CurrentSegment);
+
+            if (CurrentSegment == Segment.Global)
+            {
+                offset |= (int)(OutputScript.GlobalsBlock << 18);
+            }
 
             if (!Labels.TryAdd(name, new Label(CurrentSegment, offset)))
             {
@@ -192,6 +197,11 @@ namespace ScTools.ScriptAssembly
                 ScAsmParser.IncludeSegmentDirectiveContext => Segment.Include,
                 _ => throw new InvalidOperationException(),
             };
+
+            if (CurrentSegment == Segment.Global && !HasGlobalBlock)
+            {
+                Diagnostics.AddError($"Directive '.global_block' required before '.global' segment", Source(directive));
+            }
         }
 
         private void ProcessDirective(ScAsmParser.DirectiveContext directive)
@@ -269,7 +279,228 @@ namespace ScTools.ScriptAssembly
                 return;
             }
 
+            if (!Enum.TryParse<Opcode>(instruction.opcode().GetText(), out var opcode))
+            {
+                throw new InvalidOperationException($"Unknown opcode '{instruction.opcode().GetText()}'");
+            }
 
+            var errorOccurred = false;
+            var expectedNumOperands = opcode.GetNumberOfOperands();
+            var operands = instruction.operandList()?.operand() ?? Array.Empty<ScAsmParser.OperandContext>();
+            if (expectedNumOperands != -1 && operands.Length != expectedNumOperands)
+            {
+                Diagnostics.AddError($"Expected {expectedNumOperands} operands for opcode {opcode} but found {operands.Length} operands", Source(instruction));
+                errorOccurred = true;
+            }
+
+            codeBuilder.Opcode(opcode);
+            switch (opcode)
+            {
+                case Opcode.PUSH_CONST_U8:
+                case Opcode.ARRAY_U8:
+                case Opcode.ARRAY_U8_LOAD:
+                case Opcode.ARRAY_U8_STORE:
+                case Opcode.LOCAL_U8:
+                case Opcode.LOCAL_U8_LOAD:
+                case Opcode.LOCAL_U8_STORE:
+                case Opcode.STATIC_U8:
+                case Opcode.STATIC_U8_LOAD:
+                case Opcode.STATIC_U8_STORE:
+                case Opcode.IADD_U8:
+                case Opcode.IMUL_U8:
+                case Opcode.IOFFSET_U8:
+                case Opcode.IOFFSET_U8_LOAD:
+                case Opcode.IOFFSET_U8_STORE:
+                case Opcode.TEXT_LABEL_ASSIGN_STRING:
+                case Opcode.TEXT_LABEL_ASSIGN_INT:
+                case Opcode.TEXT_LABEL_APPEND_STRING:
+                case Opcode.TEXT_LABEL_APPEND_INT:
+                    OperandToU8(operands[0], ref errorOccurred);
+                    break;
+                case Opcode.PUSH_CONST_U8_U8:
+                case Opcode.LEAVE:
+                    OperandToU8(operands[0], ref errorOccurred);
+                    OperandToU8(operands[1], ref errorOccurred);
+                    break;
+                case Opcode.PUSH_CONST_U8_U8_U8:
+                    OperandToU8(operands[0], ref errorOccurred);
+                    OperandToU8(operands[1], ref errorOccurred);
+                    OperandToU8(operands[2], ref errorOccurred);
+                    break;
+                case Opcode.PUSH_CONST_U32:
+                    OperandToU32(operands[0], ref errorOccurred);
+                    break;
+                case Opcode.PUSH_CONST_F: // TODO
+                    break;
+                case Opcode.NATIVE: // TODO
+                    break;
+                case Opcode.ENTER:
+                    OperandToU8(operands[0], ref errorOccurred);
+                    OperandToU16(operands[1], ref errorOccurred);
+                    codeBuilder.U8(0); // TODO: include label name here
+                    break;
+                case Opcode.PUSH_CONST_S16:
+                case Opcode.IADD_S16:
+                case Opcode.IMUL_S16:
+                case Opcode.IOFFSET_S16:
+                case Opcode.IOFFSET_S16_LOAD:
+                case Opcode.IOFFSET_S16_STORE: // TODO
+                    break;
+                case Opcode.ARRAY_U16:
+                case Opcode.ARRAY_U16_LOAD:
+                case Opcode.ARRAY_U16_STORE:
+                case Opcode.LOCAL_U16:
+                case Opcode.LOCAL_U16_LOAD:
+                case Opcode.LOCAL_U16_STORE:
+                case Opcode.STATIC_U16:
+                case Opcode.STATIC_U16_LOAD:
+                case Opcode.STATIC_U16_STORE:
+                case Opcode.GLOBAL_U16:
+                case Opcode.GLOBAL_U16_LOAD:
+                case Opcode.GLOBAL_U16_STORE:
+                    OperandToU16(operands[0], ref errorOccurred);
+                    break;
+                case Opcode.J:
+                case Opcode.JZ:
+                case Opcode.IEQ_JZ:
+                case Opcode.INE_JZ:
+                case Opcode.IGT_JZ:
+                case Opcode.IGE_JZ:
+                case Opcode.ILT_JZ:
+                case Opcode.ILE_JZ: // TODO
+                    break;
+                case Opcode.CALL: // TODO
+                    break;
+                case Opcode.GLOBAL_U24:
+                case Opcode.GLOBAL_U24_LOAD:
+                case Opcode.GLOBAL_U24_STORE:
+                case Opcode.PUSH_CONST_U24:
+                    OperandToU24(operands[0], ref errorOccurred);
+                    break;
+                case Opcode.SWITCH: // TODO
+                    break;
+            }
+
+            if (errorOccurred)
+            {
+                // don't write the instruction to the segment if an error occurred
+                codeBuilder.Drop();
+            }
+            else
+            {
+                codeBuilder.Flush();
+            }
+        }
+
+        private ulong ParseOperandToU32(ScAsmParser.OperandContext operand, ref bool error)
+        {
+            long value = 0;
+            switch (operand)
+            {
+                case ScAsmParser.IntegerOperandContext ctx:
+                    value = ctx.integer().GetText().ParseAsInt64();
+                    break;
+                case ScAsmParser.FloatOperandContext ctx:
+                    var floatValue = ctx.@float().GetText().ParseAsFloat();
+                    value = (long)Math.Truncate(floatValue);
+                    Diagnostics.AddWarning("Floating-point number truncated", Source(operand));
+                    break;
+                case ScAsmParser.SwitchCaseOperandContext:
+                    Diagnostics.AddError("Unexpected switch-case operand", Source(operand));
+                    error = true;
+                    break;
+                case ScAsmParser.IdentifierOperandContext: throw new InvalidOperationException();
+            }
+
+            if (value < 0)
+            {
+                Diagnostics.AddError("Found negative integer, expected unsigned integer", Source(operand));
+                error = true;
+            }
+
+            return (ulong)value;
+        }
+
+        private void OperandToTarget(ScAsmParser.IdentifierOperandContext operand, int byteSize, bool isRelative)
+        {
+            codeBuilder.ConstantOrLabelTarget(operand.identifier(), byteSize, isRelative);
+        }
+
+        private void OperandToU32(ScAsmParser.OperandContext operand, ref bool error)
+        {
+            if (operand is ScAsmParser.IdentifierOperandContext ident)
+            {
+                OperandToTarget(ident, 4, false);
+            }
+            else
+            {
+                var value = ParseOperandToU32(operand, ref error);
+                CheckLossOfDataInUInt(value, 4, Diagnostics, Source(operand));
+
+                codeBuilder.U32((uint)(value & 0xFFFFFFFF));
+            }
+        }
+
+        private void OperandToU24(ScAsmParser.OperandContext operand, ref bool error)
+        {
+            if (operand is ScAsmParser.IdentifierOperandContext ident)
+            {
+                OperandToTarget(ident, 3, false);
+            }
+            else
+            {
+                var value = ParseOperandToU32(operand, ref error);
+                CheckLossOfDataInUInt(value, 3, Diagnostics, Source(operand));
+
+                codeBuilder.U24((uint)(value & 0xFFFFFF));
+            }
+        }
+
+        private void OperandToU16(ScAsmParser.OperandContext operand, ref bool error)
+        {
+            if (operand is ScAsmParser.IdentifierOperandContext ident)
+            {
+                OperandToTarget(ident, 2, false);
+            }
+            else
+            {
+                var value = ParseOperandToU32(operand, ref error);
+                CheckLossOfDataInUInt(value, 2, Diagnostics, Source(operand));
+
+                codeBuilder.U16((ushort)(value & 0xFFFF));
+            }
+        }
+
+        private void OperandToU8(ScAsmParser.OperandContext operand, ref bool error)
+        {
+            if (operand is ScAsmParser.IdentifierOperandContext ident)
+            {
+                OperandToTarget(ident, 1, false);
+            }
+            else
+            {
+                var value = ParseOperandToU32(operand, ref error);
+                CheckLossOfDataInUInt(value, 1, Diagnostics, Source(operand));
+
+                codeBuilder.U8((byte)(value & 0xFF));
+            }
+        }
+
+        private static void CheckLossOfDataInUInt(ulong value, int destByteSize, DiagnosticsReport diagnostics, SourceRange source)
+        {
+            var (mask, name) = destByteSize switch
+            {
+                1 => (0x000000FFu, "8-bit"),
+                2 => (0x0000FFFFu, "16-bit"),
+                3 => (0x00FFFFFFu, "24-bit"),
+                4 => (0xFFFFFFFFu, "32-bit"),
+                _ => throw new ArgumentOutOfRangeException(nameof(destByteSize)),
+            };
+
+            if ((value & mask) != value)
+            {
+                diagnostics.AddWarning($"Possible loss of data, value converted to {name} unsigned integer", source);
+            }
         }
 
         private void WriteIntFloatDirectiveOperands(ScAsmParser.DirectiveOperandListContext operandList, bool isFloat)
@@ -287,7 +518,7 @@ namespace ScTools.ScriptAssembly
                             }
                             else
                             {
-                                CurrentSegmentBuilder.Int(constValue.Integer);
+                                CurrentSegmentBuilder.Int((int)constValue.Integer); // TODO: check for data loss
                             }
                         }
                         break;
@@ -317,7 +548,7 @@ namespace ScTools.ScriptAssembly
                         int count = 0;
                         if (dupOperand.identifier() != null && TryGetConstant(dupOperand.identifier(), out var countConst))
                         {
-                            count = countConst.Integer;
+                            count = (int)countConst.Integer; // TODO: check for data loss
                         }
                         else if (dupOperand.integer() != null)
                         {
@@ -347,12 +578,26 @@ namespace ScTools.ScriptAssembly
             }
         }
 
+        private bool TryGetLabel(ScAsmParser.IdentifierContext identifier, out Label value)
+        {
+            var name = identifier.GetText();
+            if (Labels.TryGetValue(name, out value))
+            {
+                return true;
+            }
+            else
+            {
+                Diagnostics.AddError($"Undefined label '{name}'", Source(identifier));
+                return false;
+            }
+        }
+
         /// <summary>
         /// The args are stored after the static variables, so add the static segment length to the offset of labels in the '.arg' segment.
         /// </summary>
         private void FixArgLabels()
         {
-            var staticSegmentLength = (int)(staticSegmentBuilder.ByteLength / GetAddressingUnitByteSize(Segment.Static));
+            var staticSegmentLength = staticSegmentBuilder.ByteLength / GetAddressingUnitByteSize(Segment.Static);
             var argLabels = Labels.Where(kvp => kvp.Value.Segment == Segment.Arg).ToArray();
             foreach (var (name, label) in argLabels)
             {
@@ -417,16 +662,17 @@ namespace ScTools.ScriptAssembly
             }
         }
 
-        public struct ConstantValue
+        public readonly struct ConstantValue
         {
-            public int Integer { get; }
+            public long Integer { get; }
             public float Float { get; }
+            public bool DefinedAsFloat { get; }
 
-            public ConstantValue(int value) => (Integer, Float) = (value, value);
-            public ConstantValue(float value) => (Integer, Float) = ((int)Math.Truncate(value), value);
+            public ConstantValue(long value) => (Integer, Float, DefinedAsFloat) = (value, value, false);
+            public ConstantValue(float value) => (Integer, Float, DefinedAsFloat) = ((long)Math.Truncate(value), value, true);
         }
 
-        public struct Label
+        public readonly struct Label
         {
             public Segment Segment { get; }
             public int Offset { get; }
@@ -434,14 +680,12 @@ namespace ScTools.ScriptAssembly
             public Label(Segment segment, int offset) => (Segment, Offset) = (segment, offset);
         }
 
-        private sealed class CodeBuilder : IByteCodeBuilder
+        private sealed class CodeBuilder
         {
             private readonly SegmentBuilder segment;
             private readonly List<byte> buffer = new();
-            private readonly List<(string TargetFunctionName, int IP)> absoluteLabelTargets = new List<(string, int)>();
-            private readonly List<(string TargetLabel, int IP)> relativeLabelTargets = new List<(string, int)>();
-            private readonly List<int> absoluteTargetsInCurrentInstruction = new List<int>(); // index of functionTargets
-            private readonly List<int> relativeLabelTargetsInCurrentInstruction = new List<int>(); // index of labelTargets
+            private readonly List<UnresolvedConstantOrLabelTarget> labelTargets = new List<UnresolvedConstantOrLabelTarget>();
+            private readonly List<int> labelTargetsInCurrentInstruction = new List<int>(); // index of labelTargets
 
             public string? Label { get; set; }
             public CodeGenOptions Options { get; } = new(includeFunctionNames: true);
@@ -478,35 +722,31 @@ namespace ScTools.ScriptAssembly
 
             public unsafe void F32(float v) => U32(*(uint*)&v);
 
-            public void AbsoluteLabelTarget(string function)
+            public void ConstantOrLabelTarget(ScAsmParser.IdentifierContext identifier, int byteSize, bool isRelative)
             {
-                if (string.IsNullOrWhiteSpace(function))
+                labelTargetsInCurrentInstruction.Add(labelTargets.Count);
+                labelTargets.Add(new(identifier, segment.Length + buffer.Count, byteSize, isRelative));
+                for (int i = 0; i < byteSize; i++)
                 {
-                    throw new ArgumentException("null or empty function name", nameof(function));
+                    buffer.Add(0); // empty, will be filled later when we know the offsets of all labels
                 }
-
-                absoluteTargetsInCurrentInstruction.Add(absoluteLabelTargets.Count);
-                absoluteLabelTargets.Add((function, segment.Length + buffer.Count));
-                buffer.Add(0); // empty, will be filled later when we know the offsets of all labels
-                buffer.Add(0);
-                buffer.Add(0);
-            }
-
-            public void RelativeLabelTarget(string label)
-            {
-                if (string.IsNullOrWhiteSpace(label))
-                {
-                    throw new ArgumentException("null or empty label", nameof(label));
-                }
-
-                relativeLabelTargetsInCurrentInstruction.Add(relativeLabelTargets.Count);
-                relativeLabelTargets.Add((label, segment.Length + buffer.Count));
-                buffer.Add(0); // empty, will be filled later when we know the offsets of all labels
-                buffer.Add(0);
             }
 
             public void Opcode(Opcode v) => U8((byte)v);
 
+            /// <summary>
+            /// Clears the current instruction buffer.
+            /// </summary>
+            public void Drop()
+            {
+                buffer.Clear();
+                labelTargetsInCurrentInstruction.Clear();
+                Label = null;
+            }
+
+            /// <summary>
+            /// Writes the current instruction buffer to the segment.
+            /// </summary>
             public void Flush()
             {
                 int offset = (int)(segment.Length & (Script.MaxPageLength - 1));
@@ -517,7 +757,7 @@ namespace ScTools.ScriptAssembly
                 // the interpreter only does this with control flow instructions and NOP
                 // If the NOP is needed, skip 1 byte at the end of the page
                 bool needsNopAtBoundary = !opcode.IsControlFlow() &&
-                                            opcode != ScriptAssembly.Opcode.NOP;
+                                          opcode != ScriptAssembly.Opcode.NOP;
 
                 if (offset + buffer.Count > (Script.MaxPageLength - (needsNopAtBoundary ? 1u : 0))) // the instruction doesn't fit in the current page
                 {
@@ -538,71 +778,83 @@ namespace ScTools.ScriptAssembly
                     // NOP what is left of the current page
                     segment.Bytes(new byte[requiredNops]);
 
-                    // fix IPs of label/function targets in the current instruction
-                    foreach (int i in absoluteTargetsInCurrentInstruction)
+                    // fix IPs of label targets in the current instruction
+                    foreach (int i in labelTargetsInCurrentInstruction)
                     {
-                        absoluteLabelTargets[i] = (absoluteLabelTargets[i].TargetFunctionName, absoluteLabelTargets[i].IP + bytesUntilNextPage);
-                    }
-                    foreach (int i in relativeLabelTargetsInCurrentInstruction)
-                    {
-                        relativeLabelTargets[i] = (relativeLabelTargets[i].TargetLabel, relativeLabelTargets[i].IP + bytesUntilNextPage);
+                        var orig = labelTargets[i];
+                        labelTargets[i] = new(orig.Identifier, orig.Offset + bytesUntilNextPage, orig.ByteSize, orig.IsRelative);
                     }
                 }
 
                 segment.Bytes(CollectionsMarshal.AsSpan(buffer));
-                buffer.Clear();
-                absoluteTargetsInCurrentInstruction.Clear();
-                relativeLabelTargetsInCurrentInstruction.Clear();
-                Label = null;
+                Drop();
             }
 
-            private int GetLabelIP(Dictionary<string, Label> labels, string label)
+            public void ResolveLabelTargets(Dictionary<string, Label> labels, Dictionary<string, ConstantValue> constants, DiagnosticsReport diagnostics)
             {
-                if (!labels.TryGetValue(label, out var labelInfo))
+                foreach (var labelTarget in labelTargets)
                 {
-                    throw new ArgumentException($"Unknown label '{label}'", nameof(label));
+                    labelTarget.Resolve(segment, labels, constants, diagnostics);
+                }
+                labelTargets.Clear();
+            }
+        }
+
+        private readonly struct UnresolvedConstantOrLabelTarget
+        {
+            public ScAsmParser.IdentifierContext Identifier { get; }
+            public int Offset { get; }
+            public int ByteSize { get; }
+            public bool IsRelative { get; }
+
+            public UnresolvedConstantOrLabelTarget(ScAsmParser.IdentifierContext identifier, int offset, int byteSize, bool isRelative)
+                => (Identifier, Offset, ByteSize, IsRelative) = (identifier, offset, byteSize, isRelative);
+
+            public void Resolve(SegmentBuilder segment, Dictionary<string, Label> labels, Dictionary<string, ConstantValue> constants, DiagnosticsReport diagnostics)
+            {
+                int val = GetValue(labels, constants, diagnostics);
+
+                if (IsRelative)
+                {
+                    val -= Offset + ByteSize;
                 }
 
-                if (labelInfo.Segment != Segment.Code)
+                segment.RawDataBuffer[Offset + 0] = (byte)(val & 0xFF);
+                if (ByteSize >= 2)
                 {
-                    throw new ArgumentException($"Label '{label}' is not in code segment", nameof(label));
+                    segment.RawDataBuffer[Offset + 1] = (byte)((val >> 8) & 0xFF);
                 }
-
-                return labelInfo.Offset;
+                if (ByteSize >= 3)
+                {
+                    segment.RawDataBuffer[Offset + 2] = (byte)((val >> 16) & 0xFF);
+                }
+                if (ByteSize >= 4)
+                {
+                    segment.RawDataBuffer[Offset + 3] = (byte)((val >> 24) & 0xFF);
+                }
             }
 
-            private void FixupAbsoluteLabelTargets(Dictionary<string, Label> labels)
+            private int GetValue(Dictionary<string, Label> labels, Dictionary<string, ConstantValue> constants, DiagnosticsReport diagnostics)
             {
-                foreach (var (targetLabel, targetIP) in absoluteLabelTargets)
+                var name = Identifier.GetText();
+                if (labels.TryGetValue(name, out var label))
                 {
-                    int ip = GetLabelIP(labels, targetLabel);
-
-                    segment.RawDataBuffer[targetIP + 0] = (byte)(ip & 0xFF);
-                    segment.RawDataBuffer[targetIP + 1] = (byte)((ip >> 8) & 0xFF);
-                    segment.RawDataBuffer[targetIP + 2] = (byte)(ip >> 16);
+                    return label.Offset;
                 }
 
-                absoluteLabelTargets.Clear();
-            }
-
-            private void FixupRelativeLabelTargets(Dictionary<string, Label> labels)
-            {
-                foreach (var (targetLabel, targetIP) in relativeLabelTargets)
+                if (constants.TryGetValue(name, out var constValue))
                 {
-                    int ip = GetLabelIP(labels, targetLabel);
+                    if (constValue.DefinedAsFloat)
+                    {
+                        diagnostics.AddWarning("Floating-point number truncated", Source(Identifier));
+                    }
 
-                    short relIP = (short)(ip - (targetIP + 2));
-                    segment.RawDataBuffer[targetIP + 0] = (byte)(relIP & 0xFF);
-                    segment.RawDataBuffer[targetIP + 1] = (byte)(relIP >> 8);
+                    CheckLossOfDataInUInt((ulong)constValue.Integer, ByteSize, diagnostics, Source(Identifier)); // TODO: check for negative value
+                    return (int)constValue.Integer;
                 }
 
-                relativeLabelTargets.Clear();
-            }
-
-            public void FixupLabelTargets(Dictionary<string, Label> labels)
-            {
-                FixupAbsoluteLabelTargets(labels);
-                FixupRelativeLabelTargets(labels);
+                diagnostics.AddError($"'{name}' is undefined", Source(Identifier));
+                return 0;
             }
         }
     }

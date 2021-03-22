@@ -28,15 +28,15 @@ myIntArray: .int 5, 1, 2, 3, 4, 5
 myFloatArray:
             .const MY_FLOAT_ARRAY_SIZE 10       ; .const directive is compile-time only
             .int MY_FLOAT_ARRAY_SIZE
-            .float MY_FLOAT_ARRAY_SIZE dup (1)
+            .float MY_FLOAT_ARRAY_SIZE times (1)
 
 myVector:   .float 1.0, 2.0, 3.0
 
 myOtherVector:
-            .float 3 dup (MY_DEFAULT_VALUE)
+            .float 3 times (MY_DEFAULT_VALUE)
 
-randomData: .int 2 dup (22, 7 dup (33))
-emptySpace: .int 16 dup (0)
+randomData: .int 2 times (22, 7 times (33))
+emptySpace: .int 16 times (0)
 
 
             .arg        ; segment for script args
@@ -68,12 +68,18 @@ func1_label3:
             IADD
             STATIC_U8_STORE 0
 
-            STATIC_U8_LOAD myArg    ; access args
+            STATIC_U8_LOAD myArg1    ; access args
+            DROP
+
+            PUSH_CONST_U24 1234
             DROP
 
             GLOBAL_U24_LOAD gInt    ; access globals through labels
             IADD_U8 1
             GLOBAL_U24_STORE gInt
+
+            GLOBAL_U24_LOAD gVector
+            DROP
 
             GLOBAL_U24_LOAD 262144  ; access globals through their offsets
             IADD_U8 1
@@ -83,14 +89,39 @@ func1_label3:
             STRING
             PUSH_CONST_U8 str2
             STRING
+            DUP
+            DROP
             DROP
             DROP
 
             PUSH_CONST_U24 getMyFloat
             STATIC_U8_STORE getMyFloatRef
 
-            PUSH_CONST_S16 1000
-            NATIVE 1, 0, WAIT
+            ;PUSH_CONST_S16 1000
+            ;NATIVE 1, 0, WAIT
+
+            .const MY_TEST_CONST 16
+            PUSH_CONST_U8 MY_TEST_CONST     ; constants as operands
+            PUSH_CONST_U8_U8 MY_TEST_CONST, MY_TEST_CONST
+            PUSH_CONST_U8_U8_U8 MY_TEST_CONST, MY_TEST_CONST, MY_TEST_CONST
+            DROP
+            DROP
+            DROP
+            DROP
+            DROP
+            DROP
+
+            ; PUSH_CONST_U8 myInt2    ; labels as operands (replaced with their absolute offset)
+            DROP
+
+            PUSH_CONST_U8 10.5      ; warning: float number truncated
+            DROP
+
+            PUSH_CONST_U8 10        ; integer
+            DROP
+
+            PUSH_CONST_U8 256       ; warning: possible loss of data
+            DROP
 
             LEAVE 0, 0
 
@@ -115,10 +146,11 @@ _0x9614299DCB53E54B:    .native 0x9614299DCB53E54B
 
             Assert.Equal(4.0f, asm.Constants["MY_DEFAULT_VALUE"].Float);
             Assert.Equal(10, asm.Constants["MY_FLOAT_ARRAY_SIZE"].Integer);
+            Assert.Equal(16, asm.Constants["MY_TEST_CONST"].Integer);
 
             // globals
-            Assert.Equal(0, asm.Labels["gInt"].Offset);
-            Assert.Equal(1, asm.Labels["gVector"].Offset);
+            Assert.Equal((1 << 18) | 0, asm.Labels["gInt"].Offset);
+            Assert.Equal((1 << 18) | 1, asm.Labels["gVector"].Offset);
             // statics
             Assert.Equal(0, asm.Labels["myInt"].Offset);
             Assert.Equal(1, asm.Labels["myInt2"].Offset);
@@ -208,6 +240,9 @@ _0x9614299DCB53E54B:    .native 0x9614299DCB53E54B
             Assert.Equal(0x4EDE34FBADD967A6u, sc.NativeHash(0));
             Assert.Equal(0xD49F9B0955C367DEu, sc.NativeHash(1));
             Assert.Equal(0x9614299DCB53E54Bu, sc.NativeHash(2));
+
+            var s = Util.Dump(sc);
+            ;
         }
     }
 }

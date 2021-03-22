@@ -14,7 +14,7 @@
         public int AddressingUnitByteSize { get; }
         public bool IsPaged { get; }
         public MemoryStream RawData { get; }
-        public Span<byte> RawDataBuffer => RawData.GetBuffer()[0..(int)ByteLength];
+        public Span<byte> RawDataBuffer => RawData.GetBuffer().AsSpan(0, ByteLength);
         public BinaryWriter RawWriter { get; }
 
         public int ByteLength => (int)RawData.Length;
