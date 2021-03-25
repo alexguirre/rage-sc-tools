@@ -53,6 +53,19 @@
             };
             disassemble.Handler = CommandHandler.Create<DisassembleOptions>(Disassemble);
 
+            Command disassemblerE2E = new Command("disassembler-e2e", "Tests disassembling and re-assembling scripts")
+            {
+                new Argument<FileGlob[]>(
+                    "input",
+                    "The input YSC files. Supports glob patterns.")
+                    .AtLeastOne(),
+                new Option<DirectoryInfo>(
+                    new[] { "--output", "-o" },
+                    "If specified, output the disassembly and re-assembled files to the specified directory.")
+                    .ExistingOnly(),
+            };
+            disassemblerE2E.Handler = CommandHandler.Create<DisassemblerE2EOptions>(DisassemblerE2E);
+
             Command assemble = new Command("assemble")
             {
                 new Argument<FileGlob[]>(
@@ -139,6 +152,7 @@
 
             rootCmd.AddCommand(dump);
             rootCmd.AddCommand(disassemble);
+            rootCmd.AddCommand(disassemblerE2E);
             rootCmd.AddCommand(assemble);
             rootCmd.AddCommand(compile);
             rootCmd.AddCommand(genNatives);
@@ -354,13 +368,134 @@
 
                 Print($"Disassembling '{inputFile}'...");
                 Script sc = ysc.Script;
-                // TODO
-                //var disassembly = Disassembler.Disassemble(sc);
-
-                Print($"Writing '{inputFile}'...");
                 const int BufferSize = 1024 * 1024 * 32; // 32mb
                 using TextWriter w = new StreamWriter(outputFile.Open(FileMode.Create), Encoding.UTF8, BufferSize) { AutoFlush = false };
-                //Disassembler.Print(w, sc, disassembly);
+                Disassembler.Disassemble(w, sc);
+            });
+        }
+
+        private class DisassemblerE2EOptions
+        {
+            public FileGlob[] Input { get; set; }
+            public DirectoryInfo Output { get; set; }
+        }
+
+        private static void DisassemblerE2E(DisassemblerE2EOptions options)
+        {
+            static void Print(string str)
+            {
+                lock (Console.Out)
+                {
+                    Console.WriteLine(str);
+                }
+            }
+
+            static void PrintIf(bool condition, string str)
+            {
+                if (condition)
+                {
+                    Print(str);
+                }
+            }
+
+            Parallel.ForEach(options.Input.SelectMany(i => i.Matches), inputFile =>
+            {
+                //const int BufferSize = 1024 * 1024 * 32; // 32mb
+
+                //var outputFile = new FileInfo(Path.Combine(options.Output.FullName, Path.ChangeExtension(inputFile.Name, "scasm")));
+
+                var fileData = File.ReadAllBytes(inputFile.FullName);
+
+                var ysc = new YscFile();
+                ysc.Load(fileData);
+                var originalScript = ysc.Script;
+                string originalDisassembly;
+                using (var originalDisassemblyWriter = new StringWriter())
+                {
+                    Disassembler.Disassemble(originalDisassemblyWriter, originalScript);
+                    originalDisassembly = originalDisassemblyWriter.ToString();
+                }
+
+                Assembler reassembled;
+                using (var r = new StringReader(originalDisassembly.ToString()))
+                {
+                    reassembled = Assembler.Assemble(r, Path.ChangeExtension(inputFile.Name, "reassembled.scasm"));
+                }
+
+                byte[] reassembledData = new YscFile { Script = reassembled.OutputScript }.Save();
+                var reassembledYsc = new YscFile();
+                reassembledYsc.Load(reassembledData);
+                var newScript = ysc.Script;
+
+                string newDisassembly;
+                using (var newDisassemblyWriter = new StringWriter())
+                {
+                    Disassembler.Disassemble(newDisassemblyWriter, newScript);
+                    newDisassembly = newDisassemblyWriter.ToString();
+                }
+
+                string S(string msg) => $"[{inputFile}] > {msg}";
+
+                PrintIf(originalDisassembly != newDisassembly, S("Disassembly is different"));
+
+                var sc1 = originalScript;
+                var sc2 = newScript;
+                PrintIf(sc1.Hash != sc2.Hash, S("Hash is different"));
+                PrintIf(sc1.Name != sc2.Name, S("Name is different"));
+                PrintIf(sc1.NameHash != sc2.NameHash, S("NameHash is different"));
+                PrintIf(sc1.NumRefs != sc2.NumRefs, S("NumRefs is different"));
+
+                PrintIf(sc1.CodeLength != sc2.CodeLength, S("CodeLength is different"));
+                var codePageIdx = 0;
+                foreach (var (page1, page2) in sc1.CodePages.Zip(sc2.CodePages))
+                {
+                    PrintIf(!Enumerable.SequenceEqual(page1.Data, page2.Data), S($"CodePage #{codePageIdx} is different"));
+                    codePageIdx++;
+                }
+
+                PrintIf(sc1.StaticsCount != sc2.StaticsCount, S("StaticsCount is different"));
+                PrintIf(sc1.ArgsCount != sc2.ArgsCount, S("ArgsCount is different"));
+                PrintIf((sc1.Statics != null) != (sc2.Statics != null), S("Statics null"));
+                if (sc1.Statics != null && sc2.Statics != null)
+                {
+                    var staticIdx = 0;
+                    foreach (var (static1, static2) in sc1.Statics.Zip(sc2.Statics))
+                    {
+                        PrintIf(static1.AsUInt64 != static2.AsUInt64, S($"Static #{staticIdx} is different"));
+                        staticIdx++;
+                    }
+                }
+
+                PrintIf(sc1.GlobalsLength != sc2.GlobalsLength, S("GlobalsLength is different"));
+                PrintIf(sc1.GlobalsBlock != sc2.GlobalsBlock, S("GlobalsBlock is different"));
+                PrintIf((sc1.GlobalsPages != null) != (sc2.GlobalsPages != null), S("Globals null"));
+                if (sc1.GlobalsPages != null && sc2.GlobalsPages != null)
+                {
+                    var globalIdx = 0;
+                    foreach (var (page1, page2) in sc1.GlobalsPages.Zip(sc2.GlobalsPages))
+                    {
+                        foreach (var (global1, global2) in page1.Data.Zip(page2.Data))
+                        {
+                            PrintIf(global1.AsUInt64 != global2.AsUInt64, S($"Global #{globalIdx} is different"));
+                            globalIdx++;
+                        }
+                    }
+                }
+
+                PrintIf(sc1.NativesCount != sc2.NativesCount, S("NativesCount is different"));
+                PrintIf((sc1.Natives != null) != (sc2.Natives != null), S("Natives null"));
+                if (sc1.Natives != null && sc2.Natives != null)
+                {
+                    PrintIf(!Enumerable.SequenceEqual(sc1.Natives, sc2.Natives), S("Natives is different"));
+                }
+
+                PrintIf(sc1.StringsLength != sc2.StringsLength, S("StringsLength is different"));
+                var stringPageIdx = 0;
+                foreach (var (page1, page2) in sc1.StringsPages.Zip(sc2.StringsPages))
+                {
+                    PrintIf(!Enumerable.SequenceEqual(page1.Data, page2.Data), S($"StringsPage #{stringPageIdx} is different"));
+                    stringPageIdx++;
+                }
             });
         }
 
