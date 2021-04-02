@@ -34,6 +34,8 @@ namespace ScTools.ScriptAssembly
                 if (sc.GlobalsLength != 0)
                 {
                     w.WriteLine(".global");
+                    var repeatedValue = 0;
+                    var repeatedCount = 0;
                     foreach (var page in sc.GlobalsPages)
                     {
                         for (int i = 0; i < page.Data.Length; i++)
@@ -43,7 +45,24 @@ namespace ScTools.ScriptAssembly
                                 throw new InvalidOperationException();
                             }
 
-                            w.WriteLine(".int {0}", page.Data[i].AsInt32);
+                            if (page.Data[i].AsInt32 == repeatedValue)
+                            {
+                                repeatedCount++;
+                            }
+                            else
+                            {
+                                if (repeatedCount == 1)
+                                {
+                                    w.WriteLine(".int {0}", repeatedValue);
+                                }
+                                else
+                                {
+                                    w.WriteLine(".int {0} times ({1})", repeatedCount, repeatedValue);
+                                }
+
+                                repeatedValue = page.Data[i].AsInt32;
+                                repeatedCount = 1;
+                            }
                         }
                     }
                 }
@@ -52,6 +71,8 @@ namespace ScTools.ScriptAssembly
             if (sc.StaticsCount != 0)
             {
                 w.WriteLine(".static");
+                var repeatedValue = 0;
+                var repeatedCount = 0;
                 for (int i = 0; i < (sc.StaticsCount - sc.ArgsCount); i++)
                 {
                     if (sc.Statics[i].AsUInt64 > uint.MaxValue)
@@ -59,13 +80,32 @@ namespace ScTools.ScriptAssembly
                         throw new InvalidOperationException();
                     }
 
-                    w.WriteLine(".int {0}", sc.Statics[i].AsInt32);
+                    if (sc.Statics[i].AsInt32 == repeatedValue)
+                    {
+                        repeatedCount++;
+                    }
+                    else
+                    {
+                        if (repeatedCount == 1)
+                        {
+                            w.WriteLine(".int {0}", repeatedValue);
+                        }
+                        else
+                        {
+                            w.WriteLine(".int {0} times ({1})", repeatedCount, repeatedValue);
+                        }
+
+                        repeatedValue = sc.Statics[i].AsInt32;
+                        repeatedCount = 1;
+                    }
                 }
             }
 
             if (sc.ArgsCount != 0)
             {
                 w.WriteLine(".arg");
+                var repeatedValue = 0;
+                var repeatedCount = 0;
                 for (int i = (int)(sc.StaticsCount - sc.ArgsCount); i < sc.StaticsCount; i++)
                 {
                     if (sc.Statics[i].AsUInt64 > uint.MaxValue)
@@ -73,7 +113,24 @@ namespace ScTools.ScriptAssembly
                         throw new InvalidOperationException();
                     }
 
-                    w.WriteLine(".int {0}", sc.Statics[i].AsInt32);
+                    if (sc.Statics[i].AsInt32 == repeatedValue)
+                    {
+                        repeatedCount++;
+                    }
+                    else
+                    {
+                        if (repeatedCount == 1)
+                        {
+                            w.WriteLine(".int {0}", repeatedValue);
+                        }
+                        else
+                        {
+                            w.WriteLine(".int {0} times ({1})", repeatedCount, repeatedValue);
+                        }
+
+                        repeatedValue = sc.Statics[i].AsInt32;
+                        repeatedCount = 1;
+                    }
                 }
             }
 
