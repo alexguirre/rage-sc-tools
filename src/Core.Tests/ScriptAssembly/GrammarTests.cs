@@ -28,15 +28,15 @@ myIntArray: .int 5, 1, 2, 3, 4, 5
 myFloatArray:
             .const MY_FLOAT_ARRAY_SIZE 10       ; .const directive is compile-time only
             .int MY_FLOAT_ARRAY_SIZE
-            .float MY_FLOAT_ARRAY_SIZE times (1)
+            .float MY_FLOAT_ARRAY_SIZE dup (1)
 
 myVector:   .float 1.0, 2.0, 3.0
 
 myOtherVector:
-            .float 3 times (MY_DEFAULT_VALUE)
+            .float 3 dup (MY_DEFAULT_VALUE)
 
-randomData: .int 2 times (22, 7 times (33))
-emptySpace: .int 16 times (0)
+randomData: .int 2 dup (22, 7 dup (33))
+emptySpace: .int 16 dup (0)
 
 
             .arg        ; segment for script args

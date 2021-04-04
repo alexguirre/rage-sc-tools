@@ -3,14 +3,16 @@ namespace ScTools.ScriptAssembly
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Runtime.InteropServices;
 
     using Antlr4.Runtime;
+    using Antlr4.Runtime.Misc;
 
     using ScTools.GameFiles;
-    using ScTools.ScriptAssembly.CodeGen;
     using ScTools.ScriptAssembly.Grammar;
 
     public class Assembler : IDisposable
@@ -51,7 +53,7 @@ namespace ScTools.ScriptAssembly
             Segment.String => stringSegmentBuilder,
             Segment.Code => codeSegmentBuilder,
             Segment.Include => includeSegmentBuilder,
-            _ => throw new InvalidOperationException(), 
+            _ => throw new InvalidOperationException(),
         };
 
         private readonly List<Instruction> instructions = new();
@@ -103,44 +105,40 @@ namespace ScTools.ScriptAssembly
 
         public void Assemble(TextReader input)
         {
-            var inputStream = new AntlrInputStream(input);
+            var inputStream = new LightInputStream(input.ReadToEnd());
 
-            var lexer = new ScAsmLexer(inputStream);
-            lexer.RemoveErrorListeners();
-            lexer.AddErrorListener(new SyntaxErrorListener<int>(this));
-            var tokens = new CommonTokenStream(lexer);
-            var parser = new ScAsmParser(tokens);
-            parser.RemoveErrorListeners();
-            parser.AddErrorListener(new SyntaxErrorListener<IToken>(this));
-
-            var program = parser.program();
-            FirstPass(program);
+            FirstPass(inputStream);
             SecondPass();
 
-            OutputScript.CodePages = codeSegmentBuilder.ToPages<byte>();
-            OutputScript.CodeLength = OutputScript.CodePages.Length;
+            OutputScript.CodePages = codeSegmentBuilder.Length != 0 ? codeSegmentBuilder.ToPages<byte>() : null;
+            OutputScript.CodeLength = OutputScript.CodePages?.Length ?? 0;
 
-            OutputScript.GlobalsPages = globalSegmentBuilder.ToPages<ScriptValue>();
-            OutputScript.GlobalsLength = OutputScript.GlobalsPages.Length;
+            OutputScript.GlobalsPages = globalSegmentBuilder.Length != 0 ? globalSegmentBuilder.ToPages<ScriptValue>() : null;
+            OutputScript.GlobalsLength = OutputScript.GlobalsPages?.Length ?? 0;
 
             (OutputScript.Statics, OutputScript.StaticsCount, OutputScript.ArgsCount) = SegmentToStaticsArray(staticSegmentBuilder, argSegmentBuilder);
             (OutputScript.Natives, OutputScript.NativesCount) = SegmentToNativesArray(includeSegmentBuilder, OutputScript.CodeLength);
 
-            OutputScript.StringsPages = stringSegmentBuilder.ToPages<byte>();
-            OutputScript.StringsLength = OutputScript.StringsPages.Length;
+            OutputScript.StringsPages = stringSegmentBuilder.Length != 0 ? stringSegmentBuilder.ToPages<byte>() : null;
+            OutputScript.StringsLength = OutputScript.StringsPages?.Length ?? 0;
         }
 
         /// <summary>
         /// Traverses the parse tree. Allocates the space needed by each segment, initializes non-code segments, stores labels offsets
         /// and collects the instructions from the code segment.
         /// </summary>
-        private void FirstPass(ScAsmParser.ProgramContext program)
+        private void FirstPass(LightInputStream inputStream)
         {
-            foreach (var line in program.line())
-            {
-                ProcessLine(line);
-            }
-            FixArgLabels();
+            var lexer = new ScAsmLexer(inputStream) { TokenFactory = new LightTokenFactory() };
+            lexer.RemoveErrorListeners();
+            lexer.AddErrorListener(new SyntaxErrorListener<int>(this));
+            var tokens = new CommonTokenStream(lexer);
+            var parser = new ScAsmParser(tokens) { BuildParseTree = false };
+            parser.AddParseListener(new FirstPassParseListener(this, parser));
+            parser.RemoveErrorListeners();
+            parser.AddErrorListener(new SyntaxErrorListener<IToken>(this));
+
+            parser.program();
         }
 
         /// <summary>
@@ -157,7 +155,6 @@ namespace ScTools.ScriptAssembly
         private void ProcessLine(ScAsmParser.LineContext line)
         {
             var label = line.label();
-            var segmentDirective = line.segmentDirective();
             var directive = line.directive();
             var instruction = line.instruction();
 
@@ -166,11 +163,7 @@ namespace ScTools.ScriptAssembly
                 ProcessLabel(label);
             }
 
-            if (segmentDirective is not null)
-            {
-                ProcessSegmentDirective(segmentDirective);
-            }
-            else if (directive is not null)
+            if (directive is not null)
             {
                 ProcessDirective(directive);
             }
@@ -206,7 +199,7 @@ namespace ScTools.ScriptAssembly
             }
         }
 
-        private void ProcessSegmentDirective(ScAsmParser.SegmentDirectiveContext directive)
+        private void ChangeSegment(ScAsmParser.DirectiveContext directive)
         {
             CurrentSegment = directive switch
             {
@@ -229,6 +222,15 @@ namespace ScTools.ScriptAssembly
         {
             switch (directive)
             {
+                case ScAsmParser.GlobalSegmentDirectiveContext or
+                     ScAsmParser.StaticSegmentDirectiveContext or
+                     ScAsmParser.ArgSegmentDirectiveContext or
+                     ScAsmParser.StringSegmentDirectiveContext or
+                     ScAsmParser.CodeSegmentDirectiveContext or
+                     ScAsmParser.IncludeSegmentDirectiveContext:
+                    ChangeSegment(directive);
+                    break;
+
                 case ScAsmParser.ScriptNameDirectiveContext nameDirective:
                     if (HasScriptName)
                     {
@@ -307,8 +309,8 @@ namespace ScTools.ScriptAssembly
 
             if (!Enum.TryParse<Opcode>(instruction.opcode().GetText(), out var opcode))
             {
-                // exception instead of diagnostic error because the opcodes should already be checked by the lexer
-                throw new InvalidOperationException($"Unknown opcode '{instruction.opcode().GetText()}'");
+                Diagnostics.AddError($"Unknown opcode '{instruction.opcode().GetText()}'", Source(instruction.opcode()));
+                return;
             }
 
             var expectedNumOperands = opcode.GetNumberOfOperands();
@@ -427,7 +429,7 @@ namespace ScTools.ScriptAssembly
             var span = GetInstructionSpan(instruction);
             span = span[1..]; // skip opcode byte, already set in the first pass
 
-            var operands = instruction.Context.operandList()?.operand() ?? Array.Empty<ScAsmParser.OperandContext>();
+            var operands = instruction.Operands;
 
             switch (instruction.Opcode)
             {
@@ -473,9 +475,9 @@ namespace ScTools.ScriptAssembly
                     var returnCount = ParseOperandToUInt(operands[1]);
                     var nativeIndex = ParseOperandToUInt(operands[2]);
 
-                    CheckLossOfDataInUInt(argCount, maxBits: 2, Diagnostics, operands[0]);
-                    CheckLossOfDataInUInt(returnCount, maxBits: 6, Diagnostics, operands[1]);
-                    CheckLossOfDataInUInt(nativeIndex, maxBits: 16, Diagnostics, operands[2]);
+                    CheckLossOfDataInUInt(argCount, maxBits: 6, Diagnostics, operands[0].Source);
+                    CheckLossOfDataInUInt(returnCount, maxBits: 2, Diagnostics, operands[1].Source);
+                    CheckLossOfDataInUInt(nativeIndex, maxBits: 16, Diagnostics, operands[2].Source);
 
                     span[0] = (byte)((argCount & 0x3F) << 2 | (returnCount & 0x3));
                     span[1] = (byte)((nativeIndex >> 8) & 0xFF);
@@ -528,24 +530,24 @@ namespace ScTools.ScriptAssembly
                 case Opcode.SWITCH:
                     if (operands.Length > byte.MaxValue)
                     {
-                        Diagnostics.AddError($"Too many switch-cases, maximum number is {byte.MaxValue}", Source(instruction.Context));
+                        Diagnostics.AddError($"Too many switch-cases, maximum number is {byte.MaxValue}", instruction.Source);
                     }
 
                     span[0] = (byte)operands.Length;
                     span = span[1..];
                     for (int i = 0, jumpToOperandOffset = instruction.Offset + 1 /*opcode*/ + 1 /*total case count*/ + 4 /*case value*/;
-                        i < operands.Length; 
+                        i < operands.Length;
                         i++, jumpToOperandOffset += 6, span = span[6..])
                     {
-                        if (operands[i] is ScAsmParser.SwitchCaseOperandContext operand)
+                        if (operands[i].Type is InstructionOperandType.SwitchCase)
                         {
                             // TODO: warning if cases are repeated
-                            OperandToU32(span[0..], operand.value);
-                            OperandToRelativeLabelOffsetOrS16(span[4..], jumpToOperandOffset, operand.jumpTo);
+                            OperandToU32(span[0..], operands[i].SwitchCaseOperands[0]);
+                            OperandToRelativeLabelOffsetOrS16(span[4..], jumpToOperandOffset, operands[i].SwitchCaseOperands[1]);
                         }
                         else
                         {
-                            Diagnostics.AddError("Expected switch-case operand", Source(operands[i]));
+                            Diagnostics.AddError("Expected switch-case operand", operands[i].Source);
                         }
                     }
                     break;
@@ -555,24 +557,24 @@ namespace ScTools.ScriptAssembly
         private Span<byte> GetInstructionSpan(Instruction instruction)
             => codeSegmentBuilder.RawDataBuffer.Slice(instruction.Offset, instruction.Length);
 
-        private ulong ParseOperandToUInt(ScAsmParser.OperandContext operand)
+        private ulong ParseOperandToUInt(InstructionOperand operand)
         {
             long value = 0;
-            switch (operand)
+            switch (operand.Type)
             {
-                case ScAsmParser.IntegerOperandContext ctx:
-                    value = ctx.integer().GetText().ParseAsInt64();
+                case InstructionOperandType.Integer:
+                    value = operand.Text.Span.ParseAsInt64();
                     break;
-                case ScAsmParser.FloatOperandContext ctx:
-                    var floatValue = ctx.@float().GetText().ParseAsFloat();
+                case InstructionOperandType.Float:
+                    var floatValue = operand.Text.Span.ParseAsFloat();
                     value = (long)Math.Truncate(floatValue);
-                    Diagnostics.AddWarning("Floating-point number truncated", Source(operand));
+                    Diagnostics.AddWarning("Floating-point number truncated", operand.Source);
                     break;
-                case ScAsmParser.SwitchCaseOperandContext:
-                    Diagnostics.AddError("Unexpected switch-case operand", Source(operand));
+                case InstructionOperandType.SwitchCase:
+                    Diagnostics.AddError("Unexpected switch-case operand", operand.Source);
                     break;
-                case ScAsmParser.IdentifierOperandContext ctx:
-                    var name = ctx.identifier().GetText();
+                case InstructionOperandType.Identifier:
+                    var name = operand.Text.ToString();
                     if (Labels.TryGetValue(name, out var label))
                     {
                         value = label.Offset;
@@ -581,44 +583,44 @@ namespace ScTools.ScriptAssembly
                     {
                         if (constValue.DefinedAsFloat)
                         {
-                            Diagnostics.AddWarning("Floating-point number truncated", Source(operand));
+                            Diagnostics.AddWarning("Floating-point number truncated", operand.Source);
                         }
 
                         value = constValue.Integer;
                     }
                     else
                     {
-                        Diagnostics.AddError($"'{name}' is undefined", Source(operand));
+                        Diagnostics.AddError($"'{name}' is undefined", operand.Source);
                     }
                     break;
             }
 
             if (value < 0)
             {
-                Diagnostics.AddError("Found negative integer, expected unsigned integer", Source(operand));
+                Diagnostics.AddError("Found negative integer, expected unsigned integer", operand.Source);
             }
 
             return (ulong)value;
         }
 
-        private long ParseOperandToInt(ScAsmParser.OperandContext operand)
+        private long ParseOperandToInt(InstructionOperand operand)
         {
             long value = 0;
-            switch (operand)
+            switch (operand.Type)
             {
-                case ScAsmParser.IntegerOperandContext ctx:
-                    value = ctx.integer().GetText().ParseAsInt64();
+                case InstructionOperandType.Integer:
+                    value = operand.Text.Span.ParseAsInt64();
                     break;
-                case ScAsmParser.FloatOperandContext ctx:
-                    var floatValue = ctx.@float().GetText().ParseAsFloat();
+                case InstructionOperandType.Float:
+                    var floatValue = operand.Text.Span.ParseAsFloat();
                     value = (long)Math.Truncate(floatValue);
-                    Diagnostics.AddWarning("Floating-point number truncated", Source(operand));
+                    Diagnostics.AddWarning("Floating-point number truncated", operand.Source);
                     break;
-                case ScAsmParser.SwitchCaseOperandContext:
-                    Diagnostics.AddError("Unexpected switch-case operand", Source(operand));
+                case InstructionOperandType.SwitchCase:
+                    Diagnostics.AddError("Unexpected switch-case operand", operand.Source);
                     break;
-                case ScAsmParser.IdentifierOperandContext ctx:
-                    var name = ctx.identifier().GetText();
+                case InstructionOperandType.Identifier:
+                    var name = operand.Text.ToString();
                     if (Labels.TryGetValue(name, out var label))
                     {
                         value = label.Offset;
@@ -627,14 +629,14 @@ namespace ScTools.ScriptAssembly
                     {
                         if (constValue.DefinedAsFloat)
                         {
-                            Diagnostics.AddWarning("Floating-point number truncated", Source(operand));
+                            Diagnostics.AddWarning("Floating-point number truncated", operand.Source);
                         }
 
                         value = constValue.Integer;
                     }
                     else
                     {
-                        Diagnostics.AddError($"'{name}' is undefined", Source(operand));
+                        Diagnostics.AddError($"'{name}' is undefined", operand.Source);
                     }
                     break;
             }
@@ -642,25 +644,25 @@ namespace ScTools.ScriptAssembly
             return value;
         }
 
-        private float ParseOperandToFloat(ScAsmParser.OperandContext operand)
+        private float ParseOperandToFloat(InstructionOperand operand)
         {
             float value = 0;
-            switch (operand)
+            switch (operand.Type)
             {
-                case ScAsmParser.IntegerOperandContext ctx:
-                    value = ctx.integer().GetText().ParseAsFloat();
+                case InstructionOperandType.Integer:
+                    value = operand.Text.Span.ParseAsFloat();
                     break;
-                case ScAsmParser.FloatOperandContext ctx:
-                    value = ctx.@float().GetText().ParseAsFloat();
+                case InstructionOperandType.Float:
+                    value = operand.Text.Span.ParseAsFloat();
                     break;
-                case ScAsmParser.SwitchCaseOperandContext:
-                    Diagnostics.AddError("Unexpected switch-case operand", Source(operand));
+                case InstructionOperandType.SwitchCase:
+                    Diagnostics.AddError("Unexpected switch-case operand", operand.Source);
                     break;
-                case ScAsmParser.IdentifierOperandContext ctx:
-                    var name = ctx.identifier().GetText();
+                case InstructionOperandType.Identifier:
+                    var name = operand.Text.ToString();
                     if (Labels.TryGetValue(name, out _))
                     {
-                        Diagnostics.AddError($"Expected floating-point number, cannot use label '{name}'", Source(operand));
+                        Diagnostics.AddError($"Expected floating-point number, cannot use label '{name}'", operand.Source);
                     }
                     else if (Constants.TryGetValue(name, out var constValue))
                     {
@@ -668,7 +670,7 @@ namespace ScTools.ScriptAssembly
                     }
                     else
                     {
-                        Diagnostics.AddError($"'{name}' is undefined", Source(operand));
+                        Diagnostics.AddError($"'{name}' is undefined", operand.Source);
                     }
                     break;
             }
@@ -676,17 +678,17 @@ namespace ScTools.ScriptAssembly
             return value;
         }
 
-        private void OperandToF32(Span<byte> dest, ScAsmParser.OperandContext operand)
+        private void OperandToF32(Span<byte> dest, InstructionOperand operand)
         {
             var value = ParseOperandToFloat(operand);
 
             MemoryMarshal.Write(dest, ref value);
         }
 
-        private void OperandToU32(Span<byte> dest, ScAsmParser.OperandContext operand)
+        private void OperandToU32(Span<byte> dest, InstructionOperand operand)
         {
             var value = ParseOperandToUInt(operand);
-            CheckLossOfDataInUInt(value, 32, Diagnostics, operand);
+            CheckLossOfDataInUInt(value, 32, Diagnostics, operand.Source);
 
             dest[0] = (byte)(value & 0xFF);
             dest[1] = (byte)((value >> 8) & 0xFF);
@@ -694,49 +696,49 @@ namespace ScTools.ScriptAssembly
             dest[3] = (byte)((value >> 24) & 0xFF);
         }
 
-        private void OperandToU24(Span<byte> dest, ScAsmParser.OperandContext operand)
+        private void OperandToU24(Span<byte> dest, InstructionOperand operand)
         {
             var value = ParseOperandToUInt(operand);
-            CheckLossOfDataInUInt(value, 24, Diagnostics, operand);
+            CheckLossOfDataInUInt(value, 24, Diagnostics, operand.Source);
 
             dest[0] = (byte)(value & 0xFF);
             dest[1] = (byte)((value >> 8) & 0xFF);
             dest[2] = (byte)((value >> 16) & 0xFF);
         }
 
-        private void OperandToU16(Span<byte> dest, ScAsmParser.OperandContext operand)
+        private void OperandToU16(Span<byte> dest, InstructionOperand operand)
         {
             var value = ParseOperandToUInt(operand);
-            CheckLossOfDataInUInt(value, 16, Diagnostics, operand);
+            CheckLossOfDataInUInt(value, 16, Diagnostics, operand.Source);
 
             dest[0] = (byte)(value & 0xFF);
             dest[1] = (byte)((value >> 8) & 0xFF);
         }
 
-        private void OperandToU8(Span<byte> dest, ScAsmParser.OperandContext operand)
+        private void OperandToU8(Span<byte> dest, InstructionOperand operand)
         {
             var value = ParseOperandToUInt(operand);
-            CheckLossOfDataInUInt(value, 8, Diagnostics, operand);
+            CheckLossOfDataInUInt(value, 8, Diagnostics, operand.Source);
 
             dest[0] = (byte)(value & 0xFF);
         }
 
-        private void OperandToS16(Span<byte> dest, ScAsmParser.OperandContext operand)
+        private void OperandToS16(Span<byte> dest, InstructionOperand operand)
         {
             var value = ParseOperandToInt(operand);
-            CheckLossOfDataInInt(value, 16, Diagnostics, operand);
+            CheckLossOfDataInInt(value, 16, Diagnostics, operand.Source);
 
             dest[0] = (byte)(value & 0xFF);
             dest[1] = (byte)((value >> 8) & 0xFF);
         }
 
-        private void OperandToRelativeLabelOffsetOrS16(Span<byte> dest, int operandOffset, ScAsmParser.OperandContext operand)
+        private void OperandToRelativeLabelOffsetOrS16(Span<byte> dest, int operandOffset, InstructionOperand operand)
         {
-            if (operand is ScAsmParser.IdentifierOperandContext ident && Labels.TryGetValue(ident.GetText(), out var label))
+            if (operand.Type is InstructionOperandType.Identifier && Labels.TryGetValue(operand.Text.ToString(), out var label))
             {
                 if (label.Segment != Segment.Code)
                 {
-                    Diagnostics.AddError($"Cannot jump to label '{ident.GetText()}' outside code segment", Source(operand));
+                    Diagnostics.AddError($"Cannot jump to label '{operand.Text.ToString()}' outside code segment", operand.Source);
                     return;
                 }
 
@@ -744,7 +746,7 @@ namespace ScTools.ScriptAssembly
                 var relOffset = absOffset - (operandOffset + 2);
                 if (relOffset < short.MinValue || relOffset > short.MaxValue)
                 {
-                    Diagnostics.AddError($"Label '{ident.GetText()}' is too far", Source(operand));
+                    Diagnostics.AddError($"Label '{operand.Text.ToString()}' is too far", operand.Source);
                     return;
                 }
 
@@ -757,24 +759,24 @@ namespace ScTools.ScriptAssembly
             }
         }
 
-        private static void CheckLossOfDataInUInt(ulong value, int maxBits, DiagnosticsReport diagnostics, ParserRuleContext context)
+        private static void CheckLossOfDataInUInt(ulong value, int maxBits, DiagnosticsReport diagnostics, SourceRange source)
         {
             var maxValue = (1UL << maxBits) - 1;
-            
+
             if (value > maxValue)
             {
-                diagnostics.AddWarning($"Possible loss of data, value converted to {maxBits}-bit unsigned integer (value was {value}, range is from 0 to {maxValue})", Source(context));
+                diagnostics.AddWarning($"Possible loss of data, value converted to {maxBits}-bit unsigned integer (value was {value}, range is from 0 to {maxValue})", source);
             }
         }
 
-        private static void CheckLossOfDataInInt(long value, int maxBits, DiagnosticsReport diagnostics, ParserRuleContext context)
+        private static void CheckLossOfDataInInt(long value, int maxBits, DiagnosticsReport diagnostics, SourceRange source)
         {
             var maxValue = (1L << (maxBits - 1)) - 1;
             var minValue = -(1L << (maxBits - 1));
 
             if (value < minValue || value > maxValue)
             {
-                diagnostics.AddWarning($"Possible loss of data, value converted to {maxBits}-bit signed integer (value was {value}, range is from  {minValue} to {maxValue})", Source(context));
+                diagnostics.AddWarning($"Possible loss of data, value converted to {maxBits}-bit signed integer (value was {value}, range is from  {minValue} to {maxValue})", source);
             }
         }
 
@@ -884,7 +886,7 @@ namespace ScTools.ScriptAssembly
         {
             var statics = MemoryMarshal.Cast<byte, ScriptValue>(staticSegment.RawDataBuffer);
             var args = MemoryMarshal.Cast<byte, ScriptValue>(argSegment.RawDataBuffer);
-            
+
             var combined = new ScriptValue[statics.Length + args.Length];
             statics.CopyTo(combined.AsSpan(0, statics.Length));
             args.CopyTo(combined.AsSpan(statics.Length, args.Length));
@@ -917,6 +919,58 @@ namespace ScTools.ScriptAssembly
         public static StringComparer CaseInsensitiveComparer => StringComparer.OrdinalIgnoreCase;
 
         private static SourceRange Source(ParserRuleContext context) => SourceRange.FromTokens(context.Start, context.Stop);
+
+        private sealed class FirstPassParseListener : ScAsmBaseListener
+        {
+            private readonly Assembler assembler;
+            private readonly ScAsmParser parser;
+            private ScAsmParser.ProgramContext? programContext;
+
+            public FirstPassParseListener(Assembler assembler, ScAsmParser parser)
+                => (this.assembler, this.parser) = (assembler, parser);
+
+            public override void EnterProgram([NotNull] ScAsmParser.ProgramContext context)
+            {
+                programContext = context;
+            }
+
+            public override void EnterLine([NotNull] ScAsmParser.LineContext context)
+            {
+                parser.BuildParseTree = true;
+            }
+
+            public override void ExitLine([NotNull] ScAsmParser.LineContext context)
+            {
+                Debug.Assert(programContext != null);
+
+                assembler.ProcessLine(context);
+                if (programContext.ChildCount > 0)
+                {
+                    programContext.RemoveLastChild();
+                }
+                ClearChildren(context);
+                parser.BuildParseTree = false;
+            }
+
+            public override void ExitProgram([NotNull] ScAsmParser.ProgramContext context)
+            {
+                programContext = null;
+                context.children = null;
+                assembler.FixArgLabels();
+            }
+
+            private static void ClearChildren(ParserRuleContext context)
+            {
+                if (context.children != null)
+                {
+                    foreach (var child in context.children.OfType<ParserRuleContext>())
+                    {
+                        ClearChildren(child);
+                    }
+                    context.children = null;
+                }
+            }
+        }
 
         /// <summary>
         /// Adds syntax errors to diagnostics report.
@@ -957,13 +1011,69 @@ namespace ScTools.ScriptAssembly
 
         public readonly struct Instruction
         {
-            public ScAsmParser.InstructionContext Context { get; }
+            public ImmutableArray<InstructionOperand> Operands { get; }
+            public SourceRange Source { get; }
             public Opcode Opcode { get; }
             public int Offset { get; }
             public int Length { get; }
 
             public Instruction(ScAsmParser.InstructionContext context, Opcode opcode, int offset, int length)
-                => (Context, Opcode, Offset, Length) = (context, opcode, offset, length);
+            {
+                (Source, Opcode, Offset, Length) = (Source(context), opcode, offset, length);
+
+                var operands = context.operandList()?.operand() ?? Array.Empty<ScAsmParser.OperandContext>();
+                var operandsBuilder = ImmutableArray.CreateBuilder<InstructionOperand>(operands.Length);
+                foreach (var operand in operands)
+                {
+                    operandsBuilder.Add(CreateOperand(operand));
+                }
+                Operands = operandsBuilder.MoveToImmutable();
+
+
+                static InstructionOperand CreateOperand(ScAsmParser.OperandContext operand)
+                {
+                    var start = (LightToken)operand.Start;
+                    var stop = (LightToken)operand.Stop;
+                    var switchCaseOperands = operand is ScAsmParser.SwitchCaseOperandContext switchCase ?
+                                          new[] { CreateOperand(switchCase.value), CreateOperand(switchCase.jumpTo) } :
+                                          Array.Empty<InstructionOperand>();
+
+                    return new(
+                        operand switch
+                        {
+                            ScAsmParser.IntegerOperandContext => InstructionOperandType.Integer,
+                            ScAsmParser.FloatOperandContext => InstructionOperandType.Float,
+                            ScAsmParser.SwitchCaseOperandContext => InstructionOperandType.SwitchCase,
+                            ScAsmParser.IdentifierOperandContext => InstructionOperandType.Identifier,
+                            _ => throw new InvalidOperationException(),
+                        },
+                        ((LightInputStream)start.InputStream).GetTextMemory(start.StartIndex, stop.StopIndex),
+                        Source(operand),
+                        switchCaseOperands
+                    );
+                }
+            }
+        }
+
+        public enum InstructionOperandType
+        {
+            Integer, Float, SwitchCase, Identifier
+        }
+
+        public readonly struct InstructionOperand
+        {
+            public InstructionOperandType Type { get; }
+            public ReadOnlyMemory<char> Text { get; }
+            public SourceRange Source { get; }
+            public InstructionOperand[] SwitchCaseOperands { get; } // cannot use ImmutableArray here, causes TypeLoadException due to recursive static ctor calls
+
+            public InstructionOperand(InstructionOperandType type, ReadOnlyMemory<char> text, SourceRange source, InstructionOperand[] switchCaseOperands)
+            {
+                Type = type;
+                Text = text;
+                Source = source;
+                SwitchCaseOperands = switchCaseOperands;
+            }
         }
 
         private sealed class CodeBuilder

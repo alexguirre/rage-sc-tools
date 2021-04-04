@@ -45,7 +45,7 @@ namespace ScTools.ScriptAssembly
                                 throw new InvalidOperationException();
                             }
 
-                            if (page.Data[i].AsInt32 == repeatedValue)
+                            if (repeatedCount > 0 && page.Data[i].AsInt32 == repeatedValue)
                             {
                                 repeatedCount++;
                             }
@@ -55,15 +55,24 @@ namespace ScTools.ScriptAssembly
                                 {
                                     w.WriteLine(".int {0}", repeatedValue);
                                 }
-                                else
+                                else if (repeatedCount > 0)
                                 {
-                                    w.WriteLine(".int {0} times ({1})", repeatedCount, repeatedValue);
+                                    w.WriteLine(".int {0} dup ({1})", repeatedCount, repeatedValue);
                                 }
 
                                 repeatedValue = page.Data[i].AsInt32;
                                 repeatedCount = 1;
                             }
                         }
+                    }
+
+                    if (repeatedCount == 1)
+                    {
+                        w.WriteLine(".int {0}", repeatedValue);
+                    }
+                    else if (repeatedCount > 0)
+                    {
+                        w.WriteLine(".int {0} dup ({1})", repeatedCount, repeatedValue);
                     }
                 }
             }
@@ -80,7 +89,7 @@ namespace ScTools.ScriptAssembly
                         throw new InvalidOperationException();
                     }
 
-                    if (sc.Statics[i].AsInt32 == repeatedValue)
+                    if (repeatedCount > 0 && sc.Statics[i].AsInt32 == repeatedValue)
                     {
                         repeatedCount++;
                     }
@@ -90,14 +99,23 @@ namespace ScTools.ScriptAssembly
                         {
                             w.WriteLine(".int {0}", repeatedValue);
                         }
-                        else
+                        else if (repeatedCount > 0)
                         {
-                            w.WriteLine(".int {0} times ({1})", repeatedCount, repeatedValue);
+                            w.WriteLine(".int {0} dup ({1})", repeatedCount, repeatedValue);
                         }
 
                         repeatedValue = sc.Statics[i].AsInt32;
                         repeatedCount = 1;
                     }
+                }
+
+                if (repeatedCount == 1)
+                {
+                    w.WriteLine(".int {0}", repeatedValue);
+                }
+                else if (repeatedCount > 0)
+                {
+                    w.WriteLine(".int {0} dup ({1})", repeatedCount, repeatedValue);
                 }
             }
 
@@ -113,7 +131,7 @@ namespace ScTools.ScriptAssembly
                         throw new InvalidOperationException();
                     }
 
-                    if (sc.Statics[i].AsInt32 == repeatedValue)
+                    if (repeatedCount > 0 && sc.Statics[i].AsInt32 == repeatedValue)
                     {
                         repeatedCount++;
                     }
@@ -123,14 +141,23 @@ namespace ScTools.ScriptAssembly
                         {
                             w.WriteLine(".int {0}", repeatedValue);
                         }
-                        else
+                        else if (repeatedCount > 0)
                         {
-                            w.WriteLine(".int {0} times ({1})", repeatedCount, repeatedValue);
+                            w.WriteLine(".int {0} dup ({1})", repeatedCount, repeatedValue);
                         }
 
                         repeatedValue = sc.Statics[i].AsInt32;
                         repeatedCount = 1;
                     }
+                }
+
+                if (repeatedCount == 1)
+                {
+                    w.WriteLine(".int {0}", repeatedValue);
+                }
+                else if (repeatedCount > 0)
+                {
+                    w.WriteLine(".int {0} dup ({1})", repeatedCount, repeatedValue);
                 }
             }
 
@@ -226,8 +253,7 @@ namespace ScTools.ScriptAssembly
                     code = code[4..];
                     break;
                 case Opcode.PUSH_CONST_F:
-                    // TODO: improve floats formatting
-                    w.Write(MemoryMarshal.Read<float>(code).ToString("F9", CultureInfo.InvariantCulture));
+                    w.Write(MemoryMarshal.Read<float>(code).ToString("R", CultureInfo.InvariantCulture));
                     code = code[4..];
                     break;
                 case Opcode.NATIVE:

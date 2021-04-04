@@ -41,23 +41,29 @@
 
         public static uint ToHash(this string s) => s.AsSpan().ToHash();
 
-        private static bool NeedsEscaping(char c) => c == '\n' || c == '\r' || c == '\0' || c == '\\';
+        private static bool NeedsEscaping(char c) => c is '\n' or '\r' or '\t' or '\0' or '\\' or '\"' or '\'';
         private static string EscapeSequence(char c) => c switch
         {
             '\n' => "\\n",
             '\r' => "\\r",
+            '\t' => "\\t",
             '\0' => "\\0",
             '\\' => "\\\\",
+            '\"' => "\\\"",
+            '\'' => "\\\'",
             _ => throw new ArgumentException(),
         };
 
-        private static bool NeedsUnescaping(ReadOnlySpan<char> s) => s.Length >= 2 && s[0] == '\\' && (s[1] == 'n' || s[1] == 'r' || s[1] == '0' || s[1] == '\\');
+        private static bool NeedsUnescaping(ReadOnlySpan<char> s) => s.Length >= 2 && s[0] == '\\' && (s[1] is 'n' or 'r' or 't' or '0' or '\\' or '\"' or '\'');
         private static char UnescapeSequence(ReadOnlySpan<char> s) => s switch
         {
             _ when s[1] == 'n' => '\n',
             _ when s[1] == 'r' => '\r',
+            _ when s[1] == 't' => '\t',
             _ when s[1] == '0' => '\0',
             _ when s[1] == '\\' => '\\',
+            _ when s[1] == '\"' => '\"',
+            _ when s[1] == '\'' => '\'',
             _ => throw new ArgumentException(),
         };
 

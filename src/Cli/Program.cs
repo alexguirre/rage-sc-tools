@@ -13,7 +13,6 @@
     using System.Threading.Tasks;
     using System.Linq;
     using ScTools.ScriptAssembly;
-    using ScTools.ScriptAssembly.CodeGen;
     using ScTools.ScriptLang;
 
     internal static class Program
@@ -194,28 +193,39 @@
 
             LoadGTA5Keys();
 
-            NativeDBOld nativeDB;
+            /*NativeDBOld nativeDB;
             using (var reader = new BinaryReader(options.NativeDB.OpenRead()))
             {
                 nativeDB = NativeDBOld.Load(reader);
-            }
+            }*/
 
             Parallel.ForEach(options.Input.SelectMany(i => i.Matches), inputFile =>
             {
                 var outputFile = new FileInfo(Path.Combine(options.Output.FullName, Path.ChangeExtension(inputFile.Name, "ysc")));
 
-                Print($"Reading '{inputFile}'...");
-                string source = File.ReadAllText(inputFile.FullName);
-
                 YscFile ysc = new YscFile();
                 try
                 {
                     Print($"Assembling '{inputFile}'...");
-                    // TODO
-                    //Script sc = Assembler.Assemble(source, nativeDB, new CodeGenOptions(includeFunctionNames: options.FunctionNames));
-                    //ysc.Script = sc;
+                    const int BufferSize = 1024 * 1024 * 32; // 32mb
+                    using var reader = new StreamReader(inputFile.OpenRead(), Encoding.UTF8, bufferSize: BufferSize, leaveOpen: false);
+                    var asm = Assembler.Assemble(reader, inputFile.Name);
+                    if (asm.Diagnostics.HasErrors)
+                    {
+                        lock (Console.Error)
+                        {
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Console.Error.WriteLine($"Assembly of '{inputFile}' failed:");
+                            asm.Diagnostics.PrintAll(Console.Error);
+                            Console.Error.WriteLine();
+                            Console.ForegroundColor = ConsoleColor.White;
+                        }
+                        return;
+                    }
+
+                    ysc.Script = asm.OutputScript;
                 }
-                catch (Exception e) // TODO: improve assembler error messages
+                catch (Exception e)
                 {
                     lock (Console.Error)
                     {
@@ -398,6 +408,15 @@
                 }
             }
 
+            var files = options.Input.SelectMany(i => i.Matches).ToArray();
+            int count = 0, max = files.Length;
+
+            void OneDone()
+            {
+                int c = Interlocked.Increment(ref count);
+                Print($"Progress {c} / {max}");
+            }
+
             Parallel.ForEach(options.Input.SelectMany(i => i.Matches), inputFile =>
             {
                 //const int BufferSize = 1024 * 1024 * 32; // 32mb
@@ -415,6 +434,7 @@
                     Disassembler.Disassemble(originalDisassemblyWriter, originalScript);
                     originalDisassembly = originalDisassemblyWriter.ToString();
                 }
+                //File.WriteAllText($"test_{originalScript.Name}_original_disassembly.txt", originalDisassembly);
 
                 Assembler reassembled;
                 using (var r = new StringReader(originalDisassembly.ToString()))
@@ -425,7 +445,7 @@
                 byte[] reassembledData = new YscFile { Script = reassembled.OutputScript }.Save();
                 var reassembledYsc = new YscFile();
                 reassembledYsc.Load(reassembledData);
-                var newScript = ysc.Script;
+                var newScript = reassembledYsc.Script;
 
                 string newDisassembly;
                 using (var newDisassemblyWriter = new StringWriter())
@@ -437,6 +457,13 @@
                 string S(string msg) => $"[{inputFile}] > {msg}";
 
                 PrintIf(originalDisassembly != newDisassembly, S("Disassembly is different"));
+                //File.WriteAllText($"test_{newScript.Name}_new_disassembly.txt", newDisassembly);
+                //using var originalDumpWriter = new StringWriter();
+                //using var newDumpWriter = new StringWriter();
+                //new Dumper(originalScript).Dump(originalDumpWriter, true, true, true, true, true);
+                //new Dumper(newScript).Dump(newDumpWriter, true, true, true, true, true);
+                //File.WriteAllText("test_original_dump.txt", originalDumpWriter.ToString());
+                //File.WriteAllText("test_new_dump.txt", newDumpWriter.ToString());
 
                 var sc1 = originalScript;
                 var sc2 = newScript;
@@ -446,11 +473,20 @@
                 PrintIf(sc1.NumRefs != sc2.NumRefs, S("NumRefs is different"));
 
                 PrintIf(sc1.CodeLength != sc2.CodeLength, S("CodeLength is different"));
-                var codePageIdx = 0;
-                foreach (var (page1, page2) in sc1.CodePages.Zip(sc2.CodePages))
+                if (sc1.CodePages != null && sc2.CodePages != null)
                 {
-                    PrintIf(!Enumerable.SequenceEqual(page1.Data, page2.Data), S($"CodePage #{codePageIdx} is different"));
-                    codePageIdx++;
+                    var codePageIdx = 0;
+                    foreach (var (page1, page2) in sc1.CodePages.Zip(sc2.CodePages))
+                    {
+                        var equal = Enumerable.SequenceEqual(page1.Data, page2.Data);
+                        PrintIf(!equal, S($"CodePage #{codePageIdx} is different"));
+                        if (!equal)
+                        {
+                            //File.WriteAllText($"test_original_code_page_{codePageIdx}.txt", string.Join(' ', page1.Data.Select(b => b.ToString("X2"))));
+                            //File.WriteAllText($"test_new_code_page_{codePageIdx}.txt", string.Join(' ', page2.Data.Select(b => b.ToString("X2"))));
+                        }
+                        codePageIdx++;
+                    }
                 }
 
                 PrintIf(sc1.StaticsCount != sc2.StaticsCount, S("StaticsCount is different"));
@@ -490,12 +526,17 @@
                 }
 
                 PrintIf(sc1.StringsLength != sc2.StringsLength, S("StringsLength is different"));
-                var stringPageIdx = 0;
-                foreach (var (page1, page2) in sc1.StringsPages.Zip(sc2.StringsPages))
+                if (sc1.StringsPages != null && sc2.StringsPages != null)
                 {
-                    PrintIf(!Enumerable.SequenceEqual(page1.Data, page2.Data), S($"StringsPage #{stringPageIdx} is different"));
-                    stringPageIdx++;
+                    var stringPageIdx = 0;
+                    foreach (var (page1, page2) in sc1.StringsPages.Zip(sc2.StringsPages))
+                    {
+                        PrintIf(!Enumerable.SequenceEqual(page1.Data, page2.Data), S($"StringsPage #{stringPageIdx} is different"));
+                        stringPageIdx++;
+                    }
                 }
+
+                OneDone();
             });
         }
 
