@@ -4,13 +4,11 @@ namespace ScTools.ScriptAssembly
     using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
-    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Runtime.InteropServices;
 
     using Antlr4.Runtime;
-    using Antlr4.Runtime.Misc;
 
     using ScTools.GameFiles;
     using ScTools.ScriptAssembly.Grammar;
@@ -58,6 +56,7 @@ namespace ScTools.ScriptAssembly
 
         private readonly List<Instruction> instructions = new();
 
+        public IAssemblySource AssemblySource { get; }
         public DiagnosticsReport Diagnostics { get; }
         public Script OutputScript { get; }
         public Dictionary<string, ConstantValue> Constants { get; }
@@ -66,9 +65,10 @@ namespace ScTools.ScriptAssembly
         public bool HasScriptHash { get; private set; }
         public bool HasGlobalBlock { get; private set; }
 
-        public Assembler(string filePath)
+        public Assembler(IAssemblySource source)
         {
-            Diagnostics = new(filePath);
+            AssemblySource = source;
+            Diagnostics = new(source.FilePath);
             OutputScript = new()
             {
                 Name = DefaultScriptName,
@@ -103,11 +103,9 @@ namespace ScTools.ScriptAssembly
             GC.SuppressFinalize(this);
         }
 
-        public void Assemble(TextReader input)
+        public void Assemble()
         {
-            var inputStream = new LightInputStream(input.ReadToEnd());
-
-            FirstPass(inputStream);
+            FirstPass();
             SecondPass();
 
             OutputScript.CodePages = codeSegmentBuilder.Length != 0 ? codeSegmentBuilder.ToPages<byte>() : null;
@@ -127,18 +125,10 @@ namespace ScTools.ScriptAssembly
         /// Traverses the parse tree. Allocates the space needed by each segment, initializes non-code segments, stores labels offsets
         /// and collects the instructions from the code segment.
         /// </summary>
-        private void FirstPass(LightInputStream inputStream)
+        private void FirstPass()
         {
-            var lexer = new ScAsmLexer(inputStream) { TokenFactory = new LightTokenFactory() };
-            lexer.RemoveErrorListeners();
-            lexer.AddErrorListener(new SyntaxErrorListener<int>(this));
-            var tokens = new CommonTokenStream(lexer);
-            var parser = new ScAsmParser(tokens) { BuildParseTree = false };
-            parser.AddParseListener(new FirstPassParseListener(this, parser));
-            parser.RemoveErrorListeners();
-            parser.AddErrorListener(new SyntaxErrorListener<IToken>(this));
-
-            parser.program();
+            AssemblySource.Produce(Diagnostics, (_, line) => ProcessLine(line));
+            FixArgLabels();
         }
 
         /// <summary>
@@ -911,85 +901,14 @@ namespace ScTools.ScriptAssembly
 
         public static Assembler Assemble(TextReader input, string filePath = "tmp.sc")
         {
-            var a = new Assembler(filePath);
-            a.Assemble(input);
+            var a = new Assembler(new TextAssemblySource(input, filePath));
+            a.Assemble();
             return a;
         }
 
         public static StringComparer CaseInsensitiveComparer => StringComparer.OrdinalIgnoreCase;
 
         private static SourceRange Source(ParserRuleContext context) => SourceRange.FromTokens(context.Start, context.Stop);
-
-        private sealed class FirstPassParseListener : ScAsmBaseListener
-        {
-            private readonly Assembler assembler;
-            private readonly ScAsmParser parser;
-            private ScAsmParser.ProgramContext? programContext;
-
-            public FirstPassParseListener(Assembler assembler, ScAsmParser parser)
-                => (this.assembler, this.parser) = (assembler, parser);
-
-            public override void EnterProgram([NotNull] ScAsmParser.ProgramContext context)
-            {
-                programContext = context;
-            }
-
-            public override void EnterLine([NotNull] ScAsmParser.LineContext context)
-            {
-                parser.BuildParseTree = true;
-            }
-
-            public override void ExitLine([NotNull] ScAsmParser.LineContext context)
-            {
-                Debug.Assert(programContext != null);
-
-                assembler.ProcessLine(context);
-                if (programContext.ChildCount > 0)
-                {
-                    programContext.RemoveLastChild();
-                }
-                ClearChildren(context);
-                parser.BuildParseTree = false;
-            }
-
-            public override void ExitProgram([NotNull] ScAsmParser.ProgramContext context)
-            {
-                programContext = null;
-                context.children = null;
-                assembler.FixArgLabels();
-            }
-
-            private static void ClearChildren(ParserRuleContext context)
-            {
-                if (context.children != null)
-                {
-                    foreach (var child in context.children.OfType<ParserRuleContext>())
-                    {
-                        ClearChildren(child);
-                    }
-                    context.children = null;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Adds syntax errors to diagnostics report.
-        /// </summary>
-        private sealed class SyntaxErrorListener<TSymbol> : IAntlrErrorListener<TSymbol>
-        {
-            private readonly Assembler assembler;
-
-            public SyntaxErrorListener(Assembler assembler) => this.assembler = assembler;
-
-            public void SyntaxError(TextWriter output, IRecognizer recognizer, TSymbol offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
-            {
-                var source = offendingSymbol is IToken t ?
-                                SourceRange.FromTokens(t, null) :
-                                new SourceRange(new SourceLocation(line, charPositionInLine),
-                                                new SourceLocation(line, charPositionInLine));
-                assembler.Diagnostics.AddError(msg, source);
-            }
-        }
 
         public readonly struct ConstantValue
         {
