@@ -13,8 +13,6 @@
     using System.Threading.Tasks;
     using System.Linq;
     using ScTools.ScriptAssembly;
-    using ScTools.ScriptAssembly.CodeGen;
-    using ScTools.ScriptAssembly.Disassembly;
     using ScTools.ScriptLang;
 
     internal static class Program
@@ -54,6 +52,19 @@
             };
             disassemble.Handler = CommandHandler.Create<DisassembleOptions>(Disassemble);
 
+            Command disassemblerE2E = new Command("disassembler-e2e", "Tests disassembling and re-assembling scripts")
+            {
+                new Argument<FileGlob[]>(
+                    "input",
+                    "The input YSC files. Supports glob patterns.")
+                    .AtLeastOne(),
+                new Option<DirectoryInfo>(
+                    new[] { "--output", "-o" },
+                    "If specified, output the disassembly and re-assembled files to the specified directory.")
+                    .ExistingOnly(),
+            };
+            disassemblerE2E.Handler = CommandHandler.Create<DisassemblerE2EOptions>(DisassemblerE2E);
+
             Command assemble = new Command("assemble")
             {
                 new Argument<FileGlob[]>(
@@ -67,7 +78,7 @@
                     .ExistingOnly(),
                 new Option<FileInfo>(
                     new[] { "--nativedb", "-n" },
-                    "The SCNDB file containing the native commands definitions.")
+                    "The JSON file containing the native commands definitions.")
                     .ExistingOnly(),
                 new Option(new[] { "--function-names", "-f" }, "Include the function names in ENTER instructions."),
                 new Option(new[] { "--unencrypted", "-u" }, "Output unencrypted files of the assembled scripts."),
@@ -102,30 +113,12 @@
             };
             genNatives.Handler = CommandHandler.Create<FileInfo>(GenNatives);
 
-            Command fetchNativeDbOld = new Command("fetch-nativedb-old")
-            {
-                new Option<Uri>(
-                    new[] { "--crossmap-url", "-c" },
-                    () => new Uri("https://raw.githubusercontent.com/citizenfx/fivem/master/code/components/rage-scripting-five/include/CrossMapping_Universal.h"),
-                    "Specifies the URL from which to download the natives cross map."),
-                new Option<Uri>(
-                    new[] { "--nativedb-url", "-n" },
-                    () => new Uri("https://raw.githubusercontent.com/alloc8or/gta5-nativedb-data/master/natives.json"),
-                    "Specifies the URL from which to download the native DB data."),
-                new Option<FileInfo>(
-                    new[] { "--output", "-o" },
-                    () => new FileInfo("natives.scndb"),
-                    "The output SCNDB file.")
-                    .LegalFilePathsOnly(),
-            };
-            fetchNativeDbOld.Handler = CommandHandler.Create<FetchNativeDbOldOptions>(FetchNativeDbOld);
-
             Command fetchNativeDb = new Command("fetch-nativedb")
             {
-                new Argument<FileInfo>(
-                    "shv-zip",
-                    "Specifies the path to the ScriptHookV .zip file.")
-                    .ExistingOnly(),
+                new Option<Uri>(
+                    new[] { "--shv-url", "-s" },
+                    () => new Uri("http://www.dev-c.com/files/ScriptHookV_1.0.2215.0.zip"),
+                    "Specifies the URL from which to download the ScriptHookV release .zip."),
                 new Option<Uri>(
                     new[] { "--nativedb-url", "-n" },
                     () => new Uri("https://raw.githubusercontent.com/alloc8or/gta5-nativedb-data/master/natives.json"),
@@ -140,10 +133,10 @@
 
             rootCmd.AddCommand(dump);
             rootCmd.AddCommand(disassemble);
+            rootCmd.AddCommand(disassemblerE2E);
             rootCmd.AddCommand(assemble);
             rootCmd.AddCommand(compile);
             rootCmd.AddCommand(genNatives);
-            rootCmd.AddCommand(fetchNativeDbOld);
             rootCmd.AddCommand(fetchNativeDb);
 
             return rootCmd.InvokeAsync(args).Result;
@@ -181,27 +174,39 @@
 
             LoadGTA5Keys();
 
-            NativeDBOld nativeDB;
-            using (var reader = new BinaryReader(options.NativeDB.OpenRead()))
+            NativeDB nativeDB = null;
+            if (options.NativeDB != null)
             {
-                nativeDB = NativeDBOld.Load(reader);
+                nativeDB = NativeDB.FromJson(File.ReadAllText(options.NativeDB.FullName));
             }
 
             Parallel.ForEach(options.Input.SelectMany(i => i.Matches), inputFile =>
             {
                 var outputFile = new FileInfo(Path.Combine(options.Output.FullName, Path.ChangeExtension(inputFile.Name, "ysc")));
 
-                Print($"Reading '{inputFile}'...");
-                string source = File.ReadAllText(inputFile.FullName);
-
                 YscFile ysc = new YscFile();
                 try
                 {
                     Print($"Assembling '{inputFile}'...");
-                    Script sc = Assembler.Assemble(source, nativeDB, new CodeGenOptions(includeFunctionNames: options.FunctionNames));
-                    ysc.Script = sc;
+                    const int BufferSize = 1024 * 1024 * 32; // 32mb
+                    using var reader = new StreamReader(inputFile.OpenRead(), Encoding.UTF8, bufferSize: BufferSize, leaveOpen: false);
+                    var asm = Assembler.Assemble(reader, inputFile.Name);
+                    if (asm.Diagnostics.HasErrors)
+                    {
+                        lock (Console.Error)
+                        {
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Console.Error.WriteLine($"Assembly of '{inputFile}' failed:");
+                            asm.Diagnostics.PrintAll(Console.Error);
+                            Console.Error.WriteLine();
+                            Console.ForegroundColor = ConsoleColor.White;
+                        }
+                        return;
+                    }
+
+                    ysc.Script = asm.OutputScript;
                 }
-                catch (Exception e) // TODO: improve assembler error messages
+                catch (Exception e)
                 {
                     lock (Console.Error)
                     {
@@ -354,12 +359,165 @@
 
                 Print($"Disassembling '{inputFile}'...");
                 Script sc = ysc.Script;
-                var disassembly = Disassembler.Disassemble(sc);
-
-                Print($"Writing '{inputFile}'...");
                 const int BufferSize = 1024 * 1024 * 32; // 32mb
                 using TextWriter w = new StreamWriter(outputFile.Open(FileMode.Create), Encoding.UTF8, BufferSize) { AutoFlush = false };
-                Disassembler.Print(w, sc, disassembly);
+                Disassembler.Disassemble(w, sc);
+            });
+        }
+
+        private class DisassemblerE2EOptions
+        {
+            public FileGlob[] Input { get; set; }
+            public DirectoryInfo Output { get; set; }
+        }
+
+        private static void DisassemblerE2E(DisassemblerE2EOptions options)
+        {
+            static void Print(string str)
+            {
+                lock (Console.Out)
+                {
+                    Console.WriteLine(str);
+                }
+            }
+
+            static void PrintIf(bool condition, string str)
+            {
+                if (condition)
+                {
+                    Print(str);
+                }
+            }
+
+            var files = options.Input.SelectMany(i => i.Matches).ToArray();
+            int count = 0, max = files.Length;
+
+            void OneDone()
+            {
+                int c = Interlocked.Increment(ref count);
+                Print($"Progress {c} / {max}");
+            }
+
+            Parallel.ForEach(options.Input.SelectMany(i => i.Matches), inputFile =>
+            {
+                //const int BufferSize = 1024 * 1024 * 32; // 32mb
+
+                //var outputFile = new FileInfo(Path.Combine(options.Output.FullName, Path.ChangeExtension(inputFile.Name, "scasm")));
+
+                var fileData = File.ReadAllBytes(inputFile.FullName);
+
+                var ysc = new YscFile();
+                ysc.Load(fileData);
+                var originalScript = ysc.Script;
+                string originalDisassembly;
+                using (var originalDisassemblyWriter = new StringWriter())
+                {
+                    Disassembler.Disassemble(originalDisassemblyWriter, originalScript);
+                    originalDisassembly = originalDisassemblyWriter.ToString();
+                }
+                //File.WriteAllText($"test_{originalScript.Name}_original_disassembly.txt", originalDisassembly);
+
+                Assembler reassembled;
+                using (var r = new StringReader(originalDisassembly.ToString()))
+                {
+                    reassembled = Assembler.Assemble(r, Path.ChangeExtension(inputFile.Name, "reassembled.scasm"));
+                }
+
+                byte[] reassembledData = new YscFile { Script = reassembled.OutputScript }.Save();
+                var reassembledYsc = new YscFile();
+                reassembledYsc.Load(reassembledData);
+                var newScript = reassembledYsc.Script;
+
+                string newDisassembly;
+                using (var newDisassemblyWriter = new StringWriter())
+                {
+                    Disassembler.Disassemble(newDisassemblyWriter, newScript);
+                    newDisassembly = newDisassemblyWriter.ToString();
+                }
+
+                string S(string msg) => $"[{inputFile}] > {msg}";
+
+                PrintIf(originalDisassembly != newDisassembly, S("Disassembly is different"));
+                //File.WriteAllText($"test_{newScript.Name}_new_disassembly.txt", newDisassembly);
+                //using var originalDumpWriter = new StringWriter();
+                //using var newDumpWriter = new StringWriter();
+                //new Dumper(originalScript).Dump(originalDumpWriter, true, true, true, true, true);
+                //new Dumper(newScript).Dump(newDumpWriter, true, true, true, true, true);
+                //File.WriteAllText("test_original_dump.txt", originalDumpWriter.ToString());
+                //File.WriteAllText("test_new_dump.txt", newDumpWriter.ToString());
+
+                var sc1 = originalScript;
+                var sc2 = newScript;
+                PrintIf(sc1.Hash != sc2.Hash, S("Hash is different"));
+                PrintIf(sc1.Name != sc2.Name, S("Name is different"));
+                PrintIf(sc1.NameHash != sc2.NameHash, S("NameHash is different"));
+                PrintIf(sc1.NumRefs != sc2.NumRefs, S("NumRefs is different"));
+
+                PrintIf(sc1.CodeLength != sc2.CodeLength, S("CodeLength is different"));
+                if (sc1.CodePages != null && sc2.CodePages != null)
+                {
+                    var codePageIdx = 0;
+                    foreach (var (page1, page2) in sc1.CodePages.Zip(sc2.CodePages))
+                    {
+                        var equal = Enumerable.SequenceEqual(page1.Data, page2.Data);
+                        PrintIf(!equal, S($"CodePage #{codePageIdx} is different"));
+                        if (!equal)
+                        {
+                            //File.WriteAllText($"test_original_code_page_{codePageIdx}.txt", string.Join(' ', page1.Data.Select(b => b.ToString("X2"))));
+                            //File.WriteAllText($"test_new_code_page_{codePageIdx}.txt", string.Join(' ', page2.Data.Select(b => b.ToString("X2"))));
+                        }
+                        codePageIdx++;
+                    }
+                }
+
+                PrintIf(sc1.StaticsCount != sc2.StaticsCount, S("StaticsCount is different"));
+                PrintIf(sc1.ArgsCount != sc2.ArgsCount, S("ArgsCount is different"));
+                PrintIf((sc1.Statics != null) != (sc2.Statics != null), S("Statics null"));
+                if (sc1.Statics != null && sc2.Statics != null)
+                {
+                    var staticIdx = 0;
+                    foreach (var (static1, static2) in sc1.Statics.Zip(sc2.Statics))
+                    {
+                        PrintIf(static1.AsUInt64 != static2.AsUInt64, S($"Static #{staticIdx} is different"));
+                        staticIdx++;
+                    }
+                }
+
+                PrintIf(sc1.GlobalsLength != sc2.GlobalsLength, S("GlobalsLength is different"));
+                PrintIf(sc1.GlobalsBlock != sc2.GlobalsBlock, S("GlobalsBlock is different"));
+                PrintIf((sc1.GlobalsPages != null) != (sc2.GlobalsPages != null), S("Globals null"));
+                if (sc1.GlobalsPages != null && sc2.GlobalsPages != null)
+                {
+                    var globalIdx = 0;
+                    foreach (var (page1, page2) in sc1.GlobalsPages.Zip(sc2.GlobalsPages))
+                    {
+                        foreach (var (global1, global2) in page1.Data.Zip(page2.Data))
+                        {
+                            PrintIf(global1.AsUInt64 != global2.AsUInt64, S($"Global #{globalIdx} is different"));
+                            globalIdx++;
+                        }
+                    }
+                }
+
+                PrintIf(sc1.NativesCount != sc2.NativesCount, S("NativesCount is different"));
+                PrintIf((sc1.Natives != null) != (sc2.Natives != null), S("Natives null"));
+                if (sc1.Natives != null && sc2.Natives != null)
+                {
+                    PrintIf(!Enumerable.SequenceEqual(sc1.Natives, sc2.Natives), S("Natives is different"));
+                }
+
+                PrintIf(sc1.StringsLength != sc2.StringsLength, S("StringsLength is different"));
+                if (sc1.StringsPages != null && sc2.StringsPages != null)
+                {
+                    var stringPageIdx = 0;
+                    foreach (var (page1, page2) in sc1.StringsPages.Zip(sc2.StringsPages))
+                    {
+                        PrintIf(!Enumerable.SequenceEqual(page1.Data, page2.Data), S($"StringsPage #{stringPageIdx} is different"));
+                        stringPageIdx++;
+                    }
+                }
+
+                OneDone();
             });
         }
 
@@ -393,47 +551,16 @@
                                 showOffsets: !o.NoOffsets, showBytes: !o.NoBytes, showInstructions: !o.NoInstructions);
         }
 
-        private class FetchNativeDbOldOptions
-        {
-            public Uri CrossMapUrl { get; set; }
-            public Uri NativeDbUrl { get; set; }
-            public FileInfo Output { get; set; }
-        }
-
-        private static async Task FetchNativeDbOld(FetchNativeDbOldOptions o)
-        {
-            NativeDBOld db = await NativeDBOld.Fetch(o.CrossMapUrl, o.NativeDbUrl);
-
-            using var w = new BinaryWriter(o.Output.Open(FileMode.Create));
-            db.Save(w);
-
-#if DEBUG
-            {
-                using var buffer = new MemoryStream();
-                using var writer = new BinaryWriter(buffer, Encoding.ASCII, leaveOpen: true);
-                db.Save(writer);
-
-                buffer.Position = 0;
-                using var reader = new BinaryReader(buffer, Encoding.ASCII, leaveOpen: true);
-                NativeDBOld copyDB = NativeDBOld.Load(reader);
-
-                Debug.Assert(copyDB.Natives.Length == db.Natives.Length &&
-                             copyDB.Natives.Select((n, i) => n == db.Natives[i]).All(b => b),
-                             "natives do not match");
-            }
-#endif
-        }
-
         private class FetchNativeDbOptions
         {
-            public FileInfo SHVZip { get; set; }
+            public Uri SHVUrl { get; set; }
             public Uri NativeDbUrl { get; set; }
             public FileInfo Output { get; set; }
         }
 
         private static async Task FetchNativeDb(FetchNativeDbOptions o)
         {
-            NativeDB db = await NativeDB.Fetch(o.NativeDbUrl, o.SHVZip.FullName);
+            NativeDB db = await NativeDB.Fetch(o.NativeDbUrl, o.SHVUrl);
 
             await File.WriteAllTextAsync(o.Output.FullName, db.ToJson());
         }

@@ -3,19 +3,42 @@
     using System;
     using System.Diagnostics;
     using ScTools.GameFiles;
-    using ScTools.ScriptAssembly.Disassembly;
 
     using Inst = Instruction;
     using Code = CodeGen.IByteCodeBuilder;
 
+    /// <summary>
+    /// Defines the interface used for decoding <see cref="Instruction"/>s.
+    /// </summary>
+    public interface IInstructionDecoder
+    {
+        /// <summary>
+        /// Gets the IP of the current instruction.
+        /// </summary>
+        public uint IP { get; }
+
+        /// <summary>
+        /// Gets the <see cref="byte"/> at <see cref="IP"/> + <paramref name="offset"/>.
+        /// </summary>
+        public byte Get(uint offset);
+        public T Get<T>(uint offset) where T : unmanaged;
+
+        public void U8(byte v);
+        public void U16(ushort v);
+        public void U24(uint v);
+        public void U32(uint v);
+        public void S16(short v);
+        public void F32(float v);
+        public void LabelTarget(uint ip);
+        public void FunctionTarget(uint ip);
+        public void SwitchCase(uint value, uint ip);
+    }
+
     public enum OperandType
     {
         U32,
-        U64,
         F32,
         Identifier,
-        AddrOfFunction,
-        String,
         SwitchCase,
     }
 
@@ -23,26 +46,14 @@
     {
         public OperandType Type { get; }
         public uint U32 { get; }
-        public ulong U64 { get; }
         public float F32 { get; }
-        public string Identifier => String;
-        public string AddrOfFunction => String;
-        public string String { get; }
+        public string Identifier { get; }
         public (uint Value, string Label) SwitchCase { get; }
 
         private Operand(OperandType type) : this() { Type = type; }
         public Operand(uint u32) : this(OperandType.U32) { U32 = u32; }
-        public Operand(ulong u64) : this(OperandType.U64) { U64 = u64; }
         public Operand(float f32) : this(OperandType.F32) { F32 = f32; }
-        public Operand(string str, OperandType type) : this(type)
-        {
-            if (type != OperandType.Identifier && type != OperandType.AddrOfFunction &&  type != OperandType.String)
-            {
-                throw new ArgumentException("Incorrect OperandType for a string value. Must be Identifier, AddrOfIdentifier or String", nameof(type));
-            }
-
-            String = str;
-        }
+        public Operand(string identifier) : this(OperandType.Identifier) => Identifier = identifier;
         public Operand((uint Value, string Label) switchCase) : this(OperandType.SwitchCase) { SwitchCase = switchCase; }
 
         public byte AsU8()
@@ -312,7 +323,7 @@
         public static readonly Inst GLOBAL_U24 = new Inst(nameof(GLOBAL_U24), Opcode.GLOBAL_U24, I_u24, D_u24);
         public static readonly Inst GLOBAL_U24_LOAD = new Inst(nameof(GLOBAL_U24_LOAD), Opcode.GLOBAL_U24_LOAD, I_u24, D_u24);
         public static readonly Inst GLOBAL_U24_STORE = new Inst(nameof(GLOBAL_U24_STORE), Opcode.GLOBAL_U24_STORE, I_u24, D_u24);
-        public static readonly Inst PUSH_CONST_U24 = new Inst(nameof(PUSH_CONST_U24), Opcode.PUSH_CONST_U24, I_u24_addrof, D_u24);
+        public static readonly Inst PUSH_CONST_U24 = new Inst(nameof(PUSH_CONST_U24), Opcode.PUSH_CONST_U24, I_u24, D_u24);
         public static readonly Inst SWITCH = new Inst(nameof(SWITCH), Opcode.SWITCH, I_switch, D_switch, isControlFlow: true);
         public static readonly Inst STRING = new Inst(nameof(STRING), Opcode.STRING, I, D);
         public static readonly Inst STRINGHASH = new Inst(nameof(STRINGHASH), Opcode.STRINGHASH, I, D);
@@ -441,22 +452,6 @@
             c.U24(o[0].AsU24());
         }
 
-        private static void I_u24_addrof(in Inst i, ReadOnlySpan<Operand> o, Code c)
-        {
-            CheckOperands(o.Length == 1 && (o[0].Type == OperandType.U32 || o[0].Type == OperandType.AddrOfFunction));
-
-            switch (o[0].Type)
-            {
-                case OperandType.U32: I_u24(i, o, c); break;
-                case OperandType.AddrOfFunction:
-                {
-                    c.Opcode(i.Opcode);
-                    c.FunctionTarget(o[0].AddrOfFunction);
-                }
-                break;
-            }
-        }
-
         private static void D_u24(in Inst i, IInstructionDecoder d)
         {
             d.U24((d.Get<uint>(0) & 0xFFFFFF00) >> 8);
@@ -565,7 +560,7 @@
             CheckOperands(o.Length == 1 && o[0].Type == OperandType.Identifier);
 
             c.Opcode(i.Opcode);
-            c.LabelTarget(o[0].Identifier);
+            c.RelativeLabelTarget(o[0].Identifier);
         }
 
         private static void D_labelTarget(in Inst i, IInstructionDecoder d)
@@ -579,7 +574,7 @@
             CheckOperands(o.Length == 1 && o[0].Type == OperandType.Identifier);
 
             c.Opcode(i.Opcode);
-            c.FunctionTarget(o[0].Identifier);
+            c.AbsoluteLabelTarget(o[0].Identifier);
         }
 
         private static void D_functionTarget(in Inst i, IInstructionDecoder d)
@@ -596,7 +591,7 @@
                 CheckOperands(o[k].Type == OperandType.SwitchCase);
 
                 c.U32(o[k].SwitchCase.Value);
-                c.LabelTarget(o[k].SwitchCase.Label);
+                c.RelativeLabelTarget(o[k].SwitchCase.Label);
             }
         }
 

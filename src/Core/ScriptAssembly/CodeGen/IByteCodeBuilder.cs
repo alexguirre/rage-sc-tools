@@ -18,7 +18,7 @@
         public void U32(uint v);
         public void S16(short v);
         public void F32(float v);
-        public void LabelTarget(string label);
-        public void FunctionTarget(string function);
+        public void RelativeLabelTarget(string label);
+        public void AbsoluteLabelTarget(string label);
     }
 }

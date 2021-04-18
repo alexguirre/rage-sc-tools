@@ -1,5 +1,5 @@
 ﻿#nullable enable
-namespace ScTools.ScriptLang
+namespace ScTools
 {
     using System;
 

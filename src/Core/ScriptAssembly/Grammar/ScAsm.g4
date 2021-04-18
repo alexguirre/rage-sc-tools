@@ -1,108 +1,63 @@
 grammar ScAsm;
 
-script
-    : (statement? EOL)* EOF
+program
+    : (line EOL)* EOF
     ;
 
-statement
-    : directive
-    | function
-    | struct
-    | statics
-    | args
-    ;
-
-struct
-    : K_STRUCT identifier K_BEGIN EOL
-      (fieldDeclWithInitializer? EOL)*
-      K_END
-    ;
-
-statics
-    : K_STATICS K_BEGIN
-      (fieldDeclWithInitializer? EOL)*
-      K_END
-    ;
-
-args
-    : K_ARGS K_BEGIN
-      (fieldDeclWithInitializer? EOL)*
-      K_END
-    ;
-
-fieldDeclWithInitializer
-    : fieldDecl ('=' (integer | float))?
-    ;
-
-fieldDecl
-    : identifier ':' type
-    ;
-
-type
-    : identifier
-    | type '[' integer ']'
-    ;
-
-function
-    : K_FUNC K_NAKED? identifier functionArgList? functionReturnType?
-      (functionLocalDecl? EOL)*
-      K_BEGIN EOL
-      (functionBody? EOL)*
-      K_END
-    ;
-
-functionArgList
-    : '(' (fieldDecl (',' fieldDecl)*)? ')'
-    ;
-
-functionReturnType
-    : ':' type
-    ;
-
-functionLocalDecl
-    : fieldDecl
-    ;
-
-functionBody
-    : label? instruction?
-    ;
-
-instruction
-    : identifier operandList
-    ;
-
-directive
-    : '$' identifier operandList
-    ;
-
-operandList
-    : operand*
-    ;
-
-operand
-    : integer
-    | float
-    | string
-    | identifier
-    | operandSwitchCase
-    | operator
-    ;
-
-operator
-    : K_SIZEOF '(' identifier ('.' identifier)* ')'
-    | K_OFFSETOF '(' identifier ('.' identifier)+ ')'
-    | K_ITEMSIZEOF '(' identifier ('.' identifier)* ')'
-    | K_LENGTHOF '(' identifier ('.' identifier)* ')'
-    | K_HASH '(' string ')'
-    | K_ADDROF '(' identifier ')'
-    ;
-
-operandSwitchCase
-    : integer ':' identifier
+line
+    : label? (directive | instruction)?
     ;
 
 label
     : identifier ':'
+    ;
+
+instruction
+    : opcode operandList?
+    ;
+
+operandList
+    : operand (',' operand)*
+    ;
+
+operand
+    : identifier                                    #identifierOperand
+    | integer                                       #integerOperand
+    | float                                         #floatOperand
+    | value=operand ':' jumpTo=operand              #switchCaseOperand
+    ;
+
+directive
+    : D_GLOBAL                                      #globalSegmentDirective
+    | D_STATIC                                      #staticSegmentDirective
+    | D_ARG                                         #argSegmentDirective
+    | D_STRING                                      #stringSegmentDirective
+    | D_CODE                                        #codeSegmentDirective
+    | D_INCLUDE                                     #includeSegmentDirective
+    | D_SCRIPT_NAME identifier                      #scriptNameDirective
+    | D_SCRIPT_HASH integer                         #scriptHashDirective
+    | D_GLOBAL_BLOCK integer                        #globalBlockDirective
+    | D_CONST identifier (integer | float)          #constDirective
+    | D_INT directiveOperandList                    #intDirective
+    | D_FLOAT directiveOperandList                  #floatDirective
+    | D_STR string                                  #strDirective
+    | D_NATIVE integer                              #nativeDirective
+    ;
+
+directiveOperandList
+    : directiveOperand (',' directiveOperand)*
+    ;
+
+directiveOperand
+    : identifier                                                    #identifierDirectiveOperand
+    | integer                                                       #integerDirectiveOperand
+    | float                                                         #floatDirectiveOperand
+    | (identifier | integer) K_DUP '(' directiveOperandList ')'     #dupDirectiveOperand
+    ;
+
+opcode
+    : IDENTIFIER
+    | K_DUP
     ;
 
 identifier
@@ -122,43 +77,57 @@ string
     : STRING
     ;
 
-// keywords
-K_FUNC : F U N C;
-K_STRUCT : S T R U C T;
-K_BEGIN : B E G I N;
-K_END : E N D;
-K_NAKED : N A K E D;
-K_STATICS : S T A T I C S;
-K_ARGS : A R G S;
-K_SIZEOF : S I Z E O F;
-K_OFFSETOF : O F F S E T O F;
-K_ITEMSIZEOF : I T E M S I Z E O F;
-K_LENGTHOF : L E N G T H O F;
-K_HASH : H A S H;
-K_ADDROF : A D D R O F;
+// directives names
+D_SCRIPT_NAME : '.' S C R I P T '_' N A M E;
+D_SCRIPT_HASH : '.' S C R I P T '_' H A S H;
+D_GLOBAL_BLOCK : '.' G L O B A L '_' B L O C K;
+D_CONST : '.' C O N S T;
+D_GLOBAL : '.' G L O B A L;
+D_STATIC : '.' S T A T I C;
+D_ARG : '.' A R G;
+D_STRING : '.' S T R I N G;
+D_CODE : '.' C O D E;
+D_INCLUDE : '.' I N C L U D E;
+D_INT : '.' I N T;
+D_FLOAT : '.' F L O A T;
+D_STR : '.' S T R;
+D_NATIVE : '.' N A T I V E;
+
+K_DUP : D U P;
 
 IDENTIFIER
     :   [a-zA-Z_] [a-zA-Z_0-9]*
     ;
 
-FLOAT
-    : DECIMAL_INTEGER '.' DECIMAL_INTEGER
-    ;
-
 DECIMAL_INTEGER
-    :   [-+]? DIGIT+
+    :   [-+]? DIGIT*
     ;
 
 HEX_INTEGER
     :   '0x' HEX_DIGIT+
     ;
 
+FLOAT
+    : DECIMAL_INTEGER '.' DIGIT* FLOAT_EXPONENT?
+    | '.' DIGIT+ FLOAT_EXPONENT?
+    | DECIMAL_INTEGER FLOAT_EXPONENT
+    ;
+
+fragment FLOAT_EXPONENT
+    : [eE] DECIMAL_INTEGER
+    ;
+
 STRING
     : UNCLOSED_STRING '"'
+    | UNCLOSED_STRING_SQ '\''
     ;
 
 UNCLOSED_STRING
     : '"' (~["\\\r\n] | '\\' (. | EOF))*
+    ;
+
+UNCLOSED_STRING_SQ
+    : '\'' (~['\\\r\n] | '\\' (. | EOF))*
     ;
 
 COMMENT
