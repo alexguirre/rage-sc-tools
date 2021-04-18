@@ -71,9 +71,9 @@ namespace ScTools
         b1737 = 20,
         b1868 = 21,
         b2060 = 22,
-        b2189 = 23,
+        b2189_2215_2245 = 23,
 
-        Latest = b2189,
+        Latest = b2189_2215_2245,
     }
 
     public sealed class NativeDB
@@ -260,12 +260,14 @@ namespace ScTools
             return arr;
         }
 
-        public static async Task<NativeDB> Fetch(Uri nativeDbUrl, string shvZipFilePath)
+        public static async Task<NativeDB> Fetch(Uri nativeDbUrl, Uri shvZipUrl)
         {
             using var nativeDbClient = new WebClient();
             var nativeDbTask = nativeDbClient.DownloadStringTaskAsync(nativeDbUrl).ContinueWith(t => ParseNativeDb(t.Result));
 
-            var crossMapTask = File.ReadAllBytesAsync(shvZipFilePath).ContinueWith(t => ExtractCrossMapFromSHVZip(t.Result));
+            using var crossMapClient = new WebClient();
+            crossMapClient.Headers.Add(HttpRequestHeader.Referer, shvZipUrl.GetComponents(UriComponents.SchemeAndServer, UriFormat.UriEscaped));
+            var crossMapTask = crossMapClient.DownloadDataTaskAsync(shvZipUrl).ContinueWith(t => ExtractCrossMapFromSHVZip(t.Result));
 
             var (translationTable, hashToRows) = await crossMapTask;
             var natives = await nativeDbTask;

@@ -115,10 +115,10 @@
 
             Command fetchNativeDb = new Command("fetch-nativedb")
             {
-                new Argument<FileInfo>(
-                    "shv-zip",
-                    "Specifies the path to the ScriptHookV .zip file.")
-                    .ExistingOnly(),
+                new Option<Uri>(
+                    new[] { "--shv-url", "-s" },
+                    () => new Uri("http://www.dev-c.com/files/ScriptHookV_1.0.2215.0.zip"),
+                    "Specifies the URL from which to download the ScriptHookV release .zip."),
                 new Option<Uri>(
                     new[] { "--nativedb-url", "-n" },
                     () => new Uri("https://raw.githubusercontent.com/alloc8or/gta5-nativedb-data/master/natives.json"),
@@ -553,14 +553,14 @@
 
         private class FetchNativeDbOptions
         {
-            public FileInfo SHVZip { get; set; }
+            public Uri SHVUrl { get; set; }
             public Uri NativeDbUrl { get; set; }
             public FileInfo Output { get; set; }
         }
 
         private static async Task FetchNativeDb(FetchNativeDbOptions o)
         {
-            NativeDB db = await NativeDB.Fetch(o.NativeDbUrl, o.SHVZip.FullName);
+            NativeDB db = await NativeDB.Fetch(o.NativeDbUrl, o.SHVUrl);
 
             await File.WriteAllTextAsync(o.Output.FullName, db.ToJson());
         }
