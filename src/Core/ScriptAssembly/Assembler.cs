@@ -64,6 +64,7 @@ namespace ScTools.ScriptAssembly
         public bool HasScriptName { get; private set; }
         public bool HasScriptHash { get; private set; }
         public bool HasGlobalBlock { get; private set; }
+        public NativeDB? NativeDB { get; set; }
 
         public Assembler(IAssemblySource source)
         {
@@ -284,7 +285,18 @@ namespace ScTools.ScriptAssembly
                     CurrentSegmentBuilder.String(strDirective.@string().GetText()[1..^1].Unescape());
                     break;
                 case ScAsmParser.NativeDirectiveContext nativeDirective:
-                    CurrentSegmentBuilder.UInt64(nativeDirective.integer().GetText().ParseAsUInt64());
+                    var hash = nativeDirective.integer().GetText().ParseAsUInt64();
+                    if (NativeDB is not null)
+                    {
+                        var translatedHash = NativeDB.TranslateHash(hash, GameBuild.Latest);
+                        if (translatedHash == 0)
+                        {
+                            Diagnostics.AddError($"Unknown native hash '{hash:X16}'", Source(nativeDirective.integer()));
+                        }
+
+                        hash = translatedHash;
+                    }
+                    CurrentSegmentBuilder.UInt64(hash);
                     break;
             }
         }
@@ -899,9 +911,9 @@ namespace ScTools.ScriptAssembly
             }
         }
 
-        public static Assembler Assemble(TextReader input, string filePath = "tmp.sc")
+        public static Assembler Assemble(TextReader input, string filePath = "tmp.sc", NativeDB? nativeDB = null)
         {
-            var a = new Assembler(new TextAssemblySource(input, filePath));
+            var a = new Assembler(new TextAssemblySource(input, filePath)) { NativeDB = nativeDB };
             a.Assemble();
             return a;
         }

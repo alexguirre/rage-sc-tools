@@ -78,7 +78,7 @@
                     .ExistingOnly(),
                 new Option<FileInfo>(
                     new[] { "--nativedb", "-n" },
-                    "The SCNDB file containing the native commands definitions.")
+                    "The JSON file containing the native commands definitions.")
                     .ExistingOnly(),
                 new Option(new[] { "--function-names", "-f" }, "Include the function names in ENTER instructions."),
                 new Option(new[] { "--unencrypted", "-u" }, "Output unencrypted files of the assembled scripts."),
@@ -113,24 +113,6 @@
             };
             genNatives.Handler = CommandHandler.Create<FileInfo>(GenNatives);
 
-            Command fetchNativeDbOld = new Command("fetch-nativedb-old")
-            {
-                new Option<Uri>(
-                    new[] { "--crossmap-url", "-c" },
-                    () => new Uri("https://raw.githubusercontent.com/citizenfx/fivem/master/code/components/rage-scripting-five/include/CrossMapping_Universal.h"),
-                    "Specifies the URL from which to download the natives cross map."),
-                new Option<Uri>(
-                    new[] { "--nativedb-url", "-n" },
-                    () => new Uri("https://raw.githubusercontent.com/alloc8or/gta5-nativedb-data/master/natives.json"),
-                    "Specifies the URL from which to download the native DB data."),
-                new Option<FileInfo>(
-                    new[] { "--output", "-o" },
-                    () => new FileInfo("natives.scndb"),
-                    "The output SCNDB file.")
-                    .LegalFilePathsOnly(),
-            };
-            fetchNativeDbOld.Handler = CommandHandler.Create<FetchNativeDbOldOptions>(FetchNativeDbOld);
-
             Command fetchNativeDb = new Command("fetch-nativedb")
             {
                 new Argument<FileInfo>(
@@ -155,7 +137,6 @@
             rootCmd.AddCommand(assemble);
             rootCmd.AddCommand(compile);
             rootCmd.AddCommand(genNatives);
-            rootCmd.AddCommand(fetchNativeDbOld);
             rootCmd.AddCommand(fetchNativeDb);
 
             return rootCmd.InvokeAsync(args).Result;
@@ -193,11 +174,11 @@
 
             LoadGTA5Keys();
 
-            /*NativeDBOld nativeDB;
-            using (var reader = new BinaryReader(options.NativeDB.OpenRead()))
+            NativeDB nativeDB = null;
+            if (options.NativeDB != null)
             {
-                nativeDB = NativeDBOld.Load(reader);
-            }*/
+                nativeDB = NativeDB.FromJson(File.ReadAllText(options.NativeDB.FullName));
+            }
 
             Parallel.ForEach(options.Input.SelectMany(i => i.Matches), inputFile =>
             {
@@ -568,37 +549,6 @@
 
             new Dumper(sc).Dump(w, showMetadata: !o.NoMetadata, showDisassembly: !o.NoDisassembly,
                                 showOffsets: !o.NoOffsets, showBytes: !o.NoBytes, showInstructions: !o.NoInstructions);
-        }
-
-        private class FetchNativeDbOldOptions
-        {
-            public Uri CrossMapUrl { get; set; }
-            public Uri NativeDbUrl { get; set; }
-            public FileInfo Output { get; set; }
-        }
-
-        private static async Task FetchNativeDbOld(FetchNativeDbOldOptions o)
-        {
-            NativeDBOld db = await NativeDBOld.Fetch(o.CrossMapUrl, o.NativeDbUrl);
-
-            using var w = new BinaryWriter(o.Output.Open(FileMode.Create));
-            db.Save(w);
-
-#if DEBUG
-            {
-                using var buffer = new MemoryStream();
-                using var writer = new BinaryWriter(buffer, Encoding.ASCII, leaveOpen: true);
-                db.Save(writer);
-
-                buffer.Position = 0;
-                using var reader = new BinaryReader(buffer, Encoding.ASCII, leaveOpen: true);
-                NativeDBOld copyDB = NativeDBOld.Load(reader);
-
-                Debug.Assert(copyDB.Natives.Length == db.Natives.Length &&
-                             copyDB.Natives.Select((n, i) => n == db.Natives[i]).All(b => b),
-                             "natives do not match");
-            }
-#endif
         }
 
         private class FetchNativeDbOptions
