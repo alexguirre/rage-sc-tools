@@ -41,19 +41,18 @@
         public int GetSize() => VTable->GetSize(ref this);
         public int GetNumUsedSlots() => VTable->GetNumUsedSlots(ref this);
 
-        private static readonly void* GetAssetNameAddress = Util.IsInGame ? (void*)Util.RVA(0xA31540/*b2215*/) : null;
+        private static readonly void* GetAssetNameAddress = Util.IsInGame ? (void*)(Util.FindPattern("49 0B C0 48 C1 F8 3F 48 F7 D0 48 23 D0 74 0D 8B 52 0C B9") - 0x29) : null;
         public string GetAssetName(strLocalIndex index)
         {
             var namePtr = ((delegate* unmanaged[Thiscall]<ref CStreamedScripts, int, IntPtr>)GetAssetNameAddress)(ref this, index.Value);
             return Marshal.PtrToStringAnsi(namePtr) ?? "<null>";
         }
 
-        private static readonly void* StreamingBlockingLoadAddress = Util.IsInGame ? (void*)Util.RVA(0x15D7180/*b2215*/) : null;
+        private static readonly void* StreamingBlockingLoadAddress = Util.IsInGame ? (void*)Util.FindPattern("48 83 EC 28 03 51 08 48 8D 0D ? ? ? ? 41 83 C8 04 E8 ? ? ? ? 84 C0") : null;
         public bool StreamingBlockingLoad(strLocalIndex index, uint flags)
             => ((delegate* unmanaged[Thiscall]<ref CStreamedScripts, int, uint, bool>)StreamingBlockingLoadAddress)(ref this, index.Value, flags);
 
-        // TODO: use patterns
-        public static readonly CStreamedScripts* InstancePtr = Util.IsInGame ? (CStreamedScripts*)Util.RVA(0x2618290/*b2215*/) : null;
+        public static readonly CStreamedScripts* InstancePtr = Util.IsInGame ? Util.FindPattern("48 8D 0D ? ? ? ? E8 ? ? ? ? 48 63 00 89 47 34 83 F8 FF 0F 85").GetAddress<CStreamedScripts>(3) : null;
         public static ref CStreamedScripts Instance => ref Unsafe.AsRef<CStreamedScripts>(InstancePtr);
     }
 }

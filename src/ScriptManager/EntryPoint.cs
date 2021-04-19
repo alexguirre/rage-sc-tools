@@ -17,6 +17,9 @@
 
             if (nReason == DLL_PROCESS_ATTACH)
             {
+                //var w = new StreamWriter(File.OpenWrite("script-manager.log")) { AutoFlush = true };
+                //Console.SetOut(w);
+                //Console.SetError(w);
                 Console.WriteLine("DLL_PROCESS_ATTACH");
 
                 SetupGameUpdateCallback();
@@ -74,6 +77,7 @@
                 return;
             }
 
+            Console.WriteLine($"GameUpdateFuncPtr = {((nint)GameUpdateFuncPtr).ToString("X16")}  (+{((nint)GameUpdateFuncPtr - Util.BaseAddress).ToString("X8")})");
             PrevGameUpdateFunc = (delegate* unmanaged<void>)*(void**)GameUpdateFuncPtr;
             delegate* unmanaged<void> newGameUpdateFunc = &GameUpdate;
             *(void**)GameUpdateFuncPtr = newGameUpdateFunc;
@@ -88,7 +92,7 @@
         }
 
         // a graphics-related function ptr called after CApp::GameUpdate
-        private static void* GameUpdateFuncPtr = Util.IsInGame ? (void*)Util.RVA(0x1DE32B0/*b2215*/) : null;
+        private static readonly void* GameUpdateFuncPtr = Util.IsInGame ? Util.FindPattern("48 8B 0D ? ? ? ? 48 8B 01 FF 50 18 48 83 C4 28 48 FF 25").GetAddress(0x14) : null;
         private static delegate* unmanaged<void> PrevGameUpdateFunc = null;
     }
 }

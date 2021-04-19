@@ -56,15 +56,15 @@
             }
         }
 
-        public static readonly atArrayOfPtrs<scrThread>* ThreadsPtr = Util.IsInGame ? (atArrayOfPtrs<scrThread>*)Util.RVA(0x2DA43D8/*b2215*/) : null;
-        public static readonly atArray<ThreadStack>* StacksPtr = Util.IsInGame ? (atArray<ThreadStack>*)Util.RVA(0x2DA43E8/*b2215*/) : null;
+        public static readonly atArrayOfPtrs<scrThread>* ThreadsPtr = Util.IsInGame ? Util.FindPattern("48 89 05 ? ? ? ? EB 07 48 89 1D ? ? ? ? 8D 34 3F 66 89 3D").GetAddress<atArrayOfPtrs<scrThread>>(3) : null;
+        public static readonly atArray<ThreadStack>* StacksPtr = Util.IsInGame ? Util.FindPattern("48 89 05 ? ? ? ? EB 07 48 89 1D ? ? ? ? 66 89 35 ? ? ? ? 85 FF").GetAddress<atArray<ThreadStack>>(3) : null;
         public static ref atArrayOfPtrs<scrThread> Threads => ref Unsafe.AsRef<atArrayOfPtrs<scrThread>>(ThreadsPtr);
         public static ref atArray<ThreadStack> Stacks => ref Unsafe.AsRef<atArray<ThreadStack>>(StacksPtr);
 
-        private static readonly void* KillThreadAddress = Util.IsInGame ? (void*)Util.RVA(0x15AB158/*b2215*/) : null;
+        private static readonly void* KillThreadAddress = Util.IsInGame ? (void*)Util.FindPattern("48 89 5C 24 ? 57 48 83 EC 20 44 0F B7 05 ? ? ? ? 33 DB 8B F9") : null;
         public static void KillThread(scrThreadId id) => ((delegate* unmanaged<uint, void>)KillThreadAddress)(id.Value);
 
-        private static readonly void* StartNewThreadWithNameAddress = Util.IsInGame ? (void**)Util.RVA(0xA31EC0/*b2215*/) : null;
+        private static readonly void* StartNewThreadWithNameAddress = Util.IsInGame ? (void*)(Util.FindPattern("48 8B D9 48 85 C9 74 12 48 83 C8 FF") - 0x1D) : null;
         public static scrThreadId StartNewThreadWithName(string programName, IntPtr args, int argsSize, uint stackSize)
         {
             var programNameCopy = Marshal.StringToHGlobalAnsi(programName);
