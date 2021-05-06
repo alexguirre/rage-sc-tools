@@ -190,7 +190,7 @@
                     Print($"Assembling '{inputFile}'...");
                     const int BufferSize = 1024 * 1024 * 32; // 32mb
                     using var reader = new StreamReader(inputFile.OpenRead(), Encoding.UTF8, bufferSize: BufferSize, leaveOpen: false);
-                    var asm = Assembler.Assemble(reader, inputFile.Name);
+                    var asm = Assembler.Assemble(reader, inputFile.Name, nativeDB);
                     if (asm.Diagnostics.HasErrors)
                     {
                         lock (Console.Error)

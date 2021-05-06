@@ -1,6 +1,0 @@
-$NAME test_script_simple
-$STATICS 0
-
-main:
-    ENTER 0 2 
-    LEAVE 0 0
