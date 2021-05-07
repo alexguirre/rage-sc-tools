@@ -49,6 +49,10 @@
                     () => new DirectoryInfo(".\\"),
                     "The output directory.")
                     .ExistingOnly(),
+                new Option<FileInfo>(
+                    new[] { "--nativedb", "-n" },
+                    "The JSON file containing the native commands definitions.")
+                    .ExistingOnly(),
             };
             disassemble.Handler = CommandHandler.Create<DisassembleOptions>(Disassemble);
 
@@ -334,6 +338,7 @@
         {
             public FileGlob[] Input { get; set; }
             public DirectoryInfo Output { get; set; }
+            public FileInfo NativeDB { get; set; }
         }
 
         private static void Disassemble(DisassembleOptions options)
@@ -344,6 +349,12 @@
                 {
                     Console.WriteLine(str);
                 }
+            }
+
+            NativeDB nativeDB = null;
+            if (options.NativeDB != null)
+            {
+                nativeDB = NativeDB.FromJson(File.ReadAllText(options.NativeDB.FullName));
             }
 
             Parallel.ForEach(options.Input.SelectMany(i => i.Matches), inputFile =>
@@ -361,7 +372,7 @@
                 Script sc = ysc.Script;
                 const int BufferSize = 1024 * 1024 * 32; // 32mb
                 using TextWriter w = new StreamWriter(outputFile.Open(FileMode.Create), Encoding.UTF8, BufferSize) { AutoFlush = false };
-                Disassembler.Disassemble(w, sc);
+                Disassembler.Disassemble(w, sc, nativeDB);
             });
         }
 

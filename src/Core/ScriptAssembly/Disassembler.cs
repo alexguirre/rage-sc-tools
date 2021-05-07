@@ -10,16 +10,22 @@ namespace ScTools.ScriptAssembly
 
     public class Disassembler
     {
-        public Script Script { get; }
+        private (string Label, ulong Hash)[] nativesTable = Array.Empty<(string, ulong)>();
 
-        public Disassembler(Script sc)
+        public Script Script { get; }
+        public NativeDB? NativeDB { get; }
+
+        public Disassembler(Script sc, NativeDB? nativeDB = null)
         {
             Script = sc ?? throw new ArgumentNullException(nameof(sc));
+            NativeDB = nativeDB;
         }
 
         public void Disassemble(TextWriter w)
         {
             var sc = Script;
+
+            BuildNativesTable();
 
             w.WriteLine(".script_name {0}", sc.Name);
             if (sc.Hash != 0)
@@ -170,12 +176,12 @@ namespace ScTools.ScriptAssembly
                 }
             }
 
-            if (sc.NativesCount != 0)
+            if (nativesTable.Length != 0)
             {
                 w.WriteLine(".include");
-                for (int i = 0; i < sc.NativesCount; i++)
+                for (int i = 0; i < nativesTable.Length; i++)
                 {
-                    w.WriteLine(".native 0x{0:X16}", sc.NativeHash(i));
+                    w.WriteLine("{0}:\t.native 0x{1:X16}", nativesTable[i].Label, nativesTable[i].Hash);
                 }
             }
 
@@ -268,7 +274,14 @@ namespace ScTools.ScriptAssembly
                     w.Write(", ");
                     w.Write(returnCount);
                     w.Write(", ");
-                    w.Write(nativeIndex);
+                    if (nativeIndex >= 0 && nativeIndex < nativesTable.Length)
+                    {
+                        w.Write(nativesTable[nativeIndex].Label);
+                    }
+                    else
+                    {
+                        w.Write(nativeIndex);
+                    }
                     code = code[3..];
                     break;
                 case Opcode.ENTER:
@@ -346,9 +359,24 @@ namespace ScTools.ScriptAssembly
             w.WriteLine();
         }
 
-        public static void Disassemble(TextWriter output, Script sc)
+        private void BuildNativesTable()
         {
-            var a = new Disassembler(sc);
+            var sc = Script;
+
+            nativesTable = new (string, ulong)[sc.NativesCount];
+            for (int i = 0; i < sc.NativesCount; i++)
+            {
+                var hash = sc.NativeHash(i);
+                var origHash = NativeDB?.FindOriginalHash(hash) ?? hash;
+                var label = NativeDB?.GetDefinition(origHash)?.Name ?? $"_0x{origHash:X16}";
+
+                nativesTable[i] = (label, origHash);
+            }
+        }
+
+        public static void Disassemble(TextWriter output, Script sc, NativeDB? nativeDB = null)
+        {
+            var a = new Disassembler(sc, nativeDB);
             a.Disassemble(output);
         }
     }

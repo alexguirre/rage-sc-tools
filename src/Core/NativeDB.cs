@@ -117,6 +117,41 @@ namespace ScTools
             return null;
         }
 
+        public ulong? FindOriginalHash(ulong hash)
+        {
+            for (int i = 0; i < translationTable.GetLength(0); i++)
+            {
+                for (int k = 0; k < translationTable.GetLength(1); k++)
+                {
+                    if (translationTable[i, k] == hash)
+                    {
+                        for (int n = 0; n < translationTable.GetLength(1); n++)
+                        {
+                            if (translationTable[i, n] != 0)
+                            {
+                                return translationTable[i, n];
+                            }
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        public NativeCommandDefinition? GetDefinition(ulong origHash)
+        {
+            foreach (var def in Commands)
+            {
+                if (def.Hash == origHash)
+                {
+                    return def;
+                }
+            }
+
+            return null;
+        }
+
         public string ToJson()
         {
             var model = new JsonModel
