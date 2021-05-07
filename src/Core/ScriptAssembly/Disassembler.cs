@@ -5,12 +5,16 @@ namespace ScTools.ScriptAssembly
     using System.Globalization;
     using System.IO;
     using System.Runtime.InteropServices;
+    using System.Collections.Generic;
 
     using ScTools.GameFiles;
+    using System.Linq;
 
     public class Disassembler
     {
         private (string Label, ulong Hash)[] nativesTable = Array.Empty<(string, ulong)>();
+        private (string Label, string String)[] stringsTable = Array.Empty<(string, string)>();
+        private Dictionary<uint, int> stringIndicesById = new(); // value is index into stringsTable
 
         public Script Script { get; }
         public NativeDB? NativeDB { get; }
@@ -26,6 +30,7 @@ namespace ScTools.ScriptAssembly
             var sc = Script;
 
             BuildNativesTable();
+            BuildStringsTable();
 
             w.WriteLine(".script_name {0}", sc.Name);
             if (sc.Hash != 0)
@@ -167,12 +172,12 @@ namespace ScTools.ScriptAssembly
                 }
             }
 
-            if (sc.StringsLength != 0)
+            if (stringsTable.Length != 0)
             {
                 w.WriteLine(".string");
-                foreach (uint sid in sc.StringIds())
+                for (int i = 0; i < stringsTable.Length; i++)
                 {
-                    w.WriteLine(".str \"{0}\"", sc.String(sid).Escape());
+                    w.WriteLine("{0}:\t.str \"{1}\"", stringsTable[i].Label, stringsTable[i].String);
                 }
             }
 
@@ -372,6 +377,55 @@ namespace ScTools.ScriptAssembly
 
                 nativesTable[i] = (label, origHash);
             }
+        }
+
+        private void BuildStringsTable()
+        {
+            var sc = Script;
+            if (sc.StringsLength != 0)
+            {
+                var usedLabels = new Dictionary<string, int>();
+                var table = new List<(string Label, string String)>();
+
+                int i = 0;
+                foreach (uint sid in sc.StringIds())
+                {
+                    var str = sc.String(sid).Escape();
+                    var label = CreateLabelForString(str, usedLabels);
+                    table.Add((label, str));
+                    i++;
+                    stringIndicesById.Add(sid, i);
+                }
+
+                stringsTable = table.ToArray();
+            }
+
+            static string CreateLabelForString(string s, Dictionary<string, int> usedLabels)
+            {
+                const string Prefix = "a";
+                const int MaxLength = 25;
+
+                var label = string.IsNullOrWhiteSpace(s) ?
+                    Prefix + "EmptyString" :
+                    Prefix + char.ToUpperInvariant(s[0]) + string.Concat(s.Skip(1).Where(IsIdentifierChar).Take(MaxLength));
+
+                // check if the string label is repeated
+                if (usedLabels.TryGetValue(label, out var n))
+                {
+                    usedLabels[label]++;
+                    label += "_" + (n + 1);
+                }
+                else
+                {
+                    usedLabels.Add(label, 1);
+                }
+
+                return label;
+            }
+
+            // char is [a-zA-Z_0-9]
+            static bool IsIdentifierChar(char c)
+                => c is (>= 'a' and <= 'z') or (>= 'A' and <= 'Z') or '_' or (>= '0' and <= '9');
         }
 
         public static void Disassemble(TextWriter output, Script sc, NativeDB? nativeDB = null)
