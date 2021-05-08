@@ -12,9 +12,12 @@ namespace ScTools.ScriptAssembly
 
     public class Disassembler
     {
+        private readonly byte[] code;
         private (string Label, ulong Hash)[] nativesTable = Array.Empty<(string, ulong)>();
+        // TODO: use string labels in code instruction
         private (string Label, string String)[] stringsTable = Array.Empty<(string, string)>();
         private Dictionary<uint, int> stringIndicesById = new(); // value is index into stringsTable
+        private Dictionary<uint, string> codeLabels = new();
 
         public Script Script { get; }
         public NativeDB? NativeDB { get; }
@@ -23,6 +26,7 @@ namespace ScTools.ScriptAssembly
         {
             Script = sc ?? throw new ArgumentNullException(nameof(sc));
             NativeDB = nativeDB;
+            code = MergeCodePages(sc);
         }
 
         public void Disassemble(TextWriter w)
@@ -31,6 +35,7 @@ namespace ScTools.ScriptAssembly
 
             BuildNativesTable();
             BuildStringsTable();
+            IdentifyCodeLabels();
 
             w.WriteLine(".script_name {0}", sc.Name);
             if (sc.Hash != 0)
@@ -190,30 +195,38 @@ namespace ScTools.ScriptAssembly
                 }
             }
 
-            if (sc.CodeLength != 0)
+            if (code.Length != 0)
             {
                 w.WriteLine(".code");
-                foreach (var page in sc.CodePages)
+                IterateCode((ip, instruction) =>
                 {
-                    DisassembleCodePage(w, page);
-                }
+                    if (codeLabels.TryGetValue(ip, out var label))
+                    {
+                        if (label.StartsWith("lbl"))
+                        {
+                            w.WriteLine("\t{0}:", label);
+                        }
+                        else
+                        {
+                            if (label.StartsWith("func"))
+                            {
+                                w.WriteLine();
+                            }
+                            w.WriteLine("{0}:", label);
+                        }
+                    }
+
+                    DisassembleInstruction(w, ip, instruction);
+                });
             }
         }
 
-        private void DisassembleCodePage(TextWriter w, ScriptPage<byte> codePage)
+        private void DisassembleInstruction(TextWriter w, uint ip, ReadOnlySpan<byte> inst)
         {
-            var code = codePage.Data.AsSpan();
-            while (!code.IsEmpty)
-            {
-                DisassembleInstruction(w, ref code);
-            }
-        }
+            var opcode = (Opcode)inst[0];
+            inst = inst[1..];
 
-        private void DisassembleInstruction(TextWriter w, ref Span<byte> code)
-        {
-            var opcode = (Opcode)code[0];
-            code = code[1..];
-
+            w.Write("\t\t");
             w.Write(opcode.ToString());
             if (opcode.GetNumberOfOperands() != 0)
             {
@@ -241,36 +254,36 @@ namespace ScTools.ScriptAssembly
                 case Opcode.TEXT_LABEL_ASSIGN_INT:
                 case Opcode.TEXT_LABEL_APPEND_STRING:
                 case Opcode.TEXT_LABEL_APPEND_INT:
-                    w.Write(code[0]);
-                    code = code[1..];
+                    w.Write(inst[0]);
+                    inst = inst[1..];
                     break;
                 case Opcode.PUSH_CONST_U8_U8:
                 case Opcode.LEAVE:
-                    w.Write(code[0]);
+                    w.Write(inst[0]);
                     w.Write(", ");
-                    w.Write(code[1]);
-                    code = code[2..];
+                    w.Write(inst[1]);
+                    inst = inst[2..];
                     break;
                 case Opcode.PUSH_CONST_U8_U8_U8:
-                    w.Write(code[0]);
+                    w.Write(inst[0]);
                     w.Write(", ");
-                    w.Write(code[1]);
+                    w.Write(inst[1]);
                     w.Write(", ");
-                    w.Write(code[2]);
-                    code = code[3..];
+                    w.Write(inst[2]);
+                    inst = inst[3..];
                     break;
                 case Opcode.PUSH_CONST_U32:
-                    w.Write(MemoryMarshal.Read<uint>(code));
-                    code = code[4..];
+                    w.Write(MemoryMarshal.Read<uint>(inst));
+                    inst = inst[4..];
                     break;
                 case Opcode.PUSH_CONST_F:
-                    w.Write(MemoryMarshal.Read<float>(code).ToString("R", CultureInfo.InvariantCulture));
-                    code = code[4..];
+                    w.Write(MemoryMarshal.Read<float>(inst).ToString("R", CultureInfo.InvariantCulture));
+                    inst = inst[4..];
                     break;
                 case Opcode.NATIVE:
-                    var argReturn = code[0];
-                    var nativeIndexHi = code[1];
-                    var nativeIndexLo = code[2];
+                    var argReturn = inst[0];
+                    var nativeIndexHi = inst[1];
+                    var nativeIndexLo = inst[2];
 
                     var argCount = (argReturn >> 2) & 0x3F;
                     var returnCount = argReturn & 0x3;
@@ -287,14 +300,14 @@ namespace ScTools.ScriptAssembly
                     {
                         w.Write(nativeIndex);
                     }
-                    code = code[3..];
+                    inst = inst[3..];
                     break;
                 case Opcode.ENTER:
-                    w.Write(code[0]);
+                    w.Write(inst[0]);
                     w.Write(", ");
-                    w.Write(MemoryMarshal.Read<ushort>(code[1..]));
-                    var nameLen = code[3];  // TODO: get label name from here
-                    code = code[(4 + nameLen)..];
+                    w.Write(MemoryMarshal.Read<ushort>(inst[1..]));
+                    var nameLen = inst[3];  // TODO: get label name from here
+                    inst = inst[(4 + nameLen)..];
                     break;
                 case Opcode.PUSH_CONST_S16:
                 case Opcode.IADD_S16:
@@ -302,8 +315,8 @@ namespace ScTools.ScriptAssembly
                 case Opcode.IOFFSET_S16:
                 case Opcode.IOFFSET_S16_LOAD:
                 case Opcode.IOFFSET_S16_STORE:
-                    w.Write(MemoryMarshal.Read<short>(code));
-                    code = code[2..];
+                    w.Write(MemoryMarshal.Read<short>(inst));
+                    inst = inst[2..];
                     break;
                 case Opcode.ARRAY_U16:
                 case Opcode.ARRAY_U16_LOAD:
@@ -317,8 +330,8 @@ namespace ScTools.ScriptAssembly
                 case Opcode.GLOBAL_U16:
                 case Opcode.GLOBAL_U16_LOAD:
                 case Opcode.GLOBAL_U16_STORE:
-                    w.Write(MemoryMarshal.Read<ushort>(code));
-                    code = code[2..];
+                    w.Write(MemoryMarshal.Read<ushort>(inst));
+                    inst = inst[2..];
                     break;
                 case Opcode.J:
                 case Opcode.JZ:
@@ -328,35 +341,45 @@ namespace ScTools.ScriptAssembly
                 case Opcode.IGE_JZ:
                 case Opcode.ILT_JZ:
                 case Opcode.ILE_JZ:
-                    w.Write(MemoryMarshal.Read<short>(code));
-                    code = code[2..];
+                    var jumpOffset = MemoryMarshal.Read<short>(inst);
+                    var jumpAddress = ip + 3 + jumpOffset;
+                    w.Write(codeLabels.TryGetValue((uint)jumpAddress, out var label) ? label : jumpOffset);
+                    inst = inst[2..];
                     break;
                 case Opcode.CALL:
                 case Opcode.GLOBAL_U24:
                 case Opcode.GLOBAL_U24_LOAD:
                 case Opcode.GLOBAL_U24_STORE:
                 case Opcode.PUSH_CONST_U24:
-                    var lo = code[0];
-                    var mi = code[1];
-                    var hi = code[2];
+                    var lo = inst[0];
+                    var mi = inst[1];
+                    var hi = inst[2];
 
                     var value = (hi << 16) | (mi << 8) | lo;
-                    w.Write(value);
-                    code = code[3..];
+                    if (opcode is Opcode.CALL)
+                    {
+                        w.Write(codeLabels.TryGetValue((uint)value, out var funcLabel) ? funcLabel : value);
+                    }
+                    else
+                    {
+                        w.Write(value);
+                    }
+                    inst = inst[3..];
                     break;
                 case Opcode.SWITCH:
-                    var caseCount = code[0];
-                    code = code[1..];
-                    for (int i = 0; i < caseCount; i++, code = code[6..])
+                    var caseCount = inst[0];
+                    inst = inst[1..];
+                    for (int i = 0; i < caseCount; i++, inst = inst[6..])
                     {
-                        var caseValue = MemoryMarshal.Read<uint>(code);
-                        var caseJumpTo = MemoryMarshal.Read<short>(code[4..]);
+                        var caseValue = MemoryMarshal.Read<uint>(inst);
+                        var caseJumpToOffset = MemoryMarshal.Read<short>(inst[4..]);
+                        var caseJumpToAddress = ip + 2 + 6 * (i + 1) + caseJumpToOffset;
 
                         if (i != 0)
                         {
                             w.Write(", ");
                         }
-                        w.Write("{0}:{1}", caseValue, caseJumpTo);
+                        w.Write("{0}:{1}", caseValue, codeLabels.TryGetValue((uint)caseJumpToAddress, out var caseLabel) ? caseLabel : caseJumpToOffset);
                     }
                     break;
             }
@@ -381,6 +404,9 @@ namespace ScTools.ScriptAssembly
 
         private void BuildStringsTable()
         {
+            stringIndicesById.Clear();
+            stringsTable = Array.Empty<(string, string)>();
+
             var sc = Script;
             if (sc.StringsLength != 0)
             {
@@ -426,6 +452,166 @@ namespace ScTools.ScriptAssembly
             // char is [a-zA-Z_0-9]
             static bool IsIdentifierChar(char c)
                 => c is (>= 'a' and <= 'z') or (>= 'A' and <= 'Z') or '_' or (>= '0' and <= '9');
+        }
+
+        private void IdentifyCodeLabels()
+        {
+            codeLabels.Clear();
+
+            if (code.Length != 0)
+            {
+                codeLabels.Add(0, "main");
+                IterateCode((ip, inst) =>
+                {
+                    var opcode = (Opcode)inst[0];
+                    switch (opcode)
+                    {
+                        case Opcode.J:
+                        case Opcode.JZ:
+                        case Opcode.IEQ_JZ:
+                        case Opcode.INE_JZ:
+                        case Opcode.IGT_JZ:
+                        case Opcode.IGE_JZ:
+                        case Opcode.ILT_JZ:
+                        case Opcode.ILE_JZ:
+                            var jumpOffset = MemoryMarshal.Read<short>(inst[1..]);
+                            var jumpAddress = ip + 3 + jumpOffset;
+                            AddLabel(codeLabels, (uint)jumpAddress);
+                            break;
+                        case Opcode.SWITCH:
+                            var caseCount = inst[1];
+                            for (int i = 0; i < caseCount; i++)
+                            {
+                                var caseSpan = inst.Slice(2 + 6 * i, 6);
+                                var caseValue = MemoryMarshal.Read<uint>(caseSpan);
+                                var caseJumpToOffset = MemoryMarshal.Read<short>(caseSpan[4..]);
+                                var caseJumpToAddress = ip + 2 + 6 * (i + 1) + caseJumpToOffset;
+                                AddLabel(codeLabels, (uint)caseJumpToAddress);
+                            }
+                            break;
+                        case Opcode.CALL:
+                            var lo = inst[0];
+                            var mi = inst[1];
+                            var hi = inst[2];
+
+                            var callAddress = (hi << 16) | (mi << 8) | lo;
+                            AddFuncLabel(codeLabels, (uint)callAddress);
+                            break;
+                        case Opcode.ENTER:
+                            AddFuncLabel(codeLabels, ip);
+                            break;
+                    }
+                });
+            }
+
+            static void AddFuncLabel(Dictionary<uint, string> codeLabels, uint address)
+                => codeLabels.TryAdd(address, "func_" + address);
+            static void AddLabel(Dictionary<uint, string> codeLabels, uint address)
+                => codeLabels.TryAdd(address, "lbl_" + address);
+        }
+
+        private delegate void IterateCodeCallback(uint ip, ReadOnlySpan<byte> instruction);
+        private void IterateCode(IterateCodeCallback callback)
+        {
+            uint ip = 0;
+            var codeSpan = code.AsSpan();
+            while (!codeSpan.IsEmpty)
+            {
+                var instructionLength = 1;
+                var opcode = (Opcode)codeSpan[0];
+
+                switch (opcode)
+                {
+                    case Opcode.PUSH_CONST_U8:
+                    case Opcode.ARRAY_U8:
+                    case Opcode.ARRAY_U8_LOAD:
+                    case Opcode.ARRAY_U8_STORE:
+                    case Opcode.LOCAL_U8:
+                    case Opcode.LOCAL_U8_LOAD:
+                    case Opcode.LOCAL_U8_STORE:
+                    case Opcode.STATIC_U8:
+                    case Opcode.STATIC_U8_LOAD:
+                    case Opcode.STATIC_U8_STORE:
+                    case Opcode.IADD_U8:
+                    case Opcode.IMUL_U8:
+                    case Opcode.IOFFSET_U8:
+                    case Opcode.IOFFSET_U8_LOAD:
+                    case Opcode.IOFFSET_U8_STORE:
+                    case Opcode.TEXT_LABEL_ASSIGN_STRING:
+                    case Opcode.TEXT_LABEL_ASSIGN_INT:
+                    case Opcode.TEXT_LABEL_APPEND_STRING:
+                    case Opcode.TEXT_LABEL_APPEND_INT:
+                        instructionLength = 2;
+                        break;
+                    case Opcode.PUSH_CONST_U8_U8:
+                    case Opcode.LEAVE:
+                    case Opcode.PUSH_CONST_S16:
+                    case Opcode.IADD_S16:
+                    case Opcode.IMUL_S16:
+                    case Opcode.IOFFSET_S16:
+                    case Opcode.IOFFSET_S16_LOAD:
+                    case Opcode.IOFFSET_S16_STORE:
+                    case Opcode.ARRAY_U16:
+                    case Opcode.ARRAY_U16_LOAD:
+                    case Opcode.ARRAY_U16_STORE:
+                    case Opcode.LOCAL_U16:
+                    case Opcode.LOCAL_U16_LOAD:
+                    case Opcode.LOCAL_U16_STORE:
+                    case Opcode.STATIC_U16:
+                    case Opcode.STATIC_U16_LOAD:
+                    case Opcode.STATIC_U16_STORE:
+                    case Opcode.GLOBAL_U16:
+                    case Opcode.GLOBAL_U16_LOAD:
+                    case Opcode.GLOBAL_U16_STORE:
+                    case Opcode.J:
+                    case Opcode.JZ:
+                    case Opcode.IEQ_JZ:
+                    case Opcode.INE_JZ:
+                    case Opcode.IGT_JZ:
+                    case Opcode.IGE_JZ:
+                    case Opcode.ILT_JZ:
+                    case Opcode.ILE_JZ:
+                        instructionLength = 3;
+                        break;
+                    case Opcode.PUSH_CONST_U8_U8_U8:
+                    case Opcode.NATIVE:
+                    case Opcode.CALL:
+                    case Opcode.GLOBAL_U24:
+                    case Opcode.GLOBAL_U24_LOAD:
+                    case Opcode.GLOBAL_U24_STORE:
+                    case Opcode.PUSH_CONST_U24:
+                        instructionLength = 4;
+                        break;
+                    case Opcode.PUSH_CONST_U32:
+                    case Opcode.PUSH_CONST_F:
+                        instructionLength = 5;
+                        break;
+                    case Opcode.ENTER:
+                        var nameLen = codeSpan[4];
+                        instructionLength = 5 + nameLen;
+                        break;
+                    case Opcode.SWITCH:
+                        var caseCount = codeSpan[1];
+                        instructionLength = 2 + 6 * caseCount;
+                        break;
+                }
+
+                callback(ip, codeSpan[0..instructionLength]);
+                codeSpan = codeSpan[instructionLength..];
+                ip += (uint)instructionLength;
+            }
+        }
+
+        private static byte[] MergeCodePages(Script sc)
+        {
+            var buffer = new byte[sc.CodeLength];
+            var offset = 0;
+            foreach (var page in sc.CodePages)
+            {
+                page.Data.CopyTo(buffer.AsSpan(offset));
+                offset += page.Data.Length;
+            }
+            return buffer;
         }
 
         public static void Disassemble(TextWriter output, Script sc, NativeDB? nativeDB = null)
