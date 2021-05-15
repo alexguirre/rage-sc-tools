@@ -466,7 +466,7 @@ namespace ScTools.ScriptAssembly
             var sc = Script;
             if (sc.StringsLength != 0)
             {
-                var usedLabels = new Dictionary<string, int>();
+                var usedLabels = new Dictionary<string, int>(Assembler.CaseInsensitiveComparer);
                 var table = new List<(string Label, string String)>();
 
                 int i = 0;
@@ -489,7 +489,9 @@ namespace ScTools.ScriptAssembly
 
                 var label = string.IsNullOrWhiteSpace(s) ?
                     Prefix + "EmptyString" :
-                    Prefix + char.ToUpperInvariant(s[0]) + string.Concat(s.Skip(1).Where(IsIdentifierChar).Take(MaxLength));
+                    Prefix + string.Concat(s.Where(IsIdentifierChar)
+                                            .Take(MaxLength)
+                                            .Select((c, i) => i == 0 ? char.ToUpperInvariant(c) : c)); // make the first char uppercase
 
                 // check if the string label is repeated
                 if (usedLabels.TryGetValue(label, out var n))
