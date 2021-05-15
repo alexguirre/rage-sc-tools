@@ -135,10 +135,14 @@
 
     public static class OpcodeExtensions
     {
+        public const int NumberOfOpcodes = 127;
+
         public static ref readonly Instruction Instruction(this Opcode opcode) => ref ScriptAssembly.Instruction.Set[(byte)opcode];
         public static bool IsJump(this Opcode opcode) => opcode.Instruction().IsJump;
         public static bool IsControlFlow(this Opcode opcode) => opcode.Instruction().IsControlFlow;
         public static string Mnemonic(this Opcode opcode) => opcode.Instruction().Mnemonic;
+
+        public static int ByteSize(this Opcode opcode) => (int)opcode < NumberOfOpcodes ? InstructionSizes[(int)opcode] : 0;
 
         /// <returns>
         /// The number of operands required by <see cref="opcode"/>; or, <c>-1</c> if it accepts a variable number of operands, like <see cref="Opcode.SWITCH"/>.
@@ -275,5 +279,14 @@
                 Opcode.PUSH_CONST_F7 => 0,
                 _ => throw new ArgumentException($"Unknown opcode '{opcode}'", nameof(opcode)),
             };
+
+
+        private static readonly byte[] InstructionSizes = new byte[NumberOfOpcodes]
+        {
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            1,1,1,1,1,2,3,4,5,5,1,1,4,0,3,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,1,
+            2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,
+            4,4,0,1,1,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        };
     }
 }
