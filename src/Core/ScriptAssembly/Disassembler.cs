@@ -496,13 +496,19 @@ namespace ScTools.ScriptAssembly
                 // check if the string label is repeated
                 if (usedLabels.TryGetValue(label, out var n))
                 {
-                    usedLabels[label]++;
-                    label += "_" + (n + 1);
+                    string newLabel;
+                    do
+                    {
+                        n++;
+                        newLabel = label + "_" + n;
+                    } while (usedLabels.ContainsKey(newLabel)); // if another string already generated a label like newLabel, increment n and try again
+
+                    usedLabels[label] = n;
+                    label = newLabel;
                 }
-                else
-                {
-                    usedLabels.Add(label, 1);
-                }
+
+                // add the label to the dictionary if it is the first time it appears
+                usedLabels.TryAdd(label, 1);
 
                 return label;
             }
