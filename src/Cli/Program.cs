@@ -14,6 +14,7 @@
     using System.Linq;
     using ScTools.ScriptAssembly;
     using ScTools.ScriptLang;
+    using System.Collections.Generic;
 
     internal static class Program
     {
@@ -409,11 +410,20 @@
                 Print($"Progress {c} / {max}");
             }
 
+            var tasks = new List<Task>();
             Parallel.ForEach(options.Input.SelectMany(i => i.Matches), inputFile =>
             {
-                //const int BufferSize = 1024 * 1024 * 32; // 32mb
-
-                //var outputFile = new FileInfo(Path.Combine(options.Output.FullName, Path.ChangeExtension(inputFile.Name, "scasm")));
+                var outputDir = options.Output is null ?
+                                    null :
+                                    options.Output.CreateSubdirectory(Path.GetFileNameWithoutExtension(inputFile.Name)).FullName;
+                bool CanOutput() => outputDir is not null;
+                void OutputFile(string fileName, string contents)
+                {
+                    if (CanOutput())
+                    {
+                        tasks.Add(File.WriteAllTextAsync(Path.Join(outputDir, fileName), contents));
+                    }
+                }
 
                 var fileData = File.ReadAllBytes(inputFile.FullName);
 
@@ -426,7 +436,7 @@
                     Disassembler.Disassemble(originalDisassemblyWriter, originalScript);
                     originalDisassembly = originalDisassemblyWriter.ToString();
                 }
-                //File.WriteAllText($"test_{originalScript.Name}_original_disassembly.txt", originalDisassembly);
+                OutputFile("test_original_disassembly.txt", originalDisassembly);
 
                 Assembler reassembled;
                 using (var r = new StringReader(originalDisassembly.ToString()))
@@ -448,14 +458,26 @@
 
                 string S(string msg) => $"[{inputFile}] > {msg}";
 
+                if (reassembled.Diagnostics.HasErrors || reassembled.Diagnostics.HasWarnings)
+                {
+                    lock (Console.Out)
+                    {
+                        Console.WriteLine(S("Errors in re-assembly"));
+                        reassembled.Diagnostics.PrintAll(Console.Out);
+                    }
+                }
+
                 PrintIf(originalDisassembly != newDisassembly, S("Disassembly is different"));
-                //File.WriteAllText($"test_{newScript.Name}_new_disassembly.txt", newDisassembly);
-                //using var originalDumpWriter = new StringWriter();
-                //using var newDumpWriter = new StringWriter();
-                //new Dumper(originalScript).Dump(originalDumpWriter, true, true, true, true, true);
-                //new Dumper(newScript).Dump(newDumpWriter, true, true, true, true, true);
-                //File.WriteAllText("test_original_dump.txt", originalDumpWriter.ToString());
-                //File.WriteAllText("test_new_dump.txt", newDumpWriter.ToString());
+                if (CanOutput())
+                {
+                    OutputFile("test_new_disassembly.txt", newDisassembly);
+                    using var originalDumpWriter = new StringWriter();
+                    using var newDumpWriter = new StringWriter();
+                    new Dumper(originalScript).Dump(originalDumpWriter, true, true, true, true, true);
+                    new Dumper(newScript).Dump(newDumpWriter, true, true, true, true, true);
+                    OutputFile("test_original_dump.txt", originalDumpWriter.ToString());
+                    OutputFile("test_new_dump.txt", newDumpWriter.ToString());
+                }
 
                 var sc1 = originalScript;
                 var sc2 = newScript;
@@ -474,8 +496,11 @@
                         PrintIf(!equal, S($"CodePage #{codePageIdx} is different"));
                         if (!equal)
                         {
-                            //File.WriteAllText($"test_original_code_page_{codePageIdx}.txt", string.Join(' ', page1.Data.Select(b => b.ToString("X2"))));
-                            //File.WriteAllText($"test_new_code_page_{codePageIdx}.txt", string.Join(' ', page2.Data.Select(b => b.ToString("X2"))));
+                            if (CanOutput())
+                            {
+                                OutputFile($"test_original_code_page_{codePageIdx}.txt", string.Join(' ', page1.Data.Select(b => b.ToString("X2"))));
+                                OutputFile($"test_new_code_page_{codePageIdx}.txt", string.Join(' ', page2.Data.Select(b => b.ToString("X2"))));
+                            }
                         }
                         codePageIdx++;
                     }
@@ -530,6 +555,8 @@
 
                 OneDone();
             });
+
+            Task.WaitAll(tasks.ToArray());
         }
 
         private class DumpOptions
