@@ -436,7 +436,13 @@
                     Disassembler.Disassemble(originalDisassemblyWriter, originalScript);
                     originalDisassembly = originalDisassemblyWriter.ToString();
                 }
-                OutputFile("test_original_disassembly.txt", originalDisassembly);
+                if (CanOutput())
+                {
+                    OutputFile("original_disassembly.txt", originalDisassembly);
+                    using var originalDumpWriter = new StringWriter();
+                    new Dumper(originalScript).Dump(originalDumpWriter, true, true, true, true, true);
+                    OutputFile("original_dump.txt", originalDumpWriter.ToString());
+                }
 
                 Assembler reassembled;
                 using (var r = new StringReader(originalDisassembly.ToString()))
@@ -470,13 +476,10 @@
                 PrintIf(originalDisassembly != newDisassembly, S("Disassembly is different"));
                 if (CanOutput())
                 {
-                    OutputFile("test_new_disassembly.txt", newDisassembly);
-                    using var originalDumpWriter = new StringWriter();
+                    OutputFile("new_disassembly.txt", newDisassembly);
                     using var newDumpWriter = new StringWriter();
-                    new Dumper(originalScript).Dump(originalDumpWriter, true, true, true, true, true);
                     new Dumper(newScript).Dump(newDumpWriter, true, true, true, true, true);
-                    OutputFile("test_original_dump.txt", originalDumpWriter.ToString());
-                    OutputFile("test_new_dump.txt", newDumpWriter.ToString());
+                    OutputFile("new_dump.txt", newDumpWriter.ToString());
                 }
 
                 var sc1 = originalScript;
@@ -498,8 +501,8 @@
                         {
                             if (CanOutput())
                             {
-                                OutputFile($"test_original_code_page_{codePageIdx}.txt", string.Join(' ', page1.Data.Select(b => b.ToString("X2"))));
-                                OutputFile($"test_new_code_page_{codePageIdx}.txt", string.Join(' ', page2.Data.Select(b => b.ToString("X2"))));
+                                OutputFile($"original_code_page_{codePageIdx}.txt", string.Join(' ', page1.Data.Select(b => b.ToString("X2"))));
+                                OutputFile($"new_code_page_{codePageIdx}.txt", string.Join(' ', page2.Data.Select(b => b.ToString("X2"))));
                             }
                         }
                         codePageIdx++;
