@@ -6,9 +6,10 @@ namespace ScTools.ScriptAssembly
     using System.IO;
     using System.Runtime.InteropServices;
     using System.Collections.Generic;
+    using System.Linq;
+    using System.Diagnostics;
 
     using ScTools.GameFiles;
-    using System.Linq;
 
     public class Disassembler
     {
@@ -18,6 +19,7 @@ namespace ScTools.ScriptAssembly
         private (string Label, string String)[] stringsTable = Array.Empty<(string, string)>();
         private Dictionary<uint, int> stringIndicesById = new(); // value is index into stringsTable
         private Dictionary<uint, string> codeLabels = new();
+        private Dictionary<uint, string> staticsLabels = new();
 
         public Script Script { get; }
         public NativeDB? NativeDB { get; }
@@ -36,6 +38,7 @@ namespace ScTools.ScriptAssembly
             BuildNativesTable();
             BuildStringsTable();
             IdentifyCodeLabels();
+            IdentifyStaticsLabels();
 
             w.WriteLine(".script_name {0}", sc.Name);
             if (sc.Hash != 0)
@@ -93,89 +96,9 @@ namespace ScTools.ScriptAssembly
                 }
             }
 
-            if (sc.StaticsCount != 0)
-            {
-                w.WriteLine(".static");
-                var repeatedValue = 0;
-                var repeatedCount = 0;
-                for (int i = 0; i < (sc.StaticsCount - sc.ArgsCount); i++)
-                {
-                    if (sc.Statics[i].AsUInt64 > uint.MaxValue)
-                    {
-                        throw new InvalidOperationException();
-                    }
+            WriteStaticsSegment(w);
 
-                    if (repeatedCount > 0 && sc.Statics[i].AsInt32 == repeatedValue)
-                    {
-                        repeatedCount++;
-                    }
-                    else
-                    {
-                        if (repeatedCount == 1)
-                        {
-                            w.WriteLine(".int {0}", repeatedValue);
-                        }
-                        else if (repeatedCount > 0)
-                        {
-                            w.WriteLine(".int {0} dup ({1})", repeatedCount, repeatedValue);
-                        }
-
-                        repeatedValue = sc.Statics[i].AsInt32;
-                        repeatedCount = 1;
-                    }
-                }
-
-                if (repeatedCount == 1)
-                {
-                    w.WriteLine(".int {0}", repeatedValue);
-                }
-                else if (repeatedCount > 0)
-                {
-                    w.WriteLine(".int {0} dup ({1})", repeatedCount, repeatedValue);
-                }
-            }
-
-            if (sc.ArgsCount != 0)
-            {
-                w.WriteLine(".arg");
-                var repeatedValue = 0;
-                var repeatedCount = 0;
-                for (int i = (int)(sc.StaticsCount - sc.ArgsCount); i < sc.StaticsCount; i++)
-                {
-                    if (sc.Statics[i].AsUInt64 > uint.MaxValue)
-                    {
-                        throw new InvalidOperationException();
-                    }
-
-                    if (repeatedCount > 0 && sc.Statics[i].AsInt32 == repeatedValue)
-                    {
-                        repeatedCount++;
-                    }
-                    else
-                    {
-                        if (repeatedCount == 1)
-                        {
-                            w.WriteLine(".int {0}", repeatedValue);
-                        }
-                        else if (repeatedCount > 0)
-                        {
-                            w.WriteLine(".int {0} dup ({1})", repeatedCount, repeatedValue);
-                        }
-
-                        repeatedValue = sc.Statics[i].AsInt32;
-                        repeatedCount = 1;
-                    }
-                }
-
-                if (repeatedCount == 1)
-                {
-                    w.WriteLine(".int {0}", repeatedValue);
-                }
-                else if (repeatedCount > 0)
-                {
-                    w.WriteLine(".int {0} dup ({1})", repeatedCount, repeatedValue);
-                }
-            }
+            WriteArgsSegment(w);
 
             if (stringsTable.Length != 0)
             {
@@ -195,37 +118,90 @@ namespace ScTools.ScriptAssembly
                 }
             }
 
-            if (code.Length != 0)
+            WriteCodeSegment(w);
+        }
+
+        private void WriteStaticsSegment(TextWriter w)
+        {
+            var sc = Script;
+            if (sc.StaticsCount == 0)
             {
-                w.WriteLine(".code");
-                IterateCode(inst =>
+                return;
+            }
+
+            w.WriteLine(".static");
+            // TODO: compress repeated sequences of .int
+            var numStatics = sc.StaticsCount - sc.ArgsCount;
+            for (int i = 0; i < numStatics; i++)
+            {
+                Debug.Assert(sc.Statics[i].AsUInt64 <= uint.MaxValue, $"{nameof(WriteStaticsSegment)} only handles 32-bit values");
+
+                if (staticsLabels.TryGetValue((uint)i, out var label))
                 {
-                    TryWriteLabel(inst.Address);
+                    w.WriteLine("{0}:", label);
+                }
 
-                    DisassembleInstruction(w, inst, inst.Address, inst.Bytes);
-                });
+                w.WriteLine("\t.int {0}", sc.Statics[i].AsInt32);
+            }
+        }
 
-                // in case we have label pointing to the end of the code
-                TryWriteLabel((uint)code.Length);
+        private void WriteArgsSegment(TextWriter w)
+        {
+            var sc = Script;
+            if (sc.ArgsCount == 0)
+            {
+                return;
+            }
 
+            w.WriteLine(".arg");
+            for (int i = (int)(sc.StaticsCount - sc.ArgsCount); i < sc.StaticsCount; i++)
+            {
+                Debug.Assert(sc.Statics[i].AsUInt64 <= uint.MaxValue, $"{nameof(WriteArgsSegment)} only handles 32-bit values");
 
-                void TryWriteLabel(uint address)
+                if (staticsLabels.TryGetValue((uint)i, out var label))
                 {
-                    if (codeLabels.TryGetValue(address, out var label))
+                    w.WriteLine("{0}:", label);
+                }
+
+                w.WriteLine("\t.int {0}", sc.Statics[i].AsInt32);
+            }
+        }
+
+        private void WriteCodeSegment(TextWriter w)
+        {
+            if (code.Length == 0)
+            {
+                return;
+            }
+
+            w.WriteLine(".code");
+            IterateCode(inst =>
+            {
+                TryWriteLabel(inst.Address);
+
+                DisassembleInstruction(w, inst, inst.Address, inst.Bytes);
+            });
+
+            // in case we have label pointing to the end of the code
+            TryWriteLabel((uint)code.Length);
+
+
+            void TryWriteLabel(uint address)
+            {
+                if (codeLabels.TryGetValue(address, out var label))
+                {
+                    if (label.StartsWith("lbl"))
                     {
-                        if (label.StartsWith("lbl"))
+                        w.WriteLine("\t{0}:", label);
+                    }
+                    else
+                    {
+                        if (label.StartsWith("func"))
                         {
-                            w.WriteLine("\t{0}:", label);
+                            // add a new line to visually separate this function from the previous one
+                            w.WriteLine();
                         }
-                        else
-                        {
-                            if (label.StartsWith("func"))
-                            {
-                                // add a new line to visually separate this function from the previous one
-                                w.WriteLine();
-                            }
-                            w.WriteLine("{0}:", label);
-                        }
+                        w.WriteLine("{0}:", label);
                     }
                 }
             }
@@ -258,9 +234,6 @@ namespace ScTools.ScriptAssembly
                 case Opcode.LOCAL_U8:
                 case Opcode.LOCAL_U8_LOAD:
                 case Opcode.LOCAL_U8_STORE:
-                case Opcode.STATIC_U8:
-                case Opcode.STATIC_U8_LOAD:
-                case Opcode.STATIC_U8_STORE:
                 case Opcode.IADD_U8:
                 case Opcode.IMUL_U8:
                 case Opcode.IOFFSET_U8:
@@ -271,6 +244,13 @@ namespace ScTools.ScriptAssembly
                 case Opcode.TEXT_LABEL_APPEND_STRING:
                 case Opcode.TEXT_LABEL_APPEND_INT:
                     w.Write(inst[0]);
+                    inst = inst[1..];
+                    break;
+                case Opcode.STATIC_U8:
+                case Opcode.STATIC_U8_LOAD:
+                case Opcode.STATIC_U8_STORE:
+                    var staticU8 = inst[0];
+                    w.Write(staticsLabels.TryGetValue(staticU8, out var staticU8Label) ? staticU8Label : staticU8);
                     inst = inst[1..];
                     break;
                 case Opcode.PUSH_CONST_U8_U8:
@@ -359,13 +339,17 @@ namespace ScTools.ScriptAssembly
                 case Opcode.LOCAL_U16:
                 case Opcode.LOCAL_U16_LOAD:
                 case Opcode.LOCAL_U16_STORE:
-                case Opcode.STATIC_U16:
-                case Opcode.STATIC_U16_LOAD:
-                case Opcode.STATIC_U16_STORE:
                 case Opcode.GLOBAL_U16:
                 case Opcode.GLOBAL_U16_LOAD:
                 case Opcode.GLOBAL_U16_STORE:
                     w.Write(MemoryMarshal.Read<ushort>(inst));
+                    inst = inst[2..];
+                    break;
+                case Opcode.STATIC_U16:
+                case Opcode.STATIC_U16_LOAD:
+                case Opcode.STATIC_U16_STORE:
+                    var staticU16 = MemoryMarshal.Read<ushort>(inst);
+                    w.Write(staticsLabels.TryGetValue(staticU16, out var staticU16Label) ? staticU16Label : staticU16);
                     inst = inst[2..];
                     break;
                 case Opcode.J:
@@ -571,6 +555,48 @@ namespace ScTools.ScriptAssembly
                 => codeLabels.TryAdd(address, "func_" + address);
             static void AddLabel(Dictionary<uint, string> codeLabels, uint address)
                 => codeLabels.TryAdd(address, "lbl_" + address);
+        }
+
+        private void IdentifyStaticsLabels()
+        {
+            staticsLabels.Clear();
+
+            if (code.Length != 0)
+            {
+                IterateCode(inst =>
+                {
+                    uint? staticAddress = inst.Opcode switch
+                    {
+                        Opcode.STATIC_U8 or
+                        Opcode.STATIC_U8_LOAD or
+                        Opcode.STATIC_U8_STORE => inst.Bytes[1],
+
+                        Opcode.STATIC_U16 or
+                        Opcode.STATIC_U16_LOAD or
+                        Opcode.STATIC_U16_STORE => MemoryMarshal.Read<ushort>(inst.Bytes[1..]),
+
+                        _ => null,
+                    };
+
+                    if (staticAddress.HasValue)
+                    {
+                        AddStaticLabel(Script, staticsLabels, staticAddress.Value);
+                    }
+                });
+            }
+
+            static void AddStaticLabel(Script sc, Dictionary<uint, string> statisLabels, uint address)
+            {
+                const string StaticPrefix = "s_";
+                const string ArgPrefix = "arg_";
+
+                var argsStart = sc.StaticsCount - sc.ArgsCount;
+                var label = address < argsStart ?
+                    StaticPrefix + address :
+                    ArgPrefix + (address - argsStart);
+
+                statisLabels.TryAdd(address, label);
+            }
         }
 
         private delegate void IterateCodeCallback(InstructionContext instruction);
