@@ -121,6 +121,48 @@ namespace ScTools.ScriptAssembly
             WriteCodeSegment(w);
         }
 
+        private void WriteStaticsValues(TextWriter w, uint from, uint toExclusive)
+        {
+            var sc = Script;
+            int repeatedValue = 0;
+            int repeatedCount = 0;
+            for (uint i = from; i < toExclusive; i++)
+            {
+                Debug.Assert(sc.Statics[i].AsUInt64 <= uint.MaxValue, $"{nameof(WriteStaticsValues)} only handles 32-bit values");
+
+                if (staticsLabels.TryGetValue(i, out var label))
+                {
+                    FlushValue();
+                    w.WriteLine("{0}:", label);
+                }
+
+                var v = sc.Statics[i].AsInt32;
+                if (repeatedCount > 0 && v != repeatedValue)
+                {
+                    FlushValue();
+                }
+
+                repeatedValue = v;
+                repeatedCount++;
+            }
+
+            FlushValue();
+
+            void FlushValue()
+            {
+                if (repeatedCount > 1)
+                {
+                    w.WriteLine("\t.int {0} dup ({1})", repeatedCount, repeatedValue);
+                }
+                else if (repeatedCount == 1)
+                {
+                    w.WriteLine("\t.int {0}", repeatedValue);
+                }
+
+                repeatedCount = 0;
+            }
+        }
+
         private void WriteStaticsSegment(TextWriter w)
         {
             var sc = Script;
@@ -130,19 +172,9 @@ namespace ScTools.ScriptAssembly
             }
 
             w.WriteLine(".static");
-            // TODO: compress repeated sequences of .int
             var numStatics = sc.StaticsCount - sc.ArgsCount;
-            for (int i = 0; i < numStatics; i++)
-            {
-                Debug.Assert(sc.Statics[i].AsUInt64 <= uint.MaxValue, $"{nameof(WriteStaticsSegment)} only handles 32-bit values");
-
-                if (staticsLabels.TryGetValue((uint)i, out var label))
-                {
-                    w.WriteLine("{0}:", label);
-                }
-
-                w.WriteLine("\t.int {0}", sc.Statics[i].AsInt32);
-            }
+            WriteStaticsValues(w, from: 0, toExclusive: numStatics);
+            w.WriteLine();
         }
 
         private void WriteArgsSegment(TextWriter w)
@@ -154,17 +186,8 @@ namespace ScTools.ScriptAssembly
             }
 
             w.WriteLine(".arg");
-            for (int i = (int)(sc.StaticsCount - sc.ArgsCount); i < sc.StaticsCount; i++)
-            {
-                Debug.Assert(sc.Statics[i].AsUInt64 <= uint.MaxValue, $"{nameof(WriteArgsSegment)} only handles 32-bit values");
-
-                if (staticsLabels.TryGetValue((uint)i, out var label))
-                {
-                    w.WriteLine("{0}:", label);
-                }
-
-                w.WriteLine("\t.int {0}", sc.Statics[i].AsInt32);
-            }
+            WriteStaticsValues(w, from: sc.StaticsCount - sc.ArgsCount, toExclusive: sc.StaticsCount);
+            w.WriteLine();
         }
 
         private void WriteCodeSegment(TextWriter w)
