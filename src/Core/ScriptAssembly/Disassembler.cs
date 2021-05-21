@@ -100,23 +100,9 @@ namespace ScTools.ScriptAssembly
 
             WriteArgsSegment(w);
 
-            if (stringsTable.Length != 0)
-            {
-                w.WriteLine(".string");
-                for (int i = 0; i < stringsTable.Length; i++)
-                {
-                    w.WriteLine("{0}:\t.str \"{1}\"", stringsTable[i].Label, stringsTable[i].String);
-                }
-            }
+            WriteStringsSegment(w);
 
-            if (nativesTable.Length != 0)
-            {
-                w.WriteLine(".include");
-                for (int i = 0; i < nativesTable.Length; i++)
-                {
-                    w.WriteLine("{0}:\t.native 0x{1:X16}", nativesTable[i].Label, nativesTable[i].Hash);
-                }
-            }
+            WriteIncludeSegment(w);
 
             WriteCodeSegment(w);
         }
@@ -133,7 +119,7 @@ namespace ScTools.ScriptAssembly
                 if (staticsLabels.TryGetValue(i, out var label))
                 {
                     FlushValue();
-                    w.WriteLine("{0}:", label);
+                    w.WriteLine("\t{0}:", label);
                 }
 
                 var v = sc.Statics[i].AsInt32;
@@ -152,11 +138,11 @@ namespace ScTools.ScriptAssembly
             {
                 if (repeatedCount > 1)
                 {
-                    w.WriteLine("\t.int {0} dup ({1})", repeatedCount, repeatedValue);
+                    w.WriteLine("\t\t.int {0} dup ({1})", repeatedCount, repeatedValue);
                 }
                 else if (repeatedCount == 1)
                 {
-                    w.WriteLine("\t.int {0}", repeatedValue);
+                    w.WriteLine("\t\t.int {0}", repeatedValue);
                 }
 
                 repeatedCount = 0;
@@ -187,6 +173,36 @@ namespace ScTools.ScriptAssembly
 
             w.WriteLine(".arg");
             WriteStaticsValues(w, from: sc.StaticsCount - sc.ArgsCount, toExclusive: sc.StaticsCount);
+            w.WriteLine();
+        }
+
+        private void WriteStringsSegment(TextWriter w)
+        {
+            if (stringsTable.Length == 0)
+            {
+                return;
+            }
+
+            w.WriteLine(".string");
+            for (int i = 0; i < stringsTable.Length; i++)
+            {
+                w.WriteLine("\t{0}:\t.str \"{1}\"", stringsTable[i].Label, stringsTable[i].String);
+            }
+            w.WriteLine();
+        }
+
+        private void WriteIncludeSegment(TextWriter w)
+        {
+            if (nativesTable.Length == 0)
+            {
+                return;
+            }
+
+            w.WriteLine(".include");
+            for (int i = 0; i < nativesTable.Length; i++)
+            {
+                w.WriteLine("\t{0}:\t.native 0x{1:X16}", nativesTable[i].Label, nativesTable[i].Hash);
+            }
             w.WriteLine();
         }
 
