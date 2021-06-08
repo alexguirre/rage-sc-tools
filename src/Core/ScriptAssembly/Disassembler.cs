@@ -13,6 +13,9 @@ namespace ScTools.ScriptAssembly
 
     public class Disassembler
     {
+        private const string CodeFuncPrefix = "func_",
+                             CodeLabelPrefix = "lbl_";
+
         private readonly byte[] code;
         private (string Label, ulong Hash)[] nativesTable = Array.Empty<(string, ulong)>();
         // TODO: use string labels in code instruction
@@ -20,6 +23,7 @@ namespace ScTools.ScriptAssembly
         private Dictionary<uint, int> stringIndicesById = new(); // value is index into stringsTable
         private Dictionary<uint, string> codeLabels = new();
         private Dictionary<uint, string> staticsLabels = new();
+        private bool hasIndirectCalls = false;
 
         public Script Script { get; }
         public NativeDB? NativeDB { get; }
@@ -415,18 +419,8 @@ namespace ScTools.ScriptAssembly
                     var hi = inst[2];
 
                     var value = (hi << 16) | (mi << 8) | lo;
-                    if (opcode is Opcode.CALL)
-                    {
-                        w.Write(codeLabels.TryGetValue((uint)value, out var funcLabel) ? funcLabel : value);
-                    }
-                    else if (opcode is Opcode.PUSH_CONST_U24)
-                    {
-                        if (!TryWriteStringLabel(this, w, ctx, (uint)value))
-                        {
-                            w.Write(value);
-                        }
-                    }
-                    else
+                    if (!(opcode is Opcode.CALL && TryWriteFuncLabel(this, w, (uint)value)) &&
+                        !(opcode is Opcode.PUSH_CONST_U24 && (TryWriteStringLabel(this, w, ctx, (uint)value) || (hasIndirectCalls && TryWriteFuncLabel(this, w, (uint)value)))))
                     {
                         w.Write(value);
                     }
@@ -460,6 +454,16 @@ namespace ScTools.ScriptAssembly
                 if (next.IsValid && next.Opcode is Opcode.STRING && self.stringIndicesById.TryGetValue(strId, out int strIndex))
                 {
                     w.Write(self.stringsTable[strIndex].Label);
+                    return true;
+                }
+                return false;
+            }
+
+            static bool TryWriteFuncLabel(Disassembler self, TextWriter w, uint addr)
+            {
+                if (self.codeLabels.TryGetValue(addr, out var funcLabel) && funcLabel.StartsWith(CodeFuncPrefix))
+                {
+                    w.Write(funcLabel);
                     return true;
                 }
                 return false;
@@ -591,14 +595,17 @@ namespace ScTools.ScriptAssembly
                         case Opcode.LEAVE:
                             addressAfterLastLeaveInst = (uint)(inst.Address + Opcode.LEAVE.ByteSize());
                             break;
+                        case Opcode.CALLINDIRECT:
+                            hasIndirectCalls = true;
+                            break;
                     }
                 });
             }
 
             static void AddFuncLabel(Dictionary<uint, string> codeLabels, uint address)
-                => codeLabels.TryAdd(address, "func_" + address);
+                => codeLabels.TryAdd(address, CodeFuncPrefix + address);
             static void AddLabel(Dictionary<uint, string> codeLabels, uint address)
-                => codeLabels.TryAdd(address, "lbl_" + address);
+                => codeLabels.TryAdd(address, CodeLabelPrefix + address);
         }
 
         private void IdentifyStaticsLabels()
