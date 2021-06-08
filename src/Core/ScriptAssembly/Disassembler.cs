@@ -548,6 +548,7 @@ namespace ScTools.ScriptAssembly
             if (code.Length != 0)
             {
                 codeLabels.Add(0, "main");
+                var addressAfterLastLeaveInst = 0u;
                 IterateCode(inst =>
                 {
                     switch (inst.Opcode)
@@ -575,16 +576,20 @@ namespace ScTools.ScriptAssembly
                                 AddLabel(codeLabels, (uint)caseJumpToAddress);
                             }
                             break;
-                        case Opcode.CALL:
-                            var lo = inst.Bytes[0];
-                            var mi = inst.Bytes[1];
-                            var hi = inst.Bytes[2];
-
-                            var callAddress = (hi << 16) | (mi << 8) | lo;
-                            AddFuncLabel(codeLabels, (uint)callAddress);
-                            break;
                         case Opcode.ENTER:
-                            AddFuncLabel(codeLabels, inst.Address);
+                            var funcAddress = inst.Address;
+                            // Functions at page boundaries may not start with an ENTER instruction, they have NOPs and a J before
+                            // the ENTER to skip the page boundary.
+                            // To solve those cases, we check if the ENTER comes after a LEAVE instruction, if it doesn't we use the address
+                            // after the LEAVE as the function address, which should at least be correct for vanilla scripts
+                            if (addressAfterLastLeaveInst != inst.Address)
+                            {
+                                funcAddress = addressAfterLastLeaveInst;
+                            }
+                            AddFuncLabel(codeLabels, funcAddress);
+                            break;
+                        case Opcode.LEAVE:
+                            addressAfterLastLeaveInst = (uint)(inst.Address + Opcode.LEAVE.ByteSize());
                             break;
                     }
                 });
