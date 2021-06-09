@@ -65,8 +65,11 @@
                     .AtLeastOne(),
                 new Option<DirectoryInfo>(
                     new[] { "--output", "-o" },
-                    "If specified, output the disassembly and re-assembled files to the specified directory.")
+                    "If specified, output the disassembly and dump files to the specified directory.")
                     .ExistingOnly(),
+                new Option(
+                    new[] { "--debug", "-d" },
+                    "If specified, re-assemble the scripts with debug options.")
             };
             disassemblerE2E.Handler = CommandHandler.Create<DisassemblerE2EOptions>(DisassemblerE2E);
 
@@ -381,10 +384,19 @@
         {
             public FileGlob[] Input { get; set; }
             public DirectoryInfo Output { get; set; }
+            public bool Debug { get; set; }
         }
 
         private static void DisassemblerE2E(DisassemblerE2EOptions options)
         {
+            static void PrintNoLine(string str)
+            {
+                lock (Console.Out)
+                {
+                    Console.Write(str);
+                }
+            }
+
             static void Print(string str)
             {
                 lock (Console.Out)
@@ -407,9 +419,13 @@
             void OneDone()
             {
                 int c = Interlocked.Increment(ref count);
-                Print($"Progress {c} / {max}");
+                if (!Console.IsOutputRedirected)
+                {
+                    PrintNoLine($"\rProgress {c} / {max}");
+                }
             }
 
+            var sw = Stopwatch.StartNew();
             var tasks = new List<Task>();
             Parallel.ForEach(options.Input.SelectMany(i => i.Matches), inputFile =>
             {
@@ -447,7 +463,8 @@
                 Assembler reassembled;
                 using (var r = new StringReader(originalDisassembly.ToString()))
                 {
-                    reassembled = Assembler.Assemble(r, Path.ChangeExtension(inputFile.Name, "reassembled.scasm"));
+                    reassembled = Assembler.Assemble(r, Path.ChangeExtension(inputFile.Name, "reassembled.scasm"),
+                                                     options: new() { IncludeFunctionNames = options.Debug });
                 }
 
                 byte[] reassembledData = new YscFile { Script = reassembled.OutputScript }.Save();
@@ -462,7 +479,7 @@
                     newDisassembly = newDisassemblyWriter.ToString();
                 }
 
-                string S(string msg) => $"[{inputFile}] > {msg}";
+                string S(string msg) => $"{(Console.IsOutputRedirected ? "" : "\r")}[{inputFile}] > {msg}";
 
                 if (reassembled.Diagnostics.HasErrors || reassembled.Diagnostics.HasWarnings)
                 {
@@ -558,6 +575,12 @@
 
                 OneDone();
             });
+            sw.Stop();
+            if (!Console.IsOutputRedirected)
+            {
+                Console.WriteLine();
+            }
+            Console.WriteLine($"Took {sw.Elapsed}");
 
             Task.WaitAll(tasks.ToArray());
         }
