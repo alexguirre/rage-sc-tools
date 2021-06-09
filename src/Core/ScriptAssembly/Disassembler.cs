@@ -233,17 +233,14 @@ namespace ScTools.ScriptAssembly
             {
                 if (codeLabels.TryGetValue(address, out var label))
                 {
-                    if (label.StartsWith("lbl"))
+                    if (label.StartsWith(CodeLabelPrefix))
                     {
                         w.WriteLine("\t{0}:", label);
                     }
                     else
                     {
-                        if (label.StartsWith("func"))
-                        {
-                            // add a new line to visually separate this function from the previous one
-                            w.WriteLine();
-                        }
+                        // add a new line to visually separate this function from the previous one
+                        w.WriteLine();
                         w.WriteLine("{0}:", label);
                     }
                 }
@@ -355,7 +352,7 @@ namespace ScTools.ScriptAssembly
                     w.Write(inst[0]);
                     w.Write(", ");
                     w.Write(MemoryMarshal.Read<ushort>(inst[1..]));
-                    var nameLen = inst[3];  // TODO: get label name from here
+                    var nameLen = inst[3];
                     inst = inst[(4 + nameLen)..];
                     break;
                 case Opcode.PUSH_CONST_S16:
@@ -551,7 +548,6 @@ namespace ScTools.ScriptAssembly
 
             if (code.Length != 0)
             {
-                codeLabels.Add(0, "main");
                 var addressAfterLastLeaveInst = 0u;
                 IterateCode(inst =>
                 {
@@ -565,9 +561,14 @@ namespace ScTools.ScriptAssembly
                         case Opcode.IGE_JZ:
                         case Opcode.ILT_JZ:
                         case Opcode.ILE_JZ:
-                            var jumpOffset = MemoryMarshal.Read<short>(inst.Bytes[1..]);
-                            var jumpAddress = inst.Address + 3 + jumpOffset;
-                            AddLabel(codeLabels, (uint)jumpAddress);
+                            // ignore labels that come after a LEAVE instruction,
+                            // R* compiler inserts them sometimes with the next function as target, bug?
+                            if (addressAfterLastLeaveInst != inst.Address)
+                            {
+                                var jumpOffset = MemoryMarshal.Read<short>(inst.Bytes[1..]);
+                                var jumpAddress = inst.Address + 3 + jumpOffset;
+                                AddLabel(codeLabels, (uint)jumpAddress);
+                            }
                             break;
                         case Opcode.SWITCH:
                             var caseCount = inst.Bytes[1];
@@ -590,7 +591,12 @@ namespace ScTools.ScriptAssembly
                             {
                                 funcAddress = addressAfterLastLeaveInst;
                             }
-                            AddFuncLabel(codeLabels, funcAddress);
+
+                            var funcNameLen = inst.Bytes[4];
+                            var funcName = funcNameLen > 0 ?
+                                                System.Text.Encoding.UTF8.GetString(inst.Bytes.Slice(5, funcNameLen - 1)) :
+                                                (funcAddress == 0 ? "main" : null);
+                            AddFuncLabel(codeLabels, funcAddress, funcName);
                             break;
                         case Opcode.LEAVE:
                             addressAfterLastLeaveInst = (uint)(inst.Address + Opcode.LEAVE.ByteSize());
@@ -602,8 +608,8 @@ namespace ScTools.ScriptAssembly
                 });
             }
 
-            static void AddFuncLabel(Dictionary<uint, string> codeLabels, uint address)
-                => codeLabels.TryAdd(address, CodeFuncPrefix + address);
+            static void AddFuncLabel(Dictionary<uint, string> codeLabels, uint address, string? name)
+                => codeLabels.TryAdd(address, name ?? CodeFuncPrefix + address);
             static void AddLabel(Dictionary<uint, string> codeLabels, uint address)
                 => codeLabels.TryAdd(address, CodeLabelPrefix + address);
         }

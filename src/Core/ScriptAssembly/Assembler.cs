@@ -13,6 +13,14 @@ namespace ScTools.ScriptAssembly
     using ScTools.GameFiles;
     using ScTools.ScriptAssembly.Grammar;
 
+    public readonly struct AssemblerOptions
+    {
+        /// <summary>
+        /// If <c>true</c>, the ENTER instructions will be encoded including the closest label declared before it.
+        /// </summary>
+        public bool IncludeFunctionNames { get; init; }
+    }
+
     public class Assembler : IDisposable
     {
         public const string DefaultScriptName = "unknown";
@@ -65,6 +73,7 @@ namespace ScTools.ScriptAssembly
         public bool HasScriptHash { get; private set; }
         public bool HasGlobalBlock { get; private set; }
         public NativeDB? NativeDB { get; set; }
+        public AssemblerOptions Options { get; set; }
 
         public Assembler(IAssemblySource source)
         {
@@ -369,9 +378,33 @@ namespace ScTools.ScriptAssembly
                     codeBuilder.U8(0);
                     break;
                 case Opcode.ENTER:
+                    var enterAddr = codeSegmentBuilder.Length;
                     codeBuilder.U8(0);
                     codeBuilder.U16(0);
-                    codeBuilder.U8(0); // TODO: include label name here
+                    if (Options.IncludeFunctionNames)
+                    {
+                        var (name, lbl) = Labels.Where(lbl => lbl.Value.Segment is Segment.Code && lbl.Value.Offset <= enterAddr)
+                                                .OrderByDescending(lbl => lbl.Value.Offset)
+                                                .FirstOrDefault();
+                        if (lbl.Segment is Segment.Code)
+                        {
+                            var nameBytes = System.Text.Encoding.UTF8.GetBytes(name).AsSpan();
+                            nameBytes = nameBytes.Slice(0, Math.Min(nameBytes.Length, byte.MaxValue - 1)); // limit length to 255 (including null terminators)
+                            codeBuilder.U8((byte)(nameBytes.Length + 1));
+                            codeBuilder.Bytes(nameBytes);
+                            codeBuilder.U8(0); // null terminator
+
+                        }
+                        else
+                        {
+                            // no label found
+                            codeBuilder.U8(0);
+                        }
+                    }
+                    else
+                    {
+                        codeBuilder.U8(0);
+                    }
                     break;
                 case Opcode.PUSH_CONST_S16:
                 case Opcode.IADD_S16:
@@ -488,7 +521,7 @@ namespace ScTools.ScriptAssembly
                 case Opcode.ENTER:
                     OperandToU8(span[0..], operands[0]);
                     OperandToU16(span[1..], operands[1]);
-                    span[3] = 0; // TODO: include label name here
+                    // note: label name is already written in ProcessInstruction
                     break;
                 case Opcode.PUSH_CONST_S16:
                 case Opcode.IADD_S16:
@@ -905,9 +938,9 @@ namespace ScTools.ScriptAssembly
             return (nativeHashes, (uint)nativeHashes.Length);
         }
 
-        public static Assembler Assemble(TextReader input, string filePath = "tmp.sc", NativeDB? nativeDB = null)
+        public static Assembler Assemble(TextReader input, string filePath = "tmp.sc", NativeDB? nativeDB = null, AssemblerOptions options = default)
         {
-            var a = new Assembler(new TextAssemblySource(input, filePath)) { NativeDB = nativeDB };
+            var a = new Assembler(new TextAssemblySource(input, filePath)) { NativeDB = nativeDB, Options = options };
             a.Assemble();
             return a;
         }
@@ -1007,6 +1040,14 @@ namespace ScTools.ScriptAssembly
             private readonly List<byte> buffer = new();
 
             public CodeBuilder(SegmentBuilder segment) => this.segment = segment;
+
+            public void Bytes(ReadOnlySpan<byte> bytes)
+            {
+                foreach (var b in bytes)
+                {
+                    buffer.Add(b);
+                }
+            }
 
             public void U8(byte v)
             {
