@@ -440,15 +440,40 @@ namespace ScTools.ScriptAssembly
                         w.Write("{0}:{1}", caseValue, codeLabels.TryGetValue((uint)caseJumpToAddress, out var caseLabel) ? caseLabel : caseJumpToOffset);
                     }
                     break;
+                case Opcode.PUSH_CONST_0:
+                case Opcode.PUSH_CONST_1:
+                case Opcode.PUSH_CONST_2:
+                case Opcode.PUSH_CONST_3:
+                case Opcode.PUSH_CONST_4:
+                case Opcode.PUSH_CONST_5:
+                case Opcode.PUSH_CONST_6:
+                case Opcode.PUSH_CONST_7:
+                {
+                    var value = opcode - Opcode.PUSH_CONST_0;
+                    if (TryGetStringIndex(this, w, ctx, value, out int strIndex))
+                    {
+                        w.Write("\t; string ref: {0}", stringsTable[strIndex].Label);
+                    }
+                    break;
+                }
             }
 
             w.WriteLine();
 
-            // TODO: how to specify string labels in PUSH_CONST_0-9 instructions when used with STRING?
-            static bool TryWriteStringLabel(Disassembler self, TextWriter w, in InstructionContext ctx, uint strId)
+            static bool TryGetStringIndex(Disassembler self, TextWriter w, in InstructionContext ctx, uint strId, out int strIndex)
             {
                 var next = ctx.Next();
-                if (next.IsValid && next.Opcode is Opcode.STRING && self.stringIndicesById.TryGetValue(strId, out int strIndex))
+                if (next.IsValid && next.Opcode is Opcode.STRING && self.stringIndicesById.TryGetValue(strId, out strIndex))
+                {
+                    return true;
+                }
+                strIndex = default;
+                return false;
+            }
+
+            static bool TryWriteStringLabel(Disassembler self, TextWriter w, in InstructionContext ctx, uint strId)
+            {
+                if (TryGetStringIndex(self, w, ctx, strId, out int strIndex))
                 {
                     w.Write(self.stringsTable[strIndex].Label);
                     return true;
