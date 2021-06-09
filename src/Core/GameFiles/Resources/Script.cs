@@ -196,9 +196,20 @@
                 throw new IndexOutOfRangeException();
             }
 
-            // from: https://gtamods.com/wiki/Script_Container
-            byte rotate = (byte)(((uint)index + CodeLength) & 0x3F);
-            return Natives[index] << rotate | Natives[index] >> (64 - rotate);
+            return DecodeNativeHash(Natives[index], index, CodeLength);
+        }
+
+        public static ulong DecodeNativeHash(ulong hash, int index, uint codeLength)
+        {
+            // from: https://gtamods.com/wiki/Script_Container#Native_Functions
+            var rotate = (index + (int)codeLength) & 0x3F;
+            return hash << rotate | hash >> (64 - rotate);
+        }
+
+        public static ulong EncodeNativeHash(ulong hash, int index, uint codeLength)
+        {
+            var rotate = (index + (int)codeLength) & 0x3F;
+            return hash >> rotate | hash << (64 - rotate);
         }
 
         public string String(uint id) => Encoding.UTF8.GetString(StringChars(id));

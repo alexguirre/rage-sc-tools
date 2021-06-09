@@ -759,15 +759,7 @@ namespace ScTools.ScriptLang.CodeGen
             => strings.ToPages(out stringsLength);
         
         public ulong[] GetUsedNativesEncoded()
-        {
-            static ulong RotateHash(ulong hash, int index, uint codeLength)
-            {
-                byte rotate = (byte)(((uint)index + codeLength) & 0x3F);
-                return hash >> rotate | hash << (64 - rotate);
-            }
-
-            return nativeHashes.Select((h, i) => RotateHash(h, i, length)).ToArray();
-        }
+            => nativeHashes.Select((h, i) => Script.EncodeNativeHash(h, i, length)).ToArray();
 
         #region IByteCodeBuilder Implementation
         string? IByteCodeBuilder.Label => currentLabel;

@@ -900,15 +900,9 @@ namespace ScTools.ScriptAssembly
             var nativeHashes = MemoryMarshal.Cast<byte, ulong>(segment.RawDataBuffer).ToArray();
             for (int i = 0; i < nativeHashes.Length; i++)
             {
-                nativeHashes[i] = RotateHash(nativeHashes[i], i, codeLength);
+                nativeHashes[i] = Script.EncodeNativeHash(nativeHashes[i], i, codeLength);
             }
             return (nativeHashes, (uint)nativeHashes.Length);
-
-            static ulong RotateHash(ulong hash, int index, uint codeLength)
-            {
-                byte rotate = (byte)(((uint)index + codeLength) & 0x3F);
-                return hash >> rotate | hash << (64 - rotate);
-            }
         }
 
         public static Assembler Assemble(TextReader input, string filePath = "tmp.sc", NativeDB? nativeDB = null)
