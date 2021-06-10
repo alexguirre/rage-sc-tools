@@ -67,6 +67,10 @@
                     new[] { "--output", "-o" },
                     "If specified, output the disassembly and dump files to the specified directory.")
                     .ExistingOnly(),
+                new Option<FileInfo>(
+                    new[] { "--nativedb", "-n" },
+                    "The JSON file containing the native commands definitions.")
+                    .ExistingOnly(),
                 new Option(
                     new[] { "--debug", "-d" },
                     "If specified, re-assemble the scripts with debug options.")
@@ -384,6 +388,7 @@
         {
             public FileGlob[] Input { get; set; }
             public DirectoryInfo Output { get; set; }
+            public FileInfo NativeDB { get; set; }
             public bool Debug { get; set; }
         }
 
@@ -411,6 +416,12 @@
                 {
                     Print(str);
                 }
+            }
+
+            NativeDB nativeDB = null;
+            if (options.NativeDB != null)
+            {
+                nativeDB = NativeDB.FromJson(File.ReadAllText(options.NativeDB.FullName));
             }
 
             var files = options.Input.SelectMany(i => i.Matches).ToArray();
@@ -449,7 +460,7 @@
                 string originalDisassembly;
                 using (var originalDisassemblyWriter = new StringWriter())
                 {
-                    Disassembler.Disassemble(originalDisassemblyWriter, originalScript);
+                    Disassembler.Disassemble(originalDisassemblyWriter, originalScript, nativeDB);
                     originalDisassembly = originalDisassemblyWriter.ToString();
                 }
                 if (CanOutput())
@@ -464,6 +475,7 @@
                 using (var r = new StringReader(originalDisassembly.ToString()))
                 {
                     reassembled = Assembler.Assemble(r, Path.ChangeExtension(inputFile.Name, "reassembled.scasm"),
+                                                     nativeDB,
                                                      options: new() { IncludeFunctionNames = options.Debug });
                 }
 
@@ -475,7 +487,7 @@
                 string newDisassembly;
                 using (var newDisassemblyWriter = new StringWriter())
                 {
-                    Disassembler.Disassemble(newDisassemblyWriter, newScript);
+                    Disassembler.Disassemble(newDisassemblyWriter, newScript, nativeDB);
                     newDisassembly = newDisassemblyWriter.ToString();
                 }
 
