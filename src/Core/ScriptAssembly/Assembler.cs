@@ -300,10 +300,12 @@ namespace ScTools.ScriptAssembly
                         var translatedHash = NativeDB.TranslateHash(hash, GameBuild.Latest);
                         if (translatedHash == 0)
                         {
-                            Diagnostics.AddError($"Unknown native hash '{hash:X16}'", Source(nativeDirective.integer()));
+                            Diagnostics.AddWarning($"Unknown native hash '{hash:X16}'", Source(nativeDirective.integer()));
                         }
-
-                        hash = translatedHash;
+                        else
+                        {
+                            hash = translatedHash;
+                        }
                     }
                     CurrentSegmentBuilder.UInt64(hash);
                     break;
