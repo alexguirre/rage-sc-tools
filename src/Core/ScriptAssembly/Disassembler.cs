@@ -14,15 +14,17 @@ namespace ScTools.ScriptAssembly
     public class Disassembler
     {
         private const string CodeFuncPrefix = "func_",
-                             CodeLabelPrefix = "lbl_";
+                             CodeLabelPrefix = "lbl_",
+                             StringLabelPrefix = "a",
+                             StaticLabelPrefix = "s_",
+                             ArgLabelPrefix = "arg_";
 
         private readonly byte[] code;
         private (string Label, ulong Hash)[] nativesTable = Array.Empty<(string, ulong)>();
-        // TODO: use string labels in code instruction
         private (string Label, string String)[] stringsTable = Array.Empty<(string, string)>();
-        private Dictionary<uint, int> stringIndicesById = new(); // value is index into stringsTable
-        private Dictionary<uint, string> codeLabels = new();
-        private Dictionary<uint, string> staticsLabels = new();
+        private readonly Dictionary<uint, int> stringIndicesById = new(); // value is index into stringsTable
+        private readonly Dictionary<uint, string> codeLabels = new();
+        private readonly Dictionary<uint, string> staticsLabels = new();
         private bool hasIndirectCalls = false;
 
         public Script Script { get; }
@@ -50,55 +52,7 @@ namespace ScTools.ScriptAssembly
                 w.WriteLine(".script_hash 0x{0:X8}", sc.Hash);
             }
 
-            if (sc.GlobalsLengthAndBlock != 0)
-            {
-                w.WriteLine(".global_block {0}", sc.GlobalsBlock);
-            
-                if (sc.GlobalsLength != 0)
-                {
-                    w.WriteLine(".global");
-                    var repeatedValue = 0;
-                    var repeatedCount = 0;
-                    foreach (var page in sc.GlobalsPages)
-                    {
-                        for (int i = 0; i < page.Data.Length; i++)
-                        {
-                            if (page.Data[i].AsUInt64 > uint.MaxValue)
-                            {
-                                throw new InvalidOperationException();
-                            }
-
-                            if (repeatedCount > 0 && page.Data[i].AsInt32 == repeatedValue)
-                            {
-                                repeatedCount++;
-                            }
-                            else
-                            {
-                                if (repeatedCount == 1)
-                                {
-                                    w.WriteLine(".int {0}", repeatedValue);
-                                }
-                                else if (repeatedCount > 0)
-                                {
-                                    w.WriteLine(".int {0} dup ({1})", repeatedCount, repeatedValue);
-                                }
-
-                                repeatedValue = page.Data[i].AsInt32;
-                                repeatedCount = 1;
-                            }
-                        }
-                    }
-
-                    if (repeatedCount == 1)
-                    {
-                        w.WriteLine(".int {0}", repeatedValue);
-                    }
-                    else if (repeatedCount > 0)
-                    {
-                        w.WriteLine(".int {0} dup ({1})", repeatedCount, repeatedValue);
-                    }
-                }
-            }
+            WriteGlobalsSegment(w);
 
             WriteStaticsSegment(w);
 
@@ -109,6 +63,103 @@ namespace ScTools.ScriptAssembly
             WriteIncludeSegment(w);
 
             WriteCodeSegment(w);
+        }
+
+        private void WriteGlobalsValues(TextWriter w)
+        {
+            var sc = Script;
+            int repeatedValue = 0;
+            int repeatedCount = 0;
+            foreach (var page in sc.GlobalsPages)
+            {
+                var values = page.Data;
+                for (int i = 0; i < values.Length; i++)
+                {
+                    Debug.Assert(values[i].AsUInt64 <= uint.MaxValue, $"{nameof(WriteGlobalsValues)} only handles 32-bit values");
+
+                    var v = values[i].AsInt32;
+                    if (repeatedCount > 0 && v != repeatedValue)
+                    {
+                        FlushValue();
+                    }
+
+                    repeatedValue = v;
+                    repeatedCount++;
+                }
+            }
+
+            FlushValue();
+
+            void FlushValue()
+            {
+                if (repeatedCount > 1)
+                {
+                    w.WriteLine("\t\t.int {0} dup ({1})", repeatedCount, repeatedValue);
+                }
+                else if (repeatedCount == 1)
+                {
+                    w.WriteLine("\t\t.int {0}", repeatedValue);
+                }
+
+                repeatedCount = 0;
+            }
+        }
+
+        private void WriteGlobalsSegment(TextWriter w)
+        {
+            var sc = Script;
+            if (sc.GlobalsLengthAndBlock == 0)
+            {
+                return;
+            }
+
+            w.WriteLine(".global_block {0}", sc.GlobalsBlock);
+
+            if (sc.GlobalsLength == 0)
+            {
+                return;
+            }
+            w.WriteLine(".global");
+            var repeatedValue = 0;
+            var repeatedCount = 0;
+            foreach (var page in sc.GlobalsPages)
+            {
+                for (int i = 0; i < page.Data.Length; i++)
+                {
+                    if (page.Data[i].AsUInt64 > uint.MaxValue)
+                    {
+                        throw new InvalidOperationException();
+                    }
+
+                    if (repeatedCount > 0 && page.Data[i].AsInt32 == repeatedValue)
+                    {
+                        repeatedCount++;
+                    }
+                    else
+                    {
+                        if (repeatedCount == 1)
+                        {
+                            w.WriteLine(".int {0}", repeatedValue);
+                        }
+                        else if (repeatedCount > 0)
+                        {
+                            w.WriteLine(".int {0} dup ({1})", repeatedCount, repeatedValue);
+                        }
+
+                        repeatedValue = page.Data[i].AsInt32;
+                        repeatedCount = 1;
+                    }
+                }
+            }
+
+            if (repeatedCount == 1)
+            {
+                w.WriteLine(".int {0}", repeatedValue);
+            }
+            else if (repeatedCount > 0)
+            {
+                w.WriteLine(".int {0} dup ({1})", repeatedCount, repeatedValue);
+            }
         }
 
         private void WriteStaticsValues(TextWriter w, uint from, uint toExclusive)
@@ -483,7 +534,7 @@ namespace ScTools.ScriptAssembly
 
             static bool TryWriteFuncLabel(Disassembler self, TextWriter w, uint addr)
             {
-                if (self.codeLabels.TryGetValue(addr, out var funcLabel) && funcLabel.StartsWith(CodeFuncPrefix))
+                if (self.codeLabels.TryGetValue(addr, out var funcLabel) && !funcLabel.StartsWith(CodeLabelPrefix))
                 {
                     w.Write(funcLabel);
                     return true;
@@ -533,14 +584,13 @@ namespace ScTools.ScriptAssembly
 
             static string CreateLabelForString(string s, Dictionary<string, int> usedLabels)
             {
-                const string Prefix = "a";
                 const int MaxLength = 25;
 
                 var label = string.IsNullOrWhiteSpace(s) ?
-                    Prefix + "EmptyString" :
-                    Prefix + string.Concat(s.Where(IsIdentifierChar)
-                                            .Take(MaxLength)
-                                            .Select((c, i) => i == 0 ? char.ToUpperInvariant(c) : c)); // make the first char uppercase
+                    StringLabelPrefix + "EmptyString" :
+                    StringLabelPrefix + string.Concat(s.Where(IsIdentifierChar)
+                                                       .Take(MaxLength)
+                                                       .Select((c, i) => i == 0 ? char.ToUpperInvariant(c) : c)); // make the first char uppercase
 
                 // check if the string label is repeated
                 if (usedLabels.TryGetValue(label, out var n))
@@ -587,7 +637,7 @@ namespace ScTools.ScriptAssembly
                         case Opcode.ILT_JZ:
                         case Opcode.ILE_JZ:
                             // ignore labels that come after a LEAVE instruction,
-                            // R* compiler inserts them sometimes with the next function as target, bug?
+                            // R* compiler inserts them sometimes with the next function or label as target, bug?
                             if (addressAfterLastLeaveInst != inst.Address)
                             {
                                 var jumpOffset = MemoryMarshal.Read<short>(inst.Bytes[1..]);
@@ -669,13 +719,10 @@ namespace ScTools.ScriptAssembly
 
             static void AddStaticLabel(Script sc, Dictionary<uint, string> statisLabels, uint address)
             {
-                const string StaticPrefix = "s_";
-                const string ArgPrefix = "arg_";
-
                 var argsStart = sc.StaticsCount - sc.ArgsCount;
                 var label = address < argsStart ?
-                    StaticPrefix + address :
-                    ArgPrefix + (address - argsStart);
+                    StaticLabelPrefix + address :
+                    ArgLabelPrefix + (address - argsStart);
 
                 statisLabels.TryAdd(address, label);
             }
