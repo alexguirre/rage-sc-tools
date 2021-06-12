@@ -15,8 +15,6 @@ namespace ScTools.ScriptAssembly
         public string FilePath { get; }
         public TextReader Input { get; }
 
-        public event IAssemblySource.ConsumeLineDelegate? LineConsumed;
-
         public TextAssemblySource(TextReader input, string fileName)
         {
             FilePath = fileName;

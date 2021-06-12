@@ -14,6 +14,7 @@
     using System.Linq;
     using ScTools.ScriptAssembly;
     using ScTools.ScriptLang;
+    using System.Collections.Generic;
 
     internal static class Program
     {
@@ -49,6 +50,10 @@
                     () => new DirectoryInfo(".\\"),
                     "The output directory.")
                     .ExistingOnly(),
+                new Option<FileInfo>(
+                    new[] { "--nativedb", "-n" },
+                    "The JSON file containing the native commands definitions.")
+                    .ExistingOnly(),
             };
             disassemble.Handler = CommandHandler.Create<DisassembleOptions>(Disassemble);
 
@@ -60,8 +65,15 @@
                     .AtLeastOne(),
                 new Option<DirectoryInfo>(
                     new[] { "--output", "-o" },
-                    "If specified, output the disassembly and re-assembled files to the specified directory.")
+                    "If specified, output the disassembly and dump files to the specified directory.")
                     .ExistingOnly(),
+                new Option<FileInfo>(
+                    new[] { "--nativedb", "-n" },
+                    "The JSON file containing the native commands definitions.")
+                    .ExistingOnly(),
+                new Option(
+                    new[] { "--debug", "-d" },
+                    "If specified, re-assemble the scripts with debug options.")
             };
             disassemblerE2E.Handler = CommandHandler.Create<DisassemblerE2EOptions>(DisassemblerE2E);
 
@@ -334,6 +346,7 @@
         {
             public FileGlob[] Input { get; set; }
             public DirectoryInfo Output { get; set; }
+            public FileInfo NativeDB { get; set; }
         }
 
         private static void Disassemble(DisassembleOptions options)
@@ -344,6 +357,12 @@
                 {
                     Console.WriteLine(str);
                 }
+            }
+
+            NativeDB nativeDB = null;
+            if (options.NativeDB != null)
+            {
+                nativeDB = NativeDB.FromJson(File.ReadAllText(options.NativeDB.FullName));
             }
 
             Parallel.ForEach(options.Input.SelectMany(i => i.Matches), inputFile =>
@@ -361,7 +380,7 @@
                 Script sc = ysc.Script;
                 const int BufferSize = 1024 * 1024 * 32; // 32mb
                 using TextWriter w = new StreamWriter(outputFile.Open(FileMode.Create), Encoding.UTF8, BufferSize) { AutoFlush = false };
-                Disassembler.Disassemble(w, sc);
+                Disassembler.Disassemble(w, sc, nativeDB);
             });
         }
 
@@ -369,10 +388,20 @@
         {
             public FileGlob[] Input { get; set; }
             public DirectoryInfo Output { get; set; }
+            public FileInfo NativeDB { get; set; }
+            public bool Debug { get; set; }
         }
 
         private static void DisassemblerE2E(DisassemblerE2EOptions options)
         {
+            static void PrintNoLine(string str)
+            {
+                lock (Console.Out)
+                {
+                    Console.Write(str);
+                }
+            }
+
             static void Print(string str)
             {
                 lock (Console.Out)
@@ -389,20 +418,39 @@
                 }
             }
 
+            NativeDB nativeDB = null;
+            if (options.NativeDB != null)
+            {
+                nativeDB = NativeDB.FromJson(File.ReadAllText(options.NativeDB.FullName));
+            }
+
             var files = options.Input.SelectMany(i => i.Matches).ToArray();
             int count = 0, max = files.Length;
 
             void OneDone()
             {
                 int c = Interlocked.Increment(ref count);
-                Print($"Progress {c} / {max}");
+                if (!Console.IsOutputRedirected)
+                {
+                    PrintNoLine($"\rProgress {c} / {max}");
+                }
             }
 
+            var sw = Stopwatch.StartNew();
+            var tasks = new List<Task>();
             Parallel.ForEach(options.Input.SelectMany(i => i.Matches), inputFile =>
             {
-                //const int BufferSize = 1024 * 1024 * 32; // 32mb
-
-                //var outputFile = new FileInfo(Path.Combine(options.Output.FullName, Path.ChangeExtension(inputFile.Name, "scasm")));
+                var outputDir = options.Output is null ?
+                                    null :
+                                    options.Output.CreateSubdirectory(Path.GetFileNameWithoutExtension(inputFile.Name)).FullName;
+                bool CanOutput() => outputDir is not null;
+                void OutputFile(string fileName, string contents)
+                {
+                    if (CanOutput())
+                    {
+                        tasks.Add(File.WriteAllTextAsync(Path.Join(outputDir, fileName), contents));
+                    }
+                }
 
                 var fileData = File.ReadAllBytes(inputFile.FullName);
 
@@ -412,15 +460,23 @@
                 string originalDisassembly;
                 using (var originalDisassemblyWriter = new StringWriter())
                 {
-                    Disassembler.Disassemble(originalDisassemblyWriter, originalScript);
+                    Disassembler.Disassemble(originalDisassemblyWriter, originalScript, nativeDB);
                     originalDisassembly = originalDisassemblyWriter.ToString();
                 }
-                //File.WriteAllText($"test_{originalScript.Name}_original_disassembly.txt", originalDisassembly);
+                if (CanOutput())
+                {
+                    OutputFile("original_disassembly.txt", originalDisassembly);
+                    using var originalDumpWriter = new StringWriter();
+                    new Dumper(originalScript).Dump(originalDumpWriter, true, true, true, true, true);
+                    OutputFile("original_dump.txt", originalDumpWriter.ToString());
+                }
 
                 Assembler reassembled;
                 using (var r = new StringReader(originalDisassembly.ToString()))
                 {
-                    reassembled = Assembler.Assemble(r, Path.ChangeExtension(inputFile.Name, "reassembled.scasm"));
+                    reassembled = Assembler.Assemble(r, Path.ChangeExtension(inputFile.Name, "reassembled.scasm"),
+                                                     nativeDB,
+                                                     options: new() { IncludeFunctionNames = options.Debug });
                 }
 
                 byte[] reassembledData = new YscFile { Script = reassembled.OutputScript }.Save();
@@ -431,20 +487,29 @@
                 string newDisassembly;
                 using (var newDisassemblyWriter = new StringWriter())
                 {
-                    Disassembler.Disassemble(newDisassemblyWriter, newScript);
+                    Disassembler.Disassemble(newDisassemblyWriter, newScript, nativeDB);
                     newDisassembly = newDisassemblyWriter.ToString();
                 }
 
-                string S(string msg) => $"[{inputFile}] > {msg}";
+                string S(string msg) => $"{(Console.IsOutputRedirected ? "" : "\r")}[{inputFile}] > {msg}";
+
+                if (reassembled.Diagnostics.HasErrors || reassembled.Diagnostics.HasWarnings)
+                {
+                    lock (Console.Out)
+                    {
+                        Console.WriteLine(S("Errors in re-assembly"));
+                        reassembled.Diagnostics.PrintAll(Console.Out);
+                    }
+                }
 
                 PrintIf(originalDisassembly != newDisassembly, S("Disassembly is different"));
-                //File.WriteAllText($"test_{newScript.Name}_new_disassembly.txt", newDisassembly);
-                //using var originalDumpWriter = new StringWriter();
-                //using var newDumpWriter = new StringWriter();
-                //new Dumper(originalScript).Dump(originalDumpWriter, true, true, true, true, true);
-                //new Dumper(newScript).Dump(newDumpWriter, true, true, true, true, true);
-                //File.WriteAllText("test_original_dump.txt", originalDumpWriter.ToString());
-                //File.WriteAllText("test_new_dump.txt", newDumpWriter.ToString());
+                if (CanOutput())
+                {
+                    OutputFile("new_disassembly.txt", newDisassembly);
+                    using var newDumpWriter = new StringWriter();
+                    new Dumper(newScript).Dump(newDumpWriter, true, true, true, true, true);
+                    OutputFile("new_dump.txt", newDumpWriter.ToString());
+                }
 
                 var sc1 = originalScript;
                 var sc2 = newScript;
@@ -463,8 +528,11 @@
                         PrintIf(!equal, S($"CodePage #{codePageIdx} is different"));
                         if (!equal)
                         {
-                            //File.WriteAllText($"test_original_code_page_{codePageIdx}.txt", string.Join(' ', page1.Data.Select(b => b.ToString("X2"))));
-                            //File.WriteAllText($"test_new_code_page_{codePageIdx}.txt", string.Join(' ', page2.Data.Select(b => b.ToString("X2"))));
+                            if (CanOutput())
+                            {
+                                OutputFile($"original_code_page_{codePageIdx}.txt", string.Join(' ', page1.Data.Select(b => b.ToString("X2"))));
+                                OutputFile($"new_code_page_{codePageIdx}.txt", string.Join(' ', page2.Data.Select(b => b.ToString("X2"))));
+                            }
                         }
                         codePageIdx++;
                     }
@@ -519,6 +587,14 @@
 
                 OneDone();
             });
+            sw.Stop();
+            if (!Console.IsOutputRedirected)
+            {
+                Console.WriteLine();
+            }
+            Console.WriteLine($"Took {sw.Elapsed}");
+
+            Task.WaitAll(tasks.ToArray());
         }
 
         private class DumpOptions
