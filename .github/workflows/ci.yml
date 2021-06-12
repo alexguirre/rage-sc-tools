@@ -32,7 +32,7 @@ jobs:
       - name: Build CodeWalker.Core
         if: steps.cache-codewalker.outputs.cache-hit != 'true'
         run: |
-          msbuild codewalker/CodeWalker.sln -t:CodeWalker_Core -p:Configuration=Release -p:Platform=x64 -p:OutputPath=..\..\dependencies -restore
+          msbuild CodeWalker/CodeWalker.Core/CodeWalker.Core.csproj -p:Configuration=Release -p:Platform=x64 -p:OutputPath=..\..\dependencies -restore
 
       - name: Cache NuGet Packages
         id: cache-nuget
