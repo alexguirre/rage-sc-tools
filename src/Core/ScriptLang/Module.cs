@@ -60,7 +60,7 @@ namespace ScTools.ScriptLang
             ScLangParser parser = new ScLangParser(tokens);
             parser.RemoveErrorListeners();
             parser.AddErrorListener(new SyntaxErrorListener<IToken>(this));
-            Ast = AstBuilder.Build(parser.script());
+            Ast = AstBuilder.Build(parser.program());
             SyntaxChecker.Check(Ast, Diagnostics);
             State = ModuleState.Parsed;
         }

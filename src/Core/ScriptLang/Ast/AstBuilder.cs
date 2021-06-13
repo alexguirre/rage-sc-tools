@@ -15,9 +15,9 @@ namespace ScTools.ScriptLang.Ast
     {
         private static SourceRange Source(ParserRuleContext context) => SourceRange.FromTokens(context.Start, context.Stop);
 
-        public static Root Build(ScLangParser.ScriptContext context)
-            => new Root(context.topLevelStatement().SelectMany(stmt => Build(stmt)), Source(context));
-
+        public static Root Build(ScLangParser.ProgramContext context)
+            => null;//new Root(context.topLevelStatement().SelectMany(stmt => Build(stmt)), Source(context));
+        /*
         private static IEnumerable<TopLevelStatement> Build(ScLangParser.TopLevelStatementContext context)
         {
             switch (context)
@@ -260,6 +260,6 @@ namespace ScTools.ScriptLang.Ast
                                                                                  Source(c)),
                 ScLangParser.ExpressionContext c => new ErrorExpression(c.GetText(), Source(c)),
                 _ => throw new NotSupportedException(),
-            };
+            };*/
     }
 }
