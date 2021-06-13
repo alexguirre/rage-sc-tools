@@ -5,7 +5,7 @@ namespace ScTools.ScriptLang.Semantics
     using System.Diagnostics;
 
     using ScTools.GameFiles;
-    using ScTools.ScriptLang.Ast;
+    using ScTools.ScriptLang.AstOld;
     using ScTools.ScriptLang.Semantics.Binding;
 
     /// <summary>

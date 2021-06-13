@@ -4,7 +4,7 @@ namespace ScTools.ScriptLang.Semantics
     using System;
     using System.Linq;
 
-    using ScTools.ScriptLang.Ast;
+    using ScTools.ScriptLang.AstOld;
     using ScTools.ScriptLang.Semantics.Binding;
     using ScTools.ScriptLang.Semantics.Symbols;
 

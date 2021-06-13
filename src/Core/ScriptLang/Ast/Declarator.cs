@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
-namespace ScTools.ScriptLang.Ast
+namespace ScTools.ScriptLang.AstOld
 {
     public abstract class Declarator : Node
     {

@@ -5,10 +5,10 @@ namespace ScTools.ScriptLang.Semantics.Symbols
     {
         public override ExplicitFunctionType Type { get; }
 
-        public NativeFunctionSymbol(Ast.ProcedureNativeStatement node, ExplicitFunctionType type) : base(node.Name, node.Source)
+        public NativeFunctionSymbol(AstOld.ProcedureNativeStatement node, ExplicitFunctionType type) : base(node.Name, node.Source)
             => Type = type;
 
-        public NativeFunctionSymbol(Ast.FunctionNativeStatement node, ExplicitFunctionType type) : base(node.Name, node.Source)
+        public NativeFunctionSymbol(AstOld.FunctionNativeStatement node, ExplicitFunctionType type) : base(node.Name, node.Source)
             => Type = type;
     }
 }

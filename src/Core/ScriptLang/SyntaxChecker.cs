@@ -4,7 +4,7 @@ namespace ScTools.ScriptLang
     using System.Diagnostics;
     using System.Linq;
 
-    using ScTools.ScriptLang.Ast;
+    using ScTools.ScriptLang.AstOld;
 
     public static class SyntaxChecker
     {

@@ -16,7 +16,7 @@ namespace ScTools.ScriptLang.Semantics
         private readonly List<SymbolTable> children = new();
         private readonly List<SymbolTable> imports = new();
 
-        public Ast.Node AstNode { get; }
+        public AstOld.Node AstNode { get; }
         public SymbolTable? Parent { get; }
         public IEnumerable<SymbolTable> Children => children;
         public IEnumerable<SymbolTable> Imports => imports;
@@ -29,13 +29,13 @@ namespace ScTools.ScriptLang.Semantics
         public IEnumerable<ISymbol> Symbols => symbols;
 
 
-        public SymbolTable(Ast.Root astNode)
+        public SymbolTable(AstOld.Root astNode)
         {
             AstNode = astNode;
             Parent = null;
         }
 
-        public SymbolTable(Ast.StatementBlock astNode, SymbolTable parent)
+        public SymbolTable(AstOld.StatementBlock astNode, SymbolTable parent)
         {
             AstNode = astNode;
             Parent = parent;
@@ -124,7 +124,7 @@ namespace ScTools.ScriptLang.Semantics
         /// <summary>
         /// Searches for a child scope with <paramref name="key"/> in this scope and all its children scope.
         /// </summary>
-        public SymbolTable? FindScope(Ast.StatementBlock node)
+        public SymbolTable? FindScope(AstOld.StatementBlock node)
         {
             var t = Children.SingleOrDefault(c => c.AstNode == node);
             if (t != null)
@@ -144,12 +144,12 @@ namespace ScTools.ScriptLang.Semantics
             return null;
         }
 
-        public SymbolTable GetScope(Ast.StatementBlock node) => FindScope(node) ?? throw new ArgumentException("No scope for the specified AST node", nameof(node));
+        public SymbolTable GetScope(AstOld.StatementBlock node) => FindScope(node) ?? throw new ArgumentException("No scope for the specified AST node", nameof(node));
 
         /// <summary>
         /// Creates a new scope.
         /// </summary>
-        public SymbolTable EnterScope(Ast.StatementBlock node) 
+        public SymbolTable EnterScope(AstOld.StatementBlock node) 
         {
             if (Children.Any(c => c.AstNode == node))
             {

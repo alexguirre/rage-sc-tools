@@ -6,7 +6,7 @@ namespace ScTools.ScriptLang.Semantics
     using System.Diagnostics;
     using System.Linq;
 
-    using ScTools.ScriptLang.Ast;
+    using ScTools.ScriptLang.AstOld;
     using ScTools.ScriptLang.Semantics.Symbols;
 
     public static partial class SemanticAnalysis

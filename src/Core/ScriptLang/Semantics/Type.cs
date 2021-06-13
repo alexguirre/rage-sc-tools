@@ -452,9 +452,9 @@ namespace ScTools.ScriptLang.Semantics
     {
         public override int SizeOf => throw new InvalidOperationException("Unresolved array type");
         public Type ItemType { get; }
-        public Ast.Expression LengthExpression { get; set; }
+        public AstOld.Expression LengthExpression { get; set; }
 
-        public UnresolvedArrayType(Type itemType, Ast.Expression lengthExpr)
+        public UnresolvedArrayType(Type itemType, AstOld.Expression lengthExpr)
             => (ItemType, LengthExpression) = (itemType, lengthExpr);
 
         public override UnresolvedArrayType Clone() => new UnresolvedArrayType(ItemType, LengthExpression);

@@ -8,7 +8,7 @@ namespace ScTools.ScriptLang
     using Antlr4.Runtime;
 
     using ScTools.GameFiles;
-    using ScTools.ScriptLang.Ast;
+    using ScTools.ScriptLang.AstOld;
     using ScTools.ScriptLang.CodeGen;
     using ScTools.ScriptLang.Grammar;
     using ScTools.ScriptLang.Semantics;

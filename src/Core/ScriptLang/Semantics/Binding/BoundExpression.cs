@@ -80,9 +80,9 @@ namespace ScTools.ScriptLang.Semantics.Binding
         public override bool IsAddressable => false;
         public override bool IsInvalid => Operand.IsInvalid;
         public BoundExpression Operand { get; }
-        public Ast.UnaryOperator Op { get; }
+        public AstOld.UnaryOperator Op { get; }
 
-        public BoundUnaryExpression(BoundExpression operand, Ast.UnaryOperator op)
+        public BoundUnaryExpression(BoundExpression operand, AstOld.UnaryOperator op)
         {
             Operand = operand;
             Op = op;
@@ -99,7 +99,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
                 var isFloat = Type is BasicType { TypeCode: BasicTypeCode.Float };
                 switch (Op)
                 {
-                    case Ast.UnaryOperator.Negate:
+                    case AstOld.UnaryOperator.Negate:
                         code.Emit(isFloat ? Opcode.FNEG : Opcode.INEG);
                         break;
                     default: throw new NotImplementedException();
@@ -110,7 +110,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
                 Operand.EmitLoad(code);
                 switch (Op)
                 {
-                    case Ast.UnaryOperator.Not:
+                    case AstOld.UnaryOperator.Not:
                         code.Emit(Opcode.INOT);
                         break;
                     default: throw new NotImplementedException();
@@ -133,9 +133,9 @@ namespace ScTools.ScriptLang.Semantics.Binding
         public override bool IsInvalid => Left.IsInvalid || Right.IsInvalid;
         public BoundExpression Left { get; }
         public BoundExpression Right { get; }
-        public Ast.BinaryOperator Op { get; }
+        public AstOld.BinaryOperator Op { get; }
 
-        public BoundBinaryExpression(BoundExpression left, BoundExpression right, Ast.BinaryOperator op)
+        public BoundBinaryExpression(BoundExpression left, BoundExpression right, AstOld.BinaryOperator op)
         {
             Left = left;
             Right = right;
@@ -144,7 +144,7 @@ namespace ScTools.ScriptLang.Semantics.Binding
             if (!left.IsInvalid && !right.IsInvalid)
             {
                 Debug.Assert(left.Type?.UnderlyingType == right.Type?.UnderlyingType);
-                Type = Ast.BinaryExpression.OpIsComparison(op) ? new BasicType(BasicTypeCode.Bool) : left.Type?.UnderlyingType;
+                Type = AstOld.BinaryExpression.OpIsComparison(op) ? new BasicType(BasicTypeCode.Bool) : left.Type?.UnderlyingType;
             }
         }
 
@@ -159,46 +159,46 @@ namespace ScTools.ScriptLang.Semantics.Binding
                 var isFloat = operandsType is BasicType { TypeCode: BasicTypeCode.Float };
                 switch (Op)
                 {
-                    case Ast.BinaryOperator.Add:
+                    case AstOld.BinaryOperator.Add:
                         code.Emit(isFloat ? Opcode.FADD : Opcode.IADD);
                         break;
-                    case Ast.BinaryOperator.Subtract:
+                    case AstOld.BinaryOperator.Subtract:
                         code.Emit(isFloat ? Opcode.FSUB : Opcode.ISUB);
                         break;
-                    case Ast.BinaryOperator.Multiply:
+                    case AstOld.BinaryOperator.Multiply:
                         code.Emit(isFloat ? Opcode.FMUL : Opcode.IMUL);
                         break;
-                    case Ast.BinaryOperator.Divide:
+                    case AstOld.BinaryOperator.Divide:
                         code.Emit(isFloat ? Opcode.FDIV : Opcode.IDIV);
                         break;
-                    case Ast.BinaryOperator.Modulo:
+                    case AstOld.BinaryOperator.Modulo:
                         code.Emit(isFloat ? Opcode.FMOD : Opcode.IMOD);
                         break;
-                    case Ast.BinaryOperator.Or:
+                    case AstOld.BinaryOperator.Or:
                         code.Emit(Opcode.IOR);
                         break;
-                    case Ast.BinaryOperator.And:
+                    case AstOld.BinaryOperator.And:
                         code.Emit(Opcode.IAND);
                         break;
-                    case Ast.BinaryOperator.Xor:
+                    case AstOld.BinaryOperator.Xor:
                         code.Emit(Opcode.IXOR);
                         break;
-                    case Ast.BinaryOperator.Equal:
+                    case AstOld.BinaryOperator.Equal:
                         code.Emit(isFloat ? Opcode.FEQ : Opcode.IEQ);
                         break;
-                    case Ast.BinaryOperator.NotEqual:
+                    case AstOld.BinaryOperator.NotEqual:
                         code.Emit(isFloat ? Opcode.FNE : Opcode.INE);
                         break;
-                    case Ast.BinaryOperator.Greater:
+                    case AstOld.BinaryOperator.Greater:
                         code.Emit(isFloat ? Opcode.FGT : Opcode.IGT);
                         break;
-                    case Ast.BinaryOperator.GreaterOrEqual:
+                    case AstOld.BinaryOperator.GreaterOrEqual:
                         code.Emit(isFloat ? Opcode.FGE : Opcode.IGE);
                         break;
-                    case Ast.BinaryOperator.Less:
+                    case AstOld.BinaryOperator.Less:
                         code.Emit(isFloat ? Opcode.FLT : Opcode.ILT);
                         break;
-                    case Ast.BinaryOperator.LessOrEqual:
+                    case AstOld.BinaryOperator.LessOrEqual:
                         code.Emit(isFloat ? Opcode.FLE : Opcode.ILE);
                         break;
                     default: throw new NotImplementedException();
@@ -211,16 +211,16 @@ namespace ScTools.ScriptLang.Semantics.Binding
                 Right.EmitLoad(code);
                 switch (Op)
                 {
-                    case Ast.BinaryOperator.LogicalAnd:
+                    case AstOld.BinaryOperator.LogicalAnd:
                         code.Emit(Opcode.IAND);
                         break;
-                    case Ast.BinaryOperator.LogicalOr:
+                    case AstOld.BinaryOperator.LogicalOr:
                         code.Emit(Opcode.IOR);
                         break;
-                    case Ast.BinaryOperator.Equal:
+                    case AstOld.BinaryOperator.Equal:
                         code.Emit(Opcode.IEQ);
                         break;
-                    case Ast.BinaryOperator.NotEqual:
+                    case AstOld.BinaryOperator.NotEqual:
                         code.Emit(Opcode.INE);
                         break;
                     default: throw new NotImplementedException();

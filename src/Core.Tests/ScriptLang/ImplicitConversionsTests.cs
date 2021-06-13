@@ -3,7 +3,7 @@
     using System.IO;
 
     using ScTools.ScriptLang;
-    using ScTools.ScriptLang.Ast;
+    using ScTools.ScriptLang.AstOld;
     using ScTools.ScriptLang.Semantics;
     using ScTools.ScriptLang.Semantics.Binding;
 
