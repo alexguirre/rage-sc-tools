@@ -107,14 +107,14 @@ switchCase
     ;
 
 enumList
-    : (enumMemberList? EOL)*
+    : (enumMemberDeclarationList? EOL)*
     ;
 
-enumMemberList
-    : enumMember (',' enumMember)*
+enumMemberDeclarationList
+    : enumMemberDeclaration (',' enumMemberDeclaration)*
     ;
 
-enumMember
+enumMemberDeclaration
     : identifier ('=' initializer=expression)?
     ;
 
