@@ -6,8 +6,6 @@
     using System.Linq;
     using System.Threading;
 
-    using Antlr4.Runtime;
-
     using CodeWalker.GameFiles;
 
     using ScTools;
@@ -57,43 +55,11 @@
 
         private static void Parse(string filePath)
         {
-            using var reader = new StreamReader(filePath);
-            AntlrInputStream inputStream = new AntlrInputStream(reader);
-
-            DiagnosticsReport diagnostics = new(filePath);
-            ScLangLexer lexer = new(inputStream);
-            lexer.RemoveErrorListeners();
-            lexer.AddErrorListener(new SyntaxErrorListener<int>(diagnostics));
-            CommonTokenStream tokens = new(lexer);
-            ScLangParser parser = new(tokens);
-            parser.RemoveErrorListeners();
-            parser.AddErrorListener(new SyntaxErrorListener<IToken>(diagnostics));
-
-            PrintParseTree(Console.Out, parser, parser.program());
-            parser.program();
-
-            diagnostics.PrintAll(Console.Out);
-        }
-
-        private static void PrintParseTree(TextWriter w, Parser p, ParserRuleContext ctx)
-        {
-            w.WriteLine(ctx.ToInfoString(p));
-        }
-
-        private sealed class SyntaxErrorListener<TSymbol> : IAntlrErrorListener<TSymbol>
-        {
-            private readonly DiagnosticsReport diagnostics;
-
-            public SyntaxErrorListener(DiagnosticsReport diagnostics) => this.diagnostics = diagnostics;
-
-            public void SyntaxError(TextWriter output, IRecognizer recognizer, TSymbol offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
-            {
-                var source = offendingSymbol is IToken t ?
-                                SourceRange.FromTokens(t, null) :
-                                new SourceRange(new SourceLocation(line, charPositionInLine),
-                                                new SourceLocation(line, charPositionInLine));
-                diagnostics.AddError(msg, source);
-            }
+            using var r = new StreamReader(filePath);
+            var d = new Diagnostics();
+            var p = new Parser(r, filePath);
+            p.Parse(d);
+            ;
         }
     }
 }

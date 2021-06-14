@@ -1,29 +1,29 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using Antlr4.Runtime;
-
-using ScTools.ScriptLang.Ast;
-using ScTools.ScriptLang.Ast.Directives;
-using ScTools.ScriptLang.Grammar;
-
-namespace ScTools.ScriptLang
+﻿namespace ScTools.ScriptLang
 {
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+
+    using Antlr4.Runtime;
+
+    using ScTools.ScriptLang.Ast;
+    using ScTools.ScriptLang.Ast.Declarations;
+    using ScTools.ScriptLang.Ast.Expressions;
+    using ScTools.ScriptLang.Grammar;
+
     public class Parser
     {
         public string FilePath { get; }
         public TextReader Input { get; }
         public Program OutputAst { get; private set; }
+        private bool scriptNameSet = false, scriptHashSet = false;
 
         public Parser(TextReader input, string fileName)
         {
             FilePath = fileName;
             Input = input;
-            OutputAst = new Program(SourceRange.Unknown, Enumerable.Empty<IDirective>());
+            OutputAst = new Program(SourceRange.Unknown);
         }
 
         public void Parse(Diagnostics diagnostics)
@@ -39,20 +39,75 @@ namespace ScTools.ScriptLang
             parser.RemoveErrorListeners();
             parser.AddErrorListener(new SyntaxErrorListener<IToken>(diagnosticsReport));
 
-            OutputAst = BuildAst(parser.program());
+            ProcessParseTree(parser.program(), diagnosticsReport);
         }
 
-        private Program BuildAst(ScLangParser.ProgramContext context)
-            => new(Source(context), context.directive().Select(BuildAst));
-
-        private IDirective BuildAst(ScLangParser.DirectiveContext context)
-            => context switch
+        private void ProcessParseTree(ScLangParser.ProgramContext context, DiagnosticsReport diagnostics)
+        {
+            foreach (var directive in context.directive())
             {
-                ScLangParser.ScriptHashDirectiveContext c => new ScriptHashDirective(Source(c), Parse(c.integer())),
-                ScLangParser.ScriptNameDirectiveContext c => new ScriptNameDirective(Source(c), c.identifier().GetText()),
-                ScLangParser.UsingDirectiveContext c => new UsingDirective(Source(c), Parse(c.@string())),
-                _ => throw new NotSupportedException(),
-            };
+                ProcessDirective(directive, diagnostics);
+            }
+
+            foreach (var astDecl in context.declaration().SelectMany(BuildAst))
+            {
+                OutputAst.Declarations.Add(astDecl);
+            }
+        }
+
+        private void ProcessDirective(ScLangParser.DirectiveContext context, DiagnosticsReport diagnostics)
+        {
+            switch (context)
+            {
+                case ScLangParser.ScriptHashDirectiveContext h:
+                    if (!scriptHashSet)
+                    {
+                        OutputAst.ScriptHash = Parse(h.integer());
+                        scriptHashSet = true;
+                    }
+                    else
+                    {
+                        diagnostics.AddError("SCRIPT_HASH directive is repeated", Source(h));
+                    }
+                    break;
+                case ScLangParser.ScriptNameDirectiveContext n:
+                    if (!scriptNameSet)
+                    {
+                        OutputAst.ScriptName = n.identifier().GetText();
+                        scriptNameSet = true;
+                    }
+                    else
+                    {
+                        diagnostics.AddError("SCRIPT_NAME directive is repeated", Source(n));
+                    }
+                    break;
+                case ScLangParser.UsingDirectiveContext u:
+                    var path = Parse(u.@string());
+                    // TODO: handle USING directives
+                    break;
+                default: throw new NotSupportedException();
+            }
+        }
+
+        private IEnumerable<IDeclaration> BuildAst(ScLangParser.DeclarationContext context)
+        {
+            switch (context)
+            {
+                case ScLangParser.EnumDeclarationContext c:
+                    var enumMembers = c.enumList().enumMemberDeclarationList()
+                                       .SelectMany(l => l.enumMemberDeclaration())
+                                       .Select(m => new EnumMemberDeclaration(Source(m), m.identifier().GetText(), BuildAst(m.initializer)));
+                    yield return new EnumDeclaration(Source(c), c.identifier().GetText(), enumMembers);
+                    break;
+                default: break; // TODO: throw new NotSupportedException();
+            }
+        }
+
+        private IExpression? BuildAst(ScLangParser.ExpressionContext context)
+        {
+            // TODO
+            return null;
+        }
 
         private static SourceRange Source(ParserRuleContext context) => SourceRange.FromTokens(context.Start, context.Stop);
 
