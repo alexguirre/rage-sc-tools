@@ -2,7 +2,7 @@
 {
     public interface INode
     {
-        SourceRange Source { get; }
+        SourceRange Source { get; set; }
 
         TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param);
     }

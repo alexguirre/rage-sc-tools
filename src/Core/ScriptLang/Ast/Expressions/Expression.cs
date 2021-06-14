@@ -1,6 +1,6 @@
 ﻿namespace ScTools.ScriptLang.Ast.Expressions
 {
-    public interface IExpression
+    public interface IExpression : INode
     {
     }
 

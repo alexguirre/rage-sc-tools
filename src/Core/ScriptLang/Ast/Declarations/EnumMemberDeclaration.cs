@@ -2,7 +2,7 @@
 {
     using ScTools.ScriptLang.Ast.Expressions;
 
-    public class EnumMemberDeclaration : BaseDeclaration
+    public sealed class EnumMemberDeclaration : BaseValueDeclaration
     {
         public int Value { get; set; }
         public IExpression? Initializer { get; set; }
