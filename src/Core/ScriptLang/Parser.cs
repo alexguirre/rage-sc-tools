@@ -391,10 +391,7 @@
         }
 
         private IType BuildType(ScLangParser.IdentifierContext typeName)
-        {
-            // TODO: BuildType
-            return IType.Unknown;
-        }
+            => new UnresolvedNamedType(Source(typeName), typeName.GetText());
 
         public string GetNameFromDeclarator(ScLangParser.DeclaratorContext declarator)
         {

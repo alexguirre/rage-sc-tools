@@ -32,5 +32,6 @@
         TReturn Visit(FuncType node, TParam param);
         TReturn Visit(FuncTypeParameter node, TParam param);
         TReturn Visit(StructType node, TParam param);
+        TReturn Visit(UnresolvedNamedType node, TParam param);
     }
 }
