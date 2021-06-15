@@ -1,7 +1,7 @@
-﻿using ScTools.ScriptLang.Ast.Declarations;
-
-namespace ScTools.ScriptLang.Ast.Types
+﻿namespace ScTools.ScriptLang.Ast.Types
 {
+    using ScTools.ScriptLang.Ast.Declarations;
+
     public sealed class EnumType : BaseType
     {
         public override int SizeOf => 1;

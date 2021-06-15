@@ -13,6 +13,8 @@
         TReturn Visit(FuncDeclaration node, TParam param);
         TReturn Visit(FuncProtoDeclaration node, TParam param);
         TReturn Visit(LabelDeclaration node, TParam param);
+        TReturn Visit(StructDeclaration node, TParam param);
+        TReturn Visit(StructField node, TParam param);
         TReturn Visit(VarDeclaration node, TParam param);
 
         TReturn Visit(BreakStatement node, TParam param);
@@ -28,5 +30,6 @@
         TReturn Visit(EnumType node, TParam param);
         TReturn Visit(FuncType node, TParam param);
         TReturn Visit(FuncTypeParameter node, TParam param);
+        TReturn Visit(StructType node, TParam param);
     }
 }

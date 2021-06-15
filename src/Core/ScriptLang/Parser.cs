@@ -164,6 +164,12 @@
                         DeclaredType = BuildFuncType(Source(c), c.returnType, c.parameterList()),
                     };
                     break;
+                case ScLangParser.StructDeclarationContext c:
+                    yield return new StructDeclaration(Source(c), c.identifier().GetText())
+                    {
+                        Fields = BuildStructFields(c.structFieldList())
+                    };
+                    break;
                 case ScLangParser.EnumDeclarationContext c:
                     var enumMembers = c.enumList().enumMemberDeclarationList()
                                        .SelectMany(l => l.enumMemberDeclaration())
@@ -297,6 +303,16 @@
                     Type = BuildTypeFromDeclarator(varDeclContext.type, initDecl.declarator()),
                     Initializer = BuildAstOpt(initDecl.initializer),
                 });
+        }
+
+        private List<StructField> BuildStructFields(ScLangParser.StructFieldListContext structFieldsContext)
+        {
+            return new(structFieldsContext.varDeclarationNoInit()
+                        .SelectMany(declNoInit => declNoInit.declaratorList().declarator()
+                                                            .Select(decl => new StructField(Source(decl), GetNameFromDeclarator(decl))
+                                                            {
+                                                                Type = BuildTypeFromDeclarator(declNoInit.type, decl),
+                                                            })));
         }
 
         private List<IStatement> BuildFuncBody(FuncType funcType, ScLangParser.StatementBlockContext statementBlockContext)
