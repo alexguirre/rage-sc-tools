@@ -11,19 +11,19 @@ directive
     ;
 
 declaration
-    : K_PROC identifier parameterList EOL
+    : K_PROC name=identifier parameterList EOL
       statementBlock
-      K_ENDPROC                                                         #procedureDeclaration
+      K_ENDPROC                                                             #procedureDeclaration
 
-    | K_FUNC returnType=identifier identifier parameterList EOL
+    | K_FUNC returnType=identifier name=identifier parameterList EOL
       statementBlock
-      K_ENDFUNC                                                         #functionDeclaration
+      K_ENDFUNC                                                             #functionDeclaration
 
-    | K_PROTO K_PROC identifier parameterList                           #procedurePrototypeDeclaration
-    | K_PROTO K_FUNC returnType=identifier identifier parameterList     #functionPrototypeDeclaration
+    | K_PROTO K_PROC name=identifier parameterList                          #procedurePrototypeDeclaration
+    | K_PROTO K_FUNC returnType=identifier name=identifier parameterList    #functionPrototypeDeclaration
 
-    | K_NATIVE K_PROC identifier parameterList                          #procedureNativeDeclaration
-    | K_NATIVE K_FUNC returnType=identifier identifier parameterList    #functionNativeDeclaration
+    | K_NATIVE K_PROC name=identifier parameterList                         #procedureNativeDeclaration
+    | K_NATIVE K_FUNC returnType=identifier name=identifier parameterList   #functionNativeDeclaration
 
     | K_STRUCT identifier EOL
       structFieldList

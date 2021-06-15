@@ -10,6 +10,7 @@
     using ScTools.ScriptLang.Ast;
     using ScTools.ScriptLang.Ast.Declarations;
     using ScTools.ScriptLang.Ast.Expressions;
+    using ScTools.ScriptLang.Ast.Statements;
     using ScTools.ScriptLang.Ast.Types;
     using ScTools.ScriptLang.Grammar;
 
@@ -109,6 +110,7 @@
                         var (open, newFilePath) = UsingResolver.Resolve(filePath, usingPath);
                         if (usings.Add(newFilePath))
                         {
+                            // merge the AST from the included file
                             using var newInput = open();
                             ParseFile(newInput, newFilePath, diagnostics);
                         }
@@ -122,6 +124,46 @@
         {
             switch (context)
             {
+                case ScLangParser.ProcedureDeclarationContext c:
+                    var pTy = BuildFuncType(Source(c), null, c.parameterList());
+                    yield return new FuncDeclaration(Source(c), c.name.GetText(), FuncKind.UserDefined)
+                    {
+                        Type = pTy,
+                        Body = BuildFuncBody(pTy, c.statementBlock()),
+                    };
+                    break;
+                case ScLangParser.FunctionDeclarationContext c:
+                    var fTy = BuildFuncType(Source(c), c.returnType, c.parameterList());
+                    yield return new FuncDeclaration(Source(c), c.name.GetText(), FuncKind.UserDefined)
+                    {
+                        Type = fTy,
+                        Body = BuildFuncBody(fTy, c.statementBlock()),
+                    };
+                    break;
+                case ScLangParser.ProcedureNativeDeclarationContext c:
+                    yield return new FuncDeclaration(Source(c), c.name.GetText(), FuncKind.Native)
+                    {
+                        Type = BuildFuncType(Source(c), null, c.parameterList()),
+                    };
+                    break;
+                case ScLangParser.FunctionNativeDeclarationContext c:
+                    yield return new FuncDeclaration(Source(c), c.name.GetText(), FuncKind.Native)
+                    {
+                        Type = BuildFuncType(Source(c), c.returnType, c.parameterList()),
+                    };
+                    break;
+                case ScLangParser.ProcedurePrototypeDeclarationContext c:
+                    yield return new FuncProtoDeclaration(Source(c), c.name.GetText())
+                    {
+                        DeclaredType = BuildFuncType(Source(c), null, c.parameterList()),
+                    };
+                    break;
+                case ScLangParser.FunctionPrototypeDeclarationContext c:
+                    yield return new FuncProtoDeclaration(Source(c), c.name.GetText())
+                    {
+                        DeclaredType = BuildFuncType(Source(c), c.returnType, c.parameterList()),
+                    };
+                    break;
                 case ScLangParser.EnumDeclarationContext c:
                     var enumMembers = c.enumList().enumMemberDeclarationList()
                                        .SelectMany(l => l.enumMemberDeclaration())
@@ -131,6 +173,7 @@
                 case ScLangParser.ConstantVariableDeclarationContext c:
                     foreach (var varDecl in BuildVarDecls(VarKind.Constant, c.varDeclaration()))
                     {
+                        // TODO: check if initializer expression in CONST var is missing
                         yield return varDecl;
                     }
                     break;
@@ -152,8 +195,23 @@
 
         private IExpression? BuildAst(ScLangParser.ExpressionContext? context)
         {
-            // TODO
+            // TODO: BuildAst(ScLangParser.ExpressionContext)
             return null;
+        }
+
+        private IEnumerable<IStatement> BuildAst(ScLangParser.StatementContext context)
+        {
+            // TODO: BuildAst(ScLangParser.StatementContext)
+            switch (context)
+            {
+                case ScLangParser.VariableDeclarationStatementContext c:
+                    foreach (var varDecl in BuildVarDecls(VarKind.Local, c.varDeclaration()))
+                    {
+                        yield return varDecl;
+                    }
+                    break;
+                default: break; // TODO: throw new NotSupportedException();
+            }
         }
 
         private IEnumerable<VarDeclaration> BuildVarDecls(VarKind kind, ScLangParser.VarDeclarationContext varDeclContext)
@@ -161,14 +219,46 @@
             return varDeclContext.initDeclaratorList().initDeclarator()
                 .Select(initDecl => new VarDeclaration(Source(initDecl), GetNameFromDeclarator(initDecl.declarator()), kind)
                 {
-                    Type = BuildTypeFromDeclarator(varDeclContext.type.GetText(), initDecl.declarator()),
+                    Type = BuildTypeFromDeclarator(varDeclContext.type, initDecl.declarator()),
                     Initializer = BuildAst(initDecl.initializer),
                 });
         }
 
-        private IType BuildTypeFromDeclarator(string baseType, ScLangParser.DeclaratorContext declarator)
+        private List<IStatement> BuildFuncBody(FuncType funcType, ScLangParser.StatementBlockContext statementBlockContext)
         {
-            // TODO
+            // include parameter var declarations at the start of the function body
+            var paramsDecls = funcType.Parameters
+                                      .Select(p => new VarDeclaration(p.Source, p.Name, VarKind.Parameter)
+                                        {
+                                            Type = p.Type,
+                                            Initializer = null,
+                                        });
+            var statements = statementBlockContext.statement().SelectMany(BuildAst);
+            return new List<IStatement>(paramsDecls.Concat(statements));
+        }
+
+        private FuncType BuildFuncType(SourceRange source, ScLangParser.IdentifierContext? returnType, ScLangParser.ParameterListContext paramsContext)
+        {
+            return new FuncType(source)
+            {
+                ReturnType = returnType is null ? null : BuildType(returnType),
+                Parameters = new List<FuncTypeParameter>(
+                    paramsContext.singleVarDeclarationNoInit()
+                                 .Select(pDecl => new FuncTypeParameter(Source(pDecl),
+                                                                        GetNameFromDeclarator(pDecl.declarator()),
+                                                                        BuildTypeFromDeclarator(pDecl.type, pDecl.declarator())))),
+            };
+        }
+
+        private IType BuildTypeFromDeclarator(ScLangParser.IdentifierContext baseTypeName, ScLangParser.DeclaratorContext declarator)
+        {
+            // TODO: BuildTypeFromDeclarator
+            return IType.Unknown;
+        }
+
+        private IType BuildType(ScLangParser.IdentifierContext typeName)
+        {
+            // TODO: BuildType
             return IType.Unknown;
         }
 
