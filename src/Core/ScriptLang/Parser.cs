@@ -257,6 +257,15 @@
                         Body = new List<IStatement>(c.statementBlock().labeledStatement().SelectMany(BuildAst))
                     };
                     break;
+                case ScLangParser.BreakStatementContext c:
+                    yield return new BreakStatement(Source(c));
+                    break;
+                case ScLangParser.GotoStatementContext c:
+                    yield return new GotoStatement(Source(c), c.identifier().GetText());
+                    break;
+                case ScLangParser.ReturnStatementContext c:
+                    yield return new ReturnStatement(Source(c), BuildAstOpt(c.expression()));
+                    break;
                 default: break; // TODO: throw new NotSupportedException();
             }
         }
