@@ -31,6 +31,13 @@
         public Program OutputAst { get; private set; }
         private HashSet<string> usings = new(); // TODO: handle including the initial file from another file
         private bool scriptNameSet = false, scriptHashSet = false;
+        private Diagnostics? diagnostics = null;
+        private readonly Stack<DiagnosticsReport> diagnosticsStack = new();
+
+        /// <summary>
+        /// Diagnostics report for the file currently being parsed.
+        /// </summary>
+        private DiagnosticsReport CurrentDiagnostics => diagnosticsStack.Peek();
 
         public Parser(TextReader input, string fileName)
         {
@@ -48,7 +55,9 @@
         {
             var inputStream = new AntlrInputStream(input);
 
+            this.diagnostics = diagnostics;
             var diagnosticsReport = diagnostics[filePath];
+            diagnosticsStack.Push(diagnosticsReport);
             var lexer = new ScLangLexer(inputStream);
             lexer.RemoveErrorListeners();
             lexer.AddErrorListener(new SyntaxErrorListener<int>(diagnosticsReport));
@@ -57,14 +66,15 @@
             parser.RemoveErrorListeners();
             parser.AddErrorListener(new SyntaxErrorListener<IToken>(diagnosticsReport));
 
-            ProcessParseTree(parser.program(), filePath, diagnostics);
+            ProcessParseTree(parser.program());
+            diagnosticsStack.Pop();
         }
 
-        private void ProcessParseTree(ScLangParser.ProgramContext context, string filePath, Diagnostics diagnostics)
+        private void ProcessParseTree(ScLangParser.ProgramContext context)
         {
             foreach (var directive in context.directive())
             {
-                ProcessDirective(directive, filePath, diagnostics);
+                ProcessDirective(directive);
             }
 
             foreach (var astDecl in context.declaration().SelectMany(BuildAst))
@@ -73,7 +83,7 @@
             }
         }
 
-        private void ProcessDirective(ScLangParser.DirectiveContext context, string filePath, Diagnostics diagnostics)
+        private void ProcessDirective(ScLangParser.DirectiveContext context)
         {
             switch (context)
             {
@@ -85,7 +95,7 @@
                     }
                     else
                     {
-                        diagnostics[filePath].AddError("SCRIPT_HASH directive is repeated", Source(h));
+                        CurrentDiagnostics.AddError("SCRIPT_HASH directive is repeated", Source(h));
                     }
                     break;
 
@@ -97,24 +107,24 @@
                     }
                     else
                     {
-                        diagnostics[filePath].AddError("SCRIPT_NAME directive is repeated", Source(n));
+                        CurrentDiagnostics.AddError("SCRIPT_NAME directive is repeated", Source(n));
                     }
                     break;
 
                 case ScLangParser.UsingDirectiveContext u:
                     if (UsingResolver == null)
                     {
-                        diagnostics[filePath].AddWarning($"USING directive but {nameof(Parser)}.{nameof(UsingResolver)} is not set", Source(u));
+                        CurrentDiagnostics.AddWarning($"USING directive but {nameof(Parser)}.{nameof(UsingResolver)} is not set", Source(u));
                     }
                     else
                     {
                         var usingPath = Parse(u.@string());
-                        var (open, newFilePath) = UsingResolver.Resolve(filePath, usingPath);
+                        var (open, newFilePath) = UsingResolver.Resolve(CurrentDiagnostics.FilePath, usingPath);
                         if (usings.Add(newFilePath))
                         {
                             // merge the AST from the included file
                             using var newInput = open();
-                            ParseFile(newInput, newFilePath, diagnostics);
+                            ParseFile(newInput, newFilePath, diagnostics!);
                         }
                     }
                     break;
