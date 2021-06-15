@@ -1,6 +1,7 @@
 ﻿namespace ScTools.ScriptLang.Ast
 {
     using ScTools.ScriptLang.Ast.Declarations;
+    using ScTools.ScriptLang.Ast.Statements;
     using ScTools.ScriptLang.Ast.Types;
 
     public interface IVisitor<TReturn, TParam>
@@ -13,6 +14,8 @@
         TReturn Visit(FuncProtoDeclaration node, TParam param);
         TReturn Visit(LabelDeclaration node, TParam param);
         TReturn Visit(VarDeclaration node, TParam param);
+
+        TReturn Visit(IfStatement node, TParam param);
 
         TReturn Visit(EnumType node, TParam param);
         TReturn Visit(FuncType node, TParam param);

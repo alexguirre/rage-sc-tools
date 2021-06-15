@@ -47,6 +47,17 @@ PROC MAIN()
 
     MODIFY_STRUCT(aItems[0])
 
+    INT n = 10
+    IF n > 15
+        n *= 5
+    ELIF n > 10
+        n *= 4
+    ELIF n > 5
+        n *= 3
+    ELSE
+        n *= 2
+    ENDIF
+
     WHILE TRUE
         WAIT(0)
 

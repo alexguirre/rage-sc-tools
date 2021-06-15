@@ -167,7 +167,7 @@
                 case ScLangParser.EnumDeclarationContext c:
                     var enumMembers = c.enumList().enumMemberDeclarationList()
                                        .SelectMany(l => l.enumMemberDeclaration())
-                                       .Select(m => new EnumMemberDeclaration(Source(m), m.identifier().GetText(), BuildAst(m.initializer)));
+                                       .Select(m => new EnumMemberDeclaration(Source(m), m.identifier().GetText(), BuildAstOpt(m.initializer)));
                     yield return new EnumDeclaration(Source(c), c.identifier().GetText(), enumMembers);
                     break;
                 case ScLangParser.ConstantVariableDeclarationContext c:
@@ -194,7 +194,10 @@
             }
         }
 
-        private IExpression? BuildAst(ScLangParser.ExpressionContext? context)
+        private IExpression? BuildAstOpt(ScLangParser.ExpressionContext? context)
+            => context is not null ? BuildAst(context) : null;
+
+        private IExpression BuildAst(ScLangParser.ExpressionContext context)
         {
             // TODO: BuildAst(ScLangParser.ExpressionContext)
             return null;
@@ -217,6 +220,31 @@
                         yield return varDecl;
                     }
                     break;
+                case ScLangParser.IfStatementContext c:
+                    var ifStmt = new IfStatement(Source(c), BuildAst(c.condition))
+                    {
+                        Then = new List<IStatement>(c.thenBlock.labeledStatement().SelectMany(BuildAst))
+                    };
+
+                    // convert ELIFs to nested IFs inside ELSE
+                    var currIfStmt = ifStmt;
+                    foreach (var elifBlock in c.elifBlock())
+                    {
+                        var innerIfStmt = new IfStatement(Source(elifBlock), BuildAst(elifBlock.condition))
+                        {
+                            Then = new List<IStatement>(elifBlock.statementBlock().labeledStatement().SelectMany(BuildAst))
+                        };
+                        currIfStmt.Else = new List<IStatement> { innerIfStmt };
+                        currIfStmt = innerIfStmt;
+                    }
+
+                    if (c.elseBlock() is not null and var elseBlock)
+                    {
+                        currIfStmt.Else = new List<IStatement>(elseBlock.statementBlock().labeledStatement().SelectMany(BuildAst));
+                    }
+
+                    yield return ifStmt;
+                    break;
                 default: break; // TODO: throw new NotSupportedException();
             }
         }
@@ -227,7 +255,7 @@
                 .Select(initDecl => new VarDeclaration(Source(initDecl), GetNameFromDeclarator(initDecl.declarator()), kind)
                 {
                     Type = BuildTypeFromDeclarator(varDeclContext.type, initDecl.declarator()),
-                    Initializer = BuildAst(initDecl.initializer),
+                    Initializer = BuildAstOpt(initDecl.initializer),
                 });
         }
 

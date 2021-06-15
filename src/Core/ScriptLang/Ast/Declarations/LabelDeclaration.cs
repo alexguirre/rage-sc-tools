@@ -1,6 +1,5 @@
 ﻿namespace ScTools.ScriptLang.Ast.Declarations
 {
-    using ScTools.ScriptLang.Ast.Expressions;
     using ScTools.ScriptLang.Ast.Statements;
 
     public sealed class LabelDeclaration : BaseNode, IDeclaration, IStatement

@@ -48,8 +48,8 @@ statement
 
     | K_IF condition=expression EOL
       thenBlock=statementBlock
-      (K_ELSE EOL
-      elseBlock=statementBlock)?
+      elifBlock*
+      elseBlock?
       K_ENDIF                                                   #ifStatement
     
     | K_WHILE condition=expression EOL
@@ -68,6 +68,16 @@ statement
     | K_RETURN expression?                                      #returnStatement
     | K_GOTO identifier                                         #gotoStatement
     | expression argumentList                                   #invocationStatement
+    ;
+
+elifBlock
+    : K_ELIF condition=expression EOL
+      statementBlock
+    ;
+
+elseBlock
+    : K_ELSE EOL
+      statementBlock
     ;
 
 label
@@ -217,6 +227,7 @@ K_NOT : N O T;
 K_AND : A N D;
 K_OR : O R;
 K_IF : I F;
+K_ELIF : E L I F;
 K_ELSE : E L S E;
 K_ENDIF : E N D I F;
 K_WHILE : W H I L E;
