@@ -12,8 +12,6 @@
     using ScTools.GameFiles;
     using ScTools.ScriptLang;
     using ScTools.ScriptLang.Grammar;
-    using ScTools.ScriptLang.Semantics;
-    using ScTools.ScriptLang.Semantics.Symbols;
 
     internal static class Program
     {
@@ -56,7 +54,7 @@
         private static void Parse(string filePath)
         {
             using var r = new StreamReader(filePath);
-            var d = new Diagnostics();
+            var d = new DiagnosticsReport();
             var p = new Parser(r, filePath) { UsingResolver = new FileUsingResolver() };
             p.Parse(d);
             ;

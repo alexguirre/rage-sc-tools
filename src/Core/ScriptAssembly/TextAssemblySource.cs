@@ -30,12 +30,12 @@ namespace ScTools.ScriptAssembly
 
             var lexer = new ScAsmLexer(inputStream) { TokenFactory = new LightTokenFactory() };
             lexer.RemoveErrorListeners();
-            lexer.AddErrorListener(new SyntaxErrorListener<int>(diagnostics));
+            lexer.AddErrorListener(new SyntaxErrorListener<int>(FilePath, diagnostics));
             var tokens = new CommonTokenStream(lexer);
             var parser = new ScAsmParser(tokens) { BuildParseTree = false };
             parser.AddParseListener(new ParseListener(this, parser, consumeLine));
             parser.RemoveErrorListeners();
-            parser.AddErrorListener(new SyntaxErrorListener<IToken>(diagnostics));
+            parser.AddErrorListener(new SyntaxErrorListener<IToken>(FilePath, diagnostics));
 
             parser.program();
         }
@@ -97,15 +97,18 @@ namespace ScTools.ScriptAssembly
         /// </summary>
         private sealed class SyntaxErrorListener<TSymbol> : IAntlrErrorListener<TSymbol>
         {
+            private readonly string filePath;
             private readonly DiagnosticsReport diagnostics;
 
-            public SyntaxErrorListener(DiagnosticsReport diagnostics) => this.diagnostics = diagnostics;
+            public SyntaxErrorListener(string filePath, DiagnosticsReport diagnostics)
+                => (this.filePath, this.diagnostics) = (filePath, diagnostics);
 
             public void SyntaxError(TextWriter output, IRecognizer recognizer, TSymbol offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
             {
                 var source = offendingSymbol is IToken t ?
-                                SourceRange.FromTokens(t, null) :
-                                new SourceRange(new SourceLocation(line, charPositionInLine),
+                                SourceRange.FromTokens(filePath, t, null) :
+                                new SourceRange(filePath,
+                                                new SourceLocation(line, charPositionInLine),
                                                 new SourceLocation(line, charPositionInLine));
                 diagnostics.AddError(msg, source);
             }

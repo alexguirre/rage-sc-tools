@@ -78,7 +78,7 @@ namespace ScTools.ScriptAssembly
         public Assembler(IAssemblySource source)
         {
             AssemblySource = source;
-            Diagnostics = new(source.FilePath);
+            Diagnostics = new();
             OutputScript = new()
             {
                 Name = DefaultScriptName,
@@ -326,7 +326,7 @@ namespace ScTools.ScriptAssembly
                 return;
             }
 
-            var expectedNumOperands = opcode.GetNumberOfOperands();
+            var expectedNumOperands = opcode.NumberOfOperands();
             var operands = instruction.operandList()?.operand() ?? Array.Empty<ScAsmParser.OperandContext>();
             if (expectedNumOperands != -1 && operands.Length != expectedNumOperands)
             {
@@ -458,7 +458,7 @@ namespace ScTools.ScriptAssembly
             }
 
             var (offset, length) = codeBuilder.Flush();
-            instructions.Add(new(instruction, opcode, offset, length));
+            instructions.Add(new(AssemblySource.FilePath, instruction, opcode, offset, length));
         }
 
         private void AssembleInstruction(Instruction instruction)
@@ -919,6 +919,9 @@ namespace ScTools.ScriptAssembly
             }
         }
 
+        private SourceRange Source(ParserRuleContext context) => Source(AssemblySource.FilePath, context);
+        private static SourceRange Source(string filePath, ParserRuleContext context) => SourceRange.FromTokens(filePath, context.Start, context.Stop);
+
         private static (ScriptValue[] Statics, uint StaticsCount, uint ArgsCount) SegmentToStaticsArray(SegmentBuilder staticSegment, SegmentBuilder argSegment)
         {
             var statics = MemoryMarshal.Cast<byte, ScriptValue>(staticSegment.RawDataBuffer);
@@ -949,8 +952,6 @@ namespace ScTools.ScriptAssembly
 
         public static StringComparer CaseInsensitiveComparer => StringComparer.OrdinalIgnoreCase;
 
-        private static SourceRange Source(ParserRuleContext context) => SourceRange.FromTokens(context.Start, context.Stop);
-
         public readonly struct ConstantValue
         {
             public long Integer { get; }
@@ -977,25 +978,25 @@ namespace ScTools.ScriptAssembly
             public int Offset { get; }
             public int Length { get; }
 
-            public Instruction(ScAsmParser.InstructionContext context, Opcode opcode, int offset, int length)
+            public Instruction(string filePath, ScAsmParser.InstructionContext context, Opcode opcode, int offset, int length)
             {
-                (Source, Opcode, Offset, Length) = (Source(context), opcode, offset, length);
+                (Source, Opcode, Offset, Length) = (Source(filePath, context), opcode, offset, length);
 
                 var operands = context.operandList()?.operand() ?? Array.Empty<ScAsmParser.OperandContext>();
                 var operandsBuilder = ImmutableArray.CreateBuilder<InstructionOperand>(operands.Length);
                 foreach (var operand in operands)
                 {
-                    operandsBuilder.Add(CreateOperand(operand));
+                    operandsBuilder.Add(CreateOperand(filePath, operand));
                 }
                 Operands = operandsBuilder.MoveToImmutable();
 
 
-                static InstructionOperand CreateOperand(ScAsmParser.OperandContext operand)
+                static InstructionOperand CreateOperand(string filePath, ScAsmParser.OperandContext operand)
                 {
                     var start = (LightToken)operand.Start;
                     var stop = (LightToken)operand.Stop;
                     var switchCaseOperands = operand is ScAsmParser.SwitchCaseOperandContext switchCase ?
-                                          new[] { CreateOperand(switchCase.value), CreateOperand(switchCase.jumpTo) } :
+                                          new[] { CreateOperand(filePath, switchCase.value), CreateOperand(filePath, switchCase.jumpTo) } :
                                           Array.Empty<InstructionOperand>();
 
                     return new(
@@ -1008,7 +1009,7 @@ namespace ScTools.ScriptAssembly
                             _ => throw new InvalidOperationException(),
                         },
                         ((LightInputStream)start.InputStream).GetTextMemory(start.StartIndex, stop.StopIndex),
-                        Source(operand),
+                        Source(filePath, operand),
                         switchCaseOperands
                     );
                 }

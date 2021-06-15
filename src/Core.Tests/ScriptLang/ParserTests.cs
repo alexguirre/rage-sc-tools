@@ -21,12 +21,13 @@
             static int H(string s) => unchecked((int)Util.CalculateHash(s));
             static int P(string s)
             {
-                var d = new Diagnostics();
+                var d = new DiagnosticsReport();
                 using var r = new StringReader(@$"
                     SCRIPT_HASH {s}
                 ");
                 var parser = new Parser(r, "test.sc");
                 parser.Parse(d);
+                Assert.False(d.HasErrors || d.HasWarnings);
                 return parser.OutputAst.ScriptHash;
             }
         }

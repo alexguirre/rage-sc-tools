@@ -34,8 +34,8 @@
 
         public LightToken(LightInputStream inputStream, int type, int channel, int index, int start, int stop, int line, int charPositionInLine)
         {
-            Debug.Assert(type is >= sbyte.MaxValue and <= sbyte.MaxValue);
-            Debug.Assert(channel is >= sbyte.MaxValue and <= sbyte.MaxValue);
+            Debug.Assert(type is >= sbyte.MinValue and <= sbyte.MaxValue);
+            Debug.Assert(channel is >= sbyte.MinValue and <= sbyte.MaxValue);
 
             this.inputStream = inputStream;
             this.type = (sbyte)type;

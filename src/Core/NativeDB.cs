@@ -1,5 +1,4 @@
-﻿#nullable enable
-namespace ScTools
+﻿namespace ScTools
 {
     using System;
     using System.Collections.Generic;

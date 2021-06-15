@@ -269,68 +269,69 @@
                 nativeDB = NativeDB.FromJson(File.ReadAllText(options.NativeDB.FullName));
             }
 
-            Parallel.ForEach(options.Input.SelectMany(i => i.Matches), inputFile =>
-            {
-                var outputFile = new FileInfo(Path.Combine(options.Output.FullName, Path.ChangeExtension(inputFile.Name, "ysc")));
+            Print("COMPILER IS NOT FUNCTIONAL CURRENTLY");
+            //Parallel.ForEach(options.Input.SelectMany(i => i.Matches), inputFile =>
+            //{
+            //    var outputFile = new FileInfo(Path.Combine(options.Output.FullName, Path.ChangeExtension(inputFile.Name, "ysc")));
 
-                try
-                {
-                    Print($"Compiling '{inputFile}'...");
-                    var compilationTime = Stopwatch.StartNew();
-                    var c = new Compilation
-                    {
-                        SourceResolver = new DefaultSourceResolver(inputFile.DirectoryName),
-                        NativeDB = nativeDB,
-                    };
+            //    try
+            //    {
+            //        Print($"Compiling '{inputFile}'...");
+            //        var compilationTime = Stopwatch.StartNew();
+            //        var c = new Compilation
+            //        {
+            //            SourceResolver = new DefaultSourceResolver(inputFile.DirectoryName),
+            //            NativeDB = nativeDB,
+            //        };
 
-                    using (var source = new StreamReader(inputFile.OpenRead()))
-                    {
-                        c.SetMainModule(source, inputFile.FullName);
-                    }
-                    c.PerformPendingAnalysis();
+            //        using (var source = new StreamReader(inputFile.OpenRead()))
+            //        {
+            //            c.SetMainModule(source, inputFile.FullName);
+            //        }
+            //        c.PerformPendingAnalysis();
 
-                    var diagnostics = c.GetAllDiagnostics();
-                    if (diagnostics.HasErrors)
-                    {
-                        compilationTime.Stop();
-                        lock (Console.Error)
-                        {
-                            Console.ForegroundColor = ConsoleColor.Red;
-                            Console.Error.WriteLine($"Compilation of '{inputFile}' failed (time: {compilationTime.Elapsed}):");
-                            diagnostics.PrintAll(Console.Error);
-                            Console.Error.WriteLine();
-                            Console.ForegroundColor = ConsoleColor.White;
-                        }
-                    }
-                    else
-                    {
-                        c.Compile();
-                        compilationTime.Stop();
+            //        var diagnostics = c.GetAllDiagnostics();
+            //        if (diagnostics.HasErrors)
+            //        {
+            //            compilationTime.Stop();
+            //            lock (Console.Error)
+            //            {
+            //                Console.ForegroundColor = ConsoleColor.Red;
+            //                Console.Error.WriteLine($"Compilation of '{inputFile}' failed (time: {compilationTime.Elapsed}):");
+            //                diagnostics.PrintAll(Console.Error);
+            //                Console.Error.WriteLine();
+            //                Console.ForegroundColor = ConsoleColor.White;
+            //            }
+            //        }
+            //        else
+            //        {
+            //            c.Compile();
+            //            compilationTime.Stop();
 
-                        var outputFileName = outputFile.FullName;
-                        Print($"Successful compilation, writing '{Path.GetRelativePath(Directory.GetCurrentDirectory(), outputFileName)}'... (time: {compilationTime.Elapsed})");
-                        YscFile ysc = new YscFile { Script = c.CompiledScript };
-                        byte[] data = ysc.Save(Path.GetFileName(outputFileName));
-                        File.WriteAllBytes(outputFileName, data);
+            //            var outputFileName = outputFile.FullName;
+            //            Print($"Successful compilation, writing '{Path.GetRelativePath(Directory.GetCurrentDirectory(), outputFileName)}'... (time: {compilationTime.Elapsed})");
+            //            YscFile ysc = new YscFile { Script = c.CompiledScript };
+            //            byte[] data = ysc.Save(Path.GetFileName(outputFileName));
+            //            File.WriteAllBytes(outputFileName, data);
 
-                        if (options.Unencrypted)
-                        {
-                            data = ysc.Save();
-                            File.WriteAllBytes(Path.ChangeExtension(outputFileName, "unencrypted.ysc"), data);
-                        }
-                    }
-                }
-                catch (Exception e)
-                {
-                    lock (Console.Error)
-                    {
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        Console.Error.Write(e.ToString());
-                        Console.ForegroundColor = ConsoleColor.White;
-                    }
-                    return;
-                }
-            });
+            //            if (options.Unencrypted)
+            //            {
+            //                data = ysc.Save();
+            //                File.WriteAllBytes(Path.ChangeExtension(outputFileName, "unencrypted.ysc"), data);
+            //            }
+            //        }
+            //    }
+            //    catch (Exception e)
+            //    {
+            //        lock (Console.Error)
+            //        {
+            //            Console.ForegroundColor = ConsoleColor.Red;
+            //            Console.Error.Write(e.ToString());
+            //            Console.ForegroundColor = ConsoleColor.White;
+            //        }
+            //        return;
+            //    }
+            //});
 
             totalTime.Stop();
             Print($"Total time: {totalTime.Elapsed}");

@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
 
@@ -31,13 +32,25 @@
         public Program OutputAst { get; private set; }
         private HashSet<string> usings = new(); // TODO: handle including the initial file from another file
         private bool scriptNameSet = false, scriptHashSet = false;
-        private Diagnostics? diagnostics = null;
-        private readonly Stack<DiagnosticsReport> diagnosticsStack = new();
 
         /// <summary>
-        /// Diagnostics report for the file currently being parsed.
+        /// Stack with the files currently being parsed.
         /// </summary>
-        private DiagnosticsReport CurrentDiagnostics => diagnosticsStack.Peek();
+        private readonly Stack<string> filesStack = new();
+        /// <summary>
+        /// Gets the file currently being parsed.
+        /// </summary>
+        private string CurrentFile => filesStack.Peek();
+
+        private DiagnosticsReport? diagnostics = null;
+        private DiagnosticsReport Diagnostics
+        {
+            get
+            {
+                Debug.Assert(diagnostics != null);
+                return diagnostics;
+            }
+        }
 
         public Parser(TextReader input, string fileName)
         {
@@ -46,28 +59,28 @@
             OutputAst = new Program(SourceRange.Unknown);
         }
 
-        public void Parse(Diagnostics diagnostics)
+        public void Parse(DiagnosticsReport diagnostics)
         {
             ParseFile(Input, FilePath, diagnostics);
         }
 
-        private void ParseFile(TextReader input, string filePath, Diagnostics diagnostics)
+        private void ParseFile(TextReader input, string filePath, DiagnosticsReport diagnostics)
         {
-            var inputStream = new AntlrInputStream(input);
-
             this.diagnostics = diagnostics;
-            var diagnosticsReport = diagnostics[filePath];
-            diagnosticsStack.Push(diagnosticsReport);
+            filesStack.Push(filePath);
+            
+            var inputStream = new AntlrInputStream(input);
             var lexer = new ScLangLexer(inputStream);
             lexer.RemoveErrorListeners();
-            lexer.AddErrorListener(new SyntaxErrorListener<int>(diagnosticsReport));
+            lexer.AddErrorListener(new SyntaxErrorListener<int>(this));
             var tokens = new CommonTokenStream(lexer);
             var parser = new ScLangParser(tokens);
             parser.RemoveErrorListeners();
-            parser.AddErrorListener(new SyntaxErrorListener<IToken>(diagnosticsReport));
+            parser.AddErrorListener(new SyntaxErrorListener<IToken>(this));
 
             ProcessParseTree(parser.program());
-            diagnosticsStack.Pop();
+
+            filesStack.Pop();
         }
 
         private void ProcessParseTree(ScLangParser.ProgramContext context)
@@ -95,7 +108,7 @@
                     }
                     else
                     {
-                        CurrentDiagnostics.AddError("SCRIPT_HASH directive is repeated", Source(h));
+                        Diagnostics.AddError("SCRIPT_HASH directive is repeated", Source(h));
                     }
                     break;
 
@@ -107,19 +120,19 @@
                     }
                     else
                     {
-                        CurrentDiagnostics.AddError("SCRIPT_NAME directive is repeated", Source(n));
+                        Diagnostics.AddError("SCRIPT_NAME directive is repeated", Source(n));
                     }
                     break;
 
                 case ScLangParser.UsingDirectiveContext u:
                     if (UsingResolver == null)
                     {
-                        CurrentDiagnostics.AddWarning($"USING directive but {nameof(Parser)}.{nameof(UsingResolver)} is not set", Source(u));
+                        Diagnostics.AddWarning($"USING directive but {nameof(Parser)}.{nameof(UsingResolver)} is not set", Source(u));
                     }
                     else
                     {
                         var usingPath = Parse(u.@string());
-                        var (open, newFilePath) = UsingResolver.Resolve(CurrentDiagnostics.FilePath, usingPath);
+                        var (open, newFilePath) = UsingResolver.Resolve(CurrentFile, usingPath);
                         if (usings.Add(newFilePath))
                         {
                             // merge the AST from the included file
@@ -415,7 +428,7 @@
                 };
         }
 
-        private static SourceRange Source(ParserRuleContext context) => SourceRange.FromTokens(context.Start, context.Stop);
+        private SourceRange Source(ParserRuleContext context) => SourceRange.FromTokens(CurrentFile, context.Start, context.Stop);
 
         private static string Parse(ScLangParser.StringContext context)
         {
@@ -440,17 +453,18 @@
 
         private sealed class SyntaxErrorListener<TSymbol> : IAntlrErrorListener<TSymbol>
         {
-            private readonly DiagnosticsReport diagnostics;
+            private readonly Parser parser;
 
-            public SyntaxErrorListener(DiagnosticsReport diagnostics) => this.diagnostics = diagnostics;
+            public SyntaxErrorListener(Parser parser) => this.parser = parser;
 
             public void SyntaxError(TextWriter output, IRecognizer recognizer, TSymbol offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
             {
                 var source = offendingSymbol is IToken t ?
-                                SourceRange.FromTokens(t, null) :
-                                new SourceRange(new SourceLocation(line, charPositionInLine),
+                                SourceRange.FromTokens(parser.CurrentFile, t, null) :
+                                new SourceRange(parser.CurrentFile,
+                                                new SourceLocation(line, charPositionInLine),
                                                 new SourceLocation(line, charPositionInLine));
-                diagnostics.AddError(msg, source);
+                parser.Diagnostics.AddError(msg, source);
             }
         }
     }

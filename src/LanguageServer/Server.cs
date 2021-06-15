@@ -8,8 +8,6 @@
 
     using Newtonsoft.Json.Linq;
 
-    using ScTools.ScriptLang.Semantics;
-    using ScTools.ScriptLang.Semantics.Symbols;
     using StreamJsonRpc;
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -180,80 +178,80 @@
 
         private CompletionItem[]? GetDefaultCompletions(SourceFile file, Position position)
         {
-            var scope = file.FindScopeAt(position.ToSourceLocation());
-            if (scope == null)
+            //var scope = file.FindScopeAt(position.ToSourceLocation());
+            //if (scope == null)
             {
                 return null;
             }
 
-            static IEnumerable<ISymbol> AllSymbols(SymbolTable table)
-                => table.Parent != null ?
-                        AllSymbols(table.Parent).Concat(table.Symbols) :
-                        table.Symbols.Concat(table.Imports.SelectMany(i => i.Symbols)).Concat(SymbolTable.BuiltIns.Values);
+            //static IEnumerable<ISymbol> AllSymbols(SymbolTable table)
+            //    => table.Parent != null ?
+            //            AllSymbols(table.Parent).Concat(table.Symbols) :
+            //            table.Symbols.Concat(table.Imports.SelectMany(i => i.Symbols)).Concat(SymbolTable.BuiltIns.Values);
 
-            return AllSymbols(scope).Select(s => new CompletionItem
-            {
-                Label = s.Name,
-                Detail = SourceFile.GetLspDetail(s),
-                Kind = s switch
-                {
-                    TypeSymbol _ => CompletionItemKind.Struct,
-                    VariableSymbol _ => CompletionItemKind.Variable,
-                    FunctionSymbol _ => CompletionItemKind.Function,
-                    _ => throw new NotImplementedException(),
-                },
-            }).ToArray();
+            //return AllSymbols(scope).Select(s => new CompletionItem
+            //{
+            //    Label = s.Name,
+            //    Detail = SourceFile.GetLspDetail(s),
+            //    Kind = s switch
+            //    {
+            //        TypeSymbol _ => CompletionItemKind.Struct,
+            //        VariableSymbol _ => CompletionItemKind.Variable,
+            //        FunctionSymbol _ => CompletionItemKind.Function,
+            //        _ => throw new NotImplementedException(),
+            //    },
+            //}).ToArray();
         }
 
         private CompletionItem[]? GetDotCompletions(SourceFile file, Position position)
         {
-            var scope = file.FindScopeAt(position.ToSourceLocation());
-            if (scope == null)
+            //var scope = file.FindScopeAt(position.ToSourceLocation());
+            //if (scope == null)
             {
                 return null;
             }
 
-            var prevWord = GetPrevWord(file.Source, position);
-            if (prevWord == null)
-            {
-                return null;
-            }
+            //var prevWord = GetPrevWord(file.Source, position);
+            //if (prevWord == null)
+            //{
+            //    return null;
+            //}
 
-            var identifiers = prevWord.Split('.').Select(s => s.Trim()).ToArray();
-            if (identifiers.Length == 0)
-            {
-                return null;
-            }
+            //var identifiers = prevWord.Split('.').Select(s => s.Trim()).ToArray();
+            //if (identifiers.Length == 0)
+            //{
+            //    return null;
+            //}
 
-            var varSymbol = scope.Lookup(identifiers[0]) as VariableSymbol;
-            if (varSymbol?.Type is StructType structTy)
-            {
-                foreach (var fieldName in identifiers.Skip(1))
-                {
-                    if (!structTy.HasField(fieldName))
-                    {
-                        return null;
-                    }
+            //var varSymbol = scope.Lookup(identifiers[0]) as VariableSymbol;
+            //if (varSymbol?.Type is StructType structTy)
+            //{
+            //    foreach (var fieldName in identifiers.Skip(1))
+            //    {
+            //        if (!structTy.HasField(fieldName))
+            //        {
+            //            return null;
+            //        }
 
-                    if (structTy.TypeOfField(fieldName) is StructType fieldStructTy)
-                    {
-                        structTy = fieldStructTy;
-                    }
-                    else
-                    {
-                        return null;
-                    }
-                }
+            //        if (structTy.TypeOfField(fieldName) is StructType fieldStructTy)
+            //        {
+            //            structTy = fieldStructTy;
+            //        }
+            //        else
+            //        {
+            //            return null;
+            //        }
+            //    }
 
-                return structTy.Fields.Select(f => new CompletionItem
-                {
-                    Label = f.Name,
-                    Detail = f.Type.ToString(),
-                    Kind = CompletionItemKind.Field
-                }).ToArray();
-            }
+            //    return structTy.Fields.Select(f => new CompletionItem
+            //    {
+            //        Label = f.Name,
+            //        Detail = f.Type.ToString(),
+            //        Kind = CompletionItemKind.Field
+            //    }).ToArray();
+            //}
 
-            return null;
+            //return null;
         }
 
         private static string? GetLine(string text, Position position)

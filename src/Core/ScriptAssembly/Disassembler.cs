@@ -305,7 +305,7 @@ namespace ScTools.ScriptAssembly
 
             w.Write("\t\t");
             w.Write(opcode.ToString());
-            if (opcode.GetNumberOfOperands() != 0)
+            if (opcode.NumberOfOperands() != 0)
             {
                 w.Write(' ');
             }
