@@ -245,6 +245,18 @@
 
                     yield return ifStmt;
                     break;
+                case ScLangParser.RepeatStatementContext c:
+                    yield return new RepeatStatement(Source(c), BuildAst(c.limit), BuildAst(c.counter))
+                    {
+                        Body = new List<IStatement>(c.statementBlock().labeledStatement().SelectMany(BuildAst))
+                    };
+                    break;
+                case ScLangParser.WhileStatementContext c:
+                    yield return new WhileStatement(Source(c), BuildAst(c.condition))
+                    {
+                        Body = new List<IStatement>(c.statementBlock().labeledStatement().SelectMany(BuildAst))
+                    };
+                    break;
                 default: break; // TODO: throw new NotSupportedException();
             }
         }

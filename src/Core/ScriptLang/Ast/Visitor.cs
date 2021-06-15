@@ -16,6 +16,8 @@
         TReturn Visit(VarDeclaration node, TParam param);
 
         TReturn Visit(IfStatement node, TParam param);
+        TReturn Visit(RepeatStatement node, TParam param);
+        TReturn Visit(WhileStatement node, TParam param);
 
         TReturn Visit(EnumType node, TParam param);
         TReturn Visit(FuncType node, TParam param);
