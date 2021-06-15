@@ -88,6 +88,7 @@
                         diagnostics[filePath].AddError("SCRIPT_HASH directive is repeated", Source(h));
                     }
                     break;
+
                 case ScLangParser.ScriptNameDirectiveContext n:
                     if (!scriptNameSet)
                     {
@@ -99,6 +100,7 @@
                         diagnostics[filePath].AddError("SCRIPT_NAME directive is repeated", Source(n));
                     }
                     break;
+
                 case ScLangParser.UsingDirectiveContext u:
                     if (UsingResolver == null)
                     {
@@ -116,6 +118,7 @@
                         }
                     }
                     break;
+
                 default: throw new NotSupportedException();
             }
         }
@@ -132,6 +135,7 @@
                         Body = BuildFuncBody(pTy, c.statementBlock()),
                     };
                     break;
+
                 case ScLangParser.FunctionDeclarationContext c:
                     var fTy = BuildFuncType(Source(c), c.returnType, c.parameterList());
                     yield return new FuncDeclaration(Source(c), c.name.GetText(), FuncKind.UserDefined)
@@ -140,42 +144,56 @@
                         Body = BuildFuncBody(fTy, c.statementBlock()),
                     };
                     break;
+
                 case ScLangParser.ProcedureNativeDeclarationContext c:
                     yield return new FuncDeclaration(Source(c), c.name.GetText(), FuncKind.Native)
                     {
                         Type = BuildFuncType(Source(c), null, c.parameterList()),
                     };
                     break;
+
                 case ScLangParser.FunctionNativeDeclarationContext c:
                     yield return new FuncDeclaration(Source(c), c.name.GetText(), FuncKind.Native)
                     {
                         Type = BuildFuncType(Source(c), c.returnType, c.parameterList()),
                     };
                     break;
+
                 case ScLangParser.ProcedurePrototypeDeclarationContext c:
                     yield return new FuncProtoDeclaration(Source(c), c.name.GetText())
                     {
                         DeclaredType = BuildFuncType(Source(c), null, c.parameterList()),
                     };
                     break;
+
                 case ScLangParser.FunctionPrototypeDeclarationContext c:
                     yield return new FuncProtoDeclaration(Source(c), c.name.GetText())
                     {
                         DeclaredType = BuildFuncType(Source(c), c.returnType, c.parameterList()),
                     };
                     break;
+
+                case ScLangParser.GlobalBlockDeclarationContext c:
+                    yield return new GlobalBlockDeclaration(Source(c), c.owner.GetText(), Parse(c.block))
+                    {
+                        Vars = new List<VarDeclaration>(c.varDeclaration().SelectMany(decl => BuildVarDecls(VarKind.Global, decl)))
+                    };
+                    break;
+
                 case ScLangParser.StructDeclarationContext c:
                     yield return new StructDeclaration(Source(c), c.identifier().GetText())
                     {
                         Fields = BuildStructFields(c.structFieldList())
                     };
                     break;
+
                 case ScLangParser.EnumDeclarationContext c:
                     var enumMembers = c.enumList().enumMemberDeclarationList()
                                        .SelectMany(l => l.enumMemberDeclaration())
                                        .Select(m => new EnumMemberDeclaration(Source(m), m.identifier().GetText(), BuildAstOpt(m.initializer)));
                     yield return new EnumDeclaration(Source(c), c.identifier().GetText(), enumMembers);
                     break;
+
                 case ScLangParser.ConstantVariableDeclarationContext c:
                     foreach (var varDecl in BuildVarDecls(VarKind.Constant, c.varDeclaration()))
                     {
@@ -183,6 +201,7 @@
                         yield return varDecl;
                     }
                     break;
+
                 case ScLangParser.ArgVariableDeclarationContext c:
                     // TODO: rethink ARG variables grammar to allow static initialization of multiple values
                     foreach (var varDecl in BuildVarDecls(VarKind.StaticArg, c.varDeclaration()))
@@ -190,13 +209,15 @@
                         yield return varDecl;
                     }
                     break;
+
                 case ScLangParser.StaticVariableDeclarationContext c:
                     foreach (var varDecl in BuildVarDecls(VarKind.Static, c.varDeclaration()))
                     {
                         yield return varDecl;
                     }
                     break;
-                default: break; // TODO: throw new NotSupportedException();
+
+                default: throw new NotSupportedException($"Declaration '{context.GetType()}' is not supported");
             }
         }
 
@@ -220,12 +241,14 @@
             switch (context.statement())
             {
                 case null: break;
+
                 case ScLangParser.VariableDeclarationStatementContext c:
                     foreach (var varDecl in BuildVarDecls(VarKind.Local, c.varDeclaration()))
                     {
                         yield return varDecl;
                     }
                     break;
+
                 case ScLangParser.IfStatementContext c:
                     var ifStmt = new IfStatement(Source(c), BuildAst(c.condition))
                     {
@@ -251,18 +274,21 @@
 
                     yield return ifStmt;
                     break;
+
                 case ScLangParser.RepeatStatementContext c:
                     yield return new RepeatStatement(Source(c), BuildAst(c.limit), BuildAst(c.counter))
                     {
                         Body = BuildStatementBlock(c.statementBlock())
                     };
                     break;
+
                 case ScLangParser.WhileStatementContext c:
                     yield return new WhileStatement(Source(c), BuildAst(c.condition))
                     {
                         Body = BuildStatementBlock(c.statementBlock())
                     };
                     break;
+
                 case ScLangParser.SwitchStatementContext c:
                     var switchStmt = new SwitchStatement(Source(c), BuildAst(c.expression()));
                     foreach (var switchCase in c.switchCase())
@@ -282,15 +308,19 @@
                     }
                     yield return switchStmt;
                     break;
+
                 case ScLangParser.BreakStatementContext c:
                     yield return new BreakStatement(Source(c));
                     break;
+
                 case ScLangParser.GotoStatementContext c:
                     yield return new GotoStatement(Source(c), c.identifier().GetText());
                     break;
+
                 case ScLangParser.ReturnStatementContext c:
                     yield return new ReturnStatement(Source(c), BuildAstOpt(c.expression()));
                     break;
+
                 default: break; // TODO: throw new NotSupportedException();
             }
         }

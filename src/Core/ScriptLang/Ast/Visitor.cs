@@ -12,6 +12,7 @@
         TReturn Visit(EnumMemberDeclaration node, TParam param);
         TReturn Visit(FuncDeclaration node, TParam param);
         TReturn Visit(FuncProtoDeclaration node, TParam param);
+        TReturn Visit(GlobalBlockDeclaration node, TParam param);
         TReturn Visit(LabelDeclaration node, TParam param);
         TReturn Visit(StructDeclaration node, TParam param);
         TReturn Visit(StructField node, TParam param);
