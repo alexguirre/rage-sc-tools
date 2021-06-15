@@ -223,7 +223,7 @@
                 case ScLangParser.IfStatementContext c:
                     var ifStmt = new IfStatement(Source(c), BuildAst(c.condition))
                     {
-                        Then = new List<IStatement>(c.thenBlock.labeledStatement().SelectMany(BuildAst))
+                        Then = BuildStatementBlock(c.thenBlock)
                     };
 
                     // convert ELIFs to nested IFs inside ELSE
@@ -232,7 +232,7 @@
                     {
                         var innerIfStmt = new IfStatement(Source(elifBlock), BuildAst(elifBlock.condition))
                         {
-                            Then = new List<IStatement>(elifBlock.statementBlock().labeledStatement().SelectMany(BuildAst))
+                            Then = BuildStatementBlock(elifBlock.statementBlock())
                         };
                         currIfStmt.Else = new List<IStatement> { innerIfStmt };
                         currIfStmt = innerIfStmt;
@@ -240,7 +240,7 @@
 
                     if (c.elseBlock() is not null and var elseBlock)
                     {
-                        currIfStmt.Else = new List<IStatement>(elseBlock.statementBlock().labeledStatement().SelectMany(BuildAst));
+                        currIfStmt.Else = BuildStatementBlock(elseBlock.statementBlock());
                     }
 
                     yield return ifStmt;
@@ -248,14 +248,33 @@
                 case ScLangParser.RepeatStatementContext c:
                     yield return new RepeatStatement(Source(c), BuildAst(c.limit), BuildAst(c.counter))
                     {
-                        Body = new List<IStatement>(c.statementBlock().labeledStatement().SelectMany(BuildAst))
+                        Body = BuildStatementBlock(c.statementBlock())
                     };
                     break;
                 case ScLangParser.WhileStatementContext c:
                     yield return new WhileStatement(Source(c), BuildAst(c.condition))
                     {
-                        Body = new List<IStatement>(c.statementBlock().labeledStatement().SelectMany(BuildAst))
+                        Body = BuildStatementBlock(c.statementBlock())
                     };
+                    break;
+                case ScLangParser.SwitchStatementContext c:
+                    var switchStmt = new SwitchStatement(Source(c), BuildAst(c.expression()));
+                    foreach (var switchCase in c.switchCase())
+                    {
+                        switchStmt.Cases.Add(switchCase switch
+                        {
+                            ScLangParser.ValueSwitchCaseContext v => new ValueSwitchCase(Source(v), BuildAst(v.value))
+                            {
+                                Body = BuildStatementBlock(v.statementBlock())
+                            },
+                            ScLangParser.DefaultSwitchCaseContext d => new DefaultSwitchCase(Source(d))
+                            {
+                                Body = BuildStatementBlock(d.statementBlock())
+                            },
+                            _ => throw new NotSupportedException(),
+                        });
+                    }
+                    yield return switchStmt;
                     break;
                 case ScLangParser.BreakStatementContext c:
                     yield return new BreakStatement(Source(c));
@@ -290,8 +309,11 @@
                                             Initializer = null,
                                         });
             var statements = statementBlockContext.labeledStatement().SelectMany(BuildAst);
-            return new List<IStatement>(paramsDecls.Concat(statements));
+            return new(paramsDecls.Concat(statements));
         }
+
+        private List<IStatement> BuildStatementBlock(ScLangParser.StatementBlockContext context)
+            => new(context.labeledStatement().SelectMany(BuildAst));
 
         private FuncType BuildFuncType(SourceRange source, ScLangParser.IdentifierContext? returnType, ScLangParser.ParameterListContext paramsContext)
         {

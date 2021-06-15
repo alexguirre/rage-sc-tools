@@ -20,6 +20,9 @@
         TReturn Visit(IfStatement node, TParam param);
         TReturn Visit(RepeatStatement node, TParam param);
         TReturn Visit(ReturnStatement node, TParam param);
+        TReturn Visit(SwitchStatement node, TParam param);
+        TReturn Visit(ValueSwitchCase node, TParam param);
+        TReturn Visit(DefaultSwitchCase node, TParam param);
         TReturn Visit(WhileStatement node, TParam param);
 
         TReturn Visit(EnumType node, TParam param);
