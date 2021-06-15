@@ -171,6 +171,14 @@ PROC MAIN()
         b = f1 >= f2
         b = f1 == f2
         b = f1 <> f2
+
+        INT nullInt = NULL                      // same as = 0
+        FLOAT nullFloat = NULL                  // same as = 0
+        BOOL nullBool = NULL                    // same as = FALSE
+        VECTOR nullFloat = <<NULL, NULL, NULL>> // same as = <<0.0, 0.0, 0.0>>
+        ENTITY_INDEX nullEntity = NULL          // sets its handle to 0
+        PED_INDEX nullPed = NULL                // sets its handle to 0
+        VEHICLE_INDEX nullVeh = NULL            // sets its handle to 0
     ENDWHILE
 ENDPROC
 

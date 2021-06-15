@@ -111,6 +111,7 @@ expression
     | identifier                                                    #identifierExpression
     | (integer | float | string | bool)                             #literalExpression
     | K_SIZE_OF '(' expression ')'                                  #sizeOfExpression
+    | K_NULL                                                        #nullExpression
     ;
 
 switchCase
@@ -249,6 +250,7 @@ K_ARG : A R G;
 K_GLOBAL : G L O B A L;
 K_ENDGLOBAL : E N D G L O B A L;
 K_SIZE_OF : S I Z E '_' O F;
+K_NULL : N U L L;
 
 OP_ADD: '+';
 OP_SUBTRACT: '-';
