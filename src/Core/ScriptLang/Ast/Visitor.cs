@@ -11,6 +11,7 @@
         TReturn Visit(EnumMemberDeclaration node, TParam param);
         TReturn Visit(FuncDeclaration node, TParam param);
         TReturn Visit(FuncProtoDeclaration node, TParam param);
+        TReturn Visit(LabelDeclaration node, TParam param);
         TReturn Visit(VarDeclaration node, TParam param);
 
         TReturn Visit(EnumType node, TParam param);

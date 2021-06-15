@@ -74,8 +74,12 @@ label
     : identifier ':'
     ;
 
+labeledStatement
+    : label? statement?
+    ;
+
 statementBlock
-    : (label? statement? EOL)*
+    : (labeledStatement EOL)*
     ;
 
 expression

@@ -178,6 +178,7 @@
                     }
                     break;
                 case ScLangParser.ArgVariableDeclarationContext c:
+                    // TODO: rethink ARG variables grammar to allow static initialization of multiple values
                     foreach (var varDecl in BuildVarDecls(VarKind.StaticArg, c.varDeclaration()))
                     {
                         yield return varDecl;
@@ -199,11 +200,17 @@
             return null;
         }
 
-        private IEnumerable<IStatement> BuildAst(ScLangParser.StatementContext context)
+        private IEnumerable<IStatement> BuildAst(ScLangParser.LabeledStatementContext context)
         {
-            // TODO: BuildAst(ScLangParser.StatementContext)
-            switch (context)
+            if (context.label() is not null and var label)
             {
+                yield return new LabelDeclaration(Source(label), label.identifier().GetText());
+            }
+
+            // TODO: BuildAst(ScLangParser.LabeledStatementContext)
+            switch (context.statement())
+            {
+                case null: break;
                 case ScLangParser.VariableDeclarationStatementContext c:
                     foreach (var varDecl in BuildVarDecls(VarKind.Local, c.varDeclaration()))
                     {
@@ -233,7 +240,7 @@
                                             Type = p.Type,
                                             Initializer = null,
                                         });
-            var statements = statementBlockContext.statement().SelectMany(BuildAst);
+            var statements = statementBlockContext.labeledStatement().SelectMany(BuildAst);
             return new List<IStatement>(paramsDecls.Concat(statements));
         }
 
