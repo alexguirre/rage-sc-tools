@@ -4,6 +4,13 @@ GLOBAL 20 language_sample_main
     INT g_nNumberOfChildScriptsRunning = 0
 ENDGLOBAL
 
+ENUM eMyValue
+    MY_VALUE_A // = 0
+    MY_VALUE_B // = 1
+    MY_VALUE_C = -2
+    MY_VALUE_D // = -1
+ENDENUM
+
 PROTO PROC MY_PROCEDURE_T(STRING s, INT n)
 
 PROC DEFAULT_MY_PROCEDURE(STRING s, INT n)

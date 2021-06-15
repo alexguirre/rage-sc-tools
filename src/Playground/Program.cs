@@ -46,8 +46,8 @@
             const string BaseDir = "D:\\sources\\gtav-sc-tools\\examples\\language_sample\\";
 
             Parse(BaseDir + "language_sample_main.sc");
-            Parse(BaseDir + "language_sample_child.sc");
-            Parse(BaseDir + "language_sample_shared.sch");
+            //Parse(BaseDir + "language_sample_child.sc");
+            //Parse(BaseDir + "language_sample_shared.sch");
 
             ;
 
@@ -57,9 +57,18 @@
         {
             using var r = new StreamReader(filePath);
             var d = new Diagnostics();
-            var p = new Parser(r, filePath);
+            var p = new Parser(r, filePath) { UsingResolver = new FileUsingResolver() };
             p.Parse(d);
             ;
+        }
+
+        private sealed class FileUsingResolver : IUsingResolver
+        {
+            public (Func<TextReader> Open, string FilePath) Resolve(string originPath, string usingPath)
+            {
+                var p = Path.Combine(Path.GetDirectoryName(originPath), usingPath);
+                return (() => new StreamReader(p), p);
+            }
         }
     }
 }

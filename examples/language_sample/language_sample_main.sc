@@ -3,13 +3,6 @@ SCRIPT_HASH `language_sample_main`
 
 USING 'language_sample_shared.sch'
 
-ENUM eMyValue
-    MY_VALUE_A // = 0
-    MY_VALUE_B // = 1
-    MY_VALUE_C = -2
-    MY_VALUE_D // = -1
-ENDENUM
-
 ENUM eState
     STATE_0, STATE_1, STATE_2, STATE_3
 ENDENUM

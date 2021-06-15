@@ -10,13 +10,25 @@
     using ScTools.ScriptLang.Ast;
     using ScTools.ScriptLang.Ast.Declarations;
     using ScTools.ScriptLang.Ast.Expressions;
+    using ScTools.ScriptLang.Ast.Types;
     using ScTools.ScriptLang.Grammar;
+
+    public interface IUsingResolver
+    {
+        /// <summary>
+        /// Returns the source code of <paramref name="usingPath"/>.
+        /// </summary>
+        /// <param name="originFilePath">The path of the file that contains the USING with <paramref name="usingPath"/>.</param>
+        (Func<TextReader> Open, string FilePath) Resolve(string originFilePath, string usingPath);
+    }
 
     public class Parser
     {
         public string FilePath { get; }
         public TextReader Input { get; }
+        public IUsingResolver? UsingResolver { get; set; }
         public Program OutputAst { get; private set; }
+        private HashSet<string> usings = new(); // TODO: handle including the initial file from another file
         private bool scriptNameSet = false, scriptHashSet = false;
 
         public Parser(TextReader input, string fileName)
@@ -28,9 +40,14 @@
 
         public void Parse(Diagnostics diagnostics)
         {
-            var inputStream = new AntlrInputStream(Input);
+            ParseFile(Input, FilePath, diagnostics);
+        }
 
-            var diagnosticsReport = diagnostics.GetReport(FilePath);
+        private void ParseFile(TextReader input, string filePath, Diagnostics diagnostics)
+        {
+            var inputStream = new AntlrInputStream(input);
+
+            var diagnosticsReport = diagnostics[filePath];
             var lexer = new ScLangLexer(inputStream);
             lexer.RemoveErrorListeners();
             lexer.AddErrorListener(new SyntaxErrorListener<int>(diagnosticsReport));
@@ -39,14 +56,14 @@
             parser.RemoveErrorListeners();
             parser.AddErrorListener(new SyntaxErrorListener<IToken>(diagnosticsReport));
 
-            ProcessParseTree(parser.program(), diagnosticsReport);
+            ProcessParseTree(parser.program(), filePath, diagnostics);
         }
 
-        private void ProcessParseTree(ScLangParser.ProgramContext context, DiagnosticsReport diagnostics)
+        private void ProcessParseTree(ScLangParser.ProgramContext context, string filePath, Diagnostics diagnostics)
         {
             foreach (var directive in context.directive())
             {
-                ProcessDirective(directive, diagnostics);
+                ProcessDirective(directive, filePath, diagnostics);
             }
 
             foreach (var astDecl in context.declaration().SelectMany(BuildAst))
@@ -55,7 +72,7 @@
             }
         }
 
-        private void ProcessDirective(ScLangParser.DirectiveContext context, DiagnosticsReport diagnostics)
+        private void ProcessDirective(ScLangParser.DirectiveContext context, string filePath, Diagnostics diagnostics)
         {
             switch (context)
             {
@@ -67,7 +84,7 @@
                     }
                     else
                     {
-                        diagnostics.AddError("SCRIPT_HASH directive is repeated", Source(h));
+                        diagnostics[filePath].AddError("SCRIPT_HASH directive is repeated", Source(h));
                     }
                     break;
                 case ScLangParser.ScriptNameDirectiveContext n:
@@ -78,12 +95,24 @@
                     }
                     else
                     {
-                        diagnostics.AddError("SCRIPT_NAME directive is repeated", Source(n));
+                        diagnostics[filePath].AddError("SCRIPT_NAME directive is repeated", Source(n));
                     }
                     break;
                 case ScLangParser.UsingDirectiveContext u:
-                    var path = Parse(u.@string());
-                    // TODO: handle USING directives
+                    if (UsingResolver == null)
+                    {
+                        diagnostics[filePath].AddWarning($"USING directive but {nameof(Parser)}.{nameof(UsingResolver)} is not set", Source(u));
+                    }
+                    else
+                    {
+                        var usingPath = Parse(u.@string());
+                        var (open, newFilePath) = UsingResolver.Resolve(filePath, usingPath);
+                        if (usings.Add(newFilePath))
+                        {
+                            using var newInput = open();
+                            ParseFile(newInput, newFilePath, diagnostics);
+                        }
+                    }
                     break;
                 default: throw new NotSupportedException();
             }
@@ -99,14 +128,70 @@
                                        .Select(m => new EnumMemberDeclaration(Source(m), m.identifier().GetText(), BuildAst(m.initializer)));
                     yield return new EnumDeclaration(Source(c), c.identifier().GetText(), enumMembers);
                     break;
+                case ScLangParser.ConstantVariableDeclarationContext c:
+                    foreach (var varDecl in BuildVarDecls(VarKind.Constant, c.varDeclaration()))
+                    {
+                        yield return varDecl;
+                    }
+                    break;
+                case ScLangParser.ArgVariableDeclarationContext c:
+                    foreach (var varDecl in BuildVarDecls(VarKind.StaticArg, c.varDeclaration()))
+                    {
+                        yield return varDecl;
+                    }
+                    break;
+                case ScLangParser.StaticVariableDeclarationContext c:
+                    foreach (var varDecl in BuildVarDecls(VarKind.Static, c.varDeclaration()))
+                    {
+                        yield return varDecl;
+                    }
+                    break;
                 default: break; // TODO: throw new NotSupportedException();
             }
         }
 
-        private IExpression? BuildAst(ScLangParser.ExpressionContext context)
+        private IExpression? BuildAst(ScLangParser.ExpressionContext? context)
         {
             // TODO
             return null;
+        }
+
+        private IEnumerable<VarDeclaration> BuildVarDecls(VarKind kind, ScLangParser.VarDeclarationContext varDeclContext)
+        {
+            return varDeclContext.initDeclaratorList().initDeclarator()
+                .Select(initDecl => new VarDeclaration(Source(initDecl), GetNameFromDeclarator(initDecl.declarator()), kind)
+                {
+                    Type = BuildTypeFromDeclarator(varDeclContext.type.GetText(), initDecl.declarator()),
+                    Initializer = BuildAst(initDecl.initializer),
+                });
+        }
+
+        private IType BuildTypeFromDeclarator(string baseType, ScLangParser.DeclaratorContext declarator)
+        {
+            // TODO
+            return IType.Unknown;
+        }
+
+        public string GetNameFromDeclarator(ScLangParser.DeclaratorContext declarator)
+        {
+            return (declarator.refDeclarator(), declarator.noRefDeclarator()) switch
+            {
+                (var refDecl, null) => GetRefName(refDecl),
+                (null, var noRefDecl) => GetNoRefName(noRefDecl),
+                _ => throw new NotSupportedException(),
+            };
+
+            static string GetRefName(ScLangParser.RefDeclaratorContext refDeclarator)
+                => GetNoRefName(refDeclarator.noRefDeclarator());
+
+            static string GetNoRefName(ScLangParser.NoRefDeclaratorContext noRefDeclarator)
+                => noRefDeclarator switch
+                {
+                    ScLangParser.SimpleDeclaratorContext s => s.identifier().GetText(),
+                    ScLangParser.ArrayDeclaratorContext a => GetNoRefName(a.noRefDeclarator()),
+                    ScLangParser.ParenthesizedRefDeclaratorContext p => GetRefName(p.refDeclarator()),
+                    _ => throw new NotSupportedException(),
+                };
         }
 
         private static SourceRange Source(ParserRuleContext context) => SourceRange.FromTokens(context.Start, context.Stop);

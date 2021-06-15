@@ -74,6 +74,8 @@ namespace ScTools
         public IEnumerable<ErrorDiagnostic> Errors => reportsByFile.Values.SelectMany(r => r.Errors);
         public IEnumerable<WarningDiagnostic> Warnings => reportsByFile.Values.SelectMany(r => r.Warnings);
 
+        public DiagnosticsReport this[string filePath] => GetReport(filePath);
+
         public Diagnostics()
         {
         }

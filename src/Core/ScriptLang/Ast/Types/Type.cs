@@ -10,10 +10,11 @@
 
         private sealed class UnknownType : IType
         {
-            public SourceRange Source { get => SourceRange.Unknown; set => throw new NotSupportedException(); }
+            public int SizeOf => throw new NotSupportedException("Type is unknown");
+            public SourceRange Source { get => SourceRange.Unknown; set => throw new NotSupportedException("Type is unknown"); }
 
             public TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-                => throw new NotSupportedException();
+                => throw new NotSupportedException("Type is unknown");
         }
     }
 
