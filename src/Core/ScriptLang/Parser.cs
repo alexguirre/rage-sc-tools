@@ -410,11 +410,12 @@
 
         private List<StructField> BuildStructFields(ScLangParser.StructFieldListContext structFieldsContext)
         {
-            return new(structFieldsContext.varDeclarationNoInit()
-                        .SelectMany(declNoInit => declNoInit.declaratorList().declarator()
-                                                            .Select(decl => new StructField(Source(decl), GetNameFromDeclarator(decl))
+            return new(structFieldsContext.varDeclaration()
+                        .SelectMany(declNoInit => declNoInit.initDeclaratorList().initDeclarator()
+                                                            .Select(initDecl => new StructField(Source(initDecl), GetNameFromDeclarator(initDecl.declarator()))
                                                             {
-                                                                Type = BuildTypeFromDeclarator(declNoInit.type, decl),
+                                                                Type = BuildTypeFromDeclarator(declNoInit.type, initDecl.declarator()),
+                                                                Initializer = BuildAstOpt(initDecl.initializer),
                                                             })));
         }
 

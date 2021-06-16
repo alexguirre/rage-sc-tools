@@ -74,9 +74,9 @@ PROC MAIN()
                 WAIT(0)
             ENDWHILE
 
-            CHILD_ARGS args
+            CHILD_ARGS args     // CHILD_ARGS.b is default initialized
             args.a = 10
-            args.b = 20
+            args.c = 20
             START_NEW_SCRIPT_WITH_ARGS(CHILD_SCRIPT_NAME, args, SIZE_OF(args), 512)
 
             SET_SCRIPT_AS_NO_LONGER_NEEDED(CHILD_SCRIPT_NAME)

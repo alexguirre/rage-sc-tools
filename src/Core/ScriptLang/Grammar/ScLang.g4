@@ -140,10 +140,6 @@ varDeclaration
     : type=identifier initDeclaratorList
     ;
 
-varDeclarationNoInit
-    : type=identifier declaratorList
-    ;
-
 singleVarDeclarationNoInit
     : type=identifier declarator
     ;
@@ -176,7 +172,7 @@ noRefDeclarator
     ;
 
 structFieldList
-    : (varDeclarationNoInit? EOL)*
+    : (varDeclaration? EOL)*
     ;
 
 argumentList

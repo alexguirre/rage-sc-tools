@@ -1,6 +1,7 @@
 ﻿namespace ScTools.Playground
 {
     using System;
+    using System.Diagnostics;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -55,8 +56,11 @@
         {
             using var r = new StreamReader(filePath);
             var d = new DiagnosticsReport();
+            var sw = Stopwatch.StartNew();
             var p = new Parser(r, filePath) { UsingResolver = new FileUsingResolver() };
             p.Parse(d);
+            sw.Stop();
+            Console.WriteLine(sw.Elapsed);
             ;
         }
 

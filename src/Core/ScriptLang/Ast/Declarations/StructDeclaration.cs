@@ -2,6 +2,7 @@
 {
     using System.Collections.Generic;
 
+    using ScTools.ScriptLang.Ast.Expressions;
     using ScTools.ScriptLang.Ast.Types;
 
     public sealed class StructDeclaration : BaseTypeDeclaration
@@ -19,6 +20,7 @@
     {
         public string Name { get; set; }
         public IType Type { get; set; } = IType.Unknown;
+        public IExpression? Initializer { get; set; }
 
         public StructField(SourceRange source, string name) : base(source)
             => Name = name;
