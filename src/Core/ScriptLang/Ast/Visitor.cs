@@ -1,6 +1,7 @@
 ﻿namespace ScTools.ScriptLang.Ast
 {
     using ScTools.ScriptLang.Ast.Declarations;
+    using ScTools.ScriptLang.Ast.Expressions;
     using ScTools.ScriptLang.Ast.Statements;
     using ScTools.ScriptLang.Ast.Types;
 
@@ -19,6 +20,18 @@
         TReturn Visit(VarDeclaration node, TParam param);
 
         TReturn Visit(BinaryExpression node, TParam param);
+        TReturn Visit(BoolLiteralExpression node, TParam param);
+        TReturn Visit(FieldAccessExpression node, TParam param);
+        TReturn Visit(FloatLiteralExpression node, TParam param);
+        TReturn Visit(IndexingExpression node, TParam param);
+        TReturn Visit(IntLiteralExpression node, TParam param);
+        TReturn Visit(InvocationExpression node, TParam param);
+        TReturn Visit(NullExpression node, TParam param);
+        TReturn Visit(SizeOfExpression node, TParam param);
+        TReturn Visit(StringLiteralExpression node, TParam param);
+        TReturn Visit(UnaryExpression node, TParam param);
+        TReturn Visit(ValueDeclRefExpression node, TParam param);
+        TReturn Visit(VectorExpression node, TParam param);
 
         TReturn Visit(AssignmentStatement node, TParam param);
         TReturn Visit(BreakStatement node, TParam param);

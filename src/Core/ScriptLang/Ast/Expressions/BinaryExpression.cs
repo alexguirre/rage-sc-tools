@@ -1,9 +1,5 @@
-﻿namespace ScTools.ScriptLang.Ast.Statements
+﻿namespace ScTools.ScriptLang.Ast.Expressions
 {
-    using System;
-
-    using ScTools.ScriptLang.Ast.Expressions;
-
     public enum BinaryOperator
     {
         Add,

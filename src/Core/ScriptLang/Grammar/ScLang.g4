@@ -94,9 +94,9 @@ statementBlock
 
 expression
     : '(' expression ')'                                            #parenthesizedExpression
-    | expression '.' identifier                                     #memberAccessExpression
+    | expression '.' identifier                                     #fieldAccessExpression
     | expression argumentList                                       #invocationExpression
-    | expression arrayIndexer                                       #arrayAccessExpression
+    | expression arrayIndexer                                       #indexingExpression
     | op=(K_NOT | '-') expression                                   #unaryExpression
     | left=expression op=('*' | '/' | '%') right=expression         #binaryExpression
     | left=expression op=('+' | '-') right=expression               #binaryExpression
@@ -107,9 +107,12 @@ expression
     | left=expression op=('==' | '<>') right=expression             #binaryExpression
     | left=expression op=K_AND right=expression                     #binaryExpression
     | left=expression op=K_OR right=expression                      #binaryExpression
-    | '<<' expression ',' expression ',' expression '>>'            #vectorExpression
+    | '<<' x=expression ',' y=expression ',' z=expression '>>'            #vectorExpression
     | identifier                                                    #identifierExpression
-    | (integer | float | string | bool)                             #literalExpression
+    | integer                                                       #intLiteralExpression
+    | float                                                         #floatLiteralExpression
+    | string                                                        #stringLiteralExpression
+    | bool                                                          #boolLiteralExpression
     | K_SIZE_OF '(' expression ')'                                  #sizeOfExpression
     | K_NULL                                                        #nullExpression
     ;
@@ -281,7 +284,13 @@ IDENTIFIER
     ;
 
 FLOAT
-    : DECIMAL_INTEGER '.' DIGIT+
+    : DECIMAL_INTEGER '.' DIGIT* FLOAT_EXPONENT?
+    | '.' DIGIT+ FLOAT_EXPONENT?
+    | DECIMAL_INTEGER FLOAT_EXPONENT
+    ;
+
+fragment FLOAT_EXPONENT
+    : [eE] DECIMAL_INTEGER
     ;
 
 DECIMAL_INTEGER

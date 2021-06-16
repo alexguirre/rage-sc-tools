@@ -248,16 +248,52 @@
             => context is not null ? BuildAst(context) : null;
 
         private IExpression BuildAst(ScLangParser.ExpressionContext context)
-        {
-            // TODO: BuildAst(ScLangParser.ExpressionContext)
-            switch (context)
+            => context switch
             {
-                case ScLangParser.BinaryExpressionContext c:
-                    return new BinaryExpression(Source(c), BinaryOperatorFromString(c.op.Text), BuildAst(c.left), BuildAst(c.right));
+                ScLangParser.ParenthesizedExpressionContext c
+                    => BuildAst(c.expression()),
 
-                default: return null; // TODO: throw new NotSupportedException();
-            }
-        }
+                ScLangParser.UnaryExpressionContext c
+                    => new UnaryExpression(Source(c), UnaryOperatorFromString(c.op.Text), BuildAst(c.expression())),
+
+                ScLangParser.BinaryExpressionContext c
+                    => new BinaryExpression(Source(c), BinaryOperatorFromString(c.op.Text), BuildAst(c.left), BuildAst(c.right)),
+
+                ScLangParser.IndexingExpressionContext c
+                    => new IndexingExpression(Source(c), BuildAst(c.expression()), BuildAst(c.arrayIndexer().expression())),
+
+                ScLangParser.InvocationExpressionContext c
+                    => new InvocationExpression(Source(c), BuildAst(c.expression()), c.argumentList().expression().Select(BuildAst)),
+
+                ScLangParser.FieldAccessExpressionContext c
+                    => new FieldAccessExpression(Source(c), BuildAst(c.expression()), c.identifier().GetText()),
+
+                ScLangParser.VectorExpressionContext c
+                    => new VectorExpression(Source(c), BuildAst(c.x), BuildAst(c.y), BuildAst(c.z)),
+
+                ScLangParser.IdentifierExpressionContext c
+                    => new ValueDeclRefExpression(Source(c), c.identifier().GetText()),
+
+                ScLangParser.IntLiteralExpressionContext c
+                    => new IntLiteralExpression(Source(c), Parse(c.integer())),
+
+                ScLangParser.FloatLiteralExpressionContext c
+                    => new FloatLiteralExpression(Source(c), Parse(c.@float())),
+
+                ScLangParser.StringLiteralExpressionContext c
+                    => new StringLiteralExpression(Source(c), Parse(c.@string())),
+
+                ScLangParser.BoolLiteralExpressionContext c
+                    => new BoolLiteralExpression(Source(c), Parse(c.@bool())),
+
+                ScLangParser.SizeOfExpressionContext c
+                    => new SizeOfExpression(Source(c), BuildAst(c.expression())),
+
+                ScLangParser.NullExpressionContext c
+                    => new NullExpression(Source(c)),
+
+                _ => throw new NotSupportedException($"Expression '{context.GetType()}' is not supported"),
+            };
 
         private IEnumerable<IStatement> BuildAst(ScLangParser.LabeledStatementContext context)
         {
@@ -266,7 +302,6 @@
                 yield return new LabelDeclaration(Source(label), label.identifier().GetText());
             }
 
-            // TODO: BuildAst of invocation statement
             switch (context.statement())
             {
                 case null: break;
@@ -355,7 +390,11 @@
                     yield return new ReturnStatement(Source(c), BuildAstOpt(c.expression()));
                     break;
 
-                default: break;// TODO: throw new NotSupportedException($"Statement '{context.GetType()}' is not supported");
+                case ScLangParser.InvocationStatementContext c:
+                    yield return new InvocationExpression(Source(c), BuildAst(c.expression()), c.argumentList().expression().Select(BuildAst));
+                    break;
+
+                default: throw new NotSupportedException($"Statement '{context.statement().GetType()}' is not supported");
             }
         }
 
@@ -462,8 +501,27 @@
             }
         }
 
+        private static float Parse(ScLangParser.FloatContext context)
+            => context.GetText().ParseAsFloat();
+
+        private static bool Parse(ScLangParser.BoolContext context)
+            => context.GetText().ToUpperInvariant() switch
+            {
+                "TRUE" => true,
+                "FALSE" => false,
+                _ => throw new ArgumentException($"Invalid bool '{context.GetText()}'", nameof(context)),
+            };
+
+        private static UnaryOperator UnaryOperatorFromString(string op)
+            => op.ToUpperInvariant() switch
+            {
+                "-" => UnaryOperator.Negate,
+                "NOT" => UnaryOperator.LogicalNot,
+                _ => throw new ArgumentException($"Unknown unary operator '{op}'", nameof(op)),
+            };
+
         private static BinaryOperator BinaryOperatorFromString(string op)
-            => op switch
+            => op.ToUpperInvariant() switch
             {
                 "*" => BinaryOperator.Multiply,
                 "/" => BinaryOperator.Divide,

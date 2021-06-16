@@ -4,6 +4,9 @@
 
     public sealed class AssignmentStatement : BaseStatement
     {
+        /// <summary>
+        /// Gets or sets the operator if this is a compound assignment; <c>null</c> if it is a simple assigment.
+        /// </summary>
         public BinaryOperator? CompoundOperator { get; set; }
         public IExpression LHS { get; set; }
         public IExpression RHS { get; set; }
