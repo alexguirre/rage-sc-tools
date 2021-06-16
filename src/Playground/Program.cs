@@ -61,6 +61,7 @@
             p.Parse(d);
             sw.Stop();
             Console.WriteLine(sw.Elapsed);
+            d.PrintAll(Console.Out);
             ;
         }
 

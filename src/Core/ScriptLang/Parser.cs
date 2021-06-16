@@ -220,7 +220,11 @@
                 case ScLangParser.ConstantVariableDeclarationContext c:
                     foreach (var varDecl in BuildVarDecls(VarKind.Constant, c.varDeclaration()))
                     {
-                        // TODO: check if initializer expression in CONST var is missing
+                        if (varDecl.Initializer is null)
+                        {
+                            Diagnostics.AddError("A CONST variable requires an initializer", varDecl.Source);
+                        }
+
                         yield return varDecl;
                     }
                     break;
