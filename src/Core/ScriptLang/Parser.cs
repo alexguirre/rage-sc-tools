@@ -250,7 +250,13 @@
         private IExpression BuildAst(ScLangParser.ExpressionContext context)
         {
             // TODO: BuildAst(ScLangParser.ExpressionContext)
-            return null;
+            switch (context)
+            {
+                case ScLangParser.BinaryExpressionContext c:
+                    return new BinaryExpression(Source(c), BinaryOperatorFromString(c.op.Text), BuildAst(c.left), BuildAst(c.right));
+
+                default: return null; // TODO: throw new NotSupportedException();
+            }
         }
 
         private IEnumerable<IStatement> BuildAst(ScLangParser.LabeledStatementContext context)
@@ -260,10 +266,15 @@
                 yield return new LabelDeclaration(Source(label), label.identifier().GetText());
             }
 
-            // TODO: BuildAst(ScLangParser.LabeledStatementContext)
+            // TODO: BuildAst of invocation statement
             switch (context.statement())
             {
                 case null: break;
+
+                case ScLangParser.AssignmentStatementContext c:
+                    var op = c.op.Text is "=" ? (BinaryOperator?)null : BinaryOperatorFromString(c.op.Text[0..1]);
+                    yield return new AssignmentStatement(Source(c), op, BuildAst(c.left), BuildAst(c.right));
+                    break;
 
                 case ScLangParser.VariableDeclarationStatementContext c:
                     foreach (var varDecl in BuildVarDecls(VarKind.Local, c.varDeclaration()))
@@ -326,7 +337,7 @@
                             {
                                 Body = BuildStatementBlock(d.statementBlock())
                             },
-                            _ => throw new NotSupportedException(),
+                            _ => throw new NotSupportedException($"Switch case '{switchCase.GetType()}' is not supported"),
                         });
                     }
                     yield return switchStmt;
@@ -344,7 +355,7 @@
                     yield return new ReturnStatement(Source(c), BuildAstOpt(c.expression()));
                     break;
 
-                default: break; // TODO: throw new NotSupportedException();
+                default: break;// TODO: throw new NotSupportedException($"Statement '{context.GetType()}' is not supported");
             }
         }
 
@@ -450,6 +461,28 @@
                 return s.ParseAsInt();
             }
         }
+
+        private static BinaryOperator BinaryOperatorFromString(string op)
+            => op switch
+            {
+                "*" => BinaryOperator.Multiply,
+                "/" => BinaryOperator.Divide,
+                "%" => BinaryOperator.Modulo,
+                "+" => BinaryOperator.Add,
+                "-" => BinaryOperator.Subtract,
+                "&" => BinaryOperator.And,
+                "^" => BinaryOperator.Xor,
+                "|" => BinaryOperator.Or,
+                "<" => BinaryOperator.LessThan,
+                "<=" => BinaryOperator.LessThanOrEqual,
+                ">" => BinaryOperator.GreaterThan,
+                ">=" => BinaryOperator.GreaterThanOrEqual,
+                "==" => BinaryOperator.Equals,
+                "<>" => BinaryOperator.NotEquals,
+                "AND" => BinaryOperator.LogicalAnd,
+                "OR" => BinaryOperator.LogicalOr,
+                _ => throw new ArgumentException($"Unknown binary operator '{op}'", nameof(op)),
+            };
 
         private sealed class SyntaxErrorListener<TSymbol> : IAntlrErrorListener<TSymbol>
         {

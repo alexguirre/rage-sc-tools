@@ -18,6 +18,9 @@
         TReturn Visit(StructField node, TParam param);
         TReturn Visit(VarDeclaration node, TParam param);
 
+        TReturn Visit(BinaryExpression node, TParam param);
+
+        TReturn Visit(AssignmentStatement node, TParam param);
         TReturn Visit(BreakStatement node, TParam param);
         TReturn Visit(GotoStatement node, TParam param);
         TReturn Visit(IfStatement node, TParam param);
