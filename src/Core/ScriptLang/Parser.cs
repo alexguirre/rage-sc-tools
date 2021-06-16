@@ -31,7 +31,7 @@
         public IUsingResolver? UsingResolver { get; set; }
         public Program OutputAst { get; private set; }
         private HashSet<string> usings = new(); // TODO: handle including the initial file from another file
-        private bool scriptNameSet = false, scriptHashSet = false;
+        private bool scriptNameFound = false, scriptHashFound = false, argVarFound = false;
 
         /// <summary>
         /// Stack with the files currently being parsed.
@@ -101,10 +101,10 @@
             switch (context)
             {
                 case ScLangParser.ScriptHashDirectiveContext h:
-                    if (!scriptHashSet)
+                    if (!scriptHashFound)
                     {
                         OutputAst.ScriptHash = Parse(h.integer());
-                        scriptHashSet = true;
+                        scriptHashFound = true;
                     }
                     else
                     {
@@ -113,10 +113,10 @@
                     break;
 
                 case ScLangParser.ScriptNameDirectiveContext n:
-                    if (!scriptNameSet)
+                    if (!scriptNameFound)
                     {
                         OutputAst.ScriptName = n.identifier().GetText();
-                        scriptNameSet = true;
+                        scriptNameFound = true;
                     }
                     else
                     {
@@ -226,10 +226,14 @@
                     break;
 
                 case ScLangParser.ArgVariableDeclarationContext c:
-                    // TODO: rethink ARG variables grammar to allow static initialization of multiple values
-                    foreach (var varDecl in BuildVarDecls(VarKind.StaticArg, c.varDeclaration()))
+                    if (!argVarFound)
                     {
-                        yield return varDecl;
+                        yield return BuildSingleVarDecl(VarKind.StaticArg, c.singleVarDeclaration());
+                        argVarFound = true;
+                    }
+                    else
+                    {
+                        Diagnostics.AddError("ARG variable is repeated", Source(c));
                     }
                     break;
 
@@ -400,13 +404,19 @@
 
         private IEnumerable<VarDeclaration> BuildVarDecls(VarKind kind, ScLangParser.VarDeclarationContext varDeclContext)
         {
-            return varDeclContext.initDeclaratorList().initDeclarator()
-                .Select(initDecl => new VarDeclaration(Source(initDecl), GetNameFromDeclarator(initDecl.declarator()), kind)
-                {
-                    Type = BuildTypeFromDeclarator(varDeclContext.type, initDecl.declarator()),
-                    Initializer = BuildAstOpt(initDecl.initializer),
-                });
+            var initDecls = varDeclContext.initDeclaratorList().initDeclarator();
+            return initDecls.Select(initDecl => BuildVarDecl(kind, varDeclContext.type, initDecl));
         }
+
+        private VarDeclaration BuildSingleVarDecl(VarKind kind, ScLangParser.SingleVarDeclarationContext varDeclContext)
+            => BuildVarDecl(kind, varDeclContext.type, varDeclContext.initDeclarator());
+
+        private VarDeclaration BuildVarDecl(VarKind kind, ScLangParser.IdentifierContext type, ScLangParser.InitDeclaratorContext initDecl)
+            => new(Source(initDecl), GetNameFromDeclarator(initDecl.declarator()), kind)
+            {
+                Type = BuildTypeFromDeclarator(type, initDecl.declarator()),
+                Initializer = BuildAstOpt(initDecl.initializer),
+            };
 
         private List<StructField> BuildStructFields(ScLangParser.StructFieldListContext structFieldsContext)
         {

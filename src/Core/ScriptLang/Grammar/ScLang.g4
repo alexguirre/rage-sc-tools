@@ -34,7 +34,7 @@ declaration
       K_ENDENUM                                                         #enumDeclaration
 
     | K_CONST varDeclaration                                            #constantVariableDeclaration
-    | K_ARG varDeclaration                                              #argVariableDeclaration
+    | K_ARG singleVarDeclaration                                        #argVariableDeclaration
     | varDeclaration                                                    #staticVariableDeclaration
 
     | K_GLOBAL block=integer owner=identifier EOL
@@ -138,6 +138,10 @@ enumMemberDeclaration
 
 varDeclaration
     : type=identifier initDeclaratorList
+    ;
+
+singleVarDeclaration
+    : type=identifier initDeclarator
     ;
 
 singleVarDeclarationNoInit

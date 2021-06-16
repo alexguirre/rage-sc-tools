@@ -45,7 +45,7 @@
             const string BaseDir = "D:\\sources\\gtav-sc-tools\\examples\\language_sample\\";
 
             Parse(BaseDir + "language_sample_main.sc");
-            //Parse(BaseDir + "language_sample_child.sc");
+            Parse(BaseDir + "language_sample_child.sc");
             //Parse(BaseDir + "language_sample_shared.sch");
 
             ;
