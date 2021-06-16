@@ -100,7 +100,7 @@ IDENTIFIER
     ;
 
 DECIMAL_INTEGER
-    :   [-+]? DIGIT*
+    :   [-+]? DIGIT+
     ;
 
 HEX_INTEGER
