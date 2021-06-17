@@ -4,7 +4,7 @@
 
     using ScTools.ScriptLang.Ast.Expressions;
 
-    public sealed class SwitchStatement : BaseStatement
+    public sealed class SwitchStatement : BaseStatement, IBreakableStatement
     {
         public IExpression Expression { get; set; }
         public IList<SwitchCase> Cases { get; set; } = new List<SwitchCase>();

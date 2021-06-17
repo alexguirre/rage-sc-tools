@@ -1,5 +1,6 @@
 ﻿namespace ScTools.ScriptLang.Semantics
 {
+    using System.Collections.Generic;
     using System.Diagnostics;
 
     using ScTools.ScriptLang.Ast;
@@ -15,12 +16,14 @@
     /// <list type="bullet">
     /// <item>Resolves <see cref="NamedType"/>s.</item>
     /// <item>Associates <see cref="ValueDeclRefExpression"/>s to their corresponding <see cref="IValueDeclaration"/>.</item>
+    /// <item>Associates <see cref="BreakStatement"/>s to the closest enclosing <see cref="IBreakableStatement"/> (i.e. the enclosing loop or switch).</item>
     /// </list>
     /// </summary>
     public sealed class IdentificationVisitor : DFSVisitor
     {
         // TODO: associate GOTO statements with the labels
-        // TODO: associate BREAK statements with the closest enclosing switch or loop
+
+        private readonly Stack<IBreakableStatement> breakableStatements = new();
 
         public DiagnosticsReport Diagnostics { get; }
         public ScopeSymbolTable Symbols { get; }
@@ -110,7 +113,9 @@
             node.Counter.Accept(this, param);
 
             Symbols.PushScope();
+            breakableStatements.Push(node);
             node.Body.ForEach(stmt => stmt.Accept(this, param));
+            breakableStatements.Pop();
             Symbols.PopScope();
 
             return DefaultReturn;
@@ -121,7 +126,9 @@
             node.Expression.Accept(this, param);
 
             Symbols.PushScope();
+            breakableStatements.Push(node);
             node.Cases.ForEach(c => c.Accept(this, param));
+            breakableStatements.Pop();
             Symbols.PopScope();
 
             return DefaultReturn;
@@ -132,8 +139,24 @@
             node.Condition.Accept(this, param);
 
             Symbols.PushScope();
+            breakableStatements.Push(node);
             node.Body.ForEach(stmt => stmt.Accept(this, param));
+            breakableStatements.Pop();
             Symbols.PopScope();
+
+            return DefaultReturn;
+        }
+
+        public override Void Visit(BreakStatement node, Void param)
+        {
+            if (breakableStatements.Count == 0)
+            {
+                Diagnostics.AddError("No enclosing loop or switch out of which to break", node.Source);
+            }
+            else
+            {
+                node.EnclosingStatement = breakableStatements.Peek();
+            }
 
             return DefaultReturn;
         }

@@ -4,7 +4,7 @@
 
     using ScTools.ScriptLang.Ast.Expressions;
 
-    public sealed class WhileStatement : BaseStatement
+    public sealed class WhileStatement : BaseStatement, IBreakableStatement
     {
         public IExpression Condition { get; set; }
         public IList<IStatement> Body { get; set; } = new List<IStatement>();

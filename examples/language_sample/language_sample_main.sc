@@ -45,6 +45,9 @@ PROC MAIN()
     REPEAT aItems.length i
         INIT_STRUCT(aItems[i], GET_DEFAULT_A(), GET_DEFAULT_B(), GET_DEFAULT_C(), GET_DEFAULT_D())
         aItems[i].a += F2I(aItems[i].b)
+        IF i > 4
+            BREAK
+        ENDIF
     ENDREPEAT
 
     MODIFY_STRUCT(aItems[0])

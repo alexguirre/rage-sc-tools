@@ -4,7 +4,7 @@
 
     using ScTools.ScriptLang.Ast.Expressions;
 
-    public sealed class RepeatStatement : BaseStatement
+    public sealed class RepeatStatement : BaseStatement, IBreakableStatement
     {
         public IExpression Limit { get; set; }
         public IExpression Counter { get; set; }
