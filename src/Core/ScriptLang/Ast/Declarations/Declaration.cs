@@ -36,9 +36,9 @@
     public abstract class BaseValueDeclaration : BaseNode, IValueDeclaration
     {
         public string Name { get; set; }
-        public IType Type { get; set; } = IType.Unknown;
+        public IType Type { get; set; }
 
-        public BaseValueDeclaration(SourceRange source, string name) : base(source)
-            => Name = name;
+        public BaseValueDeclaration(SourceRange source, string name, IType type) : base(source)
+            => (Name, Type) = (name, type);
     }
 }

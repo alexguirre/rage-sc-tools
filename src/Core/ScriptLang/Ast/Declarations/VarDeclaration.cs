@@ -2,6 +2,7 @@
 {
     using ScTools.ScriptLang.Ast.Expressions;
     using ScTools.ScriptLang.Ast.Statements;
+    using ScTools.ScriptLang.Ast.Types;
 
     public enum VarKind
     {
@@ -37,7 +38,7 @@
         public VarKind Kind { get; set; }
         public IExpression? Initializer { get; set; }
 
-        public VarDeclaration(SourceRange source, string name, VarKind kind) : base(source, name)
+        public VarDeclaration(SourceRange source, string name, IType type, VarKind kind) : base(source, name, type)
             => Kind = kind;
 
         public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)

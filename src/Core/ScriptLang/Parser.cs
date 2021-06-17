@@ -185,7 +185,7 @@
                 case ScLangParser.GlobalBlockDeclarationContext c:
                     yield return new GlobalBlockDeclaration(Source(c), c.owner.GetText(), Parse(c.block))
                     {
-                        Vars = new List<VarDeclaration>(c.varDeclaration().SelectMany(decl => BuildVarDecls(VarKind.Global, decl)))
+                        Vars = c.varDeclaration().SelectMany(decl => BuildVarDecls(VarKind.Global, decl)).ToList()
                     };
                     break;
 
@@ -197,10 +197,12 @@
                     break;
 
                 case ScLangParser.EnumDeclarationContext c:
-                    var enumMembers = c.enumList().enumMemberDeclarationList()
-                                       .SelectMany(l => l.enumMemberDeclaration())
-                                       .Select(m => new EnumMemberDeclaration(Source(m), m.identifier().GetText(), BuildAstOpt(m.initializer)));
-                    yield return new EnumDeclaration(Source(c), c.identifier().GetText(), enumMembers);
+                    var enumDecl = new EnumDeclaration(Source(c), c.identifier().GetText());
+                    enumDecl.Members = c.enumList().enumMemberDeclarationList()
+                                        .SelectMany(l => l.enumMemberDeclaration())
+                                        .Select(m => new EnumMemberDeclaration(Source(m), m.identifier().GetText(), new EnumType(Source(m), enumDecl), BuildAstOpt(m.initializer)))
+                                        .ToList();
+                    yield return enumDecl;
                     break;
 
                 case ScLangParser.ConstantVariableDeclarationContext c:
@@ -402,9 +404,8 @@
             => BuildVarDecl(kind, varDeclContext.type, varDeclContext.initDeclarator());
 
         private VarDeclaration BuildVarDecl(VarKind kind, ScLangParser.IdentifierContext type, ScLangParser.InitDeclaratorContext initDecl)
-            => new(Source(initDecl), GetNameFromDeclarator(initDecl.declarator()), kind)
+            => new(Source(initDecl), GetNameFromDeclarator(initDecl.declarator()), BuildTypeFromDeclarator(type, initDecl.declarator()), kind)
             {
-                Type = BuildTypeFromDeclarator(type, initDecl.declarator()),
                 Initializer = BuildAstOpt(initDecl.initializer),
             };
 
@@ -412,9 +413,8 @@
         {
             return new(structFieldsContext.varDeclaration()
                         .SelectMany(declNoInit => declNoInit.initDeclaratorList().initDeclarator()
-                                                            .Select(initDecl => new StructField(Source(initDecl), GetNameFromDeclarator(initDecl.declarator()))
+                                                            .Select(initDecl => new StructField(Source(initDecl), GetNameFromDeclarator(initDecl.declarator()), BuildTypeFromDeclarator(declNoInit.type, initDecl.declarator()))
                                                             {
-                                                                Type = BuildTypeFromDeclarator(declNoInit.type, initDecl.declarator()),
                                                                 Initializer = BuildAstOpt(initDecl.initializer),
                                                             })));
         }
@@ -423,9 +423,8 @@
         {
             // include parameter var declarations at the start of the function body
             var paramsDecls = funcDecl.Prototype.Parameters
-                                      .Select(p => new VarDeclaration(p.Source, p.Name, VarKind.Parameter)
+                                      .Select(p => new VarDeclaration(p.Source, p.Name, p.Type, VarKind.Parameter)
                                         {
-                                            Type = p.Type,
                                             Initializer = null,
                                         });
             var statements = statementBlockContext.labeledStatement().SelectMany(BuildAst);
@@ -440,11 +439,11 @@
             return new FuncProtoDeclaration(source, name)
             {
                 ReturnType = returnType is null ? null : BuildType(returnType),
-                Parameters = new List<FuncParameter>(
-                    paramsContext.singleVarDeclarationNoInit()
-                                 .Select(pDecl => new FuncParameter(Source(pDecl),
-                                                                    GetNameFromDeclarator(pDecl.declarator()),
-                                                                    BuildTypeFromDeclarator(pDecl.type, pDecl.declarator())))),
+                Parameters = paramsContext.singleVarDeclarationNoInit()
+                                .Select(pDecl => new FuncParameter(Source(pDecl),
+                                                                   GetNameFromDeclarator(pDecl.declarator()),
+                                                                   BuildTypeFromDeclarator(pDecl.type, pDecl.declarator())))
+                                .ToList(),
             };
         }
 
