@@ -62,12 +62,13 @@
             p.Parse(d);
             sw.Stop();
             Console.WriteLine(sw.Elapsed);
-            d.PrintAll(Console.Out);
+            //d.PrintAll(Console.Out);
 
             var v1 = new GlobalSymbolsIdentificationVisitor();
             p.OutputAst.Accept(v1, default);
             ;
-            p.OutputAst.Accept(new TypeResolvingVisitor(), default);
+            p.OutputAst.Accept(new TypeResolvingVisitor(d, v1.Symbols), default);
+            d.PrintAll(Console.Out);
             ;
         }
 

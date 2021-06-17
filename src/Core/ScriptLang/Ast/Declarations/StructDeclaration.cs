@@ -11,6 +11,8 @@
 
         public StructDeclaration(SourceRange source, string name) : base(source, name) { }
 
+        public override StructType CreateType(SourceRange source) => new(source, this);
+
         public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
             => visitor.Visit(this, param);
     }

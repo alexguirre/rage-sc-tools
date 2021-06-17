@@ -9,15 +9,24 @@
     {
         public override Void DefaultReturn => default;
 
+        public DiagnosticsReport Diagnostics { get; }
+        public SymbolTable Symbols { get; }
+
+        public TypeResolvingVisitor(DiagnosticsReport diagnostics, SymbolTable symbols)
+            => (Diagnostics, Symbols) = (diagnostics, symbols);
+
         public override Void Visit(NamedType node, Void param)
         {
             Debug.Assert(node.ResolvedType is null); // verify we are not visiting the same node multiple times
 
-            System.Console.WriteLine(new Diagnostic(DiagnosticTag.Warning, node.Name, node.Source));
-            // TODO: proper type resolving
-            if (node.Name.ToUpperInvariant() == "INT")
+            var typeDecl = Symbols.FindTypeDecl(node.Name);
+            if (typeDecl is null)
             {
-                node.ResolvedType = new IntType(node.Source);
+                Diagnostics.AddError($"Unknown type '{node.Name}'", node.Source);
+            }
+            else
+            {
+                node.ResolvedType = typeDecl.CreateType(node.Source);
             }
 
             return DefaultReturn;

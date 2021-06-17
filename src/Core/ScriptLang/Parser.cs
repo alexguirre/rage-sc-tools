@@ -202,7 +202,7 @@
                     var enumDecl = new EnumDeclaration(Source(c), c.identifier().GetText());
                     enumDecl.Members = c.enumList().enumMemberDeclarationList()
                                         .SelectMany(l => l.enumMemberDeclaration())
-                                        .Select(m => new EnumMemberDeclaration(Source(m), m.identifier().GetText(), new EnumType(Source(m), enumDecl), BuildAstOpt(m.initializer)))
+                                        .Select(m => new EnumMemberDeclaration(Source(m), m.identifier().GetText(), enumDecl.CreateType(Source(m)), BuildAstOpt(m.initializer)))
                                         .ToList();
                     yield return enumDecl;
                     break;

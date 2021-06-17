@@ -16,6 +16,8 @@
 
         public FuncProtoDeclaration(SourceRange source, string name) : base(source, name) { }
 
+        public override FuncType CreateType(SourceRange source) => new(source, this);
+
         public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
             => visitor.Visit(this, param);
     }

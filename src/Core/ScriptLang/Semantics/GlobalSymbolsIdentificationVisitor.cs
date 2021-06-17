@@ -1,5 +1,6 @@
 ﻿namespace ScTools.ScriptLang.Semantics
 {
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
 
@@ -8,11 +9,15 @@
 
     public sealed class SymbolTable
     {
+        public static StringComparer CaseInsensitiveComparer => ScriptAssembly.Assembler.CaseInsensitiveComparer;
+
         public List<ITypeDeclaration> typeDeclarations = new();
         public List<IValueDeclaration> valueDeclarations = new();
 
         public void AddType(ITypeDeclaration typeDeclaration) => typeDeclarations.Add(typeDeclaration);
         public void AddValue(IValueDeclaration valueDeclaration) => valueDeclarations.Add(valueDeclaration);
+
+        public ITypeDeclaration? FindTypeDecl(string name) => typeDeclarations.Find(decl => CaseInsensitiveComparer.Compare(decl.Name, name) == 0);
     }
 
     /// <summary>

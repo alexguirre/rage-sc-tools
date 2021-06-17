@@ -15,6 +15,7 @@
     /// </summary>
     public interface ITypeDeclaration : IDeclaration
     {
+        IType CreateType(SourceRange source);
     }
 
     /// <summary>
@@ -31,6 +32,8 @@
 
         public BaseTypeDeclaration(SourceRange source, string name) : base(source)
             => Name = name;
+
+        public abstract IType CreateType(SourceRange source);
     }
 
     public abstract class BaseValueDeclaration : BaseNode, IValueDeclaration
