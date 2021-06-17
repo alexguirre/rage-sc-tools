@@ -52,11 +52,12 @@
         TReturn Visit(FloatType node, TParam param);
         TReturn Visit(FuncType node, TParam param);
         TReturn Visit(IntType node, TParam param);
+        TReturn Visit(NamedType node, TParam param);
+        TReturn Visit(NullType node, TParam param);
         TReturn Visit(RefType node, TParam param);
         TReturn Visit(StringType node, TParam param);
         TReturn Visit(StructType node, TParam param);
         TReturn Visit(TextLabelType node, TParam param);
-        TReturn Visit(NamedType node, TParam param);
     }
 
     /// <summary>
@@ -317,6 +318,17 @@
             return DefaultReturn;
         }
 
+        public virtual TReturn Visit(NamedType node, TParam param)
+        {
+            node.ResolvedType?.Accept(this, param);
+            return DefaultReturn;
+        }
+
+        public virtual TReturn Visit(NullType node, TParam param)
+        {
+            return DefaultReturn;
+        }
+
         public virtual TReturn Visit(RefType node, TParam param)
         {
             node.PointeeType.Accept(this, param);
@@ -335,12 +347,6 @@
 
         public virtual TReturn Visit(TextLabelType node, TParam param)
         {
-            return DefaultReturn;
-        }
-
-        public virtual TReturn Visit(NamedType node, TParam param)
-        {
-            node.ResolvedType?.Accept(this, param);
             return DefaultReturn;
         }
     }
