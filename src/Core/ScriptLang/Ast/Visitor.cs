@@ -13,7 +13,6 @@
         TReturn Visit(EnumMemberDeclaration node, TParam param);
         TReturn Visit(FuncDeclaration node, TParam param);
         TReturn Visit(FuncProtoDeclaration node, TParam param);
-        TReturn Visit(FuncParameter node, TParam param);
         TReturn Visit(GlobalBlockDeclaration node, TParam param);
         TReturn Visit(LabelDeclaration node, TParam param);
         TReturn Visit(StructDeclaration node, TParam param);
@@ -96,12 +95,6 @@
         {
             node.ReturnType?.Accept(this, param);
             node.Parameters.ForEach(p => p.Accept(this, param));
-            return DefaultReturn;
-        }
-
-        public virtual TReturn Visit(FuncParameter node, TParam param)
-        {
-            node.Type.Accept(this, param);
             return DefaultReturn;
         }
 

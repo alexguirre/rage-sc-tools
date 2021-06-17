@@ -30,7 +30,7 @@
         public TextReader Input { get; }
         public IUsingResolver? UsingResolver { get; set; }
         public Program OutputAst { get; private set; }
-        private HashSet<string> usings = new(); // TODO: handle including the initial file from another file
+        private readonly HashSet<string> usings = new(); // TODO: handle including the initial file from another file
         private bool scriptNameFound = false, scriptHashFound = false, argVarFound = false;
 
         /// <summary>
@@ -47,7 +47,7 @@
         {
             get
             {
-                Debug.Assert(diagnostics != null);
+                Debug.Assert(diagnostics is not null);
                 return diagnostics;
             }
         }
@@ -151,17 +151,19 @@
             switch (context)
             {
                 case ScLangParser.ProcedureDeclarationContext c:
-                    var p = new FuncDeclaration(Source(c), c.name.GetText(), FuncKind.UserDefined,
-                                                BuildFuncProtoDecl(Source(c), c.name.GetText() + "@proto", null, c.parameterList()));
-                    p.Body = BuildFuncBody(p, c.statementBlock());
-                    yield return p;
+                    yield return new FuncDeclaration(Source(c), c.name.GetText(), FuncKind.UserDefined,
+                                                     BuildFuncProtoDecl(Source(c), c.name.GetText() + "@proto", null, c.parameterList()))
+                    {
+                        Body = BuildStatementBlock(c.statementBlock())
+                    };
                     break;
 
                 case ScLangParser.FunctionDeclarationContext c:
-                    var f = new FuncDeclaration(Source(c), c.name.GetText(), FuncKind.UserDefined,
-                                                BuildFuncProtoDecl(Source(c), c.name.GetText() + "@proto", c.returnType, c.parameterList()));
-                    f.Body = BuildFuncBody(f, c.statementBlock());
-                    yield return f;
+                    yield return new FuncDeclaration(Source(c), c.name.GetText(), FuncKind.UserDefined,
+                                                     BuildFuncProtoDecl(Source(c), c.name.GetText() + "@proto", c.returnType, c.parameterList()))
+                    {
+                        Body = BuildStatementBlock(c.statementBlock())
+                    };
                     break;
 
                 case ScLangParser.ProcedureNativeDeclarationContext c:
@@ -403,10 +405,16 @@
         private VarDeclaration BuildSingleVarDecl(VarKind kind, ScLangParser.SingleVarDeclarationContext varDeclContext)
             => BuildVarDecl(kind, varDeclContext.type, varDeclContext.initDeclarator());
 
+        private VarDeclaration BuildSingleVarDecl(VarKind kind, ScLangParser.SingleVarDeclarationNoInitContext varDeclContext)
+            => BuildVarDecl(kind, Source(varDeclContext.declarator()), varDeclContext.type, varDeclContext.declarator(), null);
+
         private VarDeclaration BuildVarDecl(VarKind kind, ScLangParser.IdentifierContext type, ScLangParser.InitDeclaratorContext initDecl)
-            => new(Source(initDecl), GetNameFromDeclarator(initDecl.declarator()), BuildTypeFromDeclarator(type, initDecl.declarator()), kind)
+            => BuildVarDecl(kind, Source(initDecl), type, initDecl.declarator(), initDecl.initializer);
+
+        private VarDeclaration BuildVarDecl(VarKind kind, SourceRange source, ScLangParser.IdentifierContext type, ScLangParser.DeclaratorContext decl, ScLangParser.ExpressionContext? init)
+            => new(source, GetNameFromDeclarator(decl), BuildTypeFromDeclarator(type, decl), kind)
             {
-                Initializer = BuildAstOpt(initDecl.initializer),
+                Initializer = BuildAstOpt(init),
             };
 
         private List<StructField> BuildStructFields(ScLangParser.StructFieldListContext structFieldsContext)
@@ -419,18 +427,6 @@
                                                             })));
         }
 
-        private List<IStatement> BuildFuncBody(FuncDeclaration funcDecl, ScLangParser.StatementBlockContext statementBlockContext)
-        {
-            // include parameter var declarations at the start of the function body
-            var paramsDecls = funcDecl.Prototype.Parameters
-                                      .Select(p => new VarDeclaration(p.Source, p.Name, p.Type, VarKind.Parameter)
-                                        {
-                                            Initializer = null,
-                                        });
-            var statements = statementBlockContext.labeledStatement().SelectMany(BuildAst);
-            return new(paramsDecls.Concat(statements));
-        }
-
         private List<IStatement> BuildStatementBlock(ScLangParser.StatementBlockContext context)
             => new(context.labeledStatement().SelectMany(BuildAst));
 
@@ -440,9 +436,7 @@
             {
                 ReturnType = returnType is null ? null : BuildType(returnType),
                 Parameters = paramsContext.singleVarDeclarationNoInit()
-                                .Select(pDecl => new FuncParameter(Source(pDecl),
-                                                                   GetNameFromDeclarator(pDecl.declarator()),
-                                                                   BuildTypeFromDeclarator(pDecl.type, pDecl.declarator())))
+                                .Select(pDecl => BuildSingleVarDecl(VarKind.Parameter, pDecl))
                                 .ToList(),
             };
         }
