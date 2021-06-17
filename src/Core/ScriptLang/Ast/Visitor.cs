@@ -13,6 +13,7 @@
         TReturn Visit(EnumMemberDeclaration node, TParam param);
         TReturn Visit(FuncDeclaration node, TParam param);
         TReturn Visit(FuncProtoDeclaration node, TParam param);
+        TReturn Visit(FuncParameter node, TParam param);
         TReturn Visit(GlobalBlockDeclaration node, TParam param);
         TReturn Visit(LabelDeclaration node, TParam param);
         TReturn Visit(StructDeclaration node, TParam param);
@@ -44,9 +45,15 @@
         TReturn Visit(DefaultSwitchCase node, TParam param);
         TReturn Visit(WhileStatement node, TParam param);
 
+        TReturn Visit(ArrayRefType node, TParam param);
+        TReturn Visit(ArrayType node, TParam param);
+        TReturn Visit(BoolType node, TParam param);
         TReturn Visit(EnumType node, TParam param);
+        TReturn Visit(FloatType node, TParam param);
         TReturn Visit(FuncType node, TParam param);
-        TReturn Visit(FuncTypeParameter node, TParam param);
+        TReturn Visit(IntType node, TParam param);
+        TReturn Visit(RefType node, TParam param);
+        TReturn Visit(StringType node, TParam param);
         TReturn Visit(StructType node, TParam param);
         TReturn Visit(UnresolvedNamedType node, TParam param);
     }

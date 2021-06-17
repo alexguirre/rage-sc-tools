@@ -1,6 +1,5 @@
 ﻿namespace ScTools.ScriptLang.Ast.Types
 {
-    using System;
     using System.Linq;
 
     using ScTools.ScriptLang.Ast.Declarations;

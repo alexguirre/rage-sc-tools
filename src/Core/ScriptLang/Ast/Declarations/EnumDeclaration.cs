@@ -10,11 +10,10 @@
 
         public EnumDeclaration(SourceRange source, string name, IEnumerable<EnumMemberDeclaration> members) : base(source, name)
         {
-            DeclaredType = new EnumType(source, this);
             Members = new List<EnumMemberDeclaration>(members);
             foreach (var m in Members)
             {
-                m.Type = DeclaredType;
+                m.Type = new EnumType(m.Source, this);
             }
         }
 

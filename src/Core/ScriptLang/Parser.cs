@@ -151,49 +151,35 @@
             switch (context)
             {
                 case ScLangParser.ProcedureDeclarationContext c:
-                    var pTy = BuildFuncType(Source(c), null, c.parameterList());
-                    yield return new FuncDeclaration(Source(c), c.name.GetText(), FuncKind.UserDefined)
-                    {
-                        Type = pTy,
-                        Body = BuildFuncBody(pTy, c.statementBlock()),
-                    };
+                    var p = new FuncDeclaration(Source(c), c.name.GetText(), FuncKind.UserDefined,
+                                                BuildFuncProtoDecl(Source(c), c.name.GetText() + "@proto", null, c.parameterList()));
+                    p.Body = BuildFuncBody(p, c.statementBlock());
+                    yield return p;
                     break;
 
                 case ScLangParser.FunctionDeclarationContext c:
-                    var fTy = BuildFuncType(Source(c), c.returnType, c.parameterList());
-                    yield return new FuncDeclaration(Source(c), c.name.GetText(), FuncKind.UserDefined)
-                    {
-                        Type = fTy,
-                        Body = BuildFuncBody(fTy, c.statementBlock()),
-                    };
+                    var f = new FuncDeclaration(Source(c), c.name.GetText(), FuncKind.UserDefined,
+                                                BuildFuncProtoDecl(Source(c), c.name.GetText() + "@proto", c.returnType, c.parameterList()));
+                    f.Body = BuildFuncBody(f, c.statementBlock());
+                    yield return f;
                     break;
 
                 case ScLangParser.ProcedureNativeDeclarationContext c:
-                    yield return new FuncDeclaration(Source(c), c.name.GetText(), FuncKind.Native)
-                    {
-                        Type = BuildFuncType(Source(c), null, c.parameterList()),
-                    };
+                    yield return new FuncDeclaration(Source(c), c.name.GetText(), FuncKind.Native,
+                                                     BuildFuncProtoDecl(Source(c), c.name.GetText() + "@proto", null, c.parameterList()));
                     break;
 
                 case ScLangParser.FunctionNativeDeclarationContext c:
-                    yield return new FuncDeclaration(Source(c), c.name.GetText(), FuncKind.Native)
-                    {
-                        Type = BuildFuncType(Source(c), c.returnType, c.parameterList()),
-                    };
+                    yield return new FuncDeclaration(Source(c), c.name.GetText(), FuncKind.Native,
+                                                     BuildFuncProtoDecl(Source(c), c.name.GetText() + "@proto", c.returnType, c.parameterList()));
                     break;
 
                 case ScLangParser.ProcedurePrototypeDeclarationContext c:
-                    yield return new FuncProtoDeclaration(Source(c), c.name.GetText())
-                    {
-                        DeclaredType = BuildFuncType(Source(c), null, c.parameterList()),
-                    };
+                    yield return BuildFuncProtoDecl(Source(c), c.name.GetText(), null, c.parameterList());
                     break;
 
                 case ScLangParser.FunctionPrototypeDeclarationContext c:
-                    yield return new FuncProtoDeclaration(Source(c), c.name.GetText())
-                    {
-                        DeclaredType = BuildFuncType(Source(c), c.returnType, c.parameterList()),
-                    };
+                    yield return BuildFuncProtoDecl(Source(c), c.name.GetText(), c.returnType, c.parameterList());
                     break;
 
                 case ScLangParser.GlobalBlockDeclarationContext c:
@@ -433,10 +419,10 @@
                                                             })));
         }
 
-        private List<IStatement> BuildFuncBody(FuncType funcType, ScLangParser.StatementBlockContext statementBlockContext)
+        private List<IStatement> BuildFuncBody(FuncDeclaration funcDecl, ScLangParser.StatementBlockContext statementBlockContext)
         {
             // include parameter var declarations at the start of the function body
-            var paramsDecls = funcType.Parameters
+            var paramsDecls = funcDecl.Prototype.Parameters
                                       .Select(p => new VarDeclaration(p.Source, p.Name, VarKind.Parameter)
                                         {
                                             Type = p.Type,
@@ -449,23 +435,57 @@
         private List<IStatement> BuildStatementBlock(ScLangParser.StatementBlockContext context)
             => new(context.labeledStatement().SelectMany(BuildAst));
 
-        private FuncType BuildFuncType(SourceRange source, ScLangParser.IdentifierContext? returnType, ScLangParser.ParameterListContext paramsContext)
+        private FuncProtoDeclaration BuildFuncProtoDecl(SourceRange source, string name, ScLangParser.IdentifierContext? returnType, ScLangParser.ParameterListContext paramsContext)
         {
-            return new FuncType(source)
+            return new FuncProtoDeclaration(source, name)
             {
                 ReturnType = returnType is null ? null : BuildType(returnType),
-                Parameters = new List<FuncTypeParameter>(
+                Parameters = new List<FuncParameter>(
                     paramsContext.singleVarDeclarationNoInit()
-                                 .Select(pDecl => new FuncTypeParameter(Source(pDecl),
-                                                                        GetNameFromDeclarator(pDecl.declarator()),
-                                                                        BuildTypeFromDeclarator(pDecl.type, pDecl.declarator())))),
+                                 .Select(pDecl => new FuncParameter(Source(pDecl),
+                                                                    GetNameFromDeclarator(pDecl.declarator()),
+                                                                    BuildTypeFromDeclarator(pDecl.type, pDecl.declarator())))),
             };
         }
 
         private IType BuildTypeFromDeclarator(ScLangParser.IdentifierContext baseTypeName, ScLangParser.DeclaratorContext declarator)
         {
-            // TODO: BuildTypeFromDeclarator
-            return IType.Unknown;
+            var baseType = BuildType(baseTypeName);
+
+            var source = Source(declarator);
+            IType ty = baseType;
+            (ScLangParser.RefDeclaratorContext?, ScLangParser.NoRefDeclaratorContext?) pair = (declarator.refDeclarator(), declarator.noRefDeclarator());
+            while (pair is not (null, ScLangParser.SimpleDeclaratorContext))
+            {
+                switch (pair)
+                {
+                    case (null, ScLangParser.ArrayDeclaratorContext) when ty is RefType or ArrayRefType:
+                        Diagnostics.AddError($"Array of references is not valid", source);
+                        return baseType;
+                    case (null, ScLangParser.ArrayDeclaratorContext d):
+                        ty = d.expression() is null ?
+                                new ArrayRefType(Source(d), ty) :
+                                new ArrayType(Source(d), ty, BuildAst(d.expression()));
+                        pair = (null, d.noRefDeclarator());
+                        break;
+
+                    case (ScLangParser.RefDeclaratorContext, null) when ty is RefType or ArrayRefType:
+                        Diagnostics.AddError($"Reference to reference is not valid", source);
+                        return baseType;
+                    case (ScLangParser.RefDeclaratorContext d, null):
+                        ty = new RefType(Source(d), ty);
+                        pair = (null, d.noRefDeclarator());
+                        break;
+
+                    case (null, ScLangParser.ParenthesizedRefDeclaratorContext d):
+                        pair = (d.refDeclarator(), null);
+                        break;
+
+                    default: throw new NotImplementedException();
+                };
+            }
+
+            return ty;
         }
 
         private IType BuildType(ScLangParser.IdentifierContext typeName)

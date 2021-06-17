@@ -26,6 +26,8 @@ INT arrA[10]
 INT arrB[20]
 INT arrC[5]
 
+INT arr2D[10][20]   // array 10 of array 20 of int
+
 CONST STRING CHILD_SCRIPT_NAME = "language_sample_child"
 
 PROC MAIN()

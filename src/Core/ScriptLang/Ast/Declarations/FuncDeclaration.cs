@@ -3,6 +3,7 @@
     using System.Collections.Generic;
 
     using ScTools.ScriptLang.Ast.Statements;
+    using ScTools.ScriptLang.Ast.Types;
 
     public enum FuncKind
     {
@@ -28,10 +29,11 @@
     public sealed class FuncDeclaration : BaseValueDeclaration
     {
         public FuncKind Kind { get; set; }
+        public FuncProtoDeclaration Prototype { get; set; }
         public IList<IStatement> Body { get; set; } = new List<IStatement>();
 
-        public FuncDeclaration(SourceRange source, string name, FuncKind kind) : base(source, name)
-            => Kind = kind;
+        public FuncDeclaration(SourceRange source, string name, FuncKind kind, FuncProtoDeclaration prototype) : base(source, name)
+            => (Kind, Prototype, Type) = (kind, prototype, new FuncType(source, Prototype));
 
         public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
             => visitor.Visit(this, param);

@@ -9,8 +9,7 @@
     {
         public IList<StructField> Fields { get; set; } = new List<StructField>();
 
-        public StructDeclaration(SourceRange source, string name) : base(source, name)
-            => DeclaredType = new StructType(source, this);
+        public StructDeclaration(SourceRange source, string name) : base(source, name) { }
 
         public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
             => visitor.Visit(this, param);

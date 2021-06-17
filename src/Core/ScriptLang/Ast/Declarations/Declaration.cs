@@ -15,7 +15,6 @@
     /// </summary>
     public interface ITypeDeclaration : IDeclaration
     {
-        IType DeclaredType { get; set; }
     }
 
     /// <summary>
@@ -29,7 +28,6 @@
     public abstract class BaseTypeDeclaration : BaseNode, ITypeDeclaration
     {
         public string Name { get; set; }
-        public IType DeclaredType { get; set; } = IType.Unknown;
 
         public BaseTypeDeclaration(SourceRange source, string name) : base(source)
             => Name = name;
