@@ -44,6 +44,7 @@
         TReturn Visit(DefaultSwitchCase node, TParam param);
         TReturn Visit(WhileStatement node, TParam param);
 
+        TReturn Visit(AnyType node, TParam param);
         TReturn Visit(ArrayRefType node, TParam param);
         TReturn Visit(ArrayType node, TParam param);
         TReturn Visit(BoolType node, TParam param);
@@ -54,6 +55,7 @@
         TReturn Visit(RefType node, TParam param);
         TReturn Visit(StringType node, TParam param);
         TReturn Visit(StructType node, TParam param);
+        TReturn Visit(TextLabelType node, TParam param);
         TReturn Visit(NamedType node, TParam param);
     }
 
@@ -272,6 +274,11 @@
             return DefaultReturn;
         }
 
+        public virtual TReturn Visit(AnyType node, TParam param)
+        {
+            return DefaultReturn;
+        }
+
         public virtual TReturn Visit(ArrayRefType node, TParam param)
         {
             node.ItemType.Accept(this, param);
@@ -322,6 +329,11 @@
         }
 
         public virtual TReturn Visit(StructType node, TParam param)
+        {
+            return DefaultReturn;
+        }
+
+        public virtual TReturn Visit(TextLabelType node, TParam param)
         {
             return DefaultReturn;
         }
