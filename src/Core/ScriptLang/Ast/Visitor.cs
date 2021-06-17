@@ -55,7 +55,7 @@
         TReturn Visit(RefType node, TParam param);
         TReturn Visit(StringType node, TParam param);
         TReturn Visit(StructType node, TParam param);
-        TReturn Visit(UnresolvedNamedType node, TParam param);
+        TReturn Visit(NamedType node, TParam param);
     }
 
     /// <summary>
@@ -333,8 +333,9 @@
             return DefaultReturn;
         }
 
-        public virtual TReturn Visit(UnresolvedNamedType node, TParam param)
+        public virtual TReturn Visit(NamedType node, TParam param)
         {
+            node.ResolvedType?.Accept(this, param);
             return DefaultReturn;
         }
     }

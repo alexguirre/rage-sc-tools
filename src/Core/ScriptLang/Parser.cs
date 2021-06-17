@@ -488,7 +488,7 @@
         }
 
         private IType BuildType(ScLangParser.IdentifierContext typeName)
-            => new UnresolvedNamedType(Source(typeName), typeName.GetText());
+            => new NamedType(Source(typeName), typeName.GetText());
 
         public string GetNameFromDeclarator(ScLangParser.DeclaratorContext declarator)
         {

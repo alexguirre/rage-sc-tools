@@ -67,6 +67,8 @@
             var v1 = new GlobalSymbolsIdentificationVisitor();
             p.OutputAst.Accept(v1, default);
             ;
+            p.OutputAst.Accept(new TypeResolvingVisitor(), default);
+            ;
         }
 
         private sealed class FileUsingResolver : IUsingResolver
