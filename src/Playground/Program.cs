@@ -13,6 +13,7 @@
     using ScTools.GameFiles;
     using ScTools.ScriptLang;
     using ScTools.ScriptLang.Grammar;
+    using ScTools.ScriptLang.Semantics;
 
     internal static class Program
     {
@@ -62,6 +63,9 @@
             sw.Stop();
             Console.WriteLine(sw.Elapsed);
             d.PrintAll(Console.Out);
+
+            var v1 = new GlobalSymbolsIdentificationVisitor();
+            p.OutputAst.Accept(v1, default);
             ;
         }
 
