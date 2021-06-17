@@ -14,7 +14,7 @@
         public DiagnosticsReport Diagnostics { get; }
         public GlobalSymbolTable Symbols { get; } = new();
 
-        public GlobalSymbolTableBuilder(DiagnosticsReport diagnostics)
+        private GlobalSymbolTableBuilder(DiagnosticsReport diagnostics)
             => Diagnostics = diagnostics;
 
         public override Void Visit(EnumDeclaration node, Void param)
