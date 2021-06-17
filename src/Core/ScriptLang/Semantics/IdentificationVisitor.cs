@@ -5,6 +5,7 @@
 
     using ScTools.ScriptLang.Ast;
     using ScTools.ScriptLang.Ast.Declarations;
+    using ScTools.ScriptLang.Ast.Errors;
     using ScTools.ScriptLang.Ast.Expressions;
     using ScTools.ScriptLang.Ast.Statements;
     using ScTools.ScriptLang.Ast.Types;
@@ -85,6 +86,7 @@
             if (valueDecl is null)
             {
                 Diagnostics.AddError($"Unknown symbol '{node.Name}'", node.Source);
+                node.Declaration = new ErrorDeclaration(node.Source);
             }
             else
             {
@@ -151,9 +153,12 @@
 
         public override Void Visit(BreakStatement node, Void param)
         {
+            Debug.Assert(node.EnclosingStatement is null);
+
             if (breakableStatements.Count == 0)
             {
                 Diagnostics.AddError("No enclosing loop or switch out of which to break", node.Source);
+                node.EnclosingStatement = new ErrorStatement(node.Source);
             }
             else
             {
@@ -165,10 +170,13 @@
 
         public override Void Visit(GotoStatement node, Void param)
         {
+            Debug.Assert(node.Label is null);
+
             var label = currFuncLabels?.FindLabel(node.LabelName);
             if (label is null)
             {
                 Diagnostics.AddError($"Unknown label '{node.LabelName}'", node.Source);
+                node.Label = new ErrorDeclaration(node.Source);
             }
             else
             {
@@ -186,6 +194,7 @@
             if (typeDecl is null)
             {
                 Diagnostics.AddError($"Unknown type '{node.Name}'", node.Source);
+                node.ResolvedType = new ErrorType(node.Source);
             }
             else
             {

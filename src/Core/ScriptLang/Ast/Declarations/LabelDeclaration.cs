@@ -2,7 +2,7 @@
 {
     using ScTools.ScriptLang.Ast.Statements;
 
-    public sealed class LabelDeclaration : BaseNode, IDeclaration, IStatement
+    public sealed class LabelDeclaration : BaseNode, ILabelDeclaration, IStatement
     {
         public string Name { get; set; }
 

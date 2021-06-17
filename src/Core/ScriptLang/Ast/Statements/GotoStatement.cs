@@ -5,7 +5,7 @@
     public sealed class GotoStatement : BaseStatement
     {
         public string LabelName { get; set; }
-        public LabelDeclaration? Label { get; set; }
+        public ILabelDeclaration? Label { get; set; }
 
         public GotoStatement(SourceRange source, string labelName) : base(source)
             => LabelName = labelName;

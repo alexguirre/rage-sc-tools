@@ -9,14 +9,14 @@
     /// </summary>
     public sealed class LabelSymbolTable
     {
-        private readonly Dictionary<string, LabelDeclaration> labels = new(Parser.CaseInsensitiveComparer);
+        private readonly Dictionary<string, ILabelDeclaration> labels = new(Parser.CaseInsensitiveComparer);
 
         public LabelSymbolTable()
         {
         }
 
-        public bool AddLabel(LabelDeclaration label) => labels.TryAdd(label.Name, label);
+        public bool AddLabel(ILabelDeclaration label) => labels.TryAdd(label.Name, label);
 
-        public LabelDeclaration? FindLabel(string name) => labels.TryGetValue(name, out var decl) ? decl : null;
+        public ILabelDeclaration? FindLabel(string name) => labels.TryGetValue(name, out var decl) ? decl : null;
     }
 }

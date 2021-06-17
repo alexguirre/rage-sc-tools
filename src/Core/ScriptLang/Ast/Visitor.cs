@@ -1,6 +1,7 @@
 ﻿namespace ScTools.ScriptLang.Ast
 {
     using ScTools.ScriptLang.Ast.Declarations;
+    using ScTools.ScriptLang.Ast.Errors;
     using ScTools.ScriptLang.Ast.Expressions;
     using ScTools.ScriptLang.Ast.Statements;
     using ScTools.ScriptLang.Ast.Types;
@@ -58,6 +59,10 @@
         TReturn Visit(StringType node, TParam param);
         TReturn Visit(StructType node, TParam param);
         TReturn Visit(TextLabelType node, TParam param);
+
+        TReturn Visit(ErrorDeclaration node, TParam param);
+        TReturn Visit(ErrorStatement node, TParam param);
+        TReturn Visit(ErrorType node, TParam param);
     }
 
     /// <summary>
@@ -346,6 +351,21 @@
         }
 
         public virtual TReturn Visit(TextLabelType node, TParam param)
+        {
+            return DefaultReturn;
+        }
+
+        public virtual TReturn Visit(ErrorDeclaration node, TParam param)
+        {
+            return DefaultReturn;
+        }
+
+        public virtual TReturn Visit(ErrorStatement node, TParam param)
+        {
+            return DefaultReturn;
+        }
+
+        public virtual TReturn Visit(ErrorType node, TParam param)
         {
             return DefaultReturn;
         }
