@@ -1,4 +1,4 @@
-﻿namespace ScTools.ScriptLang.Semantics
+﻿namespace ScTools.ScriptLang.SymbolTables
 {
     using System;
     using System.Collections.Generic;
@@ -8,22 +8,24 @@
     using ScTools.ScriptLang.Ast.Declarations;
     using ScTools.ScriptLang.Ast.Types;
 
-    public sealed class SymbolTable
+    /// <summary>
+    /// Table with symbols available anywhere in the script (i.e. built-ins, enums, structs, functions, procedures and non-local variables).
+    /// </summary>
+    public sealed class GlobalSymbolTable
     {
-        public static StringComparer CaseInsensitiveComparer => ScriptAssembly.Assembler.CaseInsensitiveComparer;
-
-        public List<ITypeDeclaration> typeDeclarations = new();
-        public List<IValueDeclaration> valueDeclarations = new();
-
-        public SymbolTable()
+        private readonly Dictionary<string, ITypeDeclaration> typeDeclarations = new(Parser.CaseInsensitiveComparer);
+        private readonly Dictionary<string, IValueDeclaration> valueDeclarations = new(Parser.CaseInsensitiveComparer);
+        
+        public GlobalSymbolTable()
         {
             AddBuiltIns();
         }
 
-        public void AddType(ITypeDeclaration typeDeclaration) => typeDeclarations.Add(typeDeclaration);
-        public void AddValue(IValueDeclaration valueDeclaration) => valueDeclarations.Add(valueDeclaration);
+        public bool AddType(ITypeDeclaration typeDeclaration) => typeDeclarations.TryAdd(typeDeclaration.Name, typeDeclaration);
+        public bool AddValue(IValueDeclaration valueDeclaration) => valueDeclarations.TryAdd(valueDeclaration.Name, valueDeclaration);
 
-        public ITypeDeclaration? FindTypeDecl(string name) => typeDeclarations.Find(decl => CaseInsensitiveComparer.Compare(decl.Name, name) == 0);
+        public ITypeDeclaration? FindType(string name) => typeDeclarations.TryGetValue(name, out var decl) ? decl : null;
+        public IValueDeclaration? FindValue(string name) => valueDeclarations.TryGetValue(name, out var decl) ? decl : null;
 
         private void AddBuiltIns()
         {
@@ -66,6 +68,7 @@
         }
 
 
+        // TODO: should these be public ITypeDeclarations?
         private sealed class IntDecl : BaseTypeDeclaration
         {
             public IntDecl() : base(SourceRange.Unknown, "INT") { }
@@ -113,56 +116,4 @@
             public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param) => throw new NotImplementedException();
         }
     }
-
-    /// <summary>
-    /// Fills the symbol table with enums, structs, functions, procedures and non-local variables.
-    /// </summary>
-    public sealed class GlobalSymbolsIdentificationVisitor : DFSVisitor<Void, Void>
-    {
-        public override Void DefaultReturn => default;
-
-        public SymbolTable Symbols { get; } = new();
-
-        public override Void Visit(EnumDeclaration node, Void param)
-        {
-            Symbols.AddType(node);
-            return DefaultReturn;
-        }
-
-        public override Void Visit(EnumMemberDeclaration node, Void param)
-        {
-            Symbols.AddValue(node);
-            return DefaultReturn;
-        }
-
-        public override Void Visit(FuncDeclaration node, Void param)
-        {
-            Symbols.AddValue(node);
-            return DefaultReturn;
-        }
-
-        public override Void Visit(FuncProtoDeclaration node, Void param)
-        {
-            Symbols.AddType(node);
-            return DefaultReturn;
-        }
-
-        public override Void Visit(StructDeclaration node, Void param)
-        {
-            Symbols.AddType(node);
-            return DefaultReturn;
-        }
-
-        public override Void Visit(VarDeclaration node, Void param)
-        {
-            Debug.Assert(node.Kind is VarKind.Constant or VarKind.Global or VarKind.Static or VarKind.StaticArg);
-            Symbols.AddValue(node);
-            return DefaultReturn;
-        }
-    }
-
-    /// <summary>
-    /// Empty struct used by <see cref="IVisitor{TReturn, TParam}"/> implementations that do not require <c>TReturn</c> or <c>TParam</c>.
-    /// </summary>
-    public struct Void { }
 }

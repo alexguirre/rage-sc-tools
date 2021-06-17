@@ -26,6 +26,8 @@
 
     public class Parser
     {
+        public static StringComparer CaseInsensitiveComparer => ScriptAssembly.Assembler.CaseInsensitiveComparer;
+
         public string FilePath { get; }
         public TextReader Input { get; }
         public IUsingResolver? UsingResolver { get; set; }

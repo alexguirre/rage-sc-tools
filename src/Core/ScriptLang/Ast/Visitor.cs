@@ -344,4 +344,17 @@
             return DefaultReturn;
         }
     }
+
+    /// <summary>
+    /// Default implementation of <see cref="IVisitor{TReturn, TParam}"/> with depth-first search traversal and no return or parameter.
+    /// </summary>
+    public abstract class DFSVisitor : DFSVisitor<Void, Void>
+    {
+        public override Void DefaultReturn => default;
+    }
+
+    /// <summary>
+    /// Empty struct used by <see cref="IVisitor{TReturn, TParam}"/> implementations that do not require <c>TReturn</c> or <c>TParam</c>.
+    /// </summary>
+    public struct Void { }
 }

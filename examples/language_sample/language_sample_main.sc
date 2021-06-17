@@ -31,7 +31,7 @@ INT arr2D[10][20]   // array 10 of array 20 of int
 CONST STRING CHILD_SCRIPT_NAME = "language_sample_child"
 
 PROC MAIN()
-    g_nTimesThisScriptExecuted += 1
+    g_nTimesMainScriptExecuted += 1
 
     INCREMENT_ALL(arrA)
     INCREMENT_ALL(arrB)
@@ -51,13 +51,17 @@ PROC MAIN()
 
     INT n = 10
     IF n > 15
-        n *= 5
+        INT tmp = 5
+        n *= tmp
     ELIF n > 10
-        n *= 4
+        INT tmp = 4
+        n *= tmp
     ELIF n > 5
-        n *= 3
+        INT tmp = 3
+        n *= tmp
     ELSE
-        n *= 2
+        INT tmp = 2
+        n *= tmp
     ENDIF
 
     WHILE TRUE
@@ -177,10 +181,12 @@ PROC MAIN()
         INT nullInt = NULL                      // same as = 0
         FLOAT nullFloat = NULL                  // same as = 0
         BOOL nullBool = NULL                    // same as = FALSE
-        VECTOR nullFloat = <<NULL, NULL, NULL>> // same as = <<0.0, 0.0, 0.0>>
+        VECTOR nullVec = <<NULL, NULL, NULL>>   // same as = <<0.0, 0.0, 0.0>>
         ENTITY_INDEX nullEntity = NULL          // sets its handle to 0
         PED_INDEX nullPed = NULL                // sets its handle to 0
         VEHICLE_INDEX nullVeh = NULL            // sets its handle to 0
+
+        INT test1 = 1, test2 = 1 + test1
     ENDWHILE
 ENDPROC
 
@@ -210,7 +216,7 @@ FUNC VECTOR GET_DEFAULT_C()
     RETURN << 0.0, 0.0, 0.0 >>
 ENDFUNC
 
-FUNC VECTOR GET_DEFAULT_C()
+FUNC VECTOR GET_DEFAULT_D()
     RETURN << 1.0, 1.0, 1.0 >>
 ENDFUNC
 
