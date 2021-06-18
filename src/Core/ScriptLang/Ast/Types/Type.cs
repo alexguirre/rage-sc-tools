@@ -51,6 +51,8 @@
 
         public BaseType(SourceRange source) : base(source) {}
 
+        public override string ToString() => TypePrinter.ToString(this, null);
+
         public virtual bool CanAssign(IType rhs) => false;
 
         public virtual IType BinaryOperation(BinaryOperator op, IType rhs, SourceRange source, DiagnosticsReport diagnostics)
