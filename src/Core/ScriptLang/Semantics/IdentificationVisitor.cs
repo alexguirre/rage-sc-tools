@@ -15,7 +15,7 @@
     /// Traverses the whole AST to identify symbols and associate them with their declarations, taking scopes into account.
     /// 
     /// <list type="bullet">
-    /// <item>Resolves <see cref="NamedType"/>s.</item>
+    /// <item>Resolves and removes <see cref="NamedType"/>s.</item>
     /// <item>Associates <see cref="ValueDeclRefExpression"/>s to their corresponding <see cref="IValueDeclaration"/>.</item>
     /// <item>Associates <see cref="BreakStatement"/>s to the closest enclosing <see cref="IBreakableStatement"/> (i.e. the enclosing loop or switch).</item>
     /// <item>Associates <see cref="GotoStatement"/>s to their corresponding <see cref="LabelDeclaration"/>.</item>
@@ -29,7 +29,7 @@
         public DiagnosticsReport Diagnostics { get; }
         public ScopeSymbolTable Symbols { get; }
 
-        public IdentificationVisitor(DiagnosticsReport diagnostics, GlobalSymbolTable symbols)
+        private IdentificationVisitor(DiagnosticsReport diagnostics, GlobalSymbolTable symbols)
             => (Diagnostics, Symbols) = (diagnostics, new(symbols));
 
         public override Void Visit(FuncDeclaration node, Void param)
@@ -198,6 +198,12 @@
             }
 
             return DefaultReturn;
+        }
+
+        public static void Visit(Program root, DiagnosticsReport diagnostics, GlobalSymbolTable symbols)
+        {
+            root.Accept(new IdentificationVisitor(diagnostics, symbols), default);
+            root.Accept(new RemoveNamedTypesVisitor(), default);
         }
     }
 }

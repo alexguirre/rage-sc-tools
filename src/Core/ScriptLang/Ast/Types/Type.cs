@@ -7,6 +7,9 @@
     {
         int SizeOf { get; }
 
+        /// <summary>
+        /// Gets whether the type <paramref name="rhs"/> can be assigned to this type.
+        /// </summary>
         bool CanAssign(IType rhs);
 
         // Semantic Checks

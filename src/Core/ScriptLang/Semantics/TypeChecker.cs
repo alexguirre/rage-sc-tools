@@ -4,6 +4,7 @@
 
     using ScTools.ScriptLang.Ast;
     using ScTools.ScriptLang.Ast.Declarations;
+    using ScTools.ScriptLang.Ast.Errors;
     using ScTools.ScriptLang.Ast.Expressions;
     using ScTools.ScriptLang.Ast.Types;
     using ScTools.ScriptLang.SymbolTables;
@@ -13,7 +14,7 @@
         public DiagnosticsReport Diagnostics { get; }
         public GlobalSymbolTable Symbols { get; }
 
-        public TypeChecker(DiagnosticsReport diagnostics, GlobalSymbolTable symbols)
+        private TypeChecker(DiagnosticsReport diagnostics, GlobalSymbolTable symbols)
             => (Diagnostics, Symbols) = (diagnostics, symbols);
 
         public override Void Visit(BinaryExpression node, Void param)
@@ -135,6 +136,25 @@
             }
 
             return DefaultReturn;
+        }
+
+        public override Void Visit(ArrayType node, Void param)
+        {
+            node.ItemType.Accept(this, param);
+            node.LengthExpression.Accept(this, param);
+
+            if (node.LengthExpression.Type is not IError && new IntType(node.LengthExpression.Source).CanAssign(node.LengthExpression.Type!))
+            {
+                // TODO: evaluate LengthExpression
+                node.Length = 1234;
+            }
+
+            return DefaultReturn;
+        }
+
+        public static void Check(Program root, DiagnosticsReport diagnostics, GlobalSymbolTable globalSymbols)
+        {
+            root.Accept(new TypeChecker(diagnostics, globalSymbols), default);
         }
     }
 }
