@@ -42,7 +42,7 @@
 
         public void PrintAll(TextWriter dest)
         {
-            foreach (var d in diagnostics)
+            foreach (var d in diagnostics.OrderBy(d => d.Source.FilePath).ThenBy(d => d.Source.Start))
             {
                 dest.WriteLine(d);
             }
