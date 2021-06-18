@@ -59,6 +59,7 @@
         TReturn Visit(StringType node, TParam param);
         TReturn Visit(StructType node, TParam param);
         TReturn Visit(TextLabelType node, TParam param);
+        TReturn Visit(VoidType node, TParam param);
 
         TReturn Visit(ErrorDeclaration node, TParam param);
         TReturn Visit(ErrorStatement node, TParam param);
@@ -351,6 +352,11 @@
         }
 
         public virtual TReturn Visit(TextLabelType node, TParam param)
+        {
+            return DefaultReturn;
+        }
+
+        public virtual TReturn Visit(VoidType node, TParam param)
         {
             return DefaultReturn;
         }

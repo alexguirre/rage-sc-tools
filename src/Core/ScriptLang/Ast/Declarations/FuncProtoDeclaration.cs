@@ -9,12 +9,13 @@
     /// </summary>
     public sealed class FuncProtoDeclaration : BaseTypeDeclaration
     {
-        public IType? ReturnType { get; set; } = null;
+        public IType ReturnType { get; set; }
         public IList<VarDeclaration> Parameters { get; set; } = new List<VarDeclaration>();
 
-        public bool IsProc => ReturnType is null;
+        public bool IsProc => ReturnType is VoidType;
 
-        public FuncProtoDeclaration(SourceRange source, string name) : base(source, name) { }
+        public FuncProtoDeclaration(SourceRange source, string name, IType returnType) : base(source, name)
+            => ReturnType = returnType;
 
         public override FuncType CreateType(SourceRange source) => new(source, this);
 

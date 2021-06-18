@@ -254,10 +254,10 @@
                     => BuildAst(c.expression()),
 
                 ScLangParser.UnaryExpressionContext c
-                    => new UnaryExpression(Source(c), UnaryOperatorFromString(c.op.Text), BuildAst(c.expression())),
+                    => new UnaryExpression(Source(c), UnaryOperatorExtensions.FromToken(c.op.Text), BuildAst(c.expression())),
 
                 ScLangParser.BinaryExpressionContext c
-                    => new BinaryExpression(Source(c), BinaryOperatorFromString(c.op.Text), BuildAst(c.left), BuildAst(c.right)),
+                    => new BinaryExpression(Source(c), BinaryOperatorExtensions.FromToken(c.op.Text), BuildAst(c.left), BuildAst(c.right)),
 
                 ScLangParser.IndexingExpressionContext c
                     => new IndexingExpression(Source(c), BuildAst(c.expression()), BuildAst(c.arrayIndexer().expression())),
@@ -307,7 +307,7 @@
                 case null: break;
 
                 case ScLangParser.AssignmentStatementContext c:
-                    var op = c.op.Text is "=" ? (BinaryOperator?)null : BinaryOperatorFromString(c.op.Text[0..1]);
+                    var op = c.op.Text is "=" ? (BinaryOperator?)null : BinaryOperatorExtensions.FromToken(c.op.Text[0..1]);
                     yield return new AssignmentStatement(Source(c), op, BuildAst(c.left), BuildAst(c.right));
                     break;
 
@@ -434,9 +434,8 @@
 
         private FuncProtoDeclaration BuildFuncProtoDecl(SourceRange source, string name, ScLangParser.IdentifierContext? returnType, ScLangParser.ParameterListContext paramsContext)
         {
-            return new FuncProtoDeclaration(source, name)
+            return new FuncProtoDeclaration(source, name, returnType is null ? new VoidType(source) : BuildType(returnType))
             {
-                ReturnType = returnType is null ? null : BuildType(returnType),
                 Parameters = paramsContext.singleVarDeclarationNoInit()
                                 .Select(pDecl => BuildSingleVarDecl(VarKind.Parameter, pDecl))
                                 .ToList(),
@@ -540,36 +539,6 @@
                 "TRUE" => true,
                 "FALSE" => false,
                 _ => throw new ArgumentException($"Invalid bool '{context.GetText()}'", nameof(context)),
-            };
-
-        private static UnaryOperator UnaryOperatorFromString(string op)
-            => op.ToUpperInvariant() switch
-            {
-                "-" => UnaryOperator.Negate,
-                "NOT" => UnaryOperator.LogicalNot,
-                _ => throw new ArgumentException($"Unknown unary operator '{op}'", nameof(op)),
-            };
-
-        private static BinaryOperator BinaryOperatorFromString(string op)
-            => op.ToUpperInvariant() switch
-            {
-                "*" => BinaryOperator.Multiply,
-                "/" => BinaryOperator.Divide,
-                "%" => BinaryOperator.Modulo,
-                "+" => BinaryOperator.Add,
-                "-" => BinaryOperator.Subtract,
-                "&" => BinaryOperator.And,
-                "^" => BinaryOperator.Xor,
-                "|" => BinaryOperator.Or,
-                "<" => BinaryOperator.LessThan,
-                "<=" => BinaryOperator.LessThanOrEqual,
-                ">" => BinaryOperator.GreaterThan,
-                ">=" => BinaryOperator.GreaterThanOrEqual,
-                "==" => BinaryOperator.Equals,
-                "<>" => BinaryOperator.NotEquals,
-                "AND" => BinaryOperator.LogicalAnd,
-                "OR" => BinaryOperator.LogicalOr,
-                _ => throw new ArgumentException($"Unknown binary operator '{op}'", nameof(op)),
             };
 
         private sealed class SyntaxErrorListener<TSymbol> : IAntlrErrorListener<TSymbol>

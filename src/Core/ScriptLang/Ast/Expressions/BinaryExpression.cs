@@ -1,5 +1,7 @@
 ﻿namespace ScTools.ScriptLang.Ast.Expressions
 {
+    using System;
+
     public enum BinaryOperator
     {
         Add,
@@ -31,5 +33,52 @@
 
         public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
             => visitor.Visit(this, param);
+    }
+
+    public static class BinaryOperatorExtensions
+    {
+        public static string ToToken(this BinaryOperator op)
+            => op switch
+            {
+                BinaryOperator.Add => "+",
+                BinaryOperator.Subtract => "-",
+                BinaryOperator.Multiply => "*",
+                BinaryOperator.Divide => "/",
+                BinaryOperator.Modulo => "%",
+                BinaryOperator.And => "&",
+                BinaryOperator.Xor => "^",
+                BinaryOperator.Or => "|",
+                BinaryOperator.Equals => "==",
+                BinaryOperator.NotEquals => "<>",
+                BinaryOperator.LessThan => "<",
+                BinaryOperator.LessThanOrEqual => "<=",
+                BinaryOperator.GreaterThan => ">",
+                BinaryOperator.GreaterThanOrEqual => ">=",
+                BinaryOperator.LogicalAnd => "AND",
+                BinaryOperator.LogicalOr => "OR",
+                _ => throw new ArgumentOutOfRangeException(nameof(op))
+            };
+
+        public static BinaryOperator FromToken(string token)
+            => token.ToUpperInvariant() switch
+            {
+                "+" => BinaryOperator.Add,
+                "-" => BinaryOperator.Subtract,
+                "*" => BinaryOperator.Multiply,
+                "/" => BinaryOperator.Divide,
+                "%" => BinaryOperator.Modulo,
+                "&" => BinaryOperator.And,
+                "^" => BinaryOperator.Xor,
+                "|" => BinaryOperator.Or,
+                "==" => BinaryOperator.Equals,
+                "<>" => BinaryOperator.NotEquals,
+                "<" => BinaryOperator.LessThan,
+                "<=" => BinaryOperator.LessThanOrEqual,
+                ">" => BinaryOperator.GreaterThan,
+                ">=" => BinaryOperator.GreaterThanOrEqual,
+                "AND" => BinaryOperator.LogicalAnd,
+                "OR" => BinaryOperator.LogicalOr,
+                _ => throw new ArgumentException($"Unknown binary operator '{token}'", nameof(token)),
+            };
     }
 }

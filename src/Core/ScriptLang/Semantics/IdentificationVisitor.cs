@@ -85,8 +85,7 @@
             var valueDecl = Symbols.FindValue(node.Name);
             if (valueDecl is null)
             {
-                Diagnostics.AddError($"Unknown symbol '{node.Name}'", node.Source);
-                node.Declaration = new ErrorDeclaration(node.Source);
+                node.Declaration = new ErrorDeclaration(node.Source, Diagnostics, $"Unknown symbol '{node.Name}'");
             }
             else
             {
@@ -157,8 +156,7 @@
 
             if (breakableStatements.Count == 0)
             {
-                Diagnostics.AddError("No enclosing loop or switch out of which to break", node.Source);
-                node.EnclosingStatement = new ErrorStatement(node.Source);
+                node.EnclosingStatement = new ErrorStatement(node.Source, Diagnostics, "No enclosing loop or switch out of which to break");
             }
             else
             {
@@ -175,8 +173,7 @@
             var label = currFuncLabels?.FindLabel(node.LabelName);
             if (label is null)
             {
-                Diagnostics.AddError($"Unknown label '{node.LabelName}'", node.Source);
-                node.Label = new ErrorDeclaration(node.Source);
+                node.Label = new ErrorDeclaration(node.Source, Diagnostics, $"Unknown label '{node.LabelName}'");
             }
             else
             {
@@ -193,8 +190,7 @@
             var typeDecl = Symbols.GlobalSymbols.FindType(node.Name);
             if (typeDecl is null)
             {
-                Diagnostics.AddError($"Unknown type '{node.Name}'", node.Source);
-                node.ResolvedType = new ErrorType(node.Source);
+                node.ResolvedType = new ErrorType(node.Source, Diagnostics, $"Unknown type '{node.Name}'");
             }
             else
             {

@@ -1,5 +1,7 @@
 ﻿namespace ScTools.ScriptLang.Semantics
 {
+    using System.Linq;
+
     using ScTools.ScriptLang.Ast;
     using ScTools.ScriptLang.Ast.Declarations;
     using ScTools.ScriptLang.Ast.Expressions;
@@ -16,8 +18,12 @@
 
         public override Void Visit(BinaryExpression node, Void param)
         {
-            // TODO: BinaryExpression
-            return base.Visit(node, param);
+            node.LHS.Accept(this, param);
+            node.RHS.Accept(this, param);
+
+            node.LValue = false;
+            node.Type = node.LHS.Type!.BinaryOperation(node.Operator, node.RHS.Type!, node.Source, Diagnostics);
+            return DefaultReturn;
         }
 
         public override Void Visit(BoolLiteralExpression node, Void param)
@@ -29,8 +35,10 @@
 
         public override Void Visit(FieldAccessExpression node, Void param)
         {
-            // TODO: FieldAccessExpression
-            return base.Visit(node, param);
+            node.SubExpression.Accept(this, param);
+
+            (node.Type, node.LValue) = node.SubExpression.Type!.FieldAccess(node.FieldName, node.Source, Diagnostics);
+            return DefaultReturn;
         }
 
         public override Void Visit(FloatLiteralExpression node, Void param)
@@ -42,8 +50,12 @@
 
         public override Void Visit(IndexingExpression node, Void param)
         {
-            // TODO: IndexingExpression
-            return base.Visit(node, param);
+            node.Array.Accept(this, param);
+            node.Index.Accept(this, param);
+
+            node.LValue = true;
+            node.Type = node.Array.Type!.Indexing(node.Index.Type!, node.Source, Diagnostics);
+            return DefaultReturn;
         }
 
         public override Void Visit(IntLiteralExpression node, Void param)
@@ -55,8 +67,12 @@
 
         public override Void Visit(InvocationExpression node, Void param)
         {
-            // TODO: InvocationExpression
-            return base.Visit(node, param);
+            node.Callee.Accept(this, param);
+            node.Arguments.ForEach(arg => arg.Accept(this, param));
+
+            node.LValue = false;
+            node.Type = node.Callee.Type!.Invocation(node.Arguments.Select(arg => arg.Type!).ToArray(), node.Source, Diagnostics);
+            return DefaultReturn;
         }
 
         public override Void Visit(NullExpression node, Void param)
@@ -84,8 +100,11 @@
 
         public override Void Visit(UnaryExpression node, Void param)
         {
-            // TODO: UnaryExpression
-            return base.Visit(node, param);
+            node.SubExpression.Accept(this, param);
+
+            node.LValue = false;
+            node.Type = node.SubExpression.Type!.UnaryOperation(node.Operator, node.Source, Diagnostics);
+            return DefaultReturn;
         }
 
         public override Void Visit(ValueDeclRefExpression node, Void param)
