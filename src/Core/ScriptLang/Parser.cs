@@ -360,9 +360,10 @@
 
                 case ScLangParser.SwitchStatementContext c:
                     var switchStmt = new SwitchStatement(Source(c), BuildAst(c.expression()));
+                    var hasDefault = false;
                     foreach (var switchCase in c.switchCase())
                     {
-                        switchStmt.Cases.Add(switchCase switch
+                        SwitchCase switchCaseAst = switchCase switch
                         {
                             ScLangParser.ValueSwitchCaseContext v => new ValueSwitchCase(Source(v), BuildAst(v.value))
                             {
@@ -373,7 +374,21 @@
                                 Body = BuildStatementBlock(d.statementBlock())
                             },
                             _ => throw new NotSupportedException($"Switch case '{switchCase.GetType()}' is not supported"),
-                        });
+                        };
+
+                        if (switchCaseAst is DefaultSwitchCase)
+                        {
+                            if (hasDefault)
+                            {
+                                Diagnostics.AddError("More than one DEFAULT case", switchCaseAst.Source);
+                            }
+                            else
+                            {
+                                hasDefault = true;
+                            }
+                        }
+
+                        switchStmt.Cases.Add(switchCaseAst);
                     }
                     yield return switchStmt;
                     break;

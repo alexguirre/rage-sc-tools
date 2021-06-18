@@ -207,6 +207,96 @@
             node.LHS.Type!.Assign(node.RHS.Type!, node.Source, Diagnostics);
             return DefaultReturn;
         }
+
+        public override Void Visit(IfStatement node, Void param)
+        {
+            node.Condition.Accept(this, param);
+
+            var boolTy = Symbols.Bool.CreateType(node.Condition.Source);
+            if (!boolTy.CanAssign(node.Condition.Type!))
+            {
+                Diagnostics.AddError($"IF condition requires type '{boolTy}', found '{node.Condition.Type}'", node.Condition.Source);
+            }
+
+            node.Then.ForEach(stmt => stmt.Accept(this, param));
+            node.Else.ForEach(stmt => stmt.Accept(this, param));
+            return DefaultReturn;
+        }
+
+        public override Void Visit(RepeatStatement node, Void param)
+        {
+            node.Limit.Accept(this, param);
+            node.Counter.Accept(this, param);
+
+            var intTy = Symbols.Int.CreateType(node.Limit.Source);
+            if (!intTy.CanAssign(node.Limit.Type!))
+            {
+                Diagnostics.AddError($"REPEAT limit requires type '{intTy}', found '{node.Limit.Type}'", node.Limit.Source);
+            }
+
+            if (!node.Counter.LValue)
+            {
+                Diagnostics.AddError($"REPEAT counter requires an lvalue reference of type '{intTy}', found non-lvalue '{node.Counter.Type}'", node.Counter.Source);
+            }
+            else if (!intTy.CanAssign(node.Counter.Type!))
+            {
+                Diagnostics.AddError($"REPEAT counter requires type '{intTy}', found '{node.Counter.Type}'", node.Counter.Source);
+            }
+
+            node.Body.ForEach(stmt => stmt.Accept(this, param));
+            return DefaultReturn;
+        }
+
+        public override Void Visit(ReturnStatement node, Void param)
+        {
+            node.Expression?.Accept(this, param);
+
+            // TODO: check if return expression matches function return type
+
+            return DefaultReturn;
+        }
+
+        public override Void Visit(SwitchStatement node, Void param)
+        {
+            node.Expression.Accept(this, param);
+
+            var intTy = Symbols.Int.CreateType(node.Expression.Source);
+            if (!intTy.CanAssign(node.Expression.Type!))
+            {
+                Diagnostics.AddError($"SWITCH expression requires type '{intTy}', found '{node.Expression.Type}'", node.Expression.Source);
+            }
+
+            node.Cases.ForEach(c => c.Accept(this, param));
+            return DefaultReturn;
+        }
+
+        public override Void Visit(ValueSwitchCase node, Void param)
+        {
+            node.Value.Accept(this, param);
+
+            var intTy = Symbols.Int.CreateType(node.Value.Source);
+            if (!intTy.CanAssign(node.Value.Type!))
+            {
+                Diagnostics.AddError($"CASE value requires type '{intTy}', found '{node.Value.Type}'", node.Value.Source);
+            }
+
+            node.Body.ForEach(stmt => stmt.Accept(this, param));
+            return DefaultReturn;
+        }
+
+        public override Void Visit(WhileStatement node, Void param)
+        {
+            node.Condition.Accept(this, param);
+
+            var boolTy = Symbols.Bool.CreateType(node.Condition.Source);
+            if (!boolTy.CanAssign(node.Condition.Type!))
+            {
+                Diagnostics.AddError($"WHILE condition requires type '{boolTy}', found '{node.Condition.Type}'", node.Condition.Source);
+            }
+
+            node.Body.ForEach(stmt => stmt.Accept(this, param));
+            return DefaultReturn;
+        }
         #endregion Statements
 
         public static void Check(Program root, DiagnosticsReport diagnostics, GlobalSymbolTable globalSymbols)
