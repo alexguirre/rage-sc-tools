@@ -1,5 +1,7 @@
 ﻿namespace ScTools.ScriptLang.Ast
 {
+    using System;
+
     using ScTools.ScriptLang.Ast.Declarations;
     using ScTools.ScriptLang.Ast.Errors;
     using ScTools.ScriptLang.Ast.Expressions;
@@ -62,6 +64,7 @@
         TReturn Visit(VoidType node, TParam param);
 
         TReturn Visit(ErrorDeclaration node, TParam param);
+        TReturn Visit(ErrorExpression node, TParam param);
         TReturn Visit(ErrorStatement node, TParam param);
         TReturn Visit(ErrorType node, TParam param);
     }
@@ -366,6 +369,11 @@
             return DefaultReturn;
         }
 
+        public virtual TReturn Visit(ErrorExpression node, TParam param)
+        {
+            return DefaultReturn;
+        }
+
         public virtual TReturn Visit(ErrorStatement node, TParam param)
         {
             return DefaultReturn;
@@ -383,6 +391,73 @@
     public abstract class DFSVisitor : DFSVisitor<Void, Void>
     {
         public override Void DefaultReturn => default;
+    }
+
+    /// <summary>
+    /// Default implementation of <see cref="IVisitor{TReturn, TParam}"/> where all visit methods throw <see cref="NotImplementedException"/>.
+    /// </summary>
+    public abstract class EmptyVisitor<TReturn, TParam> : IVisitor<TReturn, TParam>
+    {
+        public virtual TReturn Visit(Program node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(EnumDeclaration node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(EnumMemberDeclaration node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(FuncDeclaration node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(FuncProtoDeclaration node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(GlobalBlockDeclaration node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(LabelDeclaration node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(StructDeclaration node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(StructField node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(VarDeclaration node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(BinaryExpression node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(BoolLiteralExpression node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(FieldAccessExpression node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(FloatLiteralExpression node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(IndexingExpression node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(IntLiteralExpression node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(InvocationExpression node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(NullExpression node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(SizeOfExpression node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(StringLiteralExpression node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(UnaryExpression node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(ValueDeclRefExpression node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(VectorExpression node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(AssignmentStatement node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(BreakStatement node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(GotoStatement node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(IfStatement node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(RepeatStatement node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(ReturnStatement node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(SwitchStatement node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(ValueSwitchCase node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(DefaultSwitchCase node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(WhileStatement node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(AnyType node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(ArrayRefType node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(ArrayType node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(BoolType node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(EnumType node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(FloatType node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(FuncType node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(IntType node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(NamedType node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(NullType node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(RefType node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(StringType node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(StructType node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(TextLabelType node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(VoidType node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(ErrorDeclaration node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(ErrorExpression node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(ErrorStatement node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(ErrorType node, TParam param) => throw new NotImplementedException();
+    }
+
+    /// <summary>
+    /// Default implementation of <see cref="IVisitor{TReturn, TParam}"/> with  no return or parameter,
+    /// where all visit methods throw <see cref="NotImplementedException"/>.
+    /// </summary>
+    public abstract class EmptyVisitor : EmptyVisitor<Void, Void>
+    {
     }
 
     /// <summary>

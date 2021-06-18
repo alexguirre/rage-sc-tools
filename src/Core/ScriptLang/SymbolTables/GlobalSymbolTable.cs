@@ -40,6 +40,9 @@
         public StructDeclaration BlipInfoId { get; } = CreateHandleType("BLIP_INFO_ID");
         public ITypeDeclaration[] TextLabels { get; } = CreateTextLabels();
 
+        public IEnumerable<ITypeDeclaration> Types => typeDeclarations.Values;
+        public IEnumerable<IValueDeclaration> Values => valueDeclarations.Values;
+
         public GlobalSymbolTable()
         {
             AddBuiltIns();
