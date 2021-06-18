@@ -58,6 +58,7 @@
             AddType(Bool);
             AddType(String);
             AddType(Any);
+            AddType(Vector);
             AddType(PlayerIndex);
             AddType(EntityIndex);
             AddType(PedIndex);

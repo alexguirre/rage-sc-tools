@@ -6,6 +6,7 @@
     using ScTools.ScriptLang.Ast.Declarations;
     using ScTools.ScriptLang.Ast.Errors;
     using ScTools.ScriptLang.Ast.Expressions;
+    using ScTools.ScriptLang.Ast.Statements;
     using ScTools.ScriptLang.Ast.Types;
     using ScTools.ScriptLang.SymbolTables;
 
@@ -17,6 +18,7 @@
         private TypeChecker(DiagnosticsReport diagnostics, GlobalSymbolTable symbols)
             => (Diagnostics, Symbols) = (diagnostics, symbols);
 
+        #region Expressions
         public override Void Visit(BinaryExpression node, Void param)
         {
             node.LHS.Accept(this, param);
@@ -131,26 +133,81 @@
                 var dest = vectorTy.Declaration.Fields[i];
                 if (!dest.Type.CanAssign(src.Type!))
                 {
-                    Diagnostics.AddError($"Mismatched type of component {dest.Name.ToUpperInvariant()}. Expected FLOAT, found {src.Type}", src.Source);
+                    Diagnostics.AddError($"Vector component {dest.Name.ToUpperInvariant()} requires type '{dest.Type}', found '{src.Type}'", src.Source);
                 }
             }
 
             return DefaultReturn;
         }
+        #endregion Expressions
 
+        #region Types
         public override Void Visit(ArrayType node, Void param)
         {
             node.ItemType.Accept(this, param);
             node.LengthExpression.Accept(this, param);
 
-            if (node.LengthExpression.Type is not IError && new IntType(node.LengthExpression.Source).CanAssign(node.LengthExpression.Type!))
+            var arrayLengthTy = Symbols.Int.CreateType(node.LengthExpression.Source);
+            if (!arrayLengthTy.CanAssign(node.LengthExpression.Type!))
             {
-                // TODO: evaluate LengthExpression
-                node.Length = 1234;
+                Diagnostics.AddError($"Array size requires type '{arrayLengthTy}', found '{node.LengthExpression.Type}'", node.LengthExpression.Source);
             }
 
             return DefaultReturn;
         }
+        #endregion Types
+
+        #region Declarations
+        public override Void Visit(EnumMemberDeclaration node, Void param)
+        {
+            node.Type.Accept(this, param);
+            if (node.Initializer is not null)
+            {
+                node.Initializer.Accept(this, param);
+
+                node.Type.Assign(node.Initializer.Type!, node.Initializer.Source, Diagnostics);
+            }
+
+            return DefaultReturn;
+        }
+
+        public override Void Visit(StructField node, Void param)
+        {
+            node.Type.Accept(this, param);
+            if (node.Initializer is not null)
+            {
+                node.Initializer.Accept(this, param);
+
+                node.Type.Assign(node.Initializer.Type!, node.Initializer.Source, Diagnostics);
+            }
+
+            return DefaultReturn;
+        }
+
+        public override Void Visit(VarDeclaration node, Void param)
+        {
+            node.Type.Accept(this, param);
+            if (node.Initializer is not null)
+            {
+                node.Initializer.Accept(this, param);
+
+                node.Type.Assign(node.Initializer.Type!, node.Initializer.Source, Diagnostics);
+            }
+
+            return DefaultReturn;
+        }
+        #endregion Declarations
+
+        #region Statements
+        public override Void Visit(AssignmentStatement node, Void param)
+        {
+            node.LHS.Accept(this, param);
+            node.RHS.Accept(this, param);
+
+            node.LHS.Type!.Assign(node.RHS.Type!, node.Source, Diagnostics);
+            return DefaultReturn;
+        }
+        #endregion Statements
 
         public static void Check(Program root, DiagnosticsReport diagnostics, GlobalSymbolTable globalSymbols)
         {

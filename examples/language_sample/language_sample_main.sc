@@ -7,13 +7,18 @@ ENUM eState
     STATE_0, STATE_1, STATE_2, STATE_3
 ENDENUM
 
+ENUM eTestEnum
+    TEST_ENUM_0 = 0
+    TEST_ENUM_1 = TEST_ENUM_0 + 1
+    TEST_ENUM_2 = TEST_ENUM_1 + 1
+    TEST_ENUM_3 = TEST_ENUM_2 + 1
+ENDENUM
+
 STRUCT MY_STRUCT
     INT a
     FLOAT b
     VECTOR c, d
 ENDSTRUCT
-
-CONST INT MY_CONSTANT = 8
 
 eMyValue nValue = MY_VALUE_A
 eState nState = STATE_0
@@ -22,7 +27,11 @@ INT nItemCount = 0, nSomeValue = 5
 MY_PROCEDURE_T fnMyProc = DEFAULT_MY_PROCEDURE
 BOOL bMyProcChanged = FALSE
 
-INT arrA[10]
+CONST INT MY_CONSTANT = 8
+
+CONST INT SIZE_10 = 10
+
+INT arrA[SIZE_10]
 INT arrB[20]
 INT arrC[5]
 
@@ -190,6 +199,11 @@ PROC MAIN()
         VEHICLE_INDEX nullVeh = NULL            // sets its handle to 0
 
         INT test1 = 1, test2 = 1 + test1
+
+        FLOAT &ref1 = f1, &ref2 = f2
+        ref1 = 10.0
+        ref1 = f1
+        ref1 = ref2
     ENDWHILE
 ENDPROC
 
@@ -247,7 +261,7 @@ PROC INCREMENT_ALL(INT arr[])
     ENDREPEAT
 ENDPROC
 
-PROC INCREMENT_ALL_ONLY_SIZE_10(INT (&arr)[10])
+PROC INCREMENT_ALL_ONLY_SIZE_10(INT (&arr)[SIZE_10])
     INT i
     REPEAT arr.length i
         arr[i] += 1
