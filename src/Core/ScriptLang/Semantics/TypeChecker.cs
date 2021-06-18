@@ -30,7 +30,7 @@
         public override Void Visit(BoolLiteralExpression node, Void param)
         {
             node.LValue = false;
-            node.Type = Symbols.FindType("BOOL")!.CreateType(node.Source);
+            node.Type = Symbols.Bool.CreateType(node.Source);
             return DefaultReturn;
         }
 
@@ -45,7 +45,7 @@
         public override Void Visit(FloatLiteralExpression node, Void param)
         {
             node.LValue = false;
-            node.Type = Symbols.FindType("FLOAT")!.CreateType(node.Source);
+            node.Type = Symbols.Float.CreateType(node.Source);
             return DefaultReturn;
         }
 
@@ -62,7 +62,7 @@
         public override Void Visit(IntLiteralExpression node, Void param)
         {
             node.LValue = false;
-            node.Type = Symbols.FindType("INT")!.CreateType(node.Source);
+            node.Type = Symbols.Int.CreateType(node.Source);
             return DefaultReturn;
         }
 
@@ -88,14 +88,14 @@
             node.SubExpression.Accept(this, param);
 
             node.LValue = false;
-            node.Type = Symbols.FindType("INT")!.CreateType(node.Source);
+            node.Type = Symbols.Int.CreateType(node.Source);
             return DefaultReturn;
         }
 
         public override Void Visit(StringLiteralExpression node, Void param)
         {
             node.LValue = false;
-            node.Type = Symbols.FindType("STRING")!.CreateType(node.Source);
+            node.Type = Symbols.String.CreateType(node.Source);
             return DefaultReturn;
         }
 
@@ -121,7 +121,7 @@
             node.Y.Accept(this, param);
             node.Z.Accept(this, param);
 
-            var vectorTy = (StructType)Symbols.FindType("VECTOR")!.CreateType(node.Source);
+            var vectorTy = Symbols.Vector.CreateType(node.Source);
             node.LValue = false;
             node.Type = vectorTy;
 
