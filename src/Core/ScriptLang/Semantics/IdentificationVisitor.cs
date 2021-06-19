@@ -62,6 +62,22 @@
             return DefaultReturn;
         }
 
+        public override Void Visit(StructDeclaration node, Void param)
+        {
+            var fieldNames = new HashSet<string>(node.Fields.Count);
+            foreach (var field in node.Fields)
+            {
+                if (!fieldNames.Add(field.Name))
+                {
+                    Diagnostics.AddError($"Struct field '{field.Name}' is already declared", field.Source);
+                }
+
+                field.Accept(this, param);
+            }
+
+            return DefaultReturn;
+        }
+
         public override Void Visit(VarDeclaration node, Void param)
         {
             node.Type.Accept(this, param);
