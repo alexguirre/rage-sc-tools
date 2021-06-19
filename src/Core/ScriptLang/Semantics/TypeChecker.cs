@@ -53,10 +53,13 @@
             node.ItemType.Accept(this, param);
             node.LengthExpression.Accept(this, param);
 
-            var arrayLengthTy = Symbols.Int.CreateType(node.LengthExpression.Source);
-            if (!arrayLengthTy.CanAssign(node.LengthExpression.Type!))
+            if (!node.LengthExpression.IsConstant)
             {
-                Diagnostics.AddError($"Array size requires type '{arrayLengthTy}', found '{node.LengthExpression.Type}'", node.LengthExpression.Source);
+                node.LengthExpression = new ErrorExpression(node.LengthExpression.Source, Diagnostics, $"Array size must be a constant expression");
+            }
+            else if (!Symbols.Int.CreateType(node.LengthExpression.Source).CanAssign(node.LengthExpression.Type!))
+            {
+                Diagnostics.AddError($"Array size requires type '{Symbols.Int.Name}', found '{node.LengthExpression.Type}'", node.LengthExpression.Source);
             }
             else
             {
@@ -74,19 +77,51 @@
             return DefaultReturn;
         }
 
+        public override Void Visit(StructDeclaration node, Void param)
+        {
+            foreach (var f in node.Fields)
+            {
+                f.Accept(this, param);
+
+                if (ContainsStruct(f.Type, node))
+                {
+                    Diagnostics.AddError($"Struct field '{f.Name}' causes a cycle in the layout of '{node.Name}'", f.Source);
+                }
+            }
+            return DefaultReturn;
+
+            static bool ContainsStruct(IType fieldType, StructDeclaration struc)
+            {
+                if (fieldType is StructType fieldStrucTy)
+                {
+                    return fieldStrucTy.Declaration == struc || fieldStrucTy.Declaration.Fields.Any(f => ContainsStruct(f.Type, struc));
+                }
+                else if (fieldType is ArrayType fieldArrayTy)
+                {
+                    return ContainsStruct(fieldArrayTy.ItemType, struc);
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
+
         public override Void Visit(StructField node, Void param)
         {
-            // TODO: check cycles in types of struct fields
-            // for example:
-            //  STRUCT MY_STRUCT
-            //      MY_STRUCT inner
-            //  ENDSTRUCT
             node.Type.Accept(this, param);
             if (node.Initializer is not null)
             {
                 node.Initializer.Accept(this, param);
 
-                node.Type.Assign(node.Initializer.Type!, node.Initializer.Source, Diagnostics);
+                if (!node.Initializer.IsConstant)
+                {
+                    node.Initializer = new ErrorExpression(node.Initializer.Source, Diagnostics, $"Default initializer of the struct field '{node.Name}' must be a constant expression");
+                }
+                else
+                {
+                    node.Type.Assign(node.Initializer.Type!, node.Initializer.Source, Diagnostics);
+                }
             }
 
             return DefaultReturn;
