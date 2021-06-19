@@ -9,6 +9,16 @@
         bool IsConstant { get; set; }
     }
 
+    public interface ILiteralExpression : IExpression
+    {
+        object? Value { get; }
+    }
+
+    public interface ILiteralExpression<T> : ILiteralExpression
+    {
+        new T Value { get; set; }
+    }
+
     public abstract class BaseExpression : BaseNode, IExpression
     {
         public IType? Type { get; set; }

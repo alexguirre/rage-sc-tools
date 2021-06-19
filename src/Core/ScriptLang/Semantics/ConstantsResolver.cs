@@ -11,25 +11,25 @@
     using ScTools.ScriptLang.Ast.Types;
     using ScTools.ScriptLang.SymbolTables;
 
-    using Console = System.Console;
-
     /// <summary>
     /// Calculates the values of enum members and CONST vars.
-    /// TODO: Their initializers will get replaced by a literal expression.
+    /// Their initializers will get replaced by a <see cref="ILiteralExpression"/>.
     /// 
     /// Only INT, FLOAT, BOOL and STRING constants are supported.
+    /// 
+    /// Used by <see cref="TypeChecker"/>.
     /// </summary>
-    public sealed class ConstantsEvaluation
+    internal sealed class ConstantsResolver
     {
         public DiagnosticsReport Diagnostics { get; }
         public GlobalSymbolTable Symbols { get; }
 
         private readonly ExpressionTypeChecker exprTypeChecker;
 
-        public ConstantsEvaluation(DiagnosticsReport diagnostics, GlobalSymbolTable symbols)
+        public ConstantsResolver(DiagnosticsReport diagnostics, GlobalSymbolTable symbols)
             => (Diagnostics, Symbols, exprTypeChecker) = (diagnostics, symbols, new(diagnostics, symbols));
 
-        public void Evaluate()
+        public void Resolve()
         {
             var dependencyFinder = new DependencyFinder(Diagnostics, Symbols);
 
@@ -54,9 +54,8 @@
 
                 if (origUnsolvedCount == unsolved.Count)
                 {
-                    // TODO: error
-                    Console.WriteLine($"There is some cycle. Unsolved ({unsolved.Count}): ");
-                    unsolved.ForEach(c => Console.WriteLine($"\t{c.Name}"));
+                    // no constants were resolved in this iteration, so there must be some dependency cycle in their initializers
+                    unsolved.ForEach(c => Diagnostics.AddError($"The evaluation of the initializer for '{c.Name}' involves a circular dependency", c.Source));
                     break;
                 }
             }
@@ -64,14 +63,12 @@
 
         private void Solve(IValueDeclaration value)
         {
-            Console.Write($"solving: {value.Name}");
             switch (value)
             {
-                case EnumMemberDeclaration d: SolveEnumMember(d); Console.Write($" = {d.Value}"); break;
-                case VarDeclaration d: SolveConstant(d); Console.Write($" = {((IntLiteralExpression)d.Initializer!).Value}"); break;
+                case EnumMemberDeclaration d: SolveEnumMember(d); break;
+                case VarDeclaration d: SolveConstant(d); break;
                 default: Debug.Assert(false); break;
             }
-            Console.WriteLine();
         }
 
         private void SolveEnumMember(EnumMemberDeclaration enumMember)
@@ -99,7 +96,7 @@
 
                 if (!enumMember.Type.CanAssign(enumMember.Initializer.Type!))
                 {
-                    // note: the error diagnostic will be added later in the TypeChecker visitor
+                    enumMember.Type = new ErrorType(enumMember.Initializer.Source, Diagnostics, $"Cannot assign type '{enumMember.Initializer.Type}' to '{enumMember.Type}'");
                     return;
                 }
 
@@ -112,6 +109,12 @@
 
         private void SolveConstant(VarDeclaration constant)
         {
+            if (constant.Type is not (IntType or FloatType or BoolType or StringType))
+            {
+                constant.Type = new ErrorType(constant.Type.Source, Diagnostics, $"The type of CONST variables must be 'INT', 'FLOAT', 'BOOL' or 'STRING', found '{constant.Type}'");
+                return;
+            }
+
             constant.Initializer!.Accept(exprTypeChecker, default);
             if (!constant.Initializer!.IsConstant)
             {
@@ -119,35 +122,49 @@
                 return;
             }
 
-            if (constant.Initializer is IntLiteralExpression or FloatLiteralExpression or BoolLiteralExpression or StringLiteralExpression)
+            if (!constant.Type.CanAssign(constant.Initializer.Type!))
+            {
+                constant.Type = new ErrorType(constant.Source, Diagnostics, $"Cannot assign type '{constant.Initializer.Type}' to '{constant.Type}'");
+                return;
+            }
+
+            if (constant.Initializer is ILiteralExpression)
             {
                 // already a literal, don't need to simplify the expression
                 return;
             }
 
-            if (constant.Type is StringType)
+            switch (constant.Type)
             {
-                Debug.Assert(constant.Initializer is StringLiteralExpression, "STRING constants should only have string literals as initializers, as they are the only constant expression");
-                return;
-            }
+                case IntType:
+                    var intValue = constant.Initializer.Type is IError ? 0 : ExpressionEvaluator.EvalInt(constant.Initializer, Symbols);
 
-            if (constant.Type is IntType)
-            {
-                if (!constant.Type.CanAssign(constant.Initializer.Type!))
-                {
-                    // note: the error diagnostic will be added later in the TypeChecker visitor
-                    return;
-                }
+                    // simplify the initializer expression
+                    constant.Initializer = new IntLiteralExpression(constant.Initializer?.Source ?? constant.Source, intValue);
+                    break;
 
-                int value = constant.Initializer.Type is IError ? 0 : ExpressionEvaluator.EvalInt(constant.Initializer, Symbols);
+                case FloatType:
+                    var floatValue = constant.Initializer.Type is IError ? 0.0f : ExpressionEvaluator.EvalFloat(constant.Initializer, Symbols);
 
-                // simplify the initializer expression
-                constant.Initializer = new IntLiteralExpression(constant.Initializer?.Source ?? constant.Source, value);
-                Console.Write($" = {value}");
-            }
-            else
-            {
-                Debug.Assert(false, "Only INT constants are supported for now!");
+                    // simplify the initializer expression
+                    constant.Initializer = new FloatLiteralExpression(constant.Initializer?.Source ?? constant.Source, floatValue);
+                    break;
+
+                case BoolType:
+                    var boolValue = constant.Initializer.Type is IError ? false : ExpressionEvaluator.EvalBool(constant.Initializer, Symbols);
+
+                    // simplify the initializer expression
+                    constant.Initializer = new BoolLiteralExpression(constant.Initializer?.Source ?? constant.Source, boolValue);
+                    break;
+
+                case StringType:
+                    var strValue = constant.Initializer.Type is IError ? null : ExpressionEvaluator.EvalString(constant.Initializer, Symbols);
+
+                    // simplify the initializer expression
+                    constant.Initializer = new StringLiteralExpression(constant.Initializer?.Source ?? constant.Source, strValue);
+                    break;
+
+                default: throw new System.NotImplementedException();
             }
         }
 
@@ -180,12 +197,7 @@
             private IEnumerable<IValueDeclaration> None { get; } = Enumerable.Empty<IValueDeclaration>();
 
             public override IEnumerable<IValueDeclaration> Visit(VarDeclaration node, Void param)
-            {
-                Debug.Assert(node.Kind is VarKind.Constant);
-                Debug.Assert(node.Initializer is not null);
-
-                return node.Initializer.Accept(this, param);
-            }
+                => node.Initializer?.Accept(this, param) ?? None;
 
             public override IEnumerable<IValueDeclaration> Visit(EnumMemberDeclaration node, Void param)
             {
@@ -208,28 +220,19 @@
                 => None;
 
             public override IEnumerable<IValueDeclaration> Visit(FieldAccessExpression node, Void param)
-            {
-                Debug.Assert(false, $"{nameof(FieldAccessExpression)} is not supported");
-                return None;
-            }
+                => node.SubExpression.Accept(this, param);
 
             public override IEnumerable<IValueDeclaration> Visit(FloatLiteralExpression node, Void param)
                 => None;
 
             public override IEnumerable<IValueDeclaration> Visit(IndexingExpression node, Void param)
-            {
-                Debug.Assert(false, $"{nameof(IndexingExpression)} is not supported");
-                return None;
-            }
+                => node.Array.Accept(this, param).Concat(node.Index.Accept(this, param));
 
             public override IEnumerable<IValueDeclaration> Visit(IntLiteralExpression node, Void param)
                 => None;
 
             public override IEnumerable<IValueDeclaration> Visit(InvocationExpression node, Void param)
-            {
-                Debug.Assert(false, $"{nameof(InvocationExpression)} is not supported");
-                return None;
-            }
+                => node.Callee.Accept(this, param).Concat(node.Arguments.SelectMany(arg => arg.Accept(this, param)));
 
             public override IEnumerable<IValueDeclaration> Visit(NullExpression node, Void param)
                 => None;
@@ -247,10 +250,7 @@
                 => new[] { node.Declaration! };
 
             public override IEnumerable<IValueDeclaration> Visit(VectorExpression node, Void param)
-            {
-                Debug.Assert(false, $"{nameof(VectorExpression)} is not supported");
-                return None;
-            }
+                => node.X.Accept(this, param).Concat(node.Y.Accept(this, param)).Concat(node.Z.Accept(this, param));
         }
     }
 }

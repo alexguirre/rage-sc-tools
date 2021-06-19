@@ -1,6 +1,6 @@
 ﻿namespace ScTools.ScriptLang.Ast.Expressions
 {
-    public sealed class IntLiteralExpression : BaseExpression
+    public sealed class IntLiteralExpression : BaseExpression, ILiteralExpression<int>
     {
         public int Value { get; set; }
 
@@ -9,5 +9,7 @@
 
         public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
             => visitor.Visit(this, param);
+
+        object? ILiteralExpression.Value => Value;
     }
 }

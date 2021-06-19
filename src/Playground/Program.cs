@@ -66,8 +66,7 @@
 
             var globalSymbols = GlobalSymbolTableBuilder.Build(p.OutputAst, d);
             IdentificationVisitor.Visit(p.OutputAst, d, globalSymbols);
-            new ConstantsEvaluation(d, globalSymbols).Evaluate();
-            //TypeChecker.Check(p.OutputAst, d, globalSymbols);
+            TypeChecker.Check(p.OutputAst, d, globalSymbols);
             d.PrintAll(Console.Out);
             ;
         }

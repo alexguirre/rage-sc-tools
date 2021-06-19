@@ -20,6 +20,17 @@
         private TypeChecker(DiagnosticsReport diagnostics, GlobalSymbolTable symbols)
             => (Diagnostics, Symbols, exprTypeChecker) = (diagnostics, symbols, new(diagnostics, symbols));
 
+        public override Void Visit(Program node, Void param)
+        {
+            // visit all declarations except functions to ensure that all global/static variables are type-checked
+            // before they are used in functions
+            node.Declarations.Where(d => d is not FuncDeclaration).ForEach(decl => decl.Accept(this, param));
+            
+            // now visit all functions
+            node.Declarations.Where(d => d is FuncDeclaration).ForEach(decl => decl.Accept(this, param));
+            return DefaultReturn;
+        }
+
         #region Expressions
         public override Void Visit(BinaryExpression node, Void param) => node.Accept(exprTypeChecker, default);
         public override Void Visit(BoolLiteralExpression node, Void param) => node.Accept(exprTypeChecker, default);
@@ -47,6 +58,10 @@
             {
                 Diagnostics.AddError($"Array size requires type '{arrayLengthTy}', found '{node.LengthExpression.Type}'", node.LengthExpression.Source);
             }
+            else
+            {
+                node.Length = ExpressionEvaluator.EvalInt(node.LengthExpression, Symbols);
+            }
 
             return DefaultReturn;
         }
@@ -55,19 +70,17 @@
         #region Declarations
         public override Void Visit(EnumMemberDeclaration node, Void param)
         {
-            node.Type.Accept(this, param);
-            if (node.Initializer is not null)
-            {
-                node.Initializer.Accept(this, param);
-
-                node.Type.Assign(node.Initializer.Type!, node.Initializer.Source, Diagnostics);
-            }
-
+            // type-check for enum members is done by ConstantsResolver before TypeChecker is executed
             return DefaultReturn;
         }
 
         public override Void Visit(StructField node, Void param)
         {
+            // TODO: check cycles in types of struct fields
+            // for example:
+            //  STRUCT MY_STRUCT
+            //      MY_STRUCT inner
+            //  ENDSTRUCT
             node.Type.Accept(this, param);
             if (node.Initializer is not null)
             {
@@ -81,6 +94,12 @@
 
         public override Void Visit(VarDeclaration node, Void param)
         {
+            if (node.Kind is VarKind.Constant)
+            {
+                // type-check for CONST vars is done by ConstantsResolver before TypeChecker is executed
+                return DefaultReturn;
+            }
+
             node.Type.Accept(this, param);
             if (node.Initializer is not null)
             {
@@ -96,6 +115,7 @@
         #region Statements
         public override Void Visit(AssignmentStatement node, Void param)
         {
+            // TODO: type-check compound assignments
             node.LHS.Accept(this, param);
             node.RHS.Accept(this, param);
 
@@ -196,6 +216,8 @@
 
         public static void Check(Program root, DiagnosticsReport diagnostics, GlobalSymbolTable globalSymbols)
         {
+            new ConstantsResolver(diagnostics, globalSymbols).Resolve();
+
             root.Accept(new TypeChecker(diagnostics, globalSymbols), default);
         }
     }
