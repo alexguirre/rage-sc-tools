@@ -1,5 +1,6 @@
 ﻿namespace ScTools.ScriptLang.Semantics
 {
+    using System.Diagnostics;
     using System.Linq;
 
     using ScTools.ScriptLang.Ast;
@@ -10,8 +11,16 @@
     using ScTools.ScriptLang.Ast.Types;
     using ScTools.ScriptLang.SymbolTables;
 
-    public sealed class TypeChecker : DFSVisitor
+    public readonly struct TypeCheckerContext
     {
+        public StructDeclaration? Struct { get; init; }
+        public FuncDeclaration? Function { get; init; }
+    }
+
+    public sealed class TypeChecker : DFSVisitor<Void, TypeCheckerContext>
+    {
+        public override Void DefaultReturn => default;
+
         public DiagnosticsReport Diagnostics { get; }
         public GlobalSymbolTable Symbols { get; }
 
@@ -20,7 +29,7 @@
         private TypeChecker(DiagnosticsReport diagnostics, GlobalSymbolTable symbols)
             => (Diagnostics, Symbols, exprTypeChecker) = (diagnostics, symbols, new(diagnostics, symbols));
 
-        public override Void Visit(Program node, Void param)
+        public override Void Visit(Program node, TypeCheckerContext param)
         {
             // visit all declarations except functions to ensure that all global/static variables are type-checked
             // before they are used in functions
@@ -32,23 +41,23 @@
         }
 
         #region Expressions
-        public override Void Visit(BinaryExpression node, Void param) => node.Accept(exprTypeChecker, default);
-        public override Void Visit(BoolLiteralExpression node, Void param) => node.Accept(exprTypeChecker, default);
-        public override Void Visit(FieldAccessExpression node, Void param) => node.Accept(exprTypeChecker, default);
-        public override Void Visit(FloatLiteralExpression node, Void param) => node.Accept(exprTypeChecker, default);
-        public override Void Visit(IndexingExpression node, Void param) => node.Accept(exprTypeChecker, default);
-        public override Void Visit(IntLiteralExpression node, Void param) => node.Accept(exprTypeChecker, default);
-        public override Void Visit(InvocationExpression node, Void param) => node.Accept(exprTypeChecker, default);
-        public override Void Visit(NullExpression node, Void param) => node.Accept(exprTypeChecker, default);
-        public override Void Visit(SizeOfExpression node, Void param) => node.Accept(exprTypeChecker, default);
-        public override Void Visit(StringLiteralExpression node, Void param) => node.Accept(exprTypeChecker, default);
-        public override Void Visit(UnaryExpression node, Void param) => node.Accept(exprTypeChecker, default);
-        public override Void Visit(ValueDeclRefExpression node, Void param) => node.Accept(exprTypeChecker, default);
-        public override Void Visit(VectorExpression node, Void param) => node.Accept(exprTypeChecker, default);
+        public override Void Visit(BinaryExpression node, TypeCheckerContext param) => node.Accept(exprTypeChecker, default);
+        public override Void Visit(BoolLiteralExpression node, TypeCheckerContext param) => node.Accept(exprTypeChecker, default);
+        public override Void Visit(FieldAccessExpression node, TypeCheckerContext param) => node.Accept(exprTypeChecker, default);
+        public override Void Visit(FloatLiteralExpression node, TypeCheckerContext param) => node.Accept(exprTypeChecker, default);
+        public override Void Visit(IndexingExpression node, TypeCheckerContext param) => node.Accept(exprTypeChecker, default);
+        public override Void Visit(IntLiteralExpression node, TypeCheckerContext param) => node.Accept(exprTypeChecker, default);
+        public override Void Visit(InvocationExpression node, TypeCheckerContext param) => node.Accept(exprTypeChecker, default);
+        public override Void Visit(NullExpression node, TypeCheckerContext param) => node.Accept(exprTypeChecker, default);
+        public override Void Visit(SizeOfExpression node, TypeCheckerContext param) => node.Accept(exprTypeChecker, default);
+        public override Void Visit(StringLiteralExpression node, TypeCheckerContext param) => node.Accept(exprTypeChecker, default);
+        public override Void Visit(UnaryExpression node, TypeCheckerContext param) => node.Accept(exprTypeChecker, default);
+        public override Void Visit(ValueDeclRefExpression node, TypeCheckerContext param) => node.Accept(exprTypeChecker, default);
+        public override Void Visit(VectorExpression node, TypeCheckerContext param) => node.Accept(exprTypeChecker, default);
         #endregion Expressions
 
         #region Types
-        public override Void Visit(ArrayType node, Void param)
+        public override Void Visit(ArrayType node, TypeCheckerContext param)
         {
             node.ItemType.Accept(this, param);
             node.LengthExpression.Accept(this, param);
@@ -71,23 +80,43 @@
         #endregion Types
 
         #region Declarations
-        public override Void Visit(EnumMemberDeclaration node, Void param)
+        public override Void Visit(FuncDeclaration node, TypeCheckerContext param)
+            => base.Visit(node, new() { Function = node });
+
+        public override Void Visit(EnumMemberDeclaration node, TypeCheckerContext param)
         {
             // type-check for enum members is done by ConstantsResolver before TypeChecker is executed
             return DefaultReturn;
         }
 
-        public override Void Visit(StructDeclaration node, Void param)
-        {
-            foreach (var f in node.Fields)
-            {
-                f.Accept(this, param);
+        public override Void Visit(StructDeclaration node, TypeCheckerContext param)
+            => base.Visit(node, new() { Struct = node });
 
-                if (ContainsStruct(f.Type, node))
+        public override Void Visit(StructField node, TypeCheckerContext param)
+        {
+            Debug.Assert(param.Struct is not null);
+
+            node.Type.Accept(this, param);
+
+            if (ContainsStruct(node.Type, param.Struct))
+            {
+                Diagnostics.AddError($"Struct field '{node.Name}' causes a cycle in the layout of '{param.Struct.Name}'", node.Source);
+            }
+
+            if (node.Initializer is not null)
+            {
+                node.Initializer.Accept(this, param);
+
+                if (!node.Initializer.IsConstant)
                 {
-                    Diagnostics.AddError($"Struct field '{f.Name}' causes a cycle in the layout of '{node.Name}'", f.Source);
+                    node.Initializer = new ErrorExpression(node.Initializer.Source, Diagnostics, $"Default initializer of the struct field '{node.Name}' must be a constant expression");
+                }
+                else
+                {
+                    node.Type.Assign(node.Initializer.Type!, node.Initializer.Source, Diagnostics);
                 }
             }
+
             return DefaultReturn;
 
             static bool ContainsStruct(IType fieldType, StructDeclaration struc)
@@ -107,27 +136,7 @@
             }
         }
 
-        public override Void Visit(StructField node, Void param)
-        {
-            node.Type.Accept(this, param);
-            if (node.Initializer is not null)
-            {
-                node.Initializer.Accept(this, param);
-
-                if (!node.Initializer.IsConstant)
-                {
-                    node.Initializer = new ErrorExpression(node.Initializer.Source, Diagnostics, $"Default initializer of the struct field '{node.Name}' must be a constant expression");
-                }
-                else
-                {
-                    node.Type.Assign(node.Initializer.Type!, node.Initializer.Source, Diagnostics);
-                }
-            }
-
-            return DefaultReturn;
-        }
-
-        public override Void Visit(VarDeclaration node, Void param)
+        public override Void Visit(VarDeclaration node, TypeCheckerContext param)
         {
             if (node.Kind is VarKind.Constant)
             {
@@ -148,7 +157,7 @@
         #endregion Declarations
 
         #region Statements
-        public override Void Visit(AssignmentStatement node, Void param)
+        public override Void Visit(AssignmentStatement node, TypeCheckerContext param)
         {
             // TODO: type-check compound assignments
             node.LHS.Accept(this, param);
@@ -158,7 +167,7 @@
             return DefaultReturn;
         }
 
-        public override Void Visit(IfStatement node, Void param)
+        public override Void Visit(IfStatement node, TypeCheckerContext param)
         {
             node.Condition.Accept(this, param);
 
@@ -173,7 +182,7 @@
             return DefaultReturn;
         }
 
-        public override Void Visit(RepeatStatement node, Void param)
+        public override Void Visit(RepeatStatement node, TypeCheckerContext param)
         {
             node.Limit.Accept(this, param);
             node.Counter.Accept(this, param);
@@ -197,16 +206,39 @@
             return DefaultReturn;
         }
 
-        public override Void Visit(ReturnStatement node, Void param)
+        public override Void Visit(ReturnStatement node, TypeCheckerContext param)
         {
+            Debug.Assert(param.Function is not null);
+
             node.Expression?.Accept(this, param);
 
-            // TODO: check if return expression matches function return type
+            if (param.Function.Prototype.IsProc)
+            {
+                if (node.Expression is not null)
+                {
+                    Diagnostics.AddError($"No expression expected in RETURN statement inside procedure", node.Source);
+                }
+            }
+            else
+            {
+                var returnTy = param.Function.Prototype.ReturnType;
+                if (node.Expression is not null)
+                {
+                    if (!returnTy.CanAssign(node.Expression.Type!))
+                    {
+                        Diagnostics.AddError($"Function returns '{returnTy}', found '{node.Expression.Type}' in RETURN statement", node.Expression.Source);
+                    }
+                }
+                else
+                {
+                    Diagnostics.AddError($"Expected expression in RETURN statement inside function returning '{returnTy}'", node.Source);
+                }
+            }
 
             return DefaultReturn;
         }
 
-        public override Void Visit(SwitchStatement node, Void param)
+        public override Void Visit(SwitchStatement node, TypeCheckerContext param)
         {
             node.Expression.Accept(this, param);
 
@@ -220,7 +252,7 @@
             return DefaultReturn;
         }
 
-        public override Void Visit(ValueSwitchCase node, Void param)
+        public override Void Visit(ValueSwitchCase node, TypeCheckerContext param)
         {
             node.Value.Accept(this, param);
 
@@ -234,7 +266,7 @@
             return DefaultReturn;
         }
 
-        public override Void Visit(WhileStatement node, Void param)
+        public override Void Visit(WhileStatement node, TypeCheckerContext param)
         {
             node.Condition.Accept(this, param);
 
