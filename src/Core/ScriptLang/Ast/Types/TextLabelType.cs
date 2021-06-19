@@ -25,6 +25,8 @@
         public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
             => visitor.Visit(this, param);
 
+        public override bool Equivalent(IType other) => other is TextLabelType otherLbl && Length == otherLbl.Length;
+
         /// <returns><c>true</c> if <paramref name="length"/> is in the range [<see cref="MinLength"/>, <see cref="MaxLength"/>] and is a multiple of 8; otherwise, <c>false</c>.</returns>
         public static bool IsValidLength(int length)
             => length is >= MinLength and <= MaxLength && (length % 8) == 0;

@@ -12,6 +12,8 @@
         public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
             => visitor.Visit(this, param);
 
+        public override bool Equivalent(IType other) => other is IntType;
+
         public override bool CanAssign(IType rhs) => rhs is IntType or EnumType or NullType or ErrorType;
 
         public override IType BinaryOperation(BinaryOperator op, IType rhs, SourceRange source, DiagnosticsReport diagnostics)

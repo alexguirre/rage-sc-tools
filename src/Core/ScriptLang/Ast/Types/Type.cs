@@ -1,11 +1,18 @@
 ﻿namespace ScTools.ScriptLang.Ast.Types
 {
+    using System;
+
     using ScTools.ScriptLang.Ast.Errors;
     using ScTools.ScriptLang.Ast.Expressions;
 
     public interface IType : INode
     {
         int SizeOf { get; }
+
+        /// <summary>
+        /// Gets whether this and <paramref name="other"/> represent the same type.
+        /// </summary>
+        bool Equivalent(IType other);
 
         /// <summary>
         /// Gets whether the type <paramref name="rhs"/> can be assigned to this type.
@@ -37,7 +44,7 @@
         /// <summary>
         /// Checks if this type supports invocation with the specified <paramref name="args"/> and returns the returned type.
         /// </summary>
-        IType Invocation(IType[] args, SourceRange source, DiagnosticsReport diagnostics);
+        IType Invocation((IType Type, SourceRange Source)[] args, SourceRange source, DiagnosticsReport diagnostics);
 
         /// <summary>
         /// Checks if the type <paramref name="rhs"/> can be assigned to this type.
@@ -53,6 +60,8 @@
 
         public override string ToString() => TypePrinter.ToString(this, null);
 
+        public abstract bool Equivalent(IType other);
+
         public virtual bool CanAssign(IType rhs) => false;
 
         public virtual IType BinaryOperation(BinaryOperator op, IType rhs, SourceRange source, DiagnosticsReport diagnostics)
@@ -67,7 +76,7 @@
         public virtual IType Indexing(IType index, SourceRange source, DiagnosticsReport diagnostics)
             => new ErrorType(source, diagnostics, $"Indexing is not supported by type '{this}'");
 
-        public virtual IType Invocation(IType[] args, SourceRange source, DiagnosticsReport diagnostics)
+        public virtual IType Invocation((IType Type, SourceRange Source)[] args, SourceRange source, DiagnosticsReport diagnostics)
             => new ErrorType(source, diagnostics, $"Invocation is not supported by type '{this}'");
 
         public virtual void Assign(IType rhs, SourceRange source, DiagnosticsReport diagnostics)

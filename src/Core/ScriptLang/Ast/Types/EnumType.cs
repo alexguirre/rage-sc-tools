@@ -15,15 +15,9 @@
         public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
             => visitor.Visit(this, param);
 
-        public override bool CanAssign(IType rhs)
-        {
-            if (rhs is IntType or NullType or ErrorType)
-            {
-                return true;
-            }
+        public override bool Equivalent(IType other) => other is EnumType otherEnum && otherEnum.Declaration == Declaration;
 
-            return rhs is EnumType rhsEnumTy && rhsEnumTy.Declaration == Declaration;
-        }
+        public override bool CanAssign(IType rhs) => rhs is IntType or NullType or ErrorType || Equivalent(rhs);
 
         public override IType BinaryOperation(BinaryOperator op, IType rhs, SourceRange source, DiagnosticsReport diagnostics)
         {

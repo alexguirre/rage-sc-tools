@@ -83,7 +83,7 @@
 
             node.IsLValue = false;
             node.IsConstant = false;
-            node.Type = node.Callee.Type!.Invocation(node.Arguments.Select(arg => arg.Type!).ToArray(), node.Source, Diagnostics);
+            node.Type = node.Callee.Type!.Invocation(node.Arguments.Select(arg => (arg.Type!, arg.Source)).ToArray(), node.Source, Diagnostics);
             return default;
         }
 

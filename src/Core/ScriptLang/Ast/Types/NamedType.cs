@@ -20,5 +20,7 @@
 
         public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
             => visitor.Visit(this, param);
+
+        public override bool Equivalent(IType other) => other is NamedType otherNamed && Parser.CaseInsensitiveComparer.Equals(Name, otherNamed.Name);
     }
 }

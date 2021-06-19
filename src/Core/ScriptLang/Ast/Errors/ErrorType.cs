@@ -1,7 +1,6 @@
 ﻿namespace ScTools.ScriptLang.Ast.Errors
 {
     using System;
-    using System.Collections.Generic;
 
     using ScTools.ScriptLang.Ast.Expressions;
     using ScTools.ScriptLang.Ast.Types;
@@ -16,6 +15,7 @@
         public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
             => visitor.Visit(this, param);
 
+        public bool Equivalent(IType other) => other is ErrorType;
         public bool CanAssign(IType rhs) => false;
 
         // do nothing and return itself in the semantic checks to prevent reduntant errors
@@ -23,7 +23,7 @@
         public IType UnaryOperation(UnaryOperator op, SourceRange source, DiagnosticsReport diagnostics) => this;
         public (IType Type, bool LValue) FieldAccess(string fieldName, SourceRange source, DiagnosticsReport diagnostics) => (this, false);
         public IType Indexing(IType index, SourceRange source, DiagnosticsReport diagnostics) => this;
-        public IType Invocation(IType[] args, SourceRange source, DiagnosticsReport diagnostics) => this;
+        public IType Invocation((IType Type, SourceRange Source)[] args, SourceRange source, DiagnosticsReport diagnostics) => this;
         public void Assign(IType rhs, SourceRange source, DiagnosticsReport diagnostics) { }
     }
 }

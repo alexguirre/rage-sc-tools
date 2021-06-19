@@ -14,5 +14,8 @@
 
         public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
             => visitor.Visit(this, param);
+
+        public override bool Equivalent(IType other)
+            => other is ArrayType otherArray && ItemType.Equivalent(otherArray.ItemType);
     }
 }

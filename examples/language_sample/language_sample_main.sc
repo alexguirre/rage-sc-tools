@@ -114,6 +114,13 @@ PROC MAIN()
 
     RAW_LOOP(arrA)
 
+    MY_STRUCT tmp
+    tmp.a = 1
+    tmp.b = 2.0
+    tmp.c = <<3.0, 4.0, 5.0>>
+    tmp.d = <<6.0, 7.0, 8.0>>
+    // tmp.unk = 120
+
     INT i
     REPEAT aItems.length i
         INIT_STRUCT(aItems[i], GET_DEFAULT_A(), GET_DEFAULT_B(), GET_DEFAULT_C(), GET_DEFAULT_D())
@@ -344,4 +351,17 @@ begin:
     GOTO begin
 exit:
 
+ENDPROC
+
+PROC TEST_HANDLES()
+    PED_INDEX ped = NULL
+    VEHICLE_INDEX veh = NULL
+    OBJECT_INDEX obj = NULL
+    ENTITY_INDEX ent = NULL
+    PLAYER_INDEX player = NULL
+
+    ent = ped
+    ent = veh
+    ent = obj
+    // ent = player
 ENDPROC

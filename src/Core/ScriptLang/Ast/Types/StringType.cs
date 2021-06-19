@@ -11,6 +11,8 @@
         public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
             => visitor.Visit(this, param);
 
+        public override bool Equivalent(IType other) => other is StringType;
+
         public override bool CanAssign(IType rhs) => rhs is StringType or NullType or ErrorType;
     }
 }
