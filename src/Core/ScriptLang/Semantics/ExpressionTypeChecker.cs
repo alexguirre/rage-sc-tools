@@ -7,6 +7,7 @@
     using ScTools.ScriptLang.Ast.Errors;
     using ScTools.ScriptLang.Ast.Expressions;
     using ScTools.ScriptLang.Ast.Types;
+    using ScTools.ScriptLang.BuiltIns;
     using ScTools.ScriptLang.SymbolTables;
 
     /// <summary>
@@ -36,7 +37,7 @@
         {
             node.IsLValue = false;
             node.IsConstant = true;
-            node.Type = Symbols.Bool.CreateType(node.Source);
+            node.Type = BuiltInTypes.Bool.CreateType(node.Source);
             return default;
         }
 
@@ -53,7 +54,7 @@
         {
             node.IsLValue = false;
             node.IsConstant = true;
-            node.Type = Symbols.Float.CreateType(node.Source);
+            node.Type = BuiltInTypes.Float.CreateType(node.Source);
             return default;
         }
 
@@ -72,7 +73,7 @@
         {
             node.IsLValue = false;
             node.IsConstant = true;
-            node.Type = Symbols.Int.CreateType(node.Source);
+            node.Type = BuiltInTypes.Int.CreateType(node.Source);
             return default;
         }
 
@@ -101,7 +102,7 @@
 
             node.IsLValue = false;
             node.IsConstant = node.SubExpression.IsConstant;
-            node.Type = Symbols.Int.CreateType(node.Source);
+            node.Type = BuiltInTypes.Int.CreateType(node.Source);
             return default;
         }
 
@@ -109,7 +110,7 @@
         {
             node.IsLValue = false;
             node.IsConstant = true;
-            node.Type = Symbols.String.CreateType(node.Source);
+            node.Type = BuiltInTypes.String.CreateType(node.Source);
             return default;
         }
 
@@ -137,7 +138,7 @@
             node.Y.Accept(this, param);
             node.Z.Accept(this, param);
 
-            var vectorTy = Symbols.Vector.CreateType(node.Source);
+            var vectorTy = BuiltInTypes.Vector.CreateType(node.Source);
             node.IsLValue = false;
             node.IsConstant = node.X.IsConstant && node.Y.IsConstant && node.Z.IsConstant;
             node.Type = vectorTy;

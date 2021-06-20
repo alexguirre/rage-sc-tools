@@ -5,6 +5,7 @@
     using ScTools.ScriptLang.Ast.Declarations;
     using ScTools.ScriptLang.Ast.Errors;
     using ScTools.ScriptLang.Ast.Expressions;
+    using ScTools.ScriptLang.BuiltIns;
 
     public sealed class StructType : BaseType
     {
@@ -27,7 +28,7 @@
                 return true;
             }
 
-            if (IsBuiltInHandleType(this))
+            if (BuiltInTypes.IsHandleType(this))
             {
                 // special case for built-in handle-like structs (e.g. ENTITY_INDEX, PED_INDEX, VEHICLE_INDEX, ...)
 
@@ -38,19 +39,16 @@
                 }
 
                 // allow to assign PED/VEHICLE/OBJECT_INDEX to ENTITY_INDEX (to simplify native calls that expect ENTITY_INDEX but you have some other handle type)
-                if (Parser.CaseInsensitiveComparer.Equals(Declaration.Name, "ENTITY_INDEX") && rhs is StructType rhsTy && IsBuiltInHandleType(rhsTy))
+                if (Declaration == BuiltInTypes.EntityIndex && BuiltInTypes.IsHandleType(rhs))
                 {
-                    return Parser.CaseInsensitiveComparer.Equals(rhsTy.Declaration.Name, "PED_INDEX") ||
-                           Parser.CaseInsensitiveComparer.Equals(rhsTy.Declaration.Name, "VEHICLE_INDEX") ||
-                           Parser.CaseInsensitiveComparer.Equals(rhsTy.Declaration.Name, "OBJECT_INDEX");
+                    var rhsDecl = ((StructType)rhs).Declaration;
+                    return rhsDecl == BuiltInTypes.PedIndex ||
+                           rhsDecl == BuiltInTypes.VehicleIndex ||
+                           rhsDecl == BuiltInTypes.ObjectIndex;
                 }
             }
 
             return false;
-
-            // Gets whether the StructType is a built-in handle-like struct. See GlobalSymbolTable for how they are created.
-            static bool IsBuiltInHandleType(StructType ty)
-                => ty.Declaration.Source.IsUnknown && ty.Declaration.Fields.Count == 1 && ty.Declaration.Fields[0].Type is IntType;
         }
 
         public override (IType Type, bool LValue) FieldAccess(string fieldName, SourceRange source, DiagnosticsReport diagnostics)
@@ -74,8 +72,7 @@
             }
 
             if (op is BinaryOperator.Add or BinaryOperator.Subtract or BinaryOperator.Multiply or BinaryOperator.Divide && 
-                rhs is StructType rhsStructType &&
-                IsBuiltInVectorType(this) && IsBuiltInVectorType(rhsStructType))
+                BuiltInTypes.IsVectorType(this) && BuiltInTypes.IsVectorType(rhs))
             {
                 // special case to allow +-*/ operations for VECTOR type
                 return new StructType(source, Declaration);
@@ -86,19 +83,13 @@
 
         public override IType UnaryOperation(UnaryOperator op, SourceRange source, DiagnosticsReport diagnostics)
         {
-            if (op is UnaryOperator.Negate && IsBuiltInVectorType(this))
+            if (op is UnaryOperator.Negate && BuiltInTypes.IsVectorType(this))
             {
                 // special case to allow negation for VECTOR type
                 return new StructType(source, Declaration);
             }
 
             return base.UnaryOperation(op, source, diagnostics);
-        }
-
-        private static bool IsBuiltInVectorType(StructType structType)
-        {
-            var decl = structType.Declaration;
-            return decl.Source.IsUnknown && decl.Fields.Count == 3 && Parser.CaseInsensitiveComparer.Equals(decl.Name, "VECTOR");
         }
     }
 }

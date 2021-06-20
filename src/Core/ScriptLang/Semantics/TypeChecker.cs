@@ -10,6 +10,7 @@
     using ScTools.ScriptLang.Ast.Expressions;
     using ScTools.ScriptLang.Ast.Statements;
     using ScTools.ScriptLang.Ast.Types;
+    using ScTools.ScriptLang.BuiltIns;
     using ScTools.ScriptLang.SymbolTables;
 
     public readonly struct TypeCheckerContext
@@ -82,9 +83,9 @@
             {
                 node.LengthExpression = new ErrorExpression(node.LengthExpression.Source, Diagnostics, $"Array size must be a constant expression");
             }
-            else if (!Symbols.Int.CreateType(node.LengthExpression.Source).CanAssign(node.LengthExpression.Type!))
+            else if (!BuiltInTypes.Int.CreateType(node.LengthExpression.Source).CanAssign(node.LengthExpression.Type!))
             {
-                Diagnostics.AddError($"Array size requires type '{Symbols.Int.Name}', found '{node.LengthExpression.Type}'", node.LengthExpression.Source);
+                Diagnostics.AddError($"Array size requires type '{BuiltInTypes.Int.Name}', found '{node.LengthExpression.Type}'", node.LengthExpression.Source);
             }
             else
             {
@@ -213,10 +214,9 @@
         {
             node.Condition.Accept(this, param);
 
-            var boolTy = Symbols.Bool.CreateType(node.Condition.Source);
-            if (!boolTy.CanAssign(node.Condition.Type!))
+            if (!BuiltInTypes.Bool.CreateType(node.Condition.Source).CanAssign(node.Condition.Type!))
             {
-                Diagnostics.AddError($"IF condition requires type '{boolTy}', found '{node.Condition.Type}'", node.Condition.Source);
+                Diagnostics.AddError($"IF condition requires type '{BuiltInTypes.Bool.Name}', found '{node.Condition.Type}'", node.Condition.Source);
             }
 
             node.Then.ForEach(stmt => stmt.Accept(this, param));
@@ -229,7 +229,7 @@
             node.Limit.Accept(this, param);
             node.Counter.Accept(this, param);
 
-            var intTy = Symbols.Int.CreateType(node.Limit.Source);
+            var intTy = BuiltInTypes.Int.CreateType(node.Limit.Source);
             if (!intTy.CanAssign(node.Limit.Type!))
             {
                 Diagnostics.AddError($"REPEAT limit requires type '{intTy}', found '{node.Limit.Type}'", node.Limit.Source);
@@ -284,9 +284,9 @@
         {
             node.Expression.Accept(this, param);
 
-            if (!Symbols.Int.CreateType(node.Expression.Source).CanAssign(node.Expression.Type!))
+            if (!BuiltInTypes.Int.CreateType(node.Expression.Source).CanAssign(node.Expression.Type!))
             {
-                Diagnostics.AddError($"SWITCH expression requires type '{Symbols.Int.Name}', found '{node.Expression.Type}'", node.Expression.Source);
+                Diagnostics.AddError($"SWITCH expression requires type '{BuiltInTypes.Int.Name}', found '{node.Expression.Type}'", node.Expression.Source);
             }
 
             param = param.Enter(node);
@@ -302,9 +302,9 @@
             {
                 node.Value = new ErrorExpression(node.Value.Source, Diagnostics, $"CASE value must be a constant expression");
             }
-            else if (!Symbols.Int.CreateType(node.Value.Source).CanAssign(node.Value.Type!))
+            else if (!BuiltInTypes.Int.CreateType(node.Value.Source).CanAssign(node.Value.Type!))
             {
-                Diagnostics.AddError($"CASE value requires type '{Symbols.Int.Name}', found '{node.Value.Type}'", node.Value.Source);
+                Diagnostics.AddError($"CASE value requires type '{BuiltInTypes.Int.Name}', found '{node.Value.Type}'", node.Value.Source);
             }
             else
             {
@@ -334,10 +334,9 @@
         {
             node.Condition.Accept(this, param);
 
-            var boolTy = Symbols.Bool.CreateType(node.Condition.Source);
-            if (!boolTy.CanAssign(node.Condition.Type!))
+            if (!BuiltInTypes.Bool.CreateType(node.Condition.Source).CanAssign(node.Condition.Type!))
             {
-                Diagnostics.AddError($"WHILE condition requires type '{boolTy}', found '{node.Condition.Type}'", node.Condition.Source);
+                Diagnostics.AddError($"WHILE condition requires type '{BuiltInTypes.Bool.Name}', found '{node.Condition.Type}'", node.Condition.Source);
             }
 
             node.Body.ForEach(stmt => stmt.Accept(this, param));
