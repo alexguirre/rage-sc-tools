@@ -10,6 +10,7 @@
 
     using ScTools.ScriptLang.Ast;
     using ScTools.ScriptLang.Ast.Declarations;
+    using ScTools.ScriptLang.Ast.Errors;
     using ScTools.ScriptLang.Ast.Expressions;
     using ScTools.ScriptLang.Ast.Statements;
     using ScTools.ScriptLang.Ast.Types;
@@ -429,7 +430,7 @@
             => BuildVarDecl(kind, Source(initDecl), type, initDecl.declarator(), initDecl.initializer);
 
         private VarDeclaration BuildVarDecl(VarKind kind, SourceRange source, ScLangParser.IdentifierContext type, ScLangParser.DeclaratorContext decl, ScLangParser.ExpressionContext? init)
-            => new(source, GetNameFromDeclarator(decl), BuildTypeFromDeclarator(type, decl), kind)
+            => new(source, GetNameFromDeclarator(decl), BuildTypeFromDeclarator(type, decl, isParameter: kind is VarKind.Parameter), kind)
             {
                 Initializer = BuildAstOpt(init),
             };
@@ -438,7 +439,7 @@
         {
             return new(structFieldsContext.varDeclaration()
                         .SelectMany(declNoInit => declNoInit.initDeclaratorList().initDeclarator()
-                                                            .Select(initDecl => new StructField(Source(initDecl), GetNameFromDeclarator(initDecl.declarator()), BuildTypeFromDeclarator(declNoInit.type, initDecl.declarator()))
+                                                            .Select(initDecl => new StructField(Source(initDecl), GetNameFromDeclarator(initDecl.declarator()), BuildTypeFromDeclarator(declNoInit.type, initDecl.declarator(), isParameter: false))
                                                             {
                                                                 Initializer = BuildAstOpt(initDecl.initializer),
                                                             })));
@@ -457,10 +458,11 @@
             };
         }
 
-        private IType BuildTypeFromDeclarator(ScLangParser.IdentifierContext baseTypeName, ScLangParser.DeclaratorContext declarator)
+        private IType BuildTypeFromDeclarator(ScLangParser.IdentifierContext baseTypeName, ScLangParser.DeclaratorContext declarator, bool isParameter)
         {
             var baseType = BuildType(baseTypeName);
 
+            var allowIncompleteArrayType = isParameter; // incomplete arrays are only allowed as parameters
             var source = Source(declarator);
             IType ty = baseType;
             (ScLangParser.RefDeclaratorContext?, ScLangParser.NoRefDeclaratorContext?) pair = (declarator.refDeclarator(), declarator.noRefDeclarator());
@@ -468,19 +470,32 @@
             {
                 switch (pair)
                 {
-                    case (null, ScLangParser.ArrayDeclaratorContext) when ty is RefType or ArrayRefType:
-                        Diagnostics.AddError($"Array of references is not valid", source);
-                        return baseType;
+                    case (null, ScLangParser.ArrayDeclaratorContext) when ty is RefType:
+                        return new ErrorType(source, Diagnostics, $"Array of references is not valid");
                     case (null, ScLangParser.ArrayDeclaratorContext d):
-                        ty = d.expression() is null ?
-                                new ArrayRefType(Source(d), ty) :
-                                new ArrayType(Source(d), ty, BuildAst(d.expression()));
+                        if (allowIncompleteArrayType && d.expression() is null)
+                        {
+                            ty = new IncompleteArrayType(Source(d), ty);
+
+                            // after we already have an incomplete array type, we cannot have more arrays coming before it
+                            // valid:   INT a[][10], INT a[10][10] 
+                            // invalid: INT a[10][], INT a[][]
+                            allowIncompleteArrayType = false;
+                        }
+                        else if (d.expression() is null || ty is IncompleteArrayType)
+                        {
+                            return new ErrorType(source, Diagnostics, $"Array is missing size expression");
+                        }
+                        else
+                        {
+                            ty = new ArrayType(Source(d), ty, BuildAst(d.expression()));
+                        }
+
                         pair = (null, d.noRefDeclarator());
                         break;
 
-                    case (ScLangParser.RefDeclaratorContext, null) when ty is RefType or ArrayRefType:
-                        Diagnostics.AddError($"Reference to reference is not valid", source);
-                        return baseType;
+                    case (ScLangParser.RefDeclaratorContext, null) when ty is RefType:
+                        return new ErrorType(source, Diagnostics, $"Reference to reference is not valid");
                     case (ScLangParser.RefDeclaratorContext d, null):
                         ty = new RefType(Source(d), ty);
                         pair = (null, d.noRefDeclarator());
@@ -492,6 +507,12 @@
 
                     default: throw new NotImplementedException();
                 };
+            }
+
+            if (isParameter && ty is IArrayType)
+            {
+                // arrays are passed by reference, so wrap them in a RefType when used as parameters
+                ty = new RefType(ty.Source, ty);
             }
 
             return ty;

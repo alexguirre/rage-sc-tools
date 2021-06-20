@@ -17,8 +17,9 @@
             => visitor.Visit(this, param);
 
         public bool Equivalent(IType other) => other is ErrorType;
-        public bool CanAssign(IType rhs) => false;
-        public bool CanAssignInit(IType rhs, bool isLValue) => false;
+        public bool CanBindRefTo(IType other) => true;
+        public bool CanAssign(IType rhs) => true;
+        public bool CanAssignInit(IType rhs, bool isLValue) => true;
 
         // do nothing and return itself in the semantic checks to prevent reduntant errors
         public IType BinaryOperation(BinaryOperator op, IType rhs, SourceRange source, DiagnosticsReport diagnostics) => this;

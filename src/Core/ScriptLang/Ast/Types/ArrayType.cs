@@ -6,7 +6,7 @@
     /// <summary>
     /// Represents an array type of constant size.
     /// </summary>
-    public sealed class ArrayType : BaseType
+    public sealed class ArrayType : BaseType, IArrayType
     {
         public IType ItemType { get; set; }
         public int Length { get; set; }

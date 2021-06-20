@@ -46,7 +46,7 @@
             return base.Visit(node, param);
         }
 
-        public override Void Visit(ArrayRefType node, Void param)
+        public override Void Visit(IncompleteArrayType node, Void param)
         {
             node.ItemType = Clean(node.ItemType);
             return base.Visit(node, param);

@@ -70,7 +70,7 @@
             {
                 return structTy.Declaration.Fields.All(f => IsCrossScriptThreadSafe(f.Type));
             }
-            else if (type is ArrayType arrayTy)
+            else if (type is IArrayType arrayTy)
             {
                 return IsCrossScriptThreadSafe(arrayTy.ItemType);
             }

@@ -21,6 +21,11 @@
         bool Equivalent(IType other);
 
         /// <summary>
+        /// Gets whether a <see cref="RefType"/> of this type can be binded to a lvalue of type <paramref name="other"/>.
+        /// </summary>
+        bool CanBindRefTo(IType other);
+
+        /// <summary>
         /// Gets whether the type <paramref name="rhs"/> can be assigned to this type.
         /// </summary>
         bool CanAssign(IType rhs);
@@ -68,6 +73,11 @@
         void AssignInit(IType rhs, bool isLValue, SourceRange source, DiagnosticsReport diagnostics);
     }
 
+    public interface IArrayType : IType
+    {
+        public IType ItemType { get; set; }
+    }
+
     public abstract class BaseType: BaseNode, IType
     {
         public abstract int SizeOf { get; }
@@ -78,7 +88,7 @@
         public override string ToString() => TypePrinter.ToString(this, null);
 
         public abstract bool Equivalent(IType other);
-
+        public virtual bool CanBindRefTo(IType other) => Equivalent(other);
         public virtual bool CanAssign(IType rhs) => false;
         public virtual bool CanAssignInit(IType rhs, bool isLValue) => CanAssign(rhs);
 

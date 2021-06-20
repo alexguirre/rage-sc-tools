@@ -13,8 +13,18 @@
 
     public readonly struct TypeCheckerContext
     {
+        public bool SecondPass { get; init; }
         public StructDeclaration? Struct { get; init; }
         public FuncDeclaration? Function { get; init; }
+
+        public TypeCheckerContext BeginSecondPass()
+            => new() { SecondPass = true, Struct = Struct, Function = Function };
+
+        public TypeCheckerContext Enter(StructDeclaration structDecl)
+            => new() { SecondPass = SecondPass, Struct = structDecl, Function = Function };
+
+        public TypeCheckerContext Enter(FuncDeclaration funcDecl)
+            => new() { SecondPass = SecondPass, Struct = Struct, Function = funcDecl };
     }
 
     public sealed class TypeChecker : DFSVisitor<Void, TypeCheckerContext>
@@ -31,11 +41,12 @@
 
         public override Void Visit(Program node, TypeCheckerContext param)
         {
-            // visit all declarations except functions to ensure that all global/static variables are type-checked
-            // before they are used in functions
-            node.Declarations.Where(d => d is not FuncDeclaration).ForEach(decl => decl.Accept(this, param));
-            
-            // now visit all functions
+            // visit all declarations to ensure that all global/static variables/function types are type-checked
+            // before they are used inside functions
+            node.Declarations.ForEach(decl => decl.Accept(this, param));
+
+            // now visit the body of all functions
+            param = param.BeginSecondPass();
             node.Declarations.Where(d => d is FuncDeclaration).ForEach(decl => decl.Accept(this, param));
             return DefaultReturn;
         }
@@ -81,7 +92,19 @@
 
         #region Declarations
         public override Void Visit(FuncDeclaration node, TypeCheckerContext param)
-            => base.Visit(node, new() { Function = node });
+        {
+            if (!param.SecondPass)
+            {
+                node.Prototype.Accept(this, param);
+                node.Type.Accept(this, param);
+            }
+            else
+            {
+                param = param.Enter(node);
+                node.Body.ForEach(stmt => stmt.Accept(this, param));
+            }
+            return DefaultReturn;
+        }
 
         public override Void Visit(EnumMemberDeclaration node, TypeCheckerContext param)
         {
@@ -90,7 +113,7 @@
         }
 
         public override Void Visit(StructDeclaration node, TypeCheckerContext param)
-            => base.Visit(node, new() { Struct = node });
+            => base.Visit(node, param.Enter(node));
 
         public override Void Visit(StructField node, TypeCheckerContext param)
         {

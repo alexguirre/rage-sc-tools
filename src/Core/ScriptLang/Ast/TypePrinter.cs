@@ -15,8 +15,7 @@
             => type switch
             {
                 AnyType => Simple("ANY", name),
-                ArrayRefType arrayRefTy => ArrayRef(arrayRefTy, name),
-                ArrayType arrayTy => Array(arrayTy, name),
+                IArrayType arrayTy => Array(arrayTy, name),
                 BoolType => Simple("BOOL", name),
                 EnumType enumTy => Simple(enumTy.Declaration.Name, name),
                 FloatType => Simple("FLOAT", name),
@@ -34,23 +33,19 @@
 
         private static string Simple(string typeName, string? name) => string.IsNullOrEmpty(name) ? typeName : $"{typeName} {name}";
 
-        private static string ArrayRef(ArrayRefType arrayRefTy, string? name)
-            => string.IsNullOrEmpty(name) ?
-                $"{ToString(arrayRefTy.ItemType, null)}[]" :
-                $"{ToString(arrayRefTy.ItemType, null)} {name}[]";
-
-        private static string Array(ArrayType arrayTy, string? name)
+        private static string Array(IArrayType arrayTy, string? name)
         {
             var lengths = "";
             while (true)
             {
-                // TODO: in TypeChecker array length is not yet calculated but should be so errors display the correct length
-                var length = arrayTy.LengthExpression is IntLiteralExpression lit ?
-                                lit.Value :
-                                arrayTy.Length;
+                var length = arrayTy switch
+                {
+                    ArrayType a => a.Length.ToString(),
+                    _ => "",
+                };
                 lengths += $"[{length}]";
 
-                if (arrayTy.ItemType is ArrayType ty)
+                if (arrayTy.ItemType is IArrayType ty)
                 {
                     arrayTy = ty;
                 }
@@ -80,7 +75,7 @@
 
         private static string Ref(RefType refTy, string? name)
         {
-            if (refTy.PointeeType is ArrayType arrTy)
+            if (refTy.PointeeType is IArrayType arrTy)
             {
                 return Array(arrTy, string.IsNullOrEmpty(name) ? $"(&)" : $"(&{name})");
             }
