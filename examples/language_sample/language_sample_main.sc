@@ -451,3 +451,33 @@ PROC TEST_ANY()
     // any7 = v
     any7 = 1234
 ENDPROC
+
+PROC TEST_ASSIGNMENT()
+    // 1 = 2
+    // 1 += 2
+
+    VECTOR v1 = <<1.0, 2.0, 3.0>>, v2 = <<4.0, 5.0, 6.0>>
+    v1 = v2
+    v1 = v1 + v2
+    v1 = v1 - v2
+    v1 = v1 * v2
+    v1 = v1 / v2
+    v1 += v2
+    v1 -= v2
+    v1 *= v2
+    v1 /= v2
+    // v1 &= v2
+
+    INT a = 1, b = 2
+    a = b
+    a = a + b
+    a = a - b
+    a = a * b
+    a = a / b
+    a = a & b
+    a += b
+    a -= b
+    a *= b
+    a /= b
+    a &= b
+ENDPROC

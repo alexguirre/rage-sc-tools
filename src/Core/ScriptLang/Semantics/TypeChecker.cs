@@ -183,11 +183,24 @@
         #region Statements
         public override Void Visit(AssignmentStatement node, TypeCheckerContext param)
         {
-            // TODO: type-check compound assignments
             node.LHS.Accept(this, param);
             node.RHS.Accept(this, param);
 
-            node.LHS.Type!.Assign(node.RHS.Type!, node.Source, Diagnostics);
+            if (!node.LHS.IsLValue)
+            {
+                Diagnostics.AddError("The left-hand side of an assignment must be an lvalue", node.Source);
+            }
+            else
+            {
+                var assignedType = node.CompoundOperator switch
+                {
+                    null => node.RHS.Type!,
+                    var op => node.LHS.Type!.BinaryOperation(op.Value, node.RHS.Type!, node.Source, Diagnostics),
+                };
+
+                node.LHS.Type!.Assign(assignedType, node.Source, Diagnostics);
+            }
+
             return DefaultReturn;
         }
 
