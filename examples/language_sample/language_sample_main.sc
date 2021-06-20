@@ -330,7 +330,7 @@ PROC INCREMENT_ALL(INT arr[])
     ENDREPEAT
 ENDPROC
 
-PROC INCREMENT_ALL_ONLY_SIZE_10(INT (&arr)[SIZE_10])
+PROC INCREMENT_ALL_ONLY_SIZE_10(INT arr[SIZE_10]) // arrays are passed by reference
     INT i
     REPEAT arr.length i
         arr[i] += 1
@@ -365,3 +365,28 @@ PROC TEST_HANDLES()
     ent = obj
     // ent = player
 ENDPROC
+
+PROC TEST_REFS()
+    FLOAT f1 = 1.0, f2 = 2.0
+    INT i = 1
+
+    FLOAT& ref1 = f1
+    FLOAT& ref2 = f2
+    // FLOAT& ref3 = i
+    FLOAT& ref4 = ref1
+
+    ref4 = ref2 + ref1
+
+    INT& iref = i
+
+    SWITCH iref
+        CASE 1
+            BREAK
+    ENDSWITCH
+ENDPROC
+
+// STRUCT STRUCT_WITH_REF
+//     INT& intRef
+// ENDSTRUCT
+
+// INT& arrOfRefs[10]

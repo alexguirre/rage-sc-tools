@@ -23,9 +23,9 @@
                Declaration.ReturnType.Equivalent(otherFunc.Declaration.ReturnType) &&
                Declaration.Parameters.Zip(otherFunc.Declaration.Parameters).All(p => p.First.Type.Equivalent(p.Second.Type));
 
-        public override bool CanAssign(IType rhs) => rhs is ErrorType || Equivalent(rhs);
+        public override bool CanAssign(IType rhs) => rhs.ByValue is ErrorType || Equivalent(rhs.ByValue);
 
-        public override IType Invocation((IType Type, SourceRange Source)[] args, SourceRange source, DiagnosticsReport diagnostics)
+        public override IType Invocation((IType Type, bool IsLValue, SourceRange Source)[] args, SourceRange source, DiagnosticsReport diagnostics)
         {
             var parameters = Declaration.Parameters;
             if (args.Length != parameters.Count)
@@ -38,7 +38,7 @@
             {
                 var param = parameters[i];
                 var arg = args[i];
-                if (!param.Type.CanAssign(arg.Type))
+                if (!param.Type.CanAssignInit(arg.Type, arg.IsLValue))
                 {
                     diagnostics.AddError($"Argument {i + 1}: cannot pass '{arg.Type}' as parameter '{TypePrinter.ToString(param.Type, param.Name)}'", arg.Source);
                 }

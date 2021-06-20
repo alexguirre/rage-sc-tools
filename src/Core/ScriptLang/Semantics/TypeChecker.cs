@@ -103,6 +103,11 @@
                 Diagnostics.AddError($"Struct field '{node.Name}' causes a cycle in the layout of '{param.Struct.Name}'", node.Source);
             }
 
+            if (node.Type is RefType)
+            {
+                Diagnostics.AddError($"Struct field '{node.Name}' of reference type is not allowed", node.Source);
+            }
+
             if (node.Initializer is not null)
             {
                 node.Initializer.Accept(this, param);
@@ -149,7 +154,7 @@
             {
                 node.Initializer.Accept(this, param);
 
-                node.Type.Assign(node.Initializer.Type!, node.Initializer.Source, Diagnostics);
+                node.Type.AssignInit(node.Initializer.Type!, node.Initializer.IsLValue, node.Initializer.Source, Diagnostics);
             }
 
             return DefaultReturn;

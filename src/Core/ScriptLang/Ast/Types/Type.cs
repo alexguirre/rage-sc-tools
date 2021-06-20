@@ -10,6 +10,12 @@
         int SizeOf { get; }
 
         /// <summary>
+        /// Gets the <see cref="IType"/> this type should be treated as when used as a value.
+        /// This is the same as this type except for <see cref="RefType"/>s where it returns its <see cref="RefType.PointeeType"/>.
+        /// </summary>
+        IType ByValue { get; }
+
+        /// <summary>
         /// Gets whether this and <paramref name="other"/> represent the same type.
         /// </summary>
         bool Equivalent(IType other);
@@ -18,6 +24,11 @@
         /// Gets whether the type <paramref name="rhs"/> can be assigned to this type.
         /// </summary>
         bool CanAssign(IType rhs);
+
+        /// <summary>
+        /// Gets whether the type <paramref name="rhs"/> can be assigned to this type in an initializer or when passed as parameter.
+        /// </summary>
+        bool CanAssignInit(IType rhs, bool isLValue);
 
         // Semantic Checks
 
@@ -44,17 +55,23 @@
         /// <summary>
         /// Checks if this type supports invocation with the specified <paramref name="args"/> and returns the returned type.
         /// </summary>
-        IType Invocation((IType Type, SourceRange Source)[] args, SourceRange source, DiagnosticsReport diagnostics);
+        IType Invocation((IType Type, bool IsLValue, SourceRange Source)[] args, SourceRange source, DiagnosticsReport diagnostics);
 
         /// <summary>
         /// Checks if the type <paramref name="rhs"/> can be assigned to this type.
         /// </summary>
         void Assign(IType rhs, SourceRange source, DiagnosticsReport diagnostics);
+
+        /// <summary>
+        /// Checks if the type <paramref name="rhs"/> can be assigned to this type in an initializer or when passed as parameter.
+        /// </summary>
+        void AssignInit(IType rhs, bool isLValue, SourceRange source, DiagnosticsReport diagnostics);
     }
 
     public abstract class BaseType: BaseNode, IType
     {
         public abstract int SizeOf { get; }
+        public virtual IType ByValue => this;
 
         public BaseType(SourceRange source) : base(source) {}
 
@@ -63,6 +80,7 @@
         public abstract bool Equivalent(IType other);
 
         public virtual bool CanAssign(IType rhs) => false;
+        public virtual bool CanAssignInit(IType rhs, bool isLValue) => CanAssign(rhs);
 
         public virtual IType BinaryOperation(BinaryOperator op, IType rhs, SourceRange source, DiagnosticsReport diagnostics)
             => new ErrorType(source, diagnostics, $"Binary operator '{op.ToToken()}' is not supported with operands of type '{this}' and '{rhs}'");
@@ -76,12 +94,22 @@
         public virtual IType Indexing(IType index, SourceRange source, DiagnosticsReport diagnostics)
             => new ErrorType(source, diagnostics, $"Indexing is not supported by type '{this}'");
 
-        public virtual IType Invocation((IType Type, SourceRange Source)[] args, SourceRange source, DiagnosticsReport diagnostics)
+        public virtual IType Invocation((IType Type, bool IsLValue, SourceRange Source)[] args, SourceRange source, DiagnosticsReport diagnostics)
             => new ErrorType(source, diagnostics, $"Invocation is not supported by type '{this}'");
 
         public virtual void Assign(IType rhs, SourceRange source, DiagnosticsReport diagnostics)
         {
             if (CanAssign(rhs))
+            {
+                return;
+            }
+
+            diagnostics.AddError($"Cannot assign type '{rhs}' to '{this}'", source);
+        }
+
+        public virtual void AssignInit(IType rhs, bool isLValue, SourceRange source, DiagnosticsReport diagnostics)
+        {
+            if (CanAssignInit(rhs, isLValue))
             {
                 return;
             }

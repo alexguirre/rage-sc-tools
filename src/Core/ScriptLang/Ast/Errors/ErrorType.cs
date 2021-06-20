@@ -8,6 +8,7 @@
     public sealed class ErrorType : BaseError, IType
     {
         public int SizeOf => throw new NotSupportedException($"Cannot get size of {nameof(ErrorType)}");
+        public IType ByValue => this;
 
         public ErrorType(SourceRange source, Diagnostic diagnostic) : base(source, diagnostic) { }
         public ErrorType(SourceRange source, DiagnosticsReport diagnostics, string message) : base(source, diagnostics, message) { }
@@ -17,13 +18,15 @@
 
         public bool Equivalent(IType other) => other is ErrorType;
         public bool CanAssign(IType rhs) => false;
+        public bool CanAssignInit(IType rhs, bool isLValue) => false;
 
         // do nothing and return itself in the semantic checks to prevent reduntant errors
         public IType BinaryOperation(BinaryOperator op, IType rhs, SourceRange source, DiagnosticsReport diagnostics) => this;
         public IType UnaryOperation(UnaryOperator op, SourceRange source, DiagnosticsReport diagnostics) => this;
         public (IType Type, bool LValue) FieldAccess(string fieldName, SourceRange source, DiagnosticsReport diagnostics) => (this, false);
         public IType Indexing(IType index, SourceRange source, DiagnosticsReport diagnostics) => this;
-        public IType Invocation((IType Type, SourceRange Source)[] args, SourceRange source, DiagnosticsReport diagnostics) => this;
+        public IType Invocation((IType Type, bool IsLValue, SourceRange Source)[] args, SourceRange source, DiagnosticsReport diagnostics) => this;
         public void Assign(IType rhs, SourceRange source, DiagnosticsReport diagnostics) { }
+        public void AssignInit(IType rhs, bool isLValue, SourceRange source, DiagnosticsReport diagnostics) { }
     }
 }

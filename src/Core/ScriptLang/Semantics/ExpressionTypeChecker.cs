@@ -83,7 +83,7 @@
 
             node.IsLValue = false;
             node.IsConstant = false;
-            node.Type = node.Callee.Type!.Invocation(node.Arguments.Select(arg => (arg.Type!, arg.Source)).ToArray(), node.Source, Diagnostics);
+            node.Type = node.Callee.Type!.Invocation(node.Arguments.Select(arg => (arg.Type!, arg.IsLValue, arg.Source)).ToArray(), node.Source, Diagnostics);
             return default;
         }
 
@@ -146,7 +146,7 @@
             {
                 var src = i switch { 0 => node.X, 1 => node.Y, 2 => node.Z, _ => throw new System.NotImplementedException() };
                 var dest = vectorTy.Declaration.Fields[i];
-                if (!dest.Type.CanAssign(src.Type!))
+                if (!dest.Type.CanAssignInit(src.Type!, src.IsLValue))
                 {
                     Diagnostics.AddError($"Vector component {dest.Name.ToUpperInvariant()} requires type '{dest.Type}', found '{src.Type}'", src.Source);
                 }

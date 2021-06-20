@@ -21,6 +21,7 @@
 
         public override bool CanAssign(IType rhs)
         {
+            rhs = rhs.ByValue;
             if (rhs is ErrorType || Equivalent(rhs))
             {
                 return true;

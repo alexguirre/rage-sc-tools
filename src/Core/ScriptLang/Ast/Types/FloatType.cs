@@ -14,10 +14,11 @@
 
         public override bool Equivalent(IType other) => other is FloatType;
 
-        public override bool CanAssign(IType rhs) => rhs is FloatType or NullType or ErrorType;
+        public override bool CanAssign(IType rhs) => rhs.ByValue is FloatType or NullType or ErrorType;
 
         public override IType BinaryOperation(BinaryOperator op, IType rhs, SourceRange source, DiagnosticsReport diagnostics)
         {
+            rhs = rhs.ByValue;
             if (rhs is ErrorType)
             {
                 return rhs;

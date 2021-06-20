@@ -1,10 +1,13 @@
-﻿namespace ScTools.ScriptLang.Ast.Types
+﻿using ScTools.ScriptLang.Ast.Expressions;
+
+namespace ScTools.ScriptLang.Ast.Types
 {
     public sealed class RefType : BaseType
     {
         public IType PointeeType { get; set; }
 
         public override int SizeOf => 1;
+        public override IType ByValue => PointeeType;
 
         public RefType(SourceRange source, IType pointeeType) : base(source)
             => PointeeType = pointeeType;
@@ -13,5 +16,42 @@
             => visitor.Visit(this, param);
 
         public override bool Equivalent(IType other) => other is RefType otherRef && PointeeType.Equivalent(otherRef.PointeeType);
+
+        public override bool CanAssign(IType rhs) => PointeeType.CanAssign(rhs);
+        public override bool CanAssignInit(IType rhs, bool isLValue) => Equivalent(rhs) || (isLValue && PointeeType.Equivalent(rhs));
+
+        public override void Assign(IType rhs, SourceRange source, DiagnosticsReport diagnostics) => PointeeType.Assign(rhs, source, diagnostics);
+
+        public override void AssignInit(IType rhs, bool isLValue, SourceRange source, DiagnosticsReport diagnostics)
+        {
+            if (Equivalent(rhs))
+            {
+                return;
+            }
+
+            if (!isLValue)
+            {
+                diagnostics.AddError($"Cannot bind reference of type '{this}' to non-lvalue", source);
+            }
+            else if (!PointeeType.Equivalent(rhs.ByValue))
+            {
+                diagnostics.AddError($"Cannot bind reference of type '{this}' to type '{rhs}'", source);
+            }
+        }
+
+        public override IType BinaryOperation(BinaryOperator op, IType rhs, SourceRange source, DiagnosticsReport diagnostics)
+            => PointeeType.BinaryOperation(op, rhs, source, diagnostics);
+
+        public override IType UnaryOperation(UnaryOperator op, SourceRange source, DiagnosticsReport diagnostics)
+            => PointeeType.UnaryOperation(op, source, diagnostics);
+
+        public override (IType Type, bool LValue) FieldAccess(string fieldName, SourceRange source, DiagnosticsReport diagnostics)
+            => PointeeType.FieldAccess(fieldName, source, diagnostics);
+
+        public override IType Indexing(IType index, SourceRange source, DiagnosticsReport diagnostics)
+            => PointeeType.Indexing(index, source, diagnostics);
+
+        public override IType Invocation((IType Type, bool IsLValue, SourceRange Source)[] args, SourceRange source, DiagnosticsReport diagnostics)
+            => PointeeType.Invocation(args, source, diagnostics);
     }
 }
