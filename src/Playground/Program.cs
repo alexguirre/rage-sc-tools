@@ -73,9 +73,11 @@
 
         private sealed class FileUsingResolver : IUsingResolver
         {
+            public string NormalizeFilePath(string filePath) => Path.GetFullPath(filePath);
+
             public (Func<TextReader> Open, string FilePath) Resolve(string originPath, string usingPath)
             {
-                var p = Path.Combine(Path.GetDirectoryName(originPath), usingPath);
+                var p = NormalizeFilePath(Path.Combine(Path.GetDirectoryName(originPath), usingPath));
                 return (() => new StreamReader(p), p);
             }
         }

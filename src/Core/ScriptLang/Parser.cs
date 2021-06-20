@@ -18,10 +18,17 @@
 
     public interface IUsingResolver
     {
+        string NormalizeFilePath(string filePath);
+
         /// <summary>
         /// Returns the source code of <paramref name="usingPath"/>.
         /// </summary>
         /// <param name="originFilePath">The path of the file that contains the USING with <paramref name="usingPath"/>.</param>
+        /// <param name="usingPath">The path specified in the USING directive.</param>
+        /// <returns>
+        /// Tuple with a <see cref="Func{TResult}"/> that returns a <see cref="TextReader"/> with the source code of the
+        /// resolved file and the normalized path of the file.
+        /// </returns>
         (Func<TextReader> Open, string FilePath) Resolve(string originFilePath, string usingPath);
     }
 
@@ -33,7 +40,7 @@
         public TextReader Input { get; }
         public IUsingResolver? UsingResolver { get; set; }
         public Program OutputAst { get; private set; }
-        private readonly HashSet<string> usings = new(); // TODO: handle including the initial file from another file
+        private readonly HashSet<string> usings = new();
         private bool scriptNameFound = false, scriptHashFound = false, argVarFound = false;
 
         /// <summary>
@@ -64,6 +71,11 @@
 
         public void Parse(DiagnosticsReport diagnostics)
         {
+            if (UsingResolver is not null)
+            {
+                // add the initial file to the set of files included with USING, in case some other file includes it recursively
+                usings.Add(UsingResolver.NormalizeFilePath(FilePath));
+            }
             ParseFile(Input, FilePath, diagnostics);
         }
 
