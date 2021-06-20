@@ -2,8 +2,10 @@
 namespace ScTools.ScriptLang
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Reflection;
 
     public static class NativeCommandsGen
     {
@@ -31,11 +33,11 @@ namespace ScTools.ScriptLang
             }
         }
 
+        /// <summary>
+        /// If the <paramref name="name"/> is disallowed (i.e. is a keyword), add a suffix so it no longer collides.
+        /// </summary>
         private static string SafeSymbol(string name)
-        {
-            // TODO: check for other keywords, REPEAT is the only one found currently in the nativeDB
-            return string.Equals(name, "REPEAT", StringComparison.OrdinalIgnoreCase) ? (name + "_") : name;
-        }
+            => Keywords.Contains(name) ? (name + "_") : name;
 
         private static string? TypeToScriptType(string type, bool returnType)
             => type switch
@@ -81,5 +83,11 @@ namespace ScTools.ScriptLang
                 _ => throw new InvalidOperationException($"Cannot convert type '{type}'"),
             };
 
+        private static readonly HashSet<string> Keywords = 
+            typeof(Grammar.ScLangLexer)
+                .GetFields(BindingFlags.Public | BindingFlags.Static)
+                .Where(f => f.IsLiteral && !f.IsInitOnly && f.Name.StartsWith("K_")) // get all constants that start with 'K_' (prefix used for keywords in the grammar)
+                .Select(f => f.Name[2..]) // remove prefix 'K_'
+                .ToHashSet(Parser.CaseInsensitiveComparer);
     }
 }
