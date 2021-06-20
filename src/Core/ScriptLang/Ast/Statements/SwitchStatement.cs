@@ -25,7 +25,7 @@
 
     public sealed class ValueSwitchCase : SwitchCase
     {
-        public IExpression Value { get; }
+        public IExpression Value { get; set; }
 
         public ValueSwitchCase(SourceRange source, IExpression value) : base(source)
             => Value = value;

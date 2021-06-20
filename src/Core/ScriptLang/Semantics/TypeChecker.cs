@@ -1,5 +1,6 @@
 ﻿namespace ScTools.ScriptLang.Semantics
 {
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
 
@@ -16,15 +17,19 @@
         public bool SecondPass { get; init; }
         public StructDeclaration? Struct { get; init; }
         public FuncDeclaration? Function { get; init; }
+        public HashSet<int?> SwitchHandledCases { get; init; }
 
         public TypeCheckerContext BeginSecondPass()
-            => new() { SecondPass = true, Struct = Struct, Function = Function };
+            => new() { SecondPass = true, Struct = Struct, Function = Function, SwitchHandledCases = SwitchHandledCases };
 
         public TypeCheckerContext Enter(StructDeclaration structDecl)
-            => new() { SecondPass = SecondPass, Struct = structDecl, Function = Function };
+            => new() { SecondPass = SecondPass, Struct = structDecl, Function = Function, SwitchHandledCases = SwitchHandledCases };
 
         public TypeCheckerContext Enter(FuncDeclaration funcDecl)
-            => new() { SecondPass = SecondPass, Struct = Struct, Function = funcDecl };
+            => new() { SecondPass = SecondPass, Struct = Struct, Function = funcDecl, SwitchHandledCases = SwitchHandledCases };
+
+        public TypeCheckerContext Enter(SwitchStatement switchStmt)
+            => new() { SecondPass = SecondPass, Struct = Struct, Function = Function, SwitchHandledCases = new(switchStmt.Cases.Count) };
     }
 
     public sealed class TypeChecker : DFSVisitor<Void, TypeCheckerContext>
@@ -279,12 +284,12 @@
         {
             node.Expression.Accept(this, param);
 
-            var intTy = Symbols.Int.CreateType(node.Expression.Source);
-            if (!intTy.CanAssign(node.Expression.Type!))
+            if (!Symbols.Int.CreateType(node.Expression.Source).CanAssign(node.Expression.Type!))
             {
-                Diagnostics.AddError($"SWITCH expression requires type '{intTy}', found '{node.Expression.Type}'", node.Expression.Source);
+                Diagnostics.AddError($"SWITCH expression requires type '{Symbols.Int.Name}', found '{node.Expression.Type}'", node.Expression.Source);
             }
 
+            param = param.Enter(node);
             node.Cases.ForEach(c => c.Accept(this, param));
             return DefaultReturn;
         }
@@ -293,10 +298,32 @@
         {
             node.Value.Accept(this, param);
 
-            var intTy = Symbols.Int.CreateType(node.Value.Source);
-            if (!intTy.CanAssign(node.Value.Type!))
+            if (!node.Value.IsConstant)
             {
-                Diagnostics.AddError($"CASE value requires type '{intTy}', found '{node.Value.Type}'", node.Value.Source);
+                node.Value = new ErrorExpression(node.Value.Source, Diagnostics, $"CASE value must be a constant expression");
+            }
+            else if (!Symbols.Int.CreateType(node.Value.Source).CanAssign(node.Value.Type!))
+            {
+                Diagnostics.AddError($"CASE value requires type '{Symbols.Int.Name}', found '{node.Value.Type}'", node.Value.Source);
+            }
+            else
+            {
+                var caseValue = ExpressionEvaluator.EvalInt(node.Value, Symbols);
+                if (!param.SwitchHandledCases.Add(caseValue))
+                {
+                    Diagnostics.AddError($"CASE value '{caseValue}' is already handled", node.Value.Source);
+                }
+            }
+
+            node.Body.ForEach(stmt => stmt.Accept(this, param));
+            return DefaultReturn;
+        }
+
+        public override Void Visit(DefaultSwitchCase node, TypeCheckerContext param)
+        {
+            if (!param.SwitchHandledCases.Add(null))
+            {
+                Diagnostics.AddError($"More than one DEFAULT case", node.Source);
             }
 
             node.Body.ForEach(stmt => stmt.Accept(this, param));

@@ -481,3 +481,25 @@ PROC TEST_ASSIGNMENT()
     a /= b
     a &= b
 ENDPROC
+
+PROC TEST_SWITCH()
+    INT n = 10
+    SWITCH n
+        CASE 1
+            BREAK
+        CASE 1 + 1
+            BREAK
+        CASE 1 * 3
+            BREAK
+        // CASE 2 + n
+        //     BREAK
+        // CASE "hello"
+        //     BREAK
+        // CASE 2
+        //     BREAK
+        DEFAULT
+            BREAK
+        // DEFAULT
+        //     BREAK
+    ENDSWITCH
+ENDPROC
