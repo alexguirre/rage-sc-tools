@@ -2,6 +2,8 @@
 GLOBAL 20 language_sample_main
     INT g_nTimesMainScriptExecuted = 0
     INT g_nNumberOfChildScriptsRunning = 0
+    // MY_PROCEDURE_T g_fnProc = DEFAULT_MY_PROCEDURE
+    // INT& g_ref
 ENDGLOBAL
 
 ENUM eMyValue

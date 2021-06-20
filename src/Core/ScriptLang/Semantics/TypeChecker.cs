@@ -98,7 +98,7 @@
 
             node.Type.Accept(this, param);
 
-            if (ContainsStruct(node.Type, param.Struct))
+            if (TypeHelper.IsOrContainsStruct(node.Type, param.Struct))
             {
                 Diagnostics.AddError($"Struct field '{node.Name}' causes a cycle in the layout of '{param.Struct.Name}'", node.Source);
             }
@@ -123,22 +123,6 @@
             }
 
             return DefaultReturn;
-
-            static bool ContainsStruct(IType fieldType, StructDeclaration struc)
-            {
-                if (fieldType is StructType fieldStrucTy)
-                {
-                    return fieldStrucTy.Declaration == struc || fieldStrucTy.Declaration.Fields.Any(f => ContainsStruct(f.Type, struc));
-                }
-                else if (fieldType is ArrayType fieldArrayTy)
-                {
-                    return ContainsStruct(fieldArrayTy.ItemType, struc);
-                }
-                else
-                {
-                    return false;
-                }
-            }
         }
 
         public override Void Visit(VarDeclaration node, TypeCheckerContext param)
@@ -150,6 +134,18 @@
             }
 
             node.Type.Accept(this, param);
+
+            if (node.Kind is VarKind.Static && node.Type is RefType)
+            {
+                Diagnostics.AddError($"Static variable '{node.Name}' of reference type is not allowed", node.Source);
+            }
+            else if (node.Kind is VarKind.Global or VarKind.StaticArg &&
+                     !TypeHelper.IsCrossScriptThreadSafe(node.Type))
+            {
+                var kindStr = node.Kind switch { VarKind.Global => "global", VarKind.StaticArg => "ARG", _ => throw new System.NotImplementedException() };
+                Diagnostics.AddError($"Type '{node.Type}' of {kindStr} variable '{node.Name}' cannot be shared between script threads safely", node.Source);
+            }
+
             if (node.Initializer is not null)
             {
                 node.Initializer.Accept(this, param);

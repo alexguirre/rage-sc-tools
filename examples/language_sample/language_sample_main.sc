@@ -78,6 +78,9 @@ CONST STRING TEST_STRING_2 = NULL
 //     INT a, a
 // ENDSTRUCT
 
+// INT nStaticValue = 5
+// INT& staticRef = nStaticValue
+
 STRUCT MY_STRUCT
     INT a
     FLOAT b
