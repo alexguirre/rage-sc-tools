@@ -75,7 +75,7 @@
 
     public interface IArrayType : IType
     {
-        public IType ItemType { get; set; }
+        IType ItemType { get; set; }
     }
 
     public abstract class BaseType: BaseNode, IType
@@ -125,6 +125,37 @@
             }
 
             diagnostics.AddError($"Cannot assign type '{rhs}' to '{this}'", source);
+        }
+    }
+
+    public abstract class BaseArrayType : BaseType, IArrayType
+    {
+        public IType ItemType { get; set; }
+
+        public BaseArrayType(SourceRange source, IType itemType) : base(source)
+            => ItemType = itemType;
+
+        public override (IType Type, bool LValue) FieldAccess(string fieldName, SourceRange source, DiagnosticsReport diagnostics)
+        {
+            if (Parser.CaseInsensitiveComparer.Equals(fieldName, "length"))
+            {
+                return (new IntType(source), false);
+            }
+            else
+            {
+                return (new ErrorType(source, diagnostics, $"Unknown field '{fieldName}'"), false);
+            }
+        }
+
+        public override IType Indexing(IType index, SourceRange source, DiagnosticsReport diagnostics)
+        {
+            var expectedIndexTy = new IntType(source);
+            if (!expectedIndexTy.CanAssign(index))
+            {
+                return new ErrorType(source, diagnostics, $"Expected type '{expectedIndexTy}' as array index, found '{index}'");
+            }
+
+            return ItemType;
         }
     }
 }
