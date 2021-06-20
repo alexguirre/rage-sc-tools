@@ -388,6 +388,12 @@ PROC TEST_REFS()
     ENDSWITCH
 ENDPROC
 
+// STRUCT STRUCT_WITH_REF
+//     INT& intRef
+// ENDSTRUCT
+
+// INT& arrOfRefs[10]
+
 PROC TEST_ARRAY_PARAMS()
     INT a[10]
     INT b[5][10]
@@ -431,8 +437,17 @@ ENDPROC
 // PROC TEST_INVALID_ARRAY_PARAMS_3(INT arrParam[10][][5])
 // ENDPROC
 
-// STRUCT STRUCT_WITH_REF
-//     INT& intRef
-// ENDSTRUCT
+PROC TEST_ANY()
+    ANY any1 = 1
+    ANY any2 = 2.0
+    ANY any3 = TRUE
+    ANY any4 = TEST_ANY
+    // ANY any5 = <<1.0, 2.0, 3.0>>
+    // ANY& any6 = <<1.0, 2.0, 3.0>>
 
-// INT& arrOfRefs[10]
+    VECTOR v = <<1.0, 2.0, 3.0>>
+    ANY& any7 = v
+
+    // any7 = v
+    any7 = 1234
+ENDPROC

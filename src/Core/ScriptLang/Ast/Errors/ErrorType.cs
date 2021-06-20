@@ -7,7 +7,7 @@
 
     public sealed class ErrorType : BaseError, IType
     {
-        public int SizeOf => throw new NotSupportedException($"Cannot get size of {nameof(ErrorType)}");
+        public int SizeOf => 0;
         public IType ByValue => this;
 
         public ErrorType(SourceRange source, Diagnostic diagnostic) : base(source, diagnostic) { }
