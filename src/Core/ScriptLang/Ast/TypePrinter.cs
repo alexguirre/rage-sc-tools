@@ -3,6 +3,7 @@
     using System;
     using System.Linq;
 
+    using ScTools.ScriptLang.Ast.Declarations;
     using ScTools.ScriptLang.Ast.Expressions;
     using ScTools.ScriptLang.Ast.Types;
 
@@ -62,6 +63,12 @@
 
         private static string Func(FuncType funcTy, string? name)
         {
+            var prefixStr = funcTy.Declaration.Kind switch
+            {
+                FuncKind.Native => "NATIVE ",
+                FuncKind.Intrinsic => "INTRINSIC ",
+                _ => "",
+            };
             var argsStr = $"({string.Join(", ", funcTy.Declaration.Parameters.Select(p => ToString(p.Type, p.Name)))})";
             var returnStr = funcTy.Declaration.IsProc ?
                                 "PROC" :
@@ -70,7 +77,7 @@
                                 "" :
                                 $" {name}";
 
-            return returnStr + nameStr + argsStr;
+            return prefixStr + returnStr + nameStr + argsStr;
         }
 
         private static string Ref(RefType refTy, string? name)

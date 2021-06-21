@@ -25,8 +25,8 @@
             => CreateFunc(name, returnType.CreateType(SourceRange.Unknown), parameters);
 
         private static FuncDeclaration CreateFunc(string name, IType returnType, params (ITypeDeclaration Type, string Name)[] parameters)
-            => new(SourceRange.Unknown, name, FuncKind.Intrinsic,
-                new(SourceRange.Unknown, name + "@proto", returnType)
+            => new(SourceRange.Unknown, name,
+                new(SourceRange.Unknown, name + "@proto", FuncKind.Intrinsic, returnType)
                 {
                     Parameters = parameters.Select(p => new VarDeclaration(SourceRange.Unknown, p.Name, p.Type.CreateType(SourceRange.Unknown), VarKind.Parameter)).ToList()
                 });

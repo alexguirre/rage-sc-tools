@@ -166,37 +166,37 @@
             switch (context)
             {
                 case ScLangParser.ProcedureDeclarationContext c:
-                    yield return new FuncDeclaration(Source(c), c.name.GetText(), FuncKind.UserDefined,
-                                                     BuildFuncProtoDecl(Source(c), c.name.GetText() + "@proto", null, c.parameterList()))
+                    yield return new FuncDeclaration(Source(c), c.name.GetText(),
+                                                     BuildFuncProtoDecl(Source(c), c.name.GetText() + "@proto", FuncKind.UserDefined, null, c.parameterList()))
                     {
                         Body = BuildStatementBlock(c.statementBlock())
                     };
                     break;
 
                 case ScLangParser.FunctionDeclarationContext c:
-                    yield return new FuncDeclaration(Source(c), c.name.GetText(), FuncKind.UserDefined,
-                                                     BuildFuncProtoDecl(Source(c), c.name.GetText() + "@proto", c.returnType, c.parameterList()))
+                    yield return new FuncDeclaration(Source(c), c.name.GetText(),
+                                                     BuildFuncProtoDecl(Source(c), c.name.GetText() + "@proto", FuncKind.UserDefined, c.returnType, c.parameterList()))
                     {
                         Body = BuildStatementBlock(c.statementBlock())
                     };
                     break;
 
                 case ScLangParser.ProcedureNativeDeclarationContext c:
-                    yield return new FuncDeclaration(Source(c), c.name.GetText(), FuncKind.Native,
-                                                     BuildFuncProtoDecl(Source(c), c.name.GetText() + "@proto", null, c.parameterList()));
+                    yield return new FuncDeclaration(Source(c), c.name.GetText(),
+                                                     BuildFuncProtoDecl(Source(c), c.name.GetText() + "@proto", FuncKind.Native, null, c.parameterList()));
                     break;
 
                 case ScLangParser.FunctionNativeDeclarationContext c:
-                    yield return new FuncDeclaration(Source(c), c.name.GetText(), FuncKind.Native,
-                                                     BuildFuncProtoDecl(Source(c), c.name.GetText() + "@proto", c.returnType, c.parameterList()));
+                    yield return new FuncDeclaration(Source(c), c.name.GetText(),
+                                                     BuildFuncProtoDecl(Source(c), c.name.GetText() + "@proto", FuncKind.Native, c.returnType, c.parameterList()));
                     break;
 
                 case ScLangParser.ProcedurePrototypeDeclarationContext c:
-                    yield return BuildFuncProtoDecl(Source(c), c.name.GetText(), null, c.parameterList());
+                    yield return BuildFuncProtoDecl(Source(c), c.name.GetText(), FuncKind.UserDefined, null, c.parameterList());
                     break;
 
                 case ScLangParser.FunctionPrototypeDeclarationContext c:
-                    yield return BuildFuncProtoDecl(Source(c), c.name.GetText(), c.returnType, c.parameterList());
+                    yield return BuildFuncProtoDecl(Source(c), c.name.GetText(), FuncKind.UserDefined, c.returnType, c.parameterList());
                     break;
 
                 case ScLangParser.GlobalBlockDeclarationContext c:
@@ -447,9 +447,9 @@
         private List<IStatement> BuildStatementBlock(ScLangParser.StatementBlockContext context)
             => new(context.labeledStatement().SelectMany(BuildAst));
 
-        private FuncProtoDeclaration BuildFuncProtoDecl(SourceRange source, string name, ScLangParser.IdentifierContext? returnType, ScLangParser.ParameterListContext paramsContext)
+        private FuncProtoDeclaration BuildFuncProtoDecl(SourceRange source, string name, FuncKind kind, ScLangParser.IdentifierContext? returnType, ScLangParser.ParameterListContext paramsContext)
         {
-            return new FuncProtoDeclaration(source, name, returnType is null ? new VoidType(source) : BuildType(returnType))
+            return new FuncProtoDeclaration(source, name, kind, returnType is null ? new VoidType(source) : BuildType(returnType))
             {
                 Parameters = paramsContext.singleVarDeclarationNoInit()
                                 .Select(pDecl => BuildSingleVarDecl(VarKind.Parameter, pDecl))

@@ -19,6 +19,7 @@
 
         public override bool Equivalent(IType other)
             => other is FuncType otherFunc &&
+               Declaration.Kind == otherFunc.Declaration.Kind &&
                Declaration.Parameters.Count == otherFunc.Declaration.Parameters.Count &&
                Declaration.ReturnType.Equivalent(otherFunc.Declaration.ReturnType) &&
                Declaration.Parameters.Zip(otherFunc.Declaration.Parameters).All(p => p.First.Type.Equivalent(p.Second.Type));
