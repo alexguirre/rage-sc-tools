@@ -39,6 +39,7 @@ directive
     | D_GLOBAL_BLOCK integer                        #globalBlockDirective
     | D_CONST identifier (integer | float)          #constDirective
     | D_INT directiveOperandList                    #intDirective
+    | D_INT64 directiveOperandList                  #int64Directive
     | D_FLOAT directiveOperandList                  #floatDirective
     | D_STR string                                  #strDirective
     | D_NATIVE integer                              #nativeDirective
@@ -89,6 +90,7 @@ D_STRING : '.' S T R I N G;
 D_CODE : '.' C O D E;
 D_INCLUDE : '.' I N C L U D E;
 D_INT : '.' I N T;
+D_INT64 : '.' I N T '6' '4';
 D_FLOAT : '.' F L O A T;
 D_STR : '.' S T R;
 D_NATIVE : '.' N A T I V E;

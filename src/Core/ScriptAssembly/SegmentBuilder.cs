@@ -101,6 +101,14 @@
             Align();
         }
 
+        public void Int64(long value)
+        {
+            Align();
+            CheckPaging(sizeof(long));
+            RawWriter.Write(value);
+            Align();
+        }
+
         public void UInt64(ulong value)
         {
             Align();

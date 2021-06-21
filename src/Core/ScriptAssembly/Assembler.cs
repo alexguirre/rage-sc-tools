@@ -272,7 +272,7 @@ namespace ScTools.ScriptAssembly
                     var constFloat = constDirective.@float();
 
                     var constValue = constInteger != null ?
-                                        new ConstantValue(constInteger.GetText().ParseAsInt()) :
+                                        new ConstantValue(constInteger.GetText().ParseAsInt64()) :
                                         new ConstantValue(constFloat.GetText().ParseAsFloat());
 
                     if (Labels.ContainsKey(constNameStr))
@@ -285,10 +285,13 @@ namespace ScTools.ScriptAssembly
                     }
                     break;
                 case ScAsmParser.IntDirectiveContext intDirective:
-                    WriteIntFloatDirectiveOperands(intDirective.directiveOperandList(), isFloat: false);
+                    WriteIntFloatDirectiveOperands(intDirective.directiveOperandList(), isFloat: false, isInt64: false);
+                    break;
+                case ScAsmParser.Int64DirectiveContext int64Directive:
+                    WriteIntFloatDirectiveOperands(int64Directive.directiveOperandList(), isFloat: false, isInt64: true);
                     break;
                 case ScAsmParser.FloatDirectiveContext floatDirective:
-                    WriteIntFloatDirectiveOperands(floatDirective.directiveOperandList(), isFloat: true);
+                    WriteIntFloatDirectiveOperands(floatDirective.directiveOperandList(), isFloat: true, isInt64: false);
                     break;
                 case ScAsmParser.StrDirectiveContext strDirective:
                     CurrentSegmentBuilder.String(strDirective.@string().GetText()[1..^1].Unescape());
@@ -817,7 +820,7 @@ namespace ScTools.ScriptAssembly
             }
         }
 
-        private void WriteIntFloatDirectiveOperands(ScAsmParser.DirectiveOperandListContext operandList, bool isFloat)
+        private void WriteIntFloatDirectiveOperands(ScAsmParser.DirectiveOperandListContext operandList, bool isFloat, bool isInt64)
         {
             foreach (var operand in operandList.directiveOperand())
             {
@@ -832,19 +835,33 @@ namespace ScTools.ScriptAssembly
                             }
                             else
                             {
-                                CurrentSegmentBuilder.Int((int)constValue.Integer); // TODO: check for data loss
+                                if (isInt64)
+                                {
+                                    CurrentSegmentBuilder.Int64(constValue.Integer);
+                                }
+                                else
+                                {
+                                    CurrentSegmentBuilder.Int((int)constValue.Integer); // TODO: check for data loss
+                                }
                             }
                         }
                         break;
                     case ScAsmParser.IntegerDirectiveOperandContext integerOperand:
-                        var intValue = integerOperand.integer().GetText().ParseAsInt();
+                        var intValue = integerOperand.integer().GetText().ParseAsInt64();
                         if (isFloat)
                         {
                             CurrentSegmentBuilder.Float(intValue);
                         }
                         else
                         {
-                            CurrentSegmentBuilder.Int(intValue);
+                            if (isInt64)
+                            {
+                                CurrentSegmentBuilder.Int64(intValue);
+                            }
+                            else
+                            {
+                                CurrentSegmentBuilder.Int((int)intValue); // TODO: check for data loss
+                            }
                         }
                         break;
                     case ScAsmParser.FloatDirectiveOperandContext floatOperand:
@@ -855,23 +872,30 @@ namespace ScTools.ScriptAssembly
                         }
                         else
                         {
-                            CurrentSegmentBuilder.Int((int)Math.Truncate(floatValue));
+                            if (isInt64)
+                            {
+                                CurrentSegmentBuilder.Int64((long)Math.Truncate(floatValue));
+                            }
+                            else
+                            {
+                                CurrentSegmentBuilder.Int((int)Math.Truncate(floatValue));
+                            }
                         }
                         break;
                     case ScAsmParser.DupDirectiveOperandContext dupOperand:
-                        int count = 0;
+                        long count = 0;
                         if (dupOperand.identifier() != null && TryGetConstant(dupOperand.identifier(), out var countConst))
                         {
-                            count = (int)countConst.Integer; // TODO: check for data loss
+                            count = countConst.Integer;
                         }
                         else if (dupOperand.integer() != null)
                         {
-                            count = dupOperand.integer().GetText().ParseAsInt();
+                            count = dupOperand.integer().GetText().ParseAsInt64();
                         }
 
-                        for (int i = 0; i < count; i++)
+                        for (long i = 0; i < count; i++)
                         {
-                            WriteIntFloatDirectiveOperands(dupOperand.directiveOperandList(), isFloat);
+                            WriteIntFloatDirectiveOperands(dupOperand.directiveOperandList(), isFloat, isInt64);
                         }
                         break;
                 }

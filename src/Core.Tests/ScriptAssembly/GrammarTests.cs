@@ -176,6 +176,9 @@ getMyFloat: ENTER 0, 2
             STATIC_U8_LOAD myFloat
             LEAVE 0, 1
 
+            .static
+myInt64:    .int64 0xAABBCCDD11223344
+
             .include    ; segment to define used natives
 WAIT:                   .native 0x4EDE34FBADD967A6
 CREATE_PED:             .native 0xD49F9B0955C367DE
@@ -202,8 +205,9 @@ _0x9614299DCB53E54B:    .native 0x9614299DCB53E54B
             Assert.Equal(41, asm.Labels["emptySpace"].Offset);
             Assert.Equal(57, asm.Labels["myFloat"].Offset);
             Assert.Equal(58, asm.Labels["getMyFloatRef"].Offset);
+            Assert.Equal(59, asm.Labels["myInt64"].Offset);
             // args
-            Assert.Equal(59, asm.Labels["myArg1"].Offset);
+            Assert.Equal(60, asm.Labels["myArg1"].Offset);
             // strings
             Assert.Equal(0, asm.Labels["str1"].Offset);
             Assert.Equal(13, asm.Labels["str2"].Offset);
@@ -233,7 +237,7 @@ _0x9614299DCB53E54B:    .native 0x9614299DCB53E54B
             Assert.Equal(3.0f, sc.GlobalsPages[0][3].AsFloat);
 
             // statics
-            Assert.Equal(60u, sc.StaticsCount); // includes args
+            Assert.Equal(61u, sc.StaticsCount); // includes args
             Assert.Equal(1u, sc.ArgsCount);
             Assert.Equal(5, sc.Statics[0].AsInt32); // myInt
             Assert.Equal(0xF, sc.Statics[1].AsInt32); // myInt2
@@ -271,7 +275,8 @@ _0x9614299DCB53E54B:    .native 0x9614299DCB53E54B
             }
             Assert.Equal(5.0f, sc.Statics[57].AsFloat); // myFloat
             Assert.Equal(0, sc.Statics[58].AsInt32); // getMyFloatRef
-            Assert.Equal(1, sc.Statics[59].AsInt32); // myArg1
+            Assert.Equal(0xAABBCCDD11223344, sc.Statics[59].AsUInt64); // myInt64
+            Assert.Equal(1, sc.Statics[60].AsInt32); // myArg1
 
             // strings
             Assert.Equal(12u + 1 + 14 + 1 + 10 + 1, sc.StringsLength);
