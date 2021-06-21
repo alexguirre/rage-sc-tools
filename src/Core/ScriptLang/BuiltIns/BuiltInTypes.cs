@@ -105,7 +105,7 @@
         private sealed class TextLabelDecl : BaseTypeDeclaration
         {
             public int Length { get; }
-            public TextLabelDecl(int length) : base(SourceRange.Unknown, $"TEXT_LABEL{length}")
+            public TextLabelDecl(int length) : base(SourceRange.Unknown, $"TEXT_LABEL_{length-1}") // real type name found in tty scripts from RDR3 (e.g. 'TEXT_LABEL_63 tlDebugName', 'TEXT_LABEL_31 tlPlaylist' or 'XML_LOADER_GET_TEXT_LABEL_127_RQ')
             {
                 Debug.Assert(TextLabelType.IsValidLength(length));
                 Length = length;
