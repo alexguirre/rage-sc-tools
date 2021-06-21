@@ -91,7 +91,7 @@ eMyValue nValue = MY_VALUE_A
 eState nState = STATE_0
 MY_STRUCT aItems[MY_CONSTANT]
 INT nItemCount = 0, nSomeValue = 5
-MY_PROCEDURE_T fnMyProc = DEFAULT_MY_PROCEDURE
+MY_PROCEDURE_T fnMyProc
 BOOL bMyProcChanged = FALSE
 
 CONST INT MY_CONSTANT = 8
@@ -108,6 +108,8 @@ CONST STRING CHILD_SCRIPT_NAME = "language_sample_child"
 
 PROC MAIN()
     g_nTimesMainScriptExecuted += 1
+
+    fnMyProc = DEFAULT_MY_PROCEDURE
 
     INCREMENT_ALL(arrA)
     INCREMENT_ALL(arrB)
@@ -507,6 +509,9 @@ ENDPROC
 PROTO FUNC BOOL TEST_FUNC1_T(INT a, eInput b)
 PROTO FUNC INT TEST_FUNC2_T(FLOAT a)
 
+TEST_FUNC2_T staticFnFunc1
+// TEST_FUNC2_T staticFnFunc2 = F2I_WRAPPER
+
 PROC TEST_FUNCTION_POINTERS()
     // TEST_FUNC1_T fnFunc1 = IS_CONTROL_JUST_PRESSED
     // TEST_FUNC2_T fnFunc2 = F2I
@@ -514,7 +519,10 @@ PROC TEST_FUNCTION_POINTERS()
     // TEST_FUNC1_T fnFunc4 = F2I_WRAPPER
     // TEST_FUNC1_T fnFunc5 = ASSIGN
 
+    staticFnFunc1 = F2I_WRAPPER
+
     INT n = fnFunc3(1234.56)
+    INT n2 = staticFnFunc1(6789.1234)
 ENDPROC
 
 FUNC INT F2I_WRAPPER(FLOAT v)

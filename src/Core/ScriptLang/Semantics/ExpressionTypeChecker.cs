@@ -127,7 +127,7 @@
         public override Void Visit(ValueDeclRefExpression node, Void param)
         {
             node.IsLValue = node.Declaration is VarDeclaration { Kind: not VarKind.Constant };
-            node.IsConstant = node.Declaration is EnumMemberDeclaration or FuncDeclaration or VarDeclaration { Kind: VarKind.Constant };
+            node.IsConstant = node.Declaration is EnumMemberDeclaration or VarDeclaration { Kind: VarKind.Constant };
             node.Type = node.Declaration!.Type;
             return default;
         }
