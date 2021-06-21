@@ -37,6 +37,7 @@
     {
         public VarKind Kind { get; set; }
         public IExpression? Initializer { get; set; }
+        public int Address { get; set; }
 
         public VarDeclaration(SourceRange source, string name, IType type, VarKind kind) : base(source, name, type)
             => Kind = kind;

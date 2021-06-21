@@ -16,6 +16,7 @@
             get => blockIndex;
             set => blockIndex = value is >= 0 and < MaxBlockCount ? value : throw new ArgumentOutOfRangeException(nameof(value), $"Value is negative or greater than or equal to {MaxBlockCount}");
         }
+        public int Size { get; set; }
         public IList<VarDeclaration> Vars { get; set; } = new List<VarDeclaration>();
 
         public GlobalBlockDeclaration(SourceRange source, string name, int blockIndex) : base(source)

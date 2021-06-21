@@ -12,6 +12,7 @@
     using ScTools;
     using ScTools.GameFiles;
     using ScTools.ScriptLang;
+    using ScTools.ScriptLang.CodeGen;
     using ScTools.ScriptLang.Grammar;
     using ScTools.ScriptLang.Semantics;
 
@@ -67,6 +68,17 @@
             var globalSymbols = GlobalSymbolTableBuilder.Build(p.OutputAst, d);
             IdentificationVisitor.Visit(p.OutputAst, d, globalSymbols);
             TypeChecker.Check(p.OutputAst, d, globalSymbols);
+            //d.PrintAll(Console.Out);
+            ;
+
+            if (!d.HasErrors)
+            {
+                Console.WriteLine("CodeGen...");
+                using var sink = new StringWriter();
+                new CodeGenerator(sink, p.OutputAst, d).Generate();
+                var s = sink.ToString();
+                ;
+            }
             d.PrintAll(Console.Out);
             ;
         }
