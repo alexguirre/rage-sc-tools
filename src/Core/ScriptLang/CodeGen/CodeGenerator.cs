@@ -23,9 +23,10 @@
         public Program Program { get; }
         public GlobalSymbolTable Symbols { get; }
         public DiagnosticsReport Diagnostics { get; }
+        public StringsTable Strings { get; private set; }
 
         public CodeGenerator(TextWriter sink, Program program, GlobalSymbolTable symbols, DiagnosticsReport diagnostics)
-            => (Sink, Program, Symbols, Diagnostics)  = (sink, program, symbols, diagnostics);
+            => (Sink, Program, Symbols, Diagnostics, Strings)  = (sink, program, symbols, diagnostics, new());
 
         public bool Generate()
         {
@@ -40,9 +41,14 @@
                 return false;
             }
 
+            Strings = StringsTableBuilder.Build(Program);
+
             EmitDirectives();
             EmitGlobalsSegment();
             EmitStaticsSegment();
+            EmitStringsSegment();
+            EmitIncludeSegment();
+            EmitCodeSegment();
             return true;
         }
 
@@ -82,6 +88,32 @@
                 Sink.WriteLine("\t.arg");
                 WriteValues(staticVars.AsSpan(Program.StaticsSize - Program.ArgsSize, Program.ArgsSize));
             }
+        }
+
+        private void EmitStringsSegment()
+        {
+            if (Strings.Count == 0)
+            {
+                return;
+            }
+
+            Sink.WriteLine("\t.string");
+            // TODO: do we want strings to keep their order from the AST?
+            foreach (var (str, label) in Strings.StringToLabel)
+            {
+                Sink.WriteLine("\t{0}:\t.str \"{1}\"", label, str.Escape());
+            }
+        }
+
+        private void EmitIncludeSegment()
+        {
+            Sink.WriteLine("\t.include");
+
+        }
+
+        private void EmitCodeSegment()
+        {
+            Sink.WriteLine("\t.code");
         }
 
         private void WriteValues(Span<ScriptValue> values)
