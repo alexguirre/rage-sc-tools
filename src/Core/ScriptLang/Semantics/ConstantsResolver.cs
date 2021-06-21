@@ -94,7 +94,7 @@
                     return;
                 }
 
-                if (!enumMember.Type.CanAssign(enumMember.Initializer.Type!))
+                if (!enumMember.Type.CanAssign(enumMember.Initializer.Type!, enumMember.Initializer.IsLValue))
                 {
                     enumMember.Type = new ErrorType(enumMember.Initializer.Source, Diagnostics, $"Cannot assign type '{enumMember.Initializer.Type}' to '{enumMember.Type}'");
                     return;
@@ -122,7 +122,7 @@
                 return;
             }
 
-            if (!constant.Type.CanAssign(constant.Initializer.Type!))
+            if (!constant.Type.CanAssign(constant.Initializer.Type!, constant.Initializer.IsLValue))
             {
                 constant.Type = new ErrorType(constant.Source, Diagnostics, $"Cannot assign type '{constant.Initializer.Type}' to '{constant.Type}'");
                 return;

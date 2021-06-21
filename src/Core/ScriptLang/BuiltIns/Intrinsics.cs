@@ -15,7 +15,6 @@
         public static FuncDeclaration F2V { get; } = CreateFunc("F2V", BuiltInTypes.Vector, (BuiltInTypes.Float, "value"));
         public static FuncDeclaration F2I { get; } = CreateFunc("F2I", BuiltInTypes.Int, (BuiltInTypes.Float, "value"));
         public static FuncDeclaration I2F { get; } = CreateFunc("I2F", BuiltInTypes.Float, (BuiltInTypes.Int, "value"));
-        public static FuncDeclaration Assign { get; } = CreateProc("ASSIGN", (GenericTextLabelRef, "tl"), (StringOrInt, "value"));
         public static FuncDeclaration Append { get; } = CreateProc("APPEND", (GenericTextLabelRef, "tl"), (StringOrInt, "value"));
 
         private static FuncDeclaration CreateProc(string name, params (ITypeDeclaration Type, string Name)[] parameters)

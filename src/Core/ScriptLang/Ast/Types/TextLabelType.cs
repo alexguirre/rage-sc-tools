@@ -2,6 +2,8 @@
 {
     using System;
 
+    using ScTools.ScriptLang.Ast.Errors;
+
     /// <summary>
     /// Represents an array type of constant size.
     /// </summary>
@@ -26,6 +28,9 @@
             => visitor.Visit(this, param);
 
         public override bool Equivalent(IType other) => other is TextLabelType otherLbl && Length == otherLbl.Length;
+
+        public override bool CanAssign(IType rhs, bool rhsIsLValue)
+            => rhs.ByValue is TextLabelType or StringType or IntType or ErrorType;
 
         /// <returns><c>true</c> if <paramref name="length"/> is in the range [<see cref="MinLength"/>, <see cref="MaxLength"/>] and is a multiple of 8; otherwise, <c>false</c>.</returns>
         public static bool IsValidLength(int length)

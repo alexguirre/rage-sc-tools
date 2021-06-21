@@ -17,7 +17,7 @@
         public override bool Equivalent(IType other) => other is AnyType;
 
         // ANY can take the value of any type with size 1
-        public override bool CanAssign(IType rhs) => rhs.ByValue is { SizeOf: 1 } or ErrorType;
+        public override bool CanAssign(IType rhs, bool rhsIsLValue) => rhs.ByValue is { SizeOf: 1 } or ErrorType;
 
         // ANY& can be binded to all other types
         public override bool CanBindRefTo(IType other) => true;

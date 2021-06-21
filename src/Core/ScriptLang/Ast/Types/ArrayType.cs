@@ -22,6 +22,6 @@
         public override bool Equivalent(IType other)
             => other is ArrayType otherArray && Length == otherArray.Length && ItemType.Equivalent(otherArray.ItemType);
 
-        public override bool CanAssign(IType rhs) => rhs is ErrorType;
+        public override bool CanAssign(IType rhs, bool rhsIsLValue) => rhs is ErrorType;
     }
 }

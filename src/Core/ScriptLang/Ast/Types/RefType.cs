@@ -17,19 +17,19 @@ namespace ScTools.ScriptLang.Ast.Types
 
         public override bool Equivalent(IType other) => other is RefType otherRef && PointeeType.Equivalent(otherRef.PointeeType);
 
-        public override bool CanAssign(IType rhs) => PointeeType.CanAssign(rhs);
-        public override bool CanAssignInit(IType rhs, bool isLValue) => Equivalent(rhs) || (isLValue && PointeeType.CanBindRefTo(rhs.ByValue));
+        public override bool CanAssign(IType rhs, bool rhsIsLValue) => PointeeType.CanAssign(rhs, rhsIsLValue);
+        public override bool CanAssignInit(IType rhs, bool rhsIsLValue) => Equivalent(rhs) || (rhsIsLValue && PointeeType.CanBindRefTo(rhs.ByValue));
 
-        public override void Assign(IType rhs, SourceRange source, DiagnosticsReport diagnostics) => PointeeType.Assign(rhs, source, diagnostics);
+        public override void Assign(IType rhs, bool rhsIsLValue, SourceRange source, DiagnosticsReport diagnostics) => PointeeType.Assign(rhs, rhsIsLValue, source, diagnostics);
 
-        public override void AssignInit(IType rhs, bool isLValue, SourceRange source, DiagnosticsReport diagnostics)
+        public override void AssignInit(IType rhs, bool rhsIsLValue, SourceRange source, DiagnosticsReport diagnostics)
         {
             if (Equivalent(rhs))
             {
                 return;
             }
 
-            if (!isLValue)
+            if (!rhsIsLValue)
             {
                 diagnostics.AddError($"Cannot bind reference of type '{this}' to non-lvalue", source);
             }

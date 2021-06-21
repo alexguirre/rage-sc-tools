@@ -1,10 +1,8 @@
 ﻿namespace ScTools.ScriptLang
 {
-    using System;
     using System.Linq;
 
     using ScTools.ScriptLang.Ast.Declarations;
-    using ScTools.ScriptLang.Ast.Expressions;
     using ScTools.ScriptLang.Ast.Types;
 
     /// <summary>
@@ -27,7 +25,7 @@
                 RefType refTy => Ref(refTy, name),
                 StringType => Simple("STRING", name),
                 StructType structTy => Simple(structTy.Declaration.Name, name),
-                TextLabelType lblTy => Simple($"TEXT_LABEL{lblTy.Length}", name),
+                TextLabelType lblTy => Simple($"TEXT_LABEL_{lblTy.Length-1}", name),
                 VoidType => Simple("(void)", name),
                 _ => Simple(type.ToString() ?? "<type.ToString() is null>", name),
             };

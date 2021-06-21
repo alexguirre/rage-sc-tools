@@ -17,7 +17,7 @@
 
         public override bool Equivalent(IType other) => other is EnumType otherEnum && otherEnum.Declaration == Declaration;
 
-        public override bool CanAssign(IType rhs) => rhs.ByValue is IntType or NullType or ErrorType || Equivalent(rhs.ByValue);
+        public override bool CanAssign(IType rhs, bool rhsIsLValue) => rhs.ByValue is IntType or NullType or ErrorType || Equivalent(rhs.ByValue);
 
         public override IType BinaryOperation(BinaryOperator op, IType rhs, SourceRange source, DiagnosticsReport diagnostics)
         {

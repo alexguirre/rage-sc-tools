@@ -83,7 +83,7 @@
             {
                 node.LengthExpression = new ErrorExpression(node.LengthExpression.Source, Diagnostics, $"Array size must be a constant expression");
             }
-            else if (!BuiltInTypes.Int.CreateType(node.LengthExpression.Source).CanAssign(node.LengthExpression.Type!))
+            else if (!BuiltInTypes.Int.CreateType(node.LengthExpression.Source).CanAssign(node.LengthExpression.Type!, node.LengthExpression.IsLValue))
             {
                 Diagnostics.AddError($"Array size requires type '{BuiltInTypes.Int.Name}', found '{node.LengthExpression.Type}'", node.LengthExpression.Source);
             }
@@ -147,7 +147,7 @@
                 }
                 else
                 {
-                    node.Type.Assign(node.Initializer.Type!, node.Initializer.Source, Diagnostics);
+                    node.Type.Assign(node.Initializer.Type!, node.Initializer.IsLValue, node.Initializer.Source, Diagnostics);
                 }
             }
 
@@ -204,7 +204,7 @@
                     var op => node.LHS.Type!.BinaryOperation(op.Value, node.RHS.Type!, node.Source, Diagnostics),
                 };
 
-                node.LHS.Type!.Assign(assignedType, node.Source, Diagnostics);
+                node.LHS.Type!.Assign(assignedType, rhsIsLValue: false, node.Source, Diagnostics);
             }
 
             return DefaultReturn;
@@ -214,7 +214,7 @@
         {
             node.Condition.Accept(this, param);
 
-            if (!BuiltInTypes.Bool.CreateType(node.Condition.Source).CanAssign(node.Condition.Type!))
+            if (!BuiltInTypes.Bool.CreateType(node.Condition.Source).CanAssign(node.Condition.Type!, node.Condition.IsLValue))
             {
                 Diagnostics.AddError($"IF condition requires type '{BuiltInTypes.Bool.Name}', found '{node.Condition.Type}'", node.Condition.Source);
             }
@@ -230,7 +230,7 @@
             node.Counter.Accept(this, param);
 
             var intTy = BuiltInTypes.Int.CreateType(node.Limit.Source);
-            if (!intTy.CanAssign(node.Limit.Type!))
+            if (!intTy.CanAssign(node.Limit.Type!, node.Limit.IsLValue))
             {
                 Diagnostics.AddError($"REPEAT limit requires type '{intTy}', found '{node.Limit.Type}'", node.Limit.Source);
             }
@@ -239,7 +239,7 @@
             {
                 Diagnostics.AddError($"REPEAT counter requires an lvalue reference of type '{intTy}', found non-lvalue '{node.Counter.Type}'", node.Counter.Source);
             }
-            else if (!intTy.CanAssign(node.Counter.Type!))
+            else if (!intTy.CanAssign(node.Counter.Type!, node.Counter.IsLValue))
             {
                 Diagnostics.AddError($"REPEAT counter requires type '{intTy}', found '{node.Counter.Type}'", node.Counter.Source);
             }
@@ -266,7 +266,7 @@
                 var returnTy = param.Function.Prototype.ReturnType;
                 if (node.Expression is not null)
                 {
-                    if (!returnTy.CanAssign(node.Expression.Type!))
+                    if (!returnTy.CanAssign(node.Expression.Type!, node.Expression.IsLValue))
                     {
                         Diagnostics.AddError($"Function returns '{returnTy}', found '{node.Expression.Type}' in RETURN statement", node.Expression.Source);
                     }
@@ -284,7 +284,7 @@
         {
             node.Expression.Accept(this, param);
 
-            if (!BuiltInTypes.Int.CreateType(node.Expression.Source).CanAssign(node.Expression.Type!))
+            if (!BuiltInTypes.Int.CreateType(node.Expression.Source).CanAssign(node.Expression.Type!, node.Expression.IsLValue))
             {
                 Diagnostics.AddError($"SWITCH expression requires type '{BuiltInTypes.Int.Name}', found '{node.Expression.Type}'", node.Expression.Source);
             }
@@ -302,7 +302,7 @@
             {
                 node.Value = new ErrorExpression(node.Value.Source, Diagnostics, $"CASE value must be a constant expression");
             }
-            else if (!BuiltInTypes.Int.CreateType(node.Value.Source).CanAssign(node.Value.Type!))
+            else if (!BuiltInTypes.Int.CreateType(node.Value.Source).CanAssign(node.Value.Type!, node.Value.IsLValue))
             {
                 Diagnostics.AddError($"CASE value requires type '{BuiltInTypes.Int.Name}', found '{node.Value.Type}'", node.Value.Source);
             }
@@ -334,7 +334,7 @@
         {
             node.Condition.Accept(this, param);
 
-            if (!BuiltInTypes.Bool.CreateType(node.Condition.Source).CanAssign(node.Condition.Type!))
+            if (!BuiltInTypes.Bool.CreateType(node.Condition.Source).CanAssign(node.Condition.Type!, node.Condition.IsLValue))
             {
                 Diagnostics.AddError($"WHILE condition requires type '{BuiltInTypes.Bool.Name}', found '{node.Condition.Type}'", node.Condition.Source);
             }

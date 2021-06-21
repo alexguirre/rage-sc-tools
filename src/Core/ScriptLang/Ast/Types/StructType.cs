@@ -20,7 +20,7 @@
 
         public override bool Equivalent(IType other) => other is StructType otherStruct && otherStruct.Declaration == Declaration;
 
-        public override bool CanAssign(IType rhs)
+        public override bool CanAssign(IType rhs, bool rhsIsLValue)
         {
             rhs = rhs.ByValue;
             if (rhs is ErrorType || Equivalent(rhs))

@@ -13,6 +13,8 @@
 
         public override bool Equivalent(IType other) => other is StringType;
 
-        public override bool CanAssign(IType rhs) => rhs.ByValue is StringType or NullType or ErrorType;
+        public override bool CanAssign(IType rhs, bool rhsIsLValue)
+            => rhs.ByValue is StringType or NullType or ErrorType ||
+               (rhs.ByValue is TextLabelType && rhsIsLValue);
     }
 }

@@ -312,7 +312,7 @@ ENDFUNC
 TEXT_LABEL_247 lblTempBuffer
 
 PROC CLEAR_TEMP_BUFFER()
-    ASSIGN(lblTempBuffer, "")
+    lblTempBuffer = ""
 ENDPROC
 
 PROC DRAW_TEMP_BUFFER()
@@ -519,4 +519,39 @@ ENDPROC
 
 FUNC INT F2I_WRAPPER(FLOAT v)
     RETURN F2I(v)
+ENDFUNC
+
+PROC TEST_TEXT_LABELS()
+    TEXT_LABEL_7 tl1
+    TEXT_LABEL_7 tl2
+    TEXT_LABEL_63 tl3
+    TEXT_LABEL_23 tl4
+
+    tl1 = 1
+    tl1 = "hello"
+
+    tl2 = tl1
+    APPEND(tl1, 1)
+    APPEND(tl2, 2)
+
+    tl3 = tl1
+    tl4 = CREATE_TEXT_LABEL()
+
+    // DRAW_TEXT(STRING s, FLOAT x, FLOAT y)
+    DRAW_TEXT(tl1, 0.5, 0.1)
+    DRAW_TEXT(tl2, 0.5, 0.2)
+    DRAW_TEXT(tl3, 0.5, 0.3)
+    DRAW_TEXT(tl4, 0.5, 0.3)
+ENDPROC
+
+FUNC TEXT_LABEL_31 CREATE_TEXT_LABEL()
+    TEXT_LABEL_31 tlResult = "hello"
+    APPEND(tlResult, 1)
+    APPEND(tlResult, 2)
+    APPEND(tlResult, 3)
+    APPEND(tlResult, "-")
+    APPEND(tlResult, 4)
+    APPEND(tlResult, 5)
+    APPEND(tlResult, 6)
+    RETURN tlResult
 ENDFUNC

@@ -24,7 +24,7 @@
                Declaration.ReturnType.Equivalent(otherFunc.Declaration.ReturnType) &&
                Declaration.Parameters.Zip(otherFunc.Declaration.Parameters).All(p => p.First.Type.Equivalent(p.Second.Type));
 
-        public override bool CanAssign(IType rhs) => rhs.ByValue is ErrorType || Equivalent(rhs.ByValue);
+        public override bool CanAssign(IType rhs, bool rhsIsLValue) => rhs.ByValue is ErrorType || Equivalent(rhs.ByValue);
 
         public override IType Invocation((IType Type, bool IsLValue, SourceRange Source)[] args, SourceRange source, DiagnosticsReport diagnostics)
         {

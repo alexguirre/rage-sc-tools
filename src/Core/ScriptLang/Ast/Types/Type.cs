@@ -28,12 +28,12 @@
         /// <summary>
         /// Gets whether the type <paramref name="rhs"/> can be assigned to this type.
         /// </summary>
-        bool CanAssign(IType rhs);
+        bool CanAssign(IType rhs, bool rhsIsLValue);
 
         /// <summary>
         /// Gets whether the type <paramref name="rhs"/> can be assigned to this type in an initializer or when passed as parameter.
         /// </summary>
-        bool CanAssignInit(IType rhs, bool isLValue);
+        bool CanAssignInit(IType rhs, bool rhsIsLValue);
 
         // Semantic Checks
 
@@ -65,12 +65,12 @@
         /// <summary>
         /// Checks if the type <paramref name="rhs"/> can be assigned to this type.
         /// </summary>
-        void Assign(IType rhs, SourceRange source, DiagnosticsReport diagnostics);
+        void Assign(IType rhs, bool rhsIsLValue, SourceRange source, DiagnosticsReport diagnostics);
 
         /// <summary>
         /// Checks if the type <paramref name="rhs"/> can be assigned to this type in an initializer or when passed as parameter.
         /// </summary>
-        void AssignInit(IType rhs, bool isLValue, SourceRange source, DiagnosticsReport diagnostics);
+        void AssignInit(IType rhs, bool rhsIsLValue, SourceRange source, DiagnosticsReport diagnostics);
     }
 
     public interface IArrayType : IType
@@ -89,8 +89,8 @@
 
         public abstract bool Equivalent(IType other);
         public virtual bool CanBindRefTo(IType other) => Equivalent(other);
-        public virtual bool CanAssign(IType rhs) => false;
-        public virtual bool CanAssignInit(IType rhs, bool isLValue) => CanAssign(rhs);
+        public virtual bool CanAssign(IType rhs, bool rhsIsLValue) => false;
+        public virtual bool CanAssignInit(IType rhs, bool rhsIsLValue) => CanAssign(rhs, rhsIsLValue);
 
         public virtual IType BinaryOperation(BinaryOperator op, IType rhs, SourceRange source, DiagnosticsReport diagnostics)
             => new ErrorType(source, diagnostics, $"Binary operator '{op.ToToken()}' is not supported with operands of type '{this}' and '{rhs}'");
@@ -107,9 +107,9 @@
         public virtual IType Invocation((IType Type, bool IsLValue, SourceRange Source)[] args, SourceRange source, DiagnosticsReport diagnostics)
             => new ErrorType(source, diagnostics, $"Invocation is not supported by type '{this}'");
 
-        public virtual void Assign(IType rhs, SourceRange source, DiagnosticsReport diagnostics)
+        public virtual void Assign(IType rhs, bool rhsIsLValue, SourceRange source, DiagnosticsReport diagnostics)
         {
-            if (CanAssign(rhs))
+            if (CanAssign(rhs, rhsIsLValue))
             {
                 return;
             }
@@ -117,9 +117,9 @@
             diagnostics.AddError($"Cannot assign type '{rhs}' to '{this}'", source);
         }
 
-        public virtual void AssignInit(IType rhs, bool isLValue, SourceRange source, DiagnosticsReport diagnostics)
+        public virtual void AssignInit(IType rhs, bool rhsIsLValue, SourceRange source, DiagnosticsReport diagnostics)
         {
-            if (CanAssignInit(rhs, isLValue))
+            if (CanAssignInit(rhs, rhsIsLValue))
             {
                 return;
             }
@@ -150,7 +150,7 @@
         public override IType Indexing(IType index, SourceRange source, DiagnosticsReport diagnostics)
         {
             var expectedIndexTy = new IntType(source);
-            if (!expectedIndexTy.CanAssign(index))
+            if (!expectedIndexTy.CanAssign(index, rhsIsLValue: false))
             {
                 return new ErrorType(source, diagnostics, $"Expected type '{expectedIndexTy}' as array index, found '{index}'");
             }
