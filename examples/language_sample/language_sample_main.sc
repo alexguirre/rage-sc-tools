@@ -312,7 +312,7 @@ ENDFUNC
 TEXT_LABEL_247 lblTempBuffer
 
 PROC CLEAR_TEMP_BUFFER()
-    ASSIGN_STRING(lblTempBuffer, "")
+    ASSIGN(lblTempBuffer, "")
 ENDPROC
 
 PROC DRAW_TEMP_BUFFER()
@@ -320,10 +320,10 @@ PROC DRAW_TEMP_BUFFER()
 ENDPROC
 
 PROC WRITE_LINE_TO_TEMP_BUFFER(STRING s, INT n)
-    APPEND_STRING(lblTempBuffer, s)
-    APPEND_STRING(lblTempBuffer, " - ~r~")
-    APPEND_INT(lblTempBuffer, n)
-    APPEND_STRING(lblTempBuffer, "~s~~n~")
+    APPEND(lblTempBuffer, s)
+    APPEND(lblTempBuffer, " - ~r~")
+    APPEND(lblTempBuffer, n)
+    APPEND(lblTempBuffer, "~s~~n~")
 ENDPROC
 
 PROC INCREMENT_ALL(INT arr[])

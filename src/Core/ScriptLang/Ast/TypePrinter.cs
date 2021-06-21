@@ -28,7 +28,7 @@
                 StructType structTy => Simple(structTy.Declaration.Name, name),
                 TextLabelType lblTy => Simple($"TEXT_LABEL{lblTy.Length}", name),
                 VoidType => Simple("(void)", name),
-                _ => throw new NotSupportedException($"Type '{type.GetType()}' is not supported"),
+                _ => Simple(type.ToString() ?? "<type.ToString() is null>", name),
             };
 
         private static string Simple(string typeName, string? name) => string.IsNullOrEmpty(name) ? typeName : $"{typeName} {name}";
