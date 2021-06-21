@@ -19,6 +19,9 @@
         public static string? EvalString(IExpression expression, GlobalSymbolTable symbols)
             => expression.Accept(new StringEvaluator(symbols), default);
 
+        public static (float X, float Y, float Z) EvalVector(IExpression expression, GlobalSymbolTable symbols)
+            => expression.Accept(new VectorEvaluator(symbols), default);
+
         private sealed class IntEvaluator : EmptyVisitor<int, Void>
         {
             public GlobalSymbolTable Symbols { get; }
@@ -180,6 +183,52 @@
                 => null;
 
             public override string? Visit(ValueDeclRefExpression node, Void param)
+            {
+                if (node.Declaration is VarDeclaration { Kind: VarKind.Constant } varDecl)
+                {
+                    return varDecl.Initializer!.Accept(this, param);
+                }
+
+                throw new System.NotImplementedException();
+            }
+        }
+
+        private sealed class VectorEvaluator : EmptyVisitor<(float X, float Y, float Z), Void>
+        {
+            private readonly FloatEvaluator floatEval;
+
+            public GlobalSymbolTable Symbols { get; }
+
+            public VectorEvaluator(GlobalSymbolTable symbols) => (floatEval, Symbols) = (new(symbols), symbols);
+
+            public override (float X, float Y, float Z) Visit(BinaryExpression node, Void param)
+            {
+                var (x1, y1, z1) = node.LHS.Accept(this, param);
+                var (x2, y2, z2) = node.RHS.Accept(this, param);
+                return node.Operator switch
+                {
+                    BinaryOperator.Add => (x1 + x2, y1 + y2, z1 + z2),
+                    BinaryOperator.Subtract => (x1 - x2, y1 - y2, z1 - z2),
+                    BinaryOperator.Multiply => (x1 * x2, y1 * y2, z1 * z2),
+                    BinaryOperator.Divide => (x1 / x2, y1 / y2, z1 / z2),
+                    _ => throw new System.NotImplementedException(),
+                };
+            }
+
+            public override (float X, float Y, float Z) Visit(VectorExpression node, Void param)
+                => (node.X.Accept(floatEval, param), node.Y.Accept(floatEval, param), node.Z.Accept(floatEval, param));
+
+            public override (float X, float Y, float Z) Visit(UnaryExpression node, Void param)
+            {
+                var (x, y, z) = node.SubExpression.Accept(this, param);
+                return node.Operator switch
+                {
+                    UnaryOperator.Negate => (-x, -y, -z),
+                    _ => throw new System.NotImplementedException(),
+                };
+            }
+
+            public override (float X, float Y, float Z) Visit(ValueDeclRefExpression node, Void param)
             {
                 if (node.Declaration is VarDeclaration { Kind: VarKind.Constant } varDecl)
                 {

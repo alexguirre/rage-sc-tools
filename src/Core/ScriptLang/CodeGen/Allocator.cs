@@ -17,9 +17,7 @@
 
         private class AllocatorContext
         {
-            public int StaticsSize { get; set; }
-            public int ArgsSize { get; set; }
-            public VarDeclaration? ArgVar { get; set; }
+            public Program? Program { get; set; }
             public GlobalBlockDeclaration? GlobalBlock { get; set; }
             public int LocalsSize { get; set; }
         }
@@ -33,20 +31,29 @@
 
             public override Void Visit(Program node, AllocatorContext ctx)
             {
+                ctx.Program = node;
                 base.Visit(node, ctx);
 
-                if (ctx.ArgVar is not null)
+                if (ctx.Program.ArgVar is not null)
                 {
-                    ctx.ArgVar.Address = ctx.StaticsSize;
-                    ctx.ArgsSize = ctx.ArgVar.Type.SizeOf;
-                    ctx.StaticsSize += ctx.ArgsSize;
+                    ctx.Program.ArgVar.Address = ctx.Program.StaticsSize;
+                    ctx.Program.ArgsSize = ctx.Program.ArgVar.Type.SizeOf;
+                    ctx.Program.StaticsSize += ctx.Program.ArgsSize;
+                    ctx.Program.Statics.Add(ctx.Program.ArgVar.Address, ctx.Program.ArgVar);
                 }
 
+                ctx.Program = null;
                 return default;
             }
 
             public override Void Visit(GlobalBlockDeclaration node, AllocatorContext ctx)
             {
+                Debug.Assert(ctx.Program is not null);
+                if (Parser.CaseInsensitiveComparer.Equals(ctx.Program.ScriptName, node.Name))
+                {
+                    ctx.Program.GlobalBlock = node;
+                }
+
                 ctx.GlobalBlock = node;
                 base.Visit(node, ctx);
                 ctx.GlobalBlock = null;
@@ -90,13 +97,16 @@
                         break;
 
                     case VarKind.Static:
-                        node.Address = ctx.StaticsSize;
-                        ctx.StaticsSize += node.Type.SizeOf;
+                        Debug.Assert(ctx.Program is not null);
+                        node.Address = ctx.Program.StaticsSize;
+                        ctx.Program.StaticsSize += node.Type.SizeOf;
+                        ctx.Program.Statics.Add(node.Address, node);
                         break;
 
                     case VarKind.StaticArg:
+                        Debug.Assert(ctx.Program is not null);
                         // ARG var is stored after all static vars, so save it to resolve its address later
-                        ctx.ArgVar = node;
+                        ctx.Program.ArgVar = node;
                         break;
 
                     case VarKind.Local or VarKind.Parameter:

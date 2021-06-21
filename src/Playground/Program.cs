@@ -11,6 +11,7 @@
 
     using ScTools;
     using ScTools.GameFiles;
+    using ScTools.ScriptAssembly;
     using ScTools.ScriptLang;
     using ScTools.ScriptLang.CodeGen;
     using ScTools.ScriptLang.Grammar;
@@ -75,8 +76,12 @@
             {
                 Console.WriteLine("CodeGen...");
                 using var sink = new StringWriter();
-                new CodeGenerator(sink, p.OutputAst, d).Generate();
+                new CodeGenerator(sink, p.OutputAst, globalSymbols, d).Generate();
                 var s = sink.ToString();
+                ;
+                using var reader = new StringReader(s);
+                var assembler = Assembler.Assemble(reader, filePath, nativeDB: null, options: new() { IncludeFunctionNames = true });
+                assembler.Diagnostics.PrintAll(Console.Out);
                 ;
             }
             d.PrintAll(Console.Out);

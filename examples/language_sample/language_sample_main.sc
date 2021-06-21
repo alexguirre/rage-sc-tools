@@ -93,6 +93,8 @@ MY_STRUCT aItems[MY_CONSTANT]
 INT nItemCount = 0, nSomeValue = 5
 MY_PROCEDURE_T fnMyProc
 BOOL bMyProcChanged = FALSE
+VECTOR vTest = <<1.0, 2.0, 3.0>> * <<2.0, 4.0, 6.0>>
+PED_INDEX hMyPed = NULL
 
 CONST INT MY_CONSTANT = 8
 
@@ -529,11 +531,17 @@ FUNC INT F2I_WRAPPER(FLOAT v)
     RETURN F2I(v)
 ENDFUNC
 
+TEXT_LABEL_7 tlStatic1 = "hello world"
+TEXT_LABEL_7 tlStatic2 = 1234
+
 PROC TEST_TEXT_LABELS()
     TEXT_LABEL_7 tl1
     TEXT_LABEL_7 tl2
     TEXT_LABEL_63 tl3
     TEXT_LABEL_23 tl4
+
+    tl1 = tlStatic1
+    tl2 = tlStatic2
 
     tl1 = 1
     tl1 = "hello"
