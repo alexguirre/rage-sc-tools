@@ -18,12 +18,14 @@
     /// <item>Resolves and removes <see cref="NamedType"/>s.</item>
     /// <item>Associates <see cref="ValueDeclRefExpression"/>s to their corresponding <see cref="IValueDeclaration"/>.</item>
     /// <item>Associates <see cref="BreakStatement"/>s to the closest enclosing <see cref="IBreakableStatement"/> (i.e. the enclosing loop or switch).</item>
+    /// <item>Associates <see cref="ContinueStatement"/>s to the closest enclosing <see cref="ILoopStatement"/>.</item>
     /// <item>Associates <see cref="GotoStatement"/>s to their corresponding <see cref="LabelDeclaration"/>.</item>
     /// </list>
     /// </summary>
     public sealed class IdentificationVisitor : DFSVisitor
     {
         private readonly Stack<IBreakableStatement> breakableStatements = new();
+        private readonly Stack<ILoopStatement> loopStatements = new();
         private LabelSymbolTable? currFuncLabels;
 
         public DiagnosticsReport Diagnostics { get; }
@@ -133,7 +135,9 @@
 
             Symbols.PushScope();
             breakableStatements.Push(node);
+            loopStatements.Push(node);
             node.Body.ForEach(stmt => stmt.Accept(this, param));
+            loopStatements.Pop();
             breakableStatements.Pop();
             Symbols.PopScope();
 
@@ -159,7 +163,9 @@
 
             Symbols.PushScope();
             breakableStatements.Push(node);
+            loopStatements.Push(node);
             node.Body.ForEach(stmt => stmt.Accept(this, param));
+            loopStatements.Pop();
             breakableStatements.Pop();
             Symbols.PopScope();
 
@@ -172,11 +178,27 @@
 
             if (breakableStatements.Count == 0)
             {
-                node.EnclosingStatement = new ErrorStatement(node.Source, Diagnostics, "No enclosing loop or switch out of which to break");
+                node.EnclosingStatement = new ErrorStatement(node.Source, Diagnostics, "BREAK statement not in loop or switch");
             }
             else
             {
                 node.EnclosingStatement = breakableStatements.Peek();
+            }
+
+            return DefaultReturn;
+        }
+
+        public override Void Visit(ContinueStatement node, Void param)
+        {
+            Debug.Assert(node.EnclosingLoop is null);
+
+            if (loopStatements.Count == 0)
+            {
+                node.EnclosingLoop = new ErrorStatement(node.Source, Diagnostics, "CONTINUE statement not in loop");
+            }
+            else
+            {
+                node.EnclosingLoop = loopStatements.Peek();
             }
 
             return DefaultReturn;

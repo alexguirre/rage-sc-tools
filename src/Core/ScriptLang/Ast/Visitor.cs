@@ -38,6 +38,7 @@
 
         TReturn Visit(AssignmentStatement node, TParam param);
         TReturn Visit(BreakStatement node, TParam param);
+        TReturn Visit(ContinueStatement node, TParam param);
         TReturn Visit(GotoStatement node, TParam param);
         TReturn Visit(IfStatement node, TParam param);
         TReturn Visit(RepeatStatement node, TParam param);
@@ -226,6 +227,11 @@
         }
 
         public virtual TReturn Visit(BreakStatement node, TParam param)
+        {
+            return DefaultReturn;
+        }
+
+        public virtual TReturn Visit(ContinueStatement node, TParam param)
         {
             return DefaultReturn;
         }
@@ -423,6 +429,7 @@
         public virtual TReturn Visit(VectorExpression node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(AssignmentStatement node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(BreakStatement node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(ContinueStatement node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(GotoStatement node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(IfStatement node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(RepeatStatement node, TParam param) => throw new NotImplementedException();

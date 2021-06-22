@@ -8,6 +8,10 @@
     {
     }
 
+    public interface ILoopStatement : IBreakableStatement
+    {
+    }
+
     public abstract class BaseStatement : BaseNode, IStatement
     {
         public BaseStatement(SourceRange source) : base(source) {}

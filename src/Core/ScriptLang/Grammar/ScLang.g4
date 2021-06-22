@@ -65,6 +65,7 @@ statement
       K_ENDSWITCH                                               #switchStatement
 
     | K_BREAK                                                   #breakStatement
+    | K_CONTINUE                                                #continueStatement
     | K_RETURN expression?                                      #returnStatement
     | K_GOTO identifier                                         #gotoStatement
     | expression argumentList                                   #invocationStatement
@@ -243,6 +244,7 @@ K_ENDSWITCH : E N D S W I T C H;
 K_CASE : C A S E;
 K_DEFAULT : D E F A U L T;
 K_BREAK : B R E A K;
+K_CONTINUE : C O N T I N U E;
 K_RETURN : R E T U R N;
 K_GOTO : G O T O;
 K_SCRIPT_NAME : S C R I P T '_' N A M E;

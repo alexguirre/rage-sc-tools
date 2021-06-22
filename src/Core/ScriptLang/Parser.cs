@@ -397,6 +397,10 @@
                     yield return new BreakStatement(Source(c));
                     break;
 
+                case ScLangParser.ContinueStatementContext c:
+                    yield return new ContinueStatement(Source(c));
+                    break;
+
                 case ScLangParser.GotoStatementContext c:
                     yield return new GotoStatement(Source(c), c.identifier().GetText());
                     break;

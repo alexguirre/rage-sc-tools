@@ -2,7 +2,7 @@
 {
     using ScTools.ScriptLang.Ast.Statements;
 
-    public sealed class ErrorStatement : BaseError, IStatement, IBreakableStatement
+    public sealed class ErrorStatement : BaseError, IStatement, IBreakableStatement, ILoopStatement
     {
         public ErrorStatement(SourceRange source, Diagnostic diagnostic) : base(source, diagnostic) { }
         public ErrorStatement(SourceRange source, DiagnosticsReport diagnostics, string message) : base(source, diagnostics, message) { }
