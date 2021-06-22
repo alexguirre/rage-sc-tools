@@ -20,7 +20,8 @@
             public Program? Program { get; set; }
             public GlobalBlockDeclaration? GlobalBlock { get; set; }
             public StructDeclaration? Struct { get; set; }
-            public int LocalsSize { get; set; }
+            public FuncDeclaration? Func { get; set; }
+            public FuncProtoDeclaration? FuncProto { get; set; }
         }
 
         private sealed class AllocatorVisitor : DFSVisitor<Void, AllocatorContext>
@@ -63,20 +64,23 @@
 
             public override Void Visit(FuncDeclaration node, AllocatorContext ctx)
             {
+                ctx.Func = node;
+                ctx.Func.LocalsSize = 0;
                 // allocate parameters
                 node.Prototype.Accept(this, ctx);
 
-                ctx.LocalsSize += 2; // additional space needed to store return address and caller frame offset
-
                 // allocate locals
                 node.Body.ForEach(stmt => stmt.Accept(this, ctx));
+                ctx.Func = null;
                 return default;
             }
 
             public override Void Visit(FuncProtoDeclaration node, AllocatorContext ctx)
             {
-                ctx.LocalsSize = 0;
+                ctx.FuncProto = node;
+                ctx.FuncProto.ParametersSize = 0;
                 node.Parameters.ForEach(p => p.Accept(this, ctx));
+                ctx.FuncProto = null;
                 return default;
             }
 
@@ -121,9 +125,16 @@
                         ctx.Program.ArgVar = node;
                         break;
 
-                    case VarKind.Local or VarKind.Parameter:
-                        node.Address = ctx.LocalsSize;
-                        ctx.LocalsSize += node.Type.SizeOf;
+                    case VarKind.Parameter:
+                        Debug.Assert(ctx.FuncProto is not null);
+                        node.Address = ctx.FuncProto.ParametersSize;
+                        ctx.FuncProto.ParametersSize += node.Type.SizeOf;
+                        break;
+
+                    case VarKind.Local:
+                        Debug.Assert(ctx.Func is not null);
+                        node.Address = ctx.Func.FrameSize;
+                        ctx.Func.LocalsSize += node.Type.SizeOf;
                         break;
                 }
 

@@ -30,6 +30,7 @@
         public FuncKind Kind { get; set; }
         public IType ReturnType { get; set; }
         public IList<VarDeclaration> Parameters { get; set; } = new List<VarDeclaration>();
+        public int ParametersSize { get; set; }
 
         public bool IsProc => ReturnType is VoidType;
 

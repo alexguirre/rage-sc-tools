@@ -13,6 +13,7 @@
     using ScTools.ScriptLang.Ast;
     using ScTools.ScriptLang.Ast.Declarations;
     using ScTools.ScriptLang.Ast.Expressions;
+    using ScTools.ScriptLang.Ast.Statements;
     using ScTools.ScriptLang.Ast.Types;
     using ScTools.ScriptLang.BuiltIns;
     using ScTools.ScriptLang.Semantics;
@@ -20,6 +21,8 @@
 
     public class CodeGenerator
     {
+        private readonly StatementEmitter stmtEmitter;
+
         public TextWriter Sink { get; }
         public Program Program { get; }
         public GlobalSymbolTable Symbols { get; }
@@ -28,7 +31,7 @@
         public StringsTable Strings { get; private set; }
 
         public CodeGenerator(TextWriter sink, Program program, GlobalSymbolTable symbols, DiagnosticsReport diagnostics, NativeDB nativeDB)
-            => (Sink, Program, Symbols, Diagnostics, NativeDB, Strings)  = (sink, program, symbols, diagnostics, nativeDB, new());
+            => (Sink, Program, Symbols, Diagnostics, NativeDB, Strings, stmtEmitter)  = (sink, program, symbols, diagnostics, nativeDB, new(), new(this));
 
         public bool Generate()
         {
@@ -131,7 +134,33 @@
 
         private void EmitCodeSegment()
         {
+            // TODO: check that MAIN exists in semantic analysis
+            var funcs = Program.Declarations.Where(decl => decl is FuncDeclaration { Prototype: { Kind: FuncKind.UserDefined } }).Cast<FuncDeclaration>();
+            var main = funcs.Single(f => Parser.CaseInsensitiveComparer.Equals(f.Name, "MAIN"));
+            funcs = funcs.Where(f => f != main).Prepend(main); // place MAIN first, it has to be compiled at address 0
+
             Sink.WriteLine("\t.code");
+            funcs.ForEach(EmitFunc);
+        }
+
+        private void EmitFunc(FuncDeclaration func)
+        {
+            Debug.Assert(func.Prototype.Kind is FuncKind.UserDefined);
+
+            // label
+            Sink.WriteLine("{0}:", func.Name);
+
+            // prologue
+            Sink.WriteLine("\tENTER {0}, {1}", func.Prototype.ParametersSize, func.FrameSize);
+
+            // body
+            func.Body.ForEach(stmt => stmt.Accept(stmtEmitter, func));
+
+            // epilogue
+            if (func.Body.LastOrDefault() is not ReturnStatement)
+            {
+                Sink.WriteLine("\tLEAVE {0}, {1}", func.Prototype.ParametersSize, func.Prototype.ReturnType.SizeOf);
+            }
         }
 
         private void WriteValues(Span<ScriptValue> values)

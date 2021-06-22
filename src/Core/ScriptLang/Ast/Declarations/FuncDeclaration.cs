@@ -11,6 +11,8 @@
     {
         public FuncProtoDeclaration Prototype { get; set; }
         public IList<IStatement> Body { get; set; } = new List<IStatement>();
+        public int LocalsSize { get; set; }
+        public int FrameSize => Prototype.ParametersSize + 2 + LocalsSize;
 
         public FuncDeclaration(SourceRange source, string name, FuncProtoDeclaration prototype) : base(source, name, prototype.CreateType(source))
             => Prototype = prototype;
