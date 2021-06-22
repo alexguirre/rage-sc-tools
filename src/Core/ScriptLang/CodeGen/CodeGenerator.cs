@@ -40,7 +40,7 @@
                 return false;
             }
 
-            Allocator.AllocateVars(Program, Diagnostics);
+            Allocator.Allocate(Program, Diagnostics);
             if (Diagnostics.HasErrors)
             {
                 return false;

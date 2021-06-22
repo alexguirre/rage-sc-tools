@@ -8,6 +8,7 @@
     {
         public IExpression Expression { get; set; }
         public IList<SwitchCase> Cases { get; set; } = new List<SwitchCase>();
+        public string? ExitLabel { get; set; }
 
         public SwitchStatement(SourceRange source, IExpression expression) : base(source)
             => Expression = expression;
@@ -19,6 +20,7 @@
     public abstract class SwitchCase : BaseNode
     {
         public IList<IStatement> Body { get; set; } = new List<IStatement>();
+        public string? Label { get; set; }
 
         public SwitchCase(SourceRange source) : base(source) { }
     }

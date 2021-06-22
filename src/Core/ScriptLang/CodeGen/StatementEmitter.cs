@@ -23,8 +23,13 @@
 
         public override Void Visit(BreakStatement node, FuncDeclaration func)
         {
-            // TODO: assign labels needed by statements
-            //CG.Sink.WriteLine("\tJ {0}", node.EnclosingStatement.);
+            CG.Sink.WriteLine("\tJ {0}", node.EnclosingStatement!.ExitLabel);
+            return default;
+        }
+
+        public override Void Visit(ContinueStatement node, FuncDeclaration func)
+        {
+            CG.Sink.WriteLine("\tJ {0}", node.EnclosingLoop!.BeginLabel);
             return default;
         }
 

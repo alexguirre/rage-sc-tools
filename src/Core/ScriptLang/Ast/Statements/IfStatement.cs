@@ -9,6 +9,8 @@
         public IExpression Condition { get; set; }
         public IList<IStatement> Then { get; set; } = new List<IStatement>();
         public IList<IStatement> Else { get; set; } = new List<IStatement>();
+        public string? ElseLabel { get; set; }
+        public string? EndLabel { get; set; }
 
         public IfStatement(SourceRange source, IExpression condition) : base(source)
             => Condition = condition;

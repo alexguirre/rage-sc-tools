@@ -8,6 +8,8 @@
     {
         public IExpression Condition { get; set; }
         public IList<IStatement> Body { get; set; } = new List<IStatement>();
+        public string? ExitLabel { get; set; }
+        public string? BeginLabel { get; set; }
 
         public WhileStatement(SourceRange source, IExpression condition) : base(source)
             => Condition = condition;

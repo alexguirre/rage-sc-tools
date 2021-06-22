@@ -4,13 +4,14 @@
 
     using ScTools.ScriptLang.Ast;
     using ScTools.ScriptLang.Ast.Declarations;
+    using ScTools.ScriptLang.Ast.Statements;
 
     /// <summary>
-    /// Assigns addresses to all variables.
+    /// Assigns addresses to all variables and labels to statements that need them.
     /// </summary>
     public static class Allocator
     {
-        public static void AllocateVars(Program root, DiagnosticsReport diagnostics)
+        public static void Allocate(Program root, DiagnosticsReport diagnostics)
         {
             root.Accept(new AllocatorVisitor(diagnostics), new AllocatorContext());
         }
@@ -22,6 +23,9 @@
             public StructDeclaration? Struct { get; set; }
             public FuncDeclaration? Func { get; set; }
             public FuncProtoDeclaration? FuncProto { get; set; }
+            public uint LastLabelID { get; set; }
+
+            public string NextLabel() => $"__lbl{LastLabelID++}";
         }
 
         private sealed class AllocatorVisitor : DFSVisitor<Void, AllocatorContext>
@@ -69,7 +73,7 @@
                 // allocate parameters
                 node.Prototype.Accept(this, ctx);
 
-                // allocate locals
+                // allocate locals and labels
                 node.Body.ForEach(stmt => stmt.Accept(this, ctx));
                 ctx.Func = null;
                 return default;
@@ -139,6 +143,45 @@
                 }
 
                 return default;
+            }
+
+            public override Void Visit(IfStatement node, AllocatorContext ctx)
+            {
+                node.ElseLabel = ctx.NextLabel();
+                node.EndLabel = ctx.NextLabel();
+                return base.Visit(node, ctx);
+            }
+
+            public override Void Visit(RepeatStatement node, AllocatorContext ctx)
+            {
+                node.BeginLabel = ctx.NextLabel();
+                node.ExitLabel = ctx.NextLabel();
+                return base.Visit(node, ctx);
+            }
+
+            public override Void Visit(WhileStatement node, AllocatorContext ctx)
+            {
+                node.BeginLabel = ctx.NextLabel();
+                node.ExitLabel = ctx.NextLabel();
+                return base.Visit(node, ctx);
+            }
+
+            public override Void Visit(SwitchStatement node, AllocatorContext ctx)
+            {
+                node.ExitLabel = ctx.NextLabel();
+                return base.Visit(node, ctx);
+            }
+
+            public override Void Visit(ValueSwitchCase node, AllocatorContext ctx)
+            {
+                node.Label = ctx.NextLabel();
+                return base.Visit(node, ctx);
+            }
+
+            public override Void Visit(DefaultSwitchCase node, AllocatorContext ctx)
+            {
+                node.Label = ctx.NextLabel();
+                return base.Visit(node, ctx);
             }
         }
     }
