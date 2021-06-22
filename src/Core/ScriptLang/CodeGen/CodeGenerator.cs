@@ -4,6 +4,7 @@
     using System.Diagnostics;
     using System.Globalization;
     using System.IO;
+    using System.Linq;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using System.Text;
@@ -23,10 +24,11 @@
         public Program Program { get; }
         public GlobalSymbolTable Symbols { get; }
         public DiagnosticsReport Diagnostics { get; }
+        public NativeDB NativeDB { get; }
         public StringsTable Strings { get; private set; }
 
-        public CodeGenerator(TextWriter sink, Program program, GlobalSymbolTable symbols, DiagnosticsReport diagnostics)
-            => (Sink, Program, Symbols, Diagnostics, Strings)  = (sink, program, symbols, diagnostics, new());
+        public CodeGenerator(TextWriter sink, Program program, GlobalSymbolTable symbols, DiagnosticsReport diagnostics, NativeDB nativeDB)
+            => (Sink, Program, Symbols, Diagnostics, NativeDB, Strings)  = (sink, program, symbols, diagnostics, nativeDB, new());
 
         public bool Generate()
         {
@@ -107,8 +109,24 @@
 
         private void EmitIncludeSegment()
         {
-            Sink.WriteLine("\t.include");
+            var nativesDecls = Program.Declarations.Where(decl => decl is FuncDeclaration { Prototype: { Kind: FuncKind.Native } }).Cast<FuncDeclaration>();
+            if (!nativesDecls.Any())
+            {
+                return;
+            }
 
+            var natives = nativesDecls.Select(decl =>
+            {
+                // TODO: check that the natives exist in the semantic analysis
+                var hash = NativeDB.FindOriginalHash(decl.Name) ?? throw new InvalidOperationException($"Unknown native '{decl.Name}'");
+                return (decl.Name, hash);
+            });
+
+            Sink.WriteLine("\t.include");
+            foreach (var (name, hash) in natives)
+            {
+                Sink.WriteLine("\t{0}:\t.native 0x{1:X16}", name, hash);
+            }
         }
 
         private void EmitCodeSegment()

@@ -43,19 +43,19 @@
             //    .ContinueWith(t => File.WriteAllText("nativedb.json", t.Result.ToJson()))
             //    .Wait();
 
-            //var nativeDB = NativeDB.FromJson(System.IO.File.ReadAllText("nativesdb.json"));
+            var nativeDB = NativeDB.FromJson(System.IO.File.ReadAllText("nativesdb.json"));
 
             const string BaseDir = "D:\\sources\\gtav-sc-tools\\examples\\language_sample\\";
 
-            Parse(BaseDir + "language_sample_main.sc");
-            Parse(BaseDir + "language_sample_child.sc");
+            Parse(BaseDir + "language_sample_main.sc", nativeDB);
+            Parse(BaseDir + "language_sample_child.sc", nativeDB);
             //Parse(BaseDir + "language_sample_shared.sch");
 
             ;
 
         }
 
-        private static void Parse(string filePath)
+        private static void Parse(string filePath, NativeDB nativeDB)
         {
             using var r = new StreamReader(filePath);
             var d = new DiagnosticsReport();
@@ -76,11 +76,11 @@
             {
                 Console.WriteLine("CodeGen...");
                 using var sink = new StringWriter();
-                new CodeGenerator(sink, p.OutputAst, globalSymbols, d).Generate();
+                new CodeGenerator(sink, p.OutputAst, globalSymbols, d, nativeDB).Generate();
                 var s = sink.ToString();
                 ;
                 using var reader = new StringReader(s);
-                var assembler = Assembler.Assemble(reader, filePath, nativeDB: null, options: new() { IncludeFunctionNames = true });
+                var assembler = Assembler.Assemble(reader, filePath, nativeDB, options: new() { IncludeFunctionNames = true });
                 assembler.Diagnostics.PrintAll(Console.Out);
                 ;
             }
