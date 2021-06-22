@@ -226,14 +226,10 @@
                     break;
 
                 case StructType structTy:
-                    var offset = 0;
                     foreach (var field in structTy.Declaration.Fields)
                     {
-                        var fieldType = field.Type;
-                        var fieldSize = fieldType.SizeOf;
-                        var fieldDest = dest.Slice(offset, fieldSize);
-                        InitializeStaticVar(fieldDest, fieldType, field.Initializer);
-                        offset += fieldSize;
+                        var fieldDest = dest.Slice(field.Offset, field.Type.SizeOf);
+                        InitializeStaticVar(fieldDest, field.Type, field.Initializer);
                     }
                     break;
 

@@ -21,9 +21,9 @@
         {
             Fields = new List<StructField>
                 {
-                    new StructField(SourceRange.Unknown, "x", Float.CreateType(SourceRange.Unknown)),
-                    new StructField(SourceRange.Unknown, "y", Float.CreateType(SourceRange.Unknown)),
-                    new StructField(SourceRange.Unknown, "z", Float.CreateType(SourceRange.Unknown)),
+                    new StructField(SourceRange.Unknown, "x", Float.CreateType(SourceRange.Unknown)) { Offset = 0 },
+                    new StructField(SourceRange.Unknown, "y", Float.CreateType(SourceRange.Unknown)) { Offset = 1 },
+                    new StructField(SourceRange.Unknown, "z", Float.CreateType(SourceRange.Unknown)) { Offset = 2 },
                 },
         };
         public static StructDeclaration PlayerIndex { get; } = CreateHandleType("PLAYER_INDEX");
@@ -48,7 +48,7 @@
             {
                 Fields = new List<StructField>
                 {
-                    new StructField(SourceRange.Unknown, "value", Int.CreateType(SourceRange.Unknown)),
+                    new StructField(SourceRange.Unknown, "value", Int.CreateType(SourceRange.Unknown)) { Offset = 0 },
                 },
             };
             HandleTypes.Add(decl);

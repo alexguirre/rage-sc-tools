@@ -25,6 +25,7 @@
         public string Name { get; set; }
         public IType Type { get; set; }
         public IExpression? Initializer { get; set; }
+        public int Offset { get; set; }
 
         public StructField(SourceRange source, string name, IType type) : base(source)
             => (Name, Type) = (name, type);

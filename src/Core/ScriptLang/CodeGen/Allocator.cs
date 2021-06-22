@@ -19,6 +19,7 @@
         {
             public Program? Program { get; set; }
             public GlobalBlockDeclaration? GlobalBlock { get; set; }
+            public StructDeclaration? Struct { get; set; }
             public int LocalsSize { get; set; }
         }
 
@@ -76,6 +77,17 @@
             {
                 ctx.LocalsSize = 0;
                 node.Parameters.ForEach(p => p.Accept(this, ctx));
+                return default;
+            }
+
+            public override Void Visit(StructDeclaration node, AllocatorContext ctx)
+            {
+                var offset = 0;
+                foreach (var field in node.Fields)
+                {
+                    field.Offset = offset;
+                    offset += field.Type.SizeOf;
+                }
                 return default;
             }
 
