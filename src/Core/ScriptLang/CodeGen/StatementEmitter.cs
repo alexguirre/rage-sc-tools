@@ -7,7 +7,7 @@
     using ScTools.ScriptLang.Ast.Declarations;
     using ScTools.ScriptLang.Ast.Expressions;
     using ScTools.ScriptLang.Ast.Statements;
-    using ScTools.ScriptLang.Semantics;
+    using ScTools.ScriptLang.BuiltIns;
 
     /// <summary>
     /// Emits code to execute statements.
@@ -46,8 +46,62 @@
             return default;
         }
 
-        public override Void Visit(IfStatement node, FuncDeclaration func) => default;
-        public override Void Visit(RepeatStatement node, FuncDeclaration func) => default;
+        public override Void Visit(IfStatement node, FuncDeclaration func)
+        {
+            // check condition
+            CG.EmitValue(node.Condition);
+            CG.EmitJumpIfZero(node.ElseLabel!);
+
+            // then body
+            node.Then.ForEach(stmt => stmt.Accept(this, func));
+            if (node.Else.Any())
+            {
+                // jump over the else body
+                CG.EmitJump(node.EndLabel!);
+            }
+
+            // else body
+            CG.EmitLabel(node.ElseLabel!);
+            node.Else.ForEach(stmt => stmt.Accept(this, func));
+
+            CG.EmitLabel(node.EndLabel!);
+
+            return default;
+        }
+
+        public override Void Visit(RepeatStatement node, FuncDeclaration func)
+        {
+            var intTy = BuiltInTypes.Int.CreateType(node.Source);
+            var constantZero = new IntLiteralExpression(node.Source, 0) { Type = intTy, IsConstant = true, IsLValue = false };
+            var constantOne = new IntLiteralExpression(node.Source, 1) { Type = intTy, IsConstant = true, IsLValue = false };
+
+            // set counter to 0
+            new AssignmentStatement(node.Source, compoundOperator: null,
+                                    lhs: node.Counter, rhs: constantZero)
+                .Accept(this, func);
+
+            CG.EmitLabel(node.BeginLabel!);
+
+            // check counter < limit
+            CG.EmitValue(node.Counter);
+            CG.EmitValue(node.Limit);
+            CG.Emit(Opcode.ILT_JZ, node.ExitLabel!);
+
+            // body
+            node.Body.ForEach(stmt => stmt.Accept(this, func));
+
+            // increment counter
+            new AssignmentStatement(node.Source, compoundOperator: BinaryOperator.Add,
+                                    lhs: node.Counter, rhs: constantOne)
+                .Accept(this, func);
+
+            // jump back to condition check
+            CG.EmitJump(node.BeginLabel!);
+
+            CG.EmitLabel(node.ExitLabel!);
+
+            return default;
+        }
 
         public override Void Visit(ReturnStatement node, FuncDeclaration func)
         {
@@ -87,7 +141,34 @@
             return default;
         }
 
-        public override Void Visit(WhileStatement node, FuncDeclaration func) => default;
-        public override Void Visit(InvocationExpression node, FuncDeclaration func) => default;
+        public override Void Visit(WhileStatement node, FuncDeclaration func)
+        {
+            CG.EmitLabel(node.BeginLabel!);
+
+            // check condition
+            CG.EmitValue(node.Condition);
+            CG.EmitJumpIfZero(node.ExitLabel!);
+
+            // body
+            node.Body.ForEach(stmt => stmt.Accept(this, func));
+
+            // jump back to condition check
+            CG.EmitJump(node.BeginLabel!);
+
+            CG.EmitLabel(node.ExitLabel!);
+
+            return default;
+        }
+
+        public override Void Visit(InvocationExpression node, FuncDeclaration func)
+        {
+            CG.EmitValue(node);
+            var returnValueSize = node.Type!.SizeOf;
+            for (int i = 0; i < returnValueSize; i++)
+            {
+                CG.Emit(Opcode.DROP);
+            }
+            return default;
+        }
     }
 }

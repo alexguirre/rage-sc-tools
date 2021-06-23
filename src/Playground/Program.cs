@@ -80,7 +80,7 @@
                 var s = sink.ToString();
                 ;
                 using var reader = new StringReader(s);
-                var assembler = Assembler.Assemble(reader, filePath, nativeDB, options: new() { IncludeFunctionNames = true });
+                var assembler = Assembler.Assemble(reader, Path.ChangeExtension(filePath, "scasm"), nativeDB, options: new() { IncludeFunctionNames = true });
                 assembler.Diagnostics.PrintAll(Console.Out);
                 ;
             }

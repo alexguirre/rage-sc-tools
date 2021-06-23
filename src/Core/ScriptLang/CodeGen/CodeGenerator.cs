@@ -183,19 +183,56 @@
 
         public void Emit(Opcode opcode, IEnumerable<object> operands) => Sink.WriteLine("\t{0} {1}", opcode.Mnemonic(), string.Join(", ", operands));
         public void Emit(Opcode opcode, params object[] operands) => Emit(opcode, (IEnumerable<object>)operands);
+
         public void EmitLabel(string label) => Sink.WriteLine(" {0}:", label);
+
         public void EmitJump(string label) => Emit(Opcode.J, label);
-        public void EmitSwitch(IEnumerable<ValueSwitchCase> cases) => Emit(Opcode.SWITCH, cases.Select(c => $"{ExpressionEvaluator.EvalInt(c.Value, Symbols)}:{c.Label}"));
+        public void EmitJumpIfZero(string label) => Emit(Opcode.JZ, label);
+
+        public void EmitSwitch(IEnumerable<ValueSwitchCase> cases)
+            => Emit(Opcode.SWITCH, cases.Select(c => $"{unchecked((uint)ExpressionEvaluator.EvalInt(c.Value, Symbols))}:{c.Label}"));
+
         public void EmitPushConstInt(int value)
         {
-            // TODO: EmitPushConstInt
-            Sink.WriteLine("\t; TODO: {0}", nameof(EmitPushConstInt));
+            switch (value)
+            {
+                case >= -1 and <= 7:
+                    Emit((Opcode)((int)Opcode.PUSH_CONST_M1 + value + 1));
+                    break;
+
+                case >= byte.MinValue and <= byte.MaxValue:
+                    Emit(Opcode.PUSH_CONST_U8, value);
+                    break;
+
+                case >= short.MinValue and <= short.MaxValue:
+                    Emit(Opcode.PUSH_CONST_S16, value);
+                    break;
+
+                case >= 0 and <= 0x00FFFFFF:
+                    Emit(Opcode.PUSH_CONST_U24, value);
+                    break;
+
+                default:
+                    Emit(Opcode.PUSH_CONST_U32, unchecked((uint)value));
+                    break;
+            }
         }
 
         public void EmitPushConstFloat(float value)
         {
-            // TODO: EmitPushConstFloat
-            Sink.WriteLine("\t; TODO: {0}", nameof(EmitPushConstFloat));
+            switch (value)
+            {
+                case -1.0f: Emit(Opcode.PUSH_CONST_FM1); break;
+                case 0.0f: Emit(Opcode.PUSH_CONST_F0); break;
+                case 1.0f: Emit(Opcode.PUSH_CONST_F1); break;
+                case 2.0f: Emit(Opcode.PUSH_CONST_F2); break;
+                case 3.0f: Emit(Opcode.PUSH_CONST_F3); break;
+                case 4.0f: Emit(Opcode.PUSH_CONST_F4); break;
+                case 5.0f: Emit(Opcode.PUSH_CONST_F5); break;
+                case 6.0f: Emit(Opcode.PUSH_CONST_F6); break;
+                case 7.0f: Emit(Opcode.PUSH_CONST_F7); break;
+                default: Emit(Opcode.PUSH_CONST_F, value.ToString("R", CultureInfo.InvariantCulture)); break;
+            }
         }
 
         private void WriteValues(Span<ScriptValue> values)
