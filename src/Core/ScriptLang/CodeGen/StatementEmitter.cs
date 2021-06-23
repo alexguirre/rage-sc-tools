@@ -1,9 +1,12 @@
 ﻿namespace ScTools.ScriptLang.CodeGen
 {
+    using System.Linq;
+
     using ScTools.ScriptLang.Ast;
     using ScTools.ScriptLang.Ast.Declarations;
     using ScTools.ScriptLang.Ast.Expressions;
     using ScTools.ScriptLang.Ast.Statements;
+    using ScTools.ScriptLang.Semantics;
 
     public sealed class StatementEmitter : EmptyVisitor<Void, FuncDeclaration>
     {
@@ -52,9 +55,36 @@
             return default;
         }
 
-        public override Void Visit(SwitchStatement node, FuncDeclaration func) => default;
-        public override Void Visit(ValueSwitchCase node, FuncDeclaration func) => default;
-        public override Void Visit(DefaultSwitchCase node, FuncDeclaration func) => default;
+        public override Void Visit(SwitchStatement node, FuncDeclaration func)
+        {
+            // TODO: push value of expression
+
+            var operandsStr = string.Join(", ", node.Cases.OfType<ValueSwitchCase>()
+                                                          .Select(c => $"{ExpressionEvaluator.EvalInt(c.Value, CG.Symbols)}:{c.Label}"));
+            CG.Sink.WriteLine("\tSWITCH {0}", operandsStr);
+
+            var defaultCase = node.Cases.OfType<DefaultSwitchCase>().SingleOrDefault();
+            CG.Sink.WriteLine("\tJ {0}", defaultCase?.Label ?? node.ExitLabel);
+
+            node.Cases.ForEach(c => c.Accept(this, func));
+            CG.Sink.WriteLine(" {0}:", node.ExitLabel);
+            return default;
+        }
+
+        public override Void Visit(ValueSwitchCase node, FuncDeclaration func) 
+        {
+            CG.Sink.WriteLine(" {0}:", node.Label);
+            node.Body.ForEach(stmt => stmt.Accept(this, func));
+            return default;
+        }
+
+        public override Void Visit(DefaultSwitchCase node, FuncDeclaration func)
+        {
+            CG.Sink.WriteLine(" {0}:", node.Label);
+            node.Body.ForEach(stmt => stmt.Accept(this, func));
+            return default;
+        }
+
         public override Void Visit(WhileStatement node, FuncDeclaration func) => default;
         public override Void Visit(InvocationExpression node, FuncDeclaration func) => default;
     }
