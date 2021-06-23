@@ -77,6 +77,8 @@
 
     public sealed class NativeDB
     {
+        public static readonly NativeDB Empty = new(new ulong[0, 0], new(), ImmutableArray<NativeCommandDefinition>.Empty);
+
         private readonly ulong[,] translationTable;
         private readonly Dictionary<ulong, ImmutableArray<int>> hashToRows;
         public ImmutableArray<NativeCommandDefinition> Commands { get; }
