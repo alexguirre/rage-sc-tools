@@ -207,11 +207,17 @@
             }
             else
             {
-                var assignedType = node.CompoundOperator switch
+                IType assignedType;
+                if (node.CompoundOperator is null)
                 {
-                    null => node.RHS.Type!,
-                    var op => node.LHS.Type!.BinaryOperation(op.Value, node.RHS.Type!, node.Source, Diagnostics),
-                };
+                    assignedType = node.RHS.Type!;
+                }
+                else
+                {
+                    node.CompoundExpression = new BinaryExpression(node.Source, node.CompoundOperator.Value, node.LHS, node.RHS);
+                    node.CompoundExpression.Accept(this, param);
+                    assignedType = node.CompoundExpression.Type!;
+                }
 
                 node.LHS.Type!.Assign(assignedType, rhsIsLValue: false, node.Source, Diagnostics);
             }

@@ -25,8 +25,42 @@
             return default;
         }
 
-        public override Void Visit(VarDeclaration node, FuncDeclaration func) => default;
-        public override Void Visit(AssignmentStatement node, FuncDeclaration func) => default;
+        public override Void Visit(VarDeclaration node, FuncDeclaration func)
+        {
+            if (node.Initializer is null)
+            {
+                // TODO: default initialize var
+            }
+            else
+            {
+                var dest = new ValueDeclRefExpression(node.Source, node.Name) { Declaration = node, Type = node.Type!, IsLValue = true, IsConstant = false };
+                new AssignmentStatement(node.Source, compoundOperator: null,
+                                        lhs: dest, rhs: node.Initializer)
+                    .Accept(this, func);
+            }
+
+            return default;
+        }
+
+        public override Void Visit(AssignmentStatement node, FuncDeclaration func)
+        {
+            var size = node.LHS.Type!.SizeOf;
+
+            CG.EmitValue(node.CompoundExpression ?? node.RHS);
+            if (size == 1)
+            {
+                CG.EmitAddress(node.LHS);
+                CG.Emit(Opcode.STORE);
+            }
+            else
+            {
+                CG.EmitPushConstInt(size);
+                CG.EmitAddress(node.LHS);
+                CG.Emit(Opcode.STORE_N);
+            }
+
+            return default;
+        }
 
         public override Void Visit(BreakStatement node, FuncDeclaration func)
         {

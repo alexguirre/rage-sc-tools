@@ -1,11 +1,14 @@
 ﻿namespace ScTools.ScriptLang.Ast.Types
 {
+    using System;
     using System.Linq;
 
+    using ScTools.ScriptAssembly;
     using ScTools.ScriptLang.Ast.Declarations;
     using ScTools.ScriptLang.Ast.Errors;
     using ScTools.ScriptLang.Ast.Expressions;
     using ScTools.ScriptLang.BuiltIns;
+    using ScTools.ScriptLang.CodeGen;
 
     public sealed class StructType : BaseType
     {
@@ -90,6 +93,36 @@
             }
 
             return base.UnaryOperation(op, source, diagnostics);
+        }
+
+        public override void CGBinaryOperation(CodeGenerator cg, BinaryOperator op)
+        {
+            if (BuiltInTypes.IsVectorType(this))
+            {
+                switch (op)
+                {
+                    case BinaryOperator.Add: cg.Emit(Opcode.VADD); break;
+                    case BinaryOperator.Subtract: cg.Emit(Opcode.VSUB); break;
+                    case BinaryOperator.Multiply: cg.Emit(Opcode.VMUL); break;
+                    case BinaryOperator.Divide: cg.Emit(Opcode.VDIV); break;
+
+                    default: throw new NotImplementedException();
+                }
+                return;
+            }
+
+            throw new NotImplementedException();
+        }
+
+        public override void CGUnaryOperation(CodeGenerator cg, UnaryOperator op)
+        {
+            if (op is UnaryOperator.Negate && BuiltInTypes.IsVectorType(this))
+            {
+                cg.Emit(Opcode.VNEG);
+                return;
+            }
+
+            throw new NotImplementedException();
         }
     }
 }

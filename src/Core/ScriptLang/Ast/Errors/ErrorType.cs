@@ -1,7 +1,10 @@
 ﻿namespace ScTools.ScriptLang.Ast.Errors
 {
+    using System;
+
     using ScTools.ScriptLang.Ast.Expressions;
     using ScTools.ScriptLang.Ast.Types;
+    using ScTools.ScriptLang.CodeGen;
 
     public sealed class ErrorType : BaseError, IType
     {
@@ -27,5 +30,7 @@
         public IType Invocation((IType Type, bool IsLValue, SourceRange Source)[] args, SourceRange source, DiagnosticsReport diagnostics) => this;
         public void Assign(IType rhs, bool rhsIsLValue, SourceRange source, DiagnosticsReport diagnostics) { }
         public void AssignInit(IType rhs, bool rhsIsLValue, SourceRange source, DiagnosticsReport diagnostics) { }
+        public void CGBinaryOperation(CodeGenerator cg, BinaryOperator op) => throw new NotImplementedException();
+        public void CGUnaryOperation(CodeGenerator cg, UnaryOperator op) => throw new NotImplementedException();
     }
 }

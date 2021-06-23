@@ -1,4 +1,5 @@
 ﻿using ScTools.ScriptLang.Ast.Expressions;
+using ScTools.ScriptLang.CodeGen;
 
 namespace ScTools.ScriptLang.Ast.Types
 {
@@ -53,5 +54,11 @@ namespace ScTools.ScriptLang.Ast.Types
 
         public override IType Invocation((IType Type, bool IsLValue, SourceRange Source)[] args, SourceRange source, DiagnosticsReport diagnostics)
             => PointeeType.Invocation(args, source, diagnostics);
+
+        public override void CGBinaryOperation(CodeGenerator cg, BinaryOperator op)
+            => PointeeType.CGBinaryOperation(cg, op);
+
+        public override void CGUnaryOperation(CodeGenerator cg, UnaryOperator op)
+            => PointeeType.CGUnaryOperation(cg, op);
     }
 }

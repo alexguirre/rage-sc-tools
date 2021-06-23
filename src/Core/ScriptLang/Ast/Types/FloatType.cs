@@ -1,7 +1,11 @@
 ﻿namespace ScTools.ScriptLang.Ast.Types
 {
+    using System;
+
+    using ScTools.ScriptAssembly;
     using ScTools.ScriptLang.Ast.Errors;
     using ScTools.ScriptLang.Ast.Expressions;
+    using ScTools.ScriptLang.CodeGen;
 
     public sealed class FloatType : BaseType
     {
@@ -56,6 +60,37 @@
             }
 
             return base.UnaryOperation(op, source, diagnostics);
+        }
+
+        public override void CGBinaryOperation(CodeGenerator cg, BinaryOperator op)
+        {
+            switch (op)
+            {
+                case BinaryOperator.Add: cg.Emit(Opcode.FADD); break;
+                case BinaryOperator.Subtract: cg.Emit(Opcode.FSUB); break;
+                case BinaryOperator.Multiply: cg.Emit(Opcode.FMUL); break;
+                case BinaryOperator.Divide: cg.Emit(Opcode.FDIV); break;
+                case BinaryOperator.Modulo: cg.Emit(Opcode.FMOD); break;
+
+                case BinaryOperator.Equals: cg.Emit(Opcode.FEQ); break;
+                case BinaryOperator.NotEquals: cg.Emit(Opcode.FNE); break;
+                case BinaryOperator.LessThan: cg.Emit(Opcode.FLT); break;
+                case BinaryOperator.LessThanOrEqual: cg.Emit(Opcode.FLE); break;
+                case BinaryOperator.GreaterThan: cg.Emit(Opcode.FGT); break;
+                case BinaryOperator.GreaterThanOrEqual: cg.Emit(Opcode.FGE); break;
+
+                default: throw new NotImplementedException();
+            }
+        }
+
+        public override void CGUnaryOperation(CodeGenerator cg, UnaryOperator op)
+        {
+            switch (op)
+            {
+                case UnaryOperator.Negate: cg.Emit(Opcode.FNEG); break;
+
+                default: throw new NotImplementedException();
+            }
         }
     }
 }

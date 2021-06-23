@@ -118,9 +118,9 @@
 
             Sink.WriteLine("\t.string");
             // TODO: do we want strings to keep their order from the AST?
-            foreach (var (str, label) in Strings.StringToLabel)
+            foreach (var (str, id) in Strings.StringToID.OrderBy(p => p.Value))
             {
-                Sink.WriteLine("\t{0}:\t.str \"{1}\"", label, str.Escape());
+                Sink.WriteLine("\t.str \"{0}\"", str.Escape());
             }
         }
 

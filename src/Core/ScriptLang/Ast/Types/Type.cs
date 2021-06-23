@@ -4,6 +4,7 @@
 
     using ScTools.ScriptLang.Ast.Errors;
     using ScTools.ScriptLang.Ast.Expressions;
+    using ScTools.ScriptLang.CodeGen;
 
     public interface IType : INode
     {
@@ -71,6 +72,10 @@
         /// Checks if the type <paramref name="rhs"/> can be assigned to this type in an initializer or when passed as parameter.
         /// </summary>
         void AssignInit(IType rhs, bool rhsIsLValue, SourceRange source, DiagnosticsReport diagnostics);
+
+        // CodeGen
+        void CGBinaryOperation(CodeGenerator cg, BinaryOperator op);
+        void CGUnaryOperation(CodeGenerator cg, UnaryOperator op);
     }
 
     public interface IArrayType : IType
@@ -126,6 +131,9 @@
 
             diagnostics.AddError($"Cannot assign type '{rhs}' to '{this}'", source);
         }
+
+        public virtual void CGBinaryOperation(CodeGenerator cg, BinaryOperator op) => throw new NotImplementedException();
+        public virtual void CGUnaryOperation(CodeGenerator cg, UnaryOperator op) => throw new NotImplementedException();
     }
 
     public abstract class BaseArrayType : BaseType, IArrayType

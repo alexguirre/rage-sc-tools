@@ -1,8 +1,12 @@
 ﻿namespace ScTools.ScriptLang.Ast.Types
 {
+    using System;
+
+    using ScTools.ScriptAssembly;
     using ScTools.ScriptLang.Ast.Declarations;
     using ScTools.ScriptLang.Ast.Errors;
     using ScTools.ScriptLang.Ast.Expressions;
+    using ScTools.ScriptLang.CodeGen;
 
     public sealed class EnumType : BaseType
     {
@@ -50,6 +54,30 @@
             }
 
             return base.BinaryOperation(op, rhs, source, diagnostics);
+        }
+
+        public override void CGBinaryOperation(CodeGenerator cg, BinaryOperator op)
+        {
+            switch (op)
+            {
+                case BinaryOperator.Add: cg.Emit(Opcode.IADD); break;
+                case BinaryOperator.Subtract: cg.Emit(Opcode.ISUB); break;
+                case BinaryOperator.Multiply: cg.Emit(Opcode.IMUL); break;
+                case BinaryOperator.Divide: cg.Emit(Opcode.IDIV); break;
+                case BinaryOperator.Modulo: cg.Emit(Opcode.IMOD); break;
+                case BinaryOperator.And: cg.Emit(Opcode.IAND); break;
+                case BinaryOperator.Xor: cg.Emit(Opcode.IXOR); break;
+                case BinaryOperator.Or: cg.Emit(Opcode.IOR); break;
+
+                case BinaryOperator.Equals: cg.Emit(Opcode.IEQ); break;
+                case BinaryOperator.NotEquals: cg.Emit(Opcode.INE); break;
+                case BinaryOperator.LessThan: cg.Emit(Opcode.ILT); break;
+                case BinaryOperator.LessThanOrEqual: cg.Emit(Opcode.ILE); break;
+                case BinaryOperator.GreaterThan: cg.Emit(Opcode.IGT); break;
+                case BinaryOperator.GreaterThanOrEqual: cg.Emit(Opcode.IGE); break;
+
+                default: throw new NotImplementedException();
+            }
         }
     }
 }

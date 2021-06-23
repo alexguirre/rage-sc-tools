@@ -10,6 +10,7 @@
         public BinaryOperator? CompoundOperator { get; set; }
         public IExpression LHS { get; set; }
         public IExpression RHS { get; set; }
+        public BinaryExpression? CompoundExpression { get; set; }
 
         public AssignmentStatement(SourceRange source, BinaryOperator? compoundOperator, IExpression lhs, IExpression rhs) : base(source)
             => (CompoundOperator, LHS, RHS) = (compoundOperator, lhs, rhs);

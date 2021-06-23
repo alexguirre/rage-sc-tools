@@ -2,16 +2,22 @@
 {
     using System.Collections.Generic;
 
+    using ScTools.ScriptAssembly;
+
     public sealed class StringsTable
     {
-        public int Count => StringToLabel.Count;
-        public IDictionary<string, string> StringToLabel { get; } = new Dictionary<string, string>();
+        private readonly SegmentBuilder segmentBuilder = new(Assembler.GetAddressingUnitByteSize(Assembler.Segment.String), isPaged: true);
+
+        public IDictionary<string, int> StringToID { get; } = new Dictionary<string, int>();
+        public int Count => StringToID.Count;
+        public int this[string str] => StringToID[str];
 
         public void Add(string str)
         {
-            if (!StringToLabel.ContainsKey(str))
+            if (!StringToID.ContainsKey(str))
             {
-                StringToLabel.Add(str, $"str{StringToLabel.Count}");
+                StringToID.Add(str, segmentBuilder.Length);
+                segmentBuilder.String(str);
             }
         }
     }

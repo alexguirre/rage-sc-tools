@@ -3,6 +3,7 @@
     using ScTools.ScriptAssembly;
     using ScTools.ScriptLang.Ast;
     using ScTools.ScriptLang.Ast.Expressions;
+    using ScTools.ScriptLang.Ast.Types;
 
     /// <summary>
     /// Emits code to push the value of expressions.
@@ -13,7 +14,13 @@
 
         public ValueEmitter(CodeGenerator cg) => CG = cg;
 
-        public override Void Visit(BinaryExpression node, Void param) => default;
+        public override Void Visit(BinaryExpression node, Void param)
+        {
+            node.LHS.Accept(this, param);
+            node.RHS.Accept(this, param);
+            node.LHS.Type!.CGBinaryOperation(CG, node.Operator);
+            return default;
+        }
 
         public override Void Visit(BoolLiteralExpression node, Void param)
         {
@@ -29,7 +36,24 @@
             return default;
         }
 
-        public override Void Visit(IndexingExpression node, Void param) => default;
+        public override Void Visit(IndexingExpression node, Void param)
+        {
+            var size = node.Type!.SizeOf;
+
+            if (size == 1)
+            {
+                CG.EmitAddress(node);
+                CG.Emit(Opcode.LOAD);
+            }
+            else
+            {
+                CG.EmitPushConstInt(size);
+                CG.EmitAddress(node);
+                CG.Emit(Opcode.LOAD_N);
+            }
+
+            return default;
+        }
 
         public override Void Visit(IntLiteralExpression node, Void param)
         {
@@ -51,9 +75,52 @@
             return default;
         }
 
-        public override Void Visit(StringLiteralExpression node, Void param) => default;
-        public override Void Visit(UnaryExpression node, Void param) => default;
-        public override Void Visit(ValueDeclRefExpression node, Void param) => default;
+        public override Void Visit(StringLiteralExpression node, Void param)
+        {
+            if (node.Value is null)
+            {
+                CG.EmitPushConstInt(0);
+            }
+            else
+            {
+                CG.EmitPushConstInt(CG.Strings[node.Value]);
+                CG.Emit(Opcode.STRING);
+            }
+            return default;
+        }
+
+        public override Void Visit(UnaryExpression node, Void param)
+        {
+            node.SubExpression.Accept(this, param);
+            node.SubExpression.Type!.CGUnaryOperation(CG, node.Operator);
+            return default;
+        }
+
+        public override Void Visit(ValueDeclRefExpression node, Void param)
+        {
+            if (node.IsLValue)
+            {
+                var size = node.Type!.SizeOf;
+
+                if (size == 1)
+                {
+                    CG.EmitAddress(node);
+                    CG.Emit(Opcode.LOAD);
+                }
+                else
+                {
+                    CG.EmitPushConstInt(size);
+                    CG.EmitAddress(node);
+                    CG.Emit(Opcode.LOAD_N);
+                }
+            }
+            else
+            {
+                // TODO: non-lvalues
+            }
+
+            return default;
+        }
 
         public override Void Visit(VectorExpression node, Void param)
         {
