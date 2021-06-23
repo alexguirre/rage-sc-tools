@@ -1,6 +1,7 @@
 ﻿namespace ScTools.ScriptLang.CodeGen
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Globalization;
     using System.IO;
@@ -10,6 +11,7 @@
     using System.Text;
 
     using ScTools.GameFiles;
+    using ScTools.ScriptAssembly;
     using ScTools.ScriptLang.Ast;
     using ScTools.ScriptLang.Ast.Declarations;
     using ScTools.ScriptLang.Ast.Expressions;
@@ -22,6 +24,8 @@
     public class CodeGenerator
     {
         private readonly StatementEmitter stmtEmitter;
+        private readonly ValueEmitter valueEmitter;
+        private readonly AddressEmitter addressEmitter;
 
         public TextWriter Sink { get; }
         public Program Program { get; }
@@ -31,7 +35,17 @@
         public StringsTable Strings { get; private set; }
 
         public CodeGenerator(TextWriter sink, Program program, GlobalSymbolTable symbols, DiagnosticsReport diagnostics, NativeDB nativeDB)
-            => (Sink, Program, Symbols, Diagnostics, NativeDB, Strings, stmtEmitter)  = (sink, program, symbols, diagnostics, nativeDB, new(), new(this));
+        {
+            Sink = sink;
+            Program = program;
+            Symbols = symbols;
+            Diagnostics = diagnostics;
+            NativeDB = nativeDB;
+            Strings = new();
+            stmtEmitter = new(this);
+            valueEmitter = new(this);
+            addressEmitter = new(this);
+        }
 
         public bool Generate()
         {
@@ -151,16 +165,37 @@
             Sink.WriteLine("{0}:", func.Name);
 
             // prologue
-            Sink.WriteLine("\tENTER {0}, {1}", func.Prototype.ParametersSize, func.FrameSize);
+            Emit(Opcode.ENTER, func.Prototype.ParametersSize, func.FrameSize);
 
             // body
-            func.Body.ForEach(stmt => stmt.Accept(stmtEmitter, func));
+            func.Body.ForEach(stmt => EmitStatement(stmt, func));
 
             // epilogue
             if (func.Body.LastOrDefault() is not ReturnStatement)
             {
-                Sink.WriteLine("\tLEAVE {0}, {1}", func.Prototype.ParametersSize, func.Prototype.ReturnType.SizeOf);
+                Emit(Opcode.LEAVE, func.Prototype.ParametersSize, func.Prototype.ReturnType.SizeOf);
             }
+        }
+
+        public void EmitStatement(IStatement stmt, FuncDeclaration func) => stmt.Accept(stmtEmitter, func);
+        public void EmitValue(IExpression expr) => expr.Accept(valueEmitter, default);
+        public void EmitAddress(IExpression expr) => expr.Accept(addressEmitter, default);
+
+        public void Emit(Opcode opcode, IEnumerable<object> operands) => Sink.WriteLine("\t{0} {1}", opcode.Mnemonic(), string.Join(", ", operands));
+        public void Emit(Opcode opcode, params object[] operands) => Emit(opcode, (IEnumerable<object>)operands);
+        public void EmitLabel(string label) => Sink.WriteLine(" {0}:", label);
+        public void EmitJump(string label) => Emit(Opcode.J, label);
+        public void EmitSwitch(IEnumerable<ValueSwitchCase> cases) => Emit(Opcode.SWITCH, cases.Select(c => $"{ExpressionEvaluator.EvalInt(c.Value, Symbols)}:{c.Label}"));
+        public void EmitPushConstInt(int value)
+        {
+            // TODO: EmitPushConstInt
+            Sink.WriteLine("\t; TODO: {0}", nameof(EmitPushConstInt));
+        }
+
+        public void EmitPushConstFloat(float value)
+        {
+            // TODO: EmitPushConstFloat
+            Sink.WriteLine("\t; TODO: {0}", nameof(EmitPushConstFloat));
         }
 
         private void WriteValues(Span<ScriptValue> values)
