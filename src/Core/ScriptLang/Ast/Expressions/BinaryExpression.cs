@@ -27,6 +27,10 @@
         public BinaryOperator Operator { get; set; }
         public IExpression LHS { get; set; }
         public IExpression RHS { get; set; }
+        /// <summary>
+        /// Gets or sets the label used to implement the short-circuiting logic of <see cref="BinaryOperator.LogicalAnd"/> and <see cref="BinaryOperator.LogicalOr"/>.
+        /// </summary>
+        public string? ShortCircuitLabel { get; set; }
 
         public BinaryExpression(SourceRange source, BinaryOperator op, IExpression lhs, IExpression rhs) : base(source)
             => (Operator, LHS, RHS) = (op, lhs, rhs);

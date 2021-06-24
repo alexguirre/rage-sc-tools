@@ -74,8 +74,8 @@
         void AssignInit(IType rhs, bool rhsIsLValue, SourceRange source, DiagnosticsReport diagnostics);
 
         // CodeGen
-        void CGBinaryOperation(CodeGenerator cg, BinaryOperator op);
-        void CGUnaryOperation(CodeGenerator cg, UnaryOperator op);
+        void CGBinaryOperation(CodeGenerator cg, BinaryExpression expr);
+        void CGUnaryOperation(CodeGenerator cg, UnaryExpression expr);
     }
 
     public interface IArrayType : IType
@@ -132,8 +132,8 @@
             diagnostics.AddError($"Cannot assign type '{rhs}' to '{this}'", source);
         }
 
-        public virtual void CGBinaryOperation(CodeGenerator cg, BinaryOperator op) => throw new NotImplementedException();
-        public virtual void CGUnaryOperation(CodeGenerator cg, UnaryOperator op) => throw new NotImplementedException();
+        public virtual void CGBinaryOperation(CodeGenerator cg, BinaryExpression expr) => throw new NotImplementedException();
+        public virtual void CGUnaryOperation(CodeGenerator cg, UnaryExpression expr) => throw new NotImplementedException();
     }
 
     public abstract class BaseArrayType : BaseType, IArrayType

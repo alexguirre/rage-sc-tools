@@ -95,11 +95,13 @@
             return base.UnaryOperation(op, source, diagnostics);
         }
 
-        public override void CGBinaryOperation(CodeGenerator cg, BinaryOperator op)
+        public override void CGBinaryOperation(CodeGenerator cg, BinaryExpression expr)
         {
             if (BuiltInTypes.IsVectorType(this))
             {
-                switch (op)
+                cg.EmitValue(expr.LHS);
+                cg.EmitValue(expr.RHS);
+                switch (expr.Operator)
                 {
                     case BinaryOperator.Add: cg.Emit(Opcode.VADD); break;
                     case BinaryOperator.Subtract: cg.Emit(Opcode.VSUB); break;
@@ -114,10 +116,11 @@
             throw new NotImplementedException();
         }
 
-        public override void CGUnaryOperation(CodeGenerator cg, UnaryOperator op)
+        public override void CGUnaryOperation(CodeGenerator cg, UnaryExpression expr)
         {
-            if (op is UnaryOperator.Negate && BuiltInTypes.IsVectorType(this))
+            if (expr.Operator is UnaryOperator.Negate && BuiltInTypes.IsVectorType(this))
             {
+                cg.EmitValue(expr.SubExpression);
                 cg.Emit(Opcode.VNEG);
                 return;
             }

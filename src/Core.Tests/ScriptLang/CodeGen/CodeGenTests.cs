@@ -246,6 +246,127 @@
             ");
         }
 
+        [Fact]
+        public void TestShortCircuitAND()
+        {
+            CompileMain(
+            source: @"
+                BOOL b = TRUE AND FALSE
+            ",
+            expectedAssembly: @"
+                ENTER 0, 3
+                PUSH_CONST_1
+                DUP
+                JZ assign
+                PUSH_CONST_0
+                IAND
+            assign:
+                LOCAL_U8_STORE 2
+                LEAVE 0, 0
+            ");
+        }
+
+        [Fact]
+        public void TestShortCircuitOR()
+        {
+            CompileMain(
+            source: @"
+                BOOL b = TRUE OR FALSE
+            ",
+            expectedAssembly: @"
+                ENTER 0, 3
+                PUSH_CONST_1
+                DUP
+                INOT
+                JZ assign
+                PUSH_CONST_0
+                IOR
+            assign:
+                LOCAL_U8_STORE 2
+                LEAVE 0, 0
+            ");
+        }
+
+        [Fact]
+        public void TestLongShortCircuitAND()
+        {
+            CompileMain(
+            source: @"
+                INT n = 1
+                IF n == 0 AND n == 3 AND n == 5
+                    n = 2
+                ENDIF
+            ",
+            expectedAssembly: @"
+                ENTER 0, 3
+                PUSH_CONST_1
+                LOCAL_U8_STORE 2
+                LOCAL_U8_LOAD 2
+                PUSH_CONST_0
+                IEQ
+                DUP
+                JZ and
+                LOCAL_U8_LOAD 2
+                PUSH_CONST_3
+                IEQ
+                IAND
+            and:
+                DUP
+                JZ if
+                LOCAL_U8_LOAD 2
+                PUSH_CONST_5
+                IEQ
+                IAND
+            if:
+                JZ endif
+                PUSH_CONST_2
+                LOCAL_U8_STORE 2
+            endif:
+                LEAVE 0, 0
+            ");
+        }
+
+        [Fact]
+        public void TestLongShortCircuitOR()
+        {
+            CompileMain(
+            source: @"
+                INT n = 1
+                IF n == 0 OR n == 3 OR n == 5
+                    n = 2
+                ENDIF
+            ",
+            expectedAssembly: @"
+                ENTER 0, 3
+                PUSH_CONST_1
+                LOCAL_U8_STORE 2
+                LOCAL_U8_LOAD 2
+                PUSH_CONST_0
+                IEQ
+                DUP
+                INOT
+                JZ or
+                LOCAL_U8_LOAD 2
+                PUSH_CONST_3
+                IEQ
+                IOR
+            or:
+                DUP
+                INOT
+                JZ if
+                LOCAL_U8_LOAD 2
+                PUSH_CONST_5
+                IEQ
+                IOR
+            if:
+                JZ endif
+                PUSH_CONST_2
+                LOCAL_U8_STORE 2
+            endif:
+                LEAVE 0, 0
+            ");
+        }
+
         private static void CompileMain(string source, string expectedAssembly, string sourceStatics = "")
         {
             using var sourceReader = new StringReader($@"

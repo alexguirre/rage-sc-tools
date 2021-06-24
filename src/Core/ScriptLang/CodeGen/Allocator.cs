@@ -4,6 +4,7 @@
 
     using ScTools.ScriptLang.Ast;
     using ScTools.ScriptLang.Ast.Declarations;
+    using ScTools.ScriptLang.Ast.Expressions;
     using ScTools.ScriptLang.Ast.Statements;
 
     /// <summary>
@@ -142,7 +143,7 @@
                         break;
                 }
 
-                return default;
+                return base.Visit(node, ctx);
             }
 
             public override Void Visit(IfStatement node, AllocatorContext ctx)
@@ -181,6 +182,15 @@
             public override Void Visit(DefaultSwitchCase node, AllocatorContext ctx)
             {
                 node.Label = ctx.NextLabel();
+                return base.Visit(node, ctx);
+            }
+
+            public override Void Visit(BinaryExpression node, AllocatorContext ctx)
+            {
+                if (node.Operator is BinaryOperator.LogicalAnd or BinaryOperator.LogicalOr)
+                {
+                    node.ShortCircuitLabel = ctx.NextLabel();
+                }
                 return base.Visit(node, ctx);
             }
         }

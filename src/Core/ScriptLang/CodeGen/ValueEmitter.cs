@@ -16,9 +16,7 @@
 
         public override Void Visit(BinaryExpression node, Void param)
         {
-            node.LHS.Accept(this, param);
-            node.RHS.Accept(this, param);
-            node.LHS.Type!.CGBinaryOperation(CG, node.Operator);
+            node.LHS.Type!.CGBinaryOperation(CG, node);
             return default;
         }
 
@@ -92,7 +90,7 @@
         public override Void Visit(UnaryExpression node, Void param)
         {
             node.SubExpression.Accept(this, param);
-            node.SubExpression.Type!.CGUnaryOperation(CG, node.Operator);
+            node.SubExpression.Type!.CGUnaryOperation(CG, node);
             return default;
         }
 

@@ -63,9 +63,11 @@
             return base.UnaryOperation(op, source, diagnostics);
         }
 
-        public override void CGBinaryOperation(CodeGenerator cg, BinaryOperator op)
+        public override void CGBinaryOperation(CodeGenerator cg, BinaryExpression expr)
         {
-            switch (op)
+            cg.EmitValue(expr.LHS);
+            cg.EmitValue(expr.RHS);
+            switch (expr.Operator)
             {
                 case BinaryOperator.Add: cg.Emit(Opcode.IADD); break;
                 case BinaryOperator.Subtract: cg.Emit(Opcode.ISUB); break;
@@ -87,9 +89,10 @@
             }
         }
 
-        public override void CGUnaryOperation(CodeGenerator cg, UnaryOperator op)
+        public override void CGUnaryOperation(CodeGenerator cg, UnaryExpression expr)
         {
-            switch (op)
+            cg.EmitValue(expr.SubExpression);
+            switch (expr.Operator)
             {
                 case UnaryOperator.Negate: cg.Emit(Opcode.INEG); break;
 

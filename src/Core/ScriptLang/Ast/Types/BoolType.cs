@@ -1,6 +1,7 @@
 ﻿namespace ScTools.ScriptLang.Ast.Types
 {
     using System;
+    using System.Diagnostics;
 
     using ScTools.ScriptAssembly;
     using ScTools.ScriptLang.Ast.Errors;
@@ -56,21 +57,42 @@
             return base.UnaryOperation(op, source, diagnostics);
         }
 
-        public override void CGBinaryOperation(CodeGenerator cg, BinaryOperator op)
+        public override void CGBinaryOperation(CodeGenerator cg, BinaryExpression expr)
         {
-            // TODO: AND/OR short-cirtuiting
-            switch (op)
+            switch (expr.Operator)
             {
-                case BinaryOperator.LogicalAnd: cg.Emit(Opcode.IAND); break;
-                case BinaryOperator.LogicalOr: cg.Emit(Opcode.IOR); break;
+                case BinaryOperator.LogicalAnd:
+                {
+                    Debug.Assert(expr.ShortCircuitLabel is not null);
+                    cg.EmitValue(expr.LHS);
+                    cg.Emit(Opcode.DUP);
+                    cg.EmitJumpIfZero(expr.ShortCircuitLabel);
+                    cg.EmitValue(expr.RHS);
+                    cg.Emit(Opcode.IAND);
+                    cg.EmitLabel(expr.ShortCircuitLabel);
+                }
+                break;
+                case BinaryOperator.LogicalOr:
+                {
+                    Debug.Assert(expr.ShortCircuitLabel is not null);
+                    cg.EmitValue(expr.LHS);
+                    cg.Emit(Opcode.DUP);
+                    cg.Emit(Opcode.INOT);
+                    cg.EmitJumpIfZero(expr.ShortCircuitLabel);
+                    cg.EmitValue(expr.RHS);
+                    cg.Emit(Opcode.IOR);
+                    cg.EmitLabel(expr.ShortCircuitLabel);
+                }
+                break;
 
                 default: throw new NotImplementedException();
             }
         }
 
-        public override void CGUnaryOperation(CodeGenerator cg, UnaryOperator op)
+        public override void CGUnaryOperation(CodeGenerator cg, UnaryExpression expr)
         {
-            switch (op)
+            cg.EmitValue(expr.SubExpression);
+            switch (expr.Operator)
             {
                 case UnaryOperator.LogicalNot: cg.Emit(Opcode.INOT); break;
 
