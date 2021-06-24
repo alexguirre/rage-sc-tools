@@ -27,12 +27,25 @@
         private readonly Stack<IBreakableStatement> breakableStatements = new();
         private readonly Stack<ILoopStatement> loopStatements = new();
         private LabelSymbolTable? currFuncLabels;
+        private FuncDeclaration? mainProc;
 
         public DiagnosticsReport Diagnostics { get; }
         public ScopeSymbolTable Symbols { get; }
 
         private IdentificationVisitor(DiagnosticsReport diagnostics, GlobalSymbolTable symbols)
             => (Diagnostics, Symbols) = (diagnostics, new(symbols));
+
+        public override Void Visit(Program node, Void param)
+        {
+            base.Visit(node, param);
+            node.Main = mainProc;
+            if (node.Main is null)
+            {
+                Diagnostics.AddError($"Entrypoint procedure 'MAIN' is missing", new SourceRange(node.Source.FilePath, node.Source.End, node.Source.End));
+            }
+
+            return DefaultReturn;
+        }
 
         public override Void Visit(FuncDeclaration node, Void param)
         {
@@ -41,6 +54,16 @@
             base.Visit(node, param);
             Symbols.PopScope();
             currFuncLabels = null;
+
+            if (TypeHelper.HasMainProcedureName(node))
+            {
+                if (!TypeHelper.HasMainProcedureSignature(node))
+                {
+                    Diagnostics.AddError($"'{TypePrinter.ToString(node.Type, node.Name)}' is not a valid entrypoint procedure signature, expected 'PROC MAIN()'", node.Source);
+                }
+                mainProc = node;
+            }
+
             return DefaultReturn;
         }
 

@@ -152,10 +152,10 @@
 
         private void EmitCodeSegment()
         {
-            // TODO: check that MAIN exists in semantic analysis
+            Debug.Assert(Program.Main is not null);
+
             var funcs = Program.Declarations.Where(decl => decl is FuncDeclaration { Prototype: { Kind: FuncKind.UserDefined } }).Cast<FuncDeclaration>();
-            var main = funcs.Single(f => Parser.CaseInsensitiveComparer.Equals(f.Name, "MAIN"));
-            funcs = funcs.Where(f => f != main).Prepend(main); // place MAIN first, it has to be compiled at address 0
+            funcs = funcs.Where(f => f != Program.Main).Prepend(Program.Main); // place MAIN first, it has to be compiled at address 0
 
             Sink.WriteLine("\t.code");
             funcs.ForEach(EmitFunc);
