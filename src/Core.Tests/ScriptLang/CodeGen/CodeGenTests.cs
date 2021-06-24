@@ -61,6 +61,214 @@
         }
 
         [Fact]
+        public void TestStringLocalWithInitializer()
+        {
+            CompileMain(
+            source: @"
+                STRING s1 = NULL
+                STRING s2 = 'hello world'
+                STRING s3 = 'test'
+                STRING s4 = 'hello world'
+            ",
+            expectedAssembly: @"
+                ENTER 0, 6
+                PUSH_CONST_0
+                LOCAL_U8_STORE 2
+                PUSH_CONST_0
+                STRING
+                LOCAL_U8_STORE 3
+                PUSH_CONST_U8 strTest
+                STRING
+                LOCAL_U8_STORE 4
+                PUSH_CONST_0
+                STRING
+                LOCAL_U8_STORE 5
+                LEAVE 0, 0
+
+                .string
+                strHelloWorld: .str 'hello world'
+                strTest: .str 'test'
+            ");
+        }
+
+        [Fact]
+        public void TestVectorOperations()
+        {
+            CompileMain(
+            source: @"
+                VECTOR v1 = <<1.0, 2.0, 3.0>>, v2 = <<4.0, 5.0, 6.0>>, v3
+                v3 = v1 + v2
+                v3 = v1 - v2
+                v3 = v1 * v2
+                v3 = v1 / v2
+                v3 = -v1
+            ",
+            expectedAssembly: @"
+                .const v1 2
+                .const v2 5
+                .const v3 8
+                ENTER 0, 11
+                ; v1 = <<1.0, 2.0, 3.0>>
+                PUSH_CONST_F1
+                PUSH_CONST_F2
+                PUSH_CONST_F3
+                PUSH_CONST_3
+                LOCAL_U8 v1
+                STORE_N
+
+                ; v2 = <<4.0, 5.0, 6.0>>
+                PUSH_CONST_F4
+                PUSH_CONST_F5
+                PUSH_CONST_F6
+                PUSH_CONST_3
+                LOCAL_U8 v2
+                STORE_N
+
+                ; v3 = v1 + v2
+                PUSH_CONST_3
+                LOCAL_U8 v1
+                LOAD_N
+                PUSH_CONST_3
+                LOCAL_U8 v2
+                LOAD_N
+                VADD
+                PUSH_CONST_3
+                LOCAL_U8 v3
+                STORE_N
+
+                ; v3 = v1 - v2
+                PUSH_CONST_3
+                LOCAL_U8 v1
+                LOAD_N
+                PUSH_CONST_3
+                LOCAL_U8 v2
+                LOAD_N
+                VSUB
+                PUSH_CONST_3
+                LOCAL_U8 v3
+                STORE_N
+
+                ; v3 = v1 * v2
+                PUSH_CONST_3
+                LOCAL_U8 v1
+                LOAD_N
+                PUSH_CONST_3
+                LOCAL_U8 v2
+                LOAD_N
+                VMUL
+                PUSH_CONST_3
+                LOCAL_U8 v3
+                STORE_N
+
+                ; v3 = v1 / v2
+                PUSH_CONST_3
+                LOCAL_U8 v1
+                LOAD_N
+                PUSH_CONST_3
+                LOCAL_U8 v2
+                LOAD_N
+                VDIV
+                PUSH_CONST_3
+                LOCAL_U8 v3
+                STORE_N
+
+                ; v3 = -v1
+                PUSH_CONST_3
+                LOCAL_U8 v1
+                LOAD_N
+                VNEG
+                PUSH_CONST_3
+                LOCAL_U8 v3
+                STORE_N
+
+                LEAVE 0, 0
+            ");
+        }
+
+        [Fact]
+        public void TestVectorCompoundAssignments()
+        {
+            CompileMain(
+            source: @"
+                VECTOR v1 = <<1.0, 2.0, 3.0>>, v2 = <<4.0, 5.0, 6.0>>
+                v1 += v2
+                v1 -= v2
+                v1 *= v2
+                v1 /= v2
+            ",
+            expectedAssembly: @"
+                .const v1 2
+                .const v2 5
+                ENTER 0, 8
+                ; v1 = <<1.0, 2.0, 3.0>>
+                PUSH_CONST_F1
+                PUSH_CONST_F2
+                PUSH_CONST_F3
+                PUSH_CONST_3
+                LOCAL_U8 v1
+                STORE_N
+
+                ; v2 = <<4.0, 5.0, 6.0>>
+                PUSH_CONST_F4
+                PUSH_CONST_F5
+                PUSH_CONST_F6
+                PUSH_CONST_3
+                LOCAL_U8 v2
+                STORE_N
+
+                ; v1 += v2
+                PUSH_CONST_3
+                LOCAL_U8 v1
+                LOAD_N
+                PUSH_CONST_3
+                LOCAL_U8 v2
+                LOAD_N
+                VADD
+                PUSH_CONST_3
+                LOCAL_U8 v1
+                STORE_N
+
+                ; v1 -= v2
+                PUSH_CONST_3
+                LOCAL_U8 v1
+                LOAD_N
+                PUSH_CONST_3
+                LOCAL_U8 v2
+                LOAD_N
+                VSUB
+                PUSH_CONST_3
+                LOCAL_U8 v1
+                STORE_N
+
+                ; v1 *= v2
+                PUSH_CONST_3
+                LOCAL_U8 v1
+                LOAD_N
+                PUSH_CONST_3
+                LOCAL_U8 v2
+                LOAD_N
+                VMUL
+                PUSH_CONST_3
+                LOCAL_U8 v1
+                STORE_N
+
+                ; v1 /= v2
+                PUSH_CONST_3
+                LOCAL_U8 v1
+                LOAD_N
+                PUSH_CONST_3
+                LOCAL_U8 v2
+                LOAD_N
+                VDIV
+                PUSH_CONST_3
+                LOCAL_U8 v1
+                STORE_N
+
+                LEAVE 0, 0
+            ");
+        }
+
+        [Fact]
         public void TestIfStatement()
         {
             CompileMain(
@@ -242,6 +450,22 @@
                 PUSH_CONST_F1
                 LOCAL_U8_LOAD 3
                 STORE
+                LEAVE 0, 0
+            ");
+        }
+
+        [Fact]
+        public void TestNOT()
+        {
+            CompileMain(
+            source: @"
+                BOOL b = NOT TRUE
+            ",
+            expectedAssembly: @"
+                ENTER 0, 3
+                PUSH_CONST_1
+                INOT
+                LOCAL_U8_STORE 2
                 LEAVE 0, 0
             ");
         }

@@ -89,7 +89,6 @@
 
         public override Void Visit(UnaryExpression node, Void param)
         {
-            node.SubExpression.Accept(this, param);
             node.SubExpression.Type!.CGUnaryOperation(CG, node);
             return default;
         }
