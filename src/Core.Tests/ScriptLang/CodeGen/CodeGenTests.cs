@@ -52,12 +52,10 @@
             source: @"
                 INT n = 10
             ",
-            // TODO: replace with LOCAL_U8_STORE when those optimization are implemented
             expectedAssembly: @"
                 ENTER 0, 3
                 PUSH_CONST_U8 10
-                LOCAL_U8 2
-                STORE
+                LOCAL_U8_STORE 2
                 LEAVE 0, 0
             ");
         }
@@ -75,20 +73,15 @@
             expectedAssembly: @"
                 ENTER 0, 4
                 PUSH_CONST_5
-                LOCAL_U8 2
-                STORE
+                LOCAL_U8_STORE 2
                 PUSH_CONST_U8 10
-                LOCAL_U8 3
-                STORE
-                LOCAL_U8 2
-                LOAD
-                LOCAL_U8 3
-                LOAD
+                LOCAL_U8_STORE 3
+                LOCAL_U8_LOAD 2
+                LOCAL_U8_LOAD 3
                 IGT
                 JZ endif
                 PUSH_CONST_U8 15
-                LOCAL_U8 2
-                STORE
+                LOCAL_U8_STORE 2
             endif:
                 LEAVE 0, 0
             ");
@@ -109,25 +102,19 @@
             expectedAssembly: @"
                 ENTER 0, 4
                 PUSH_CONST_5
-                LOCAL_U8 2
-                STORE
+                LOCAL_U8_STORE 2
                 PUSH_CONST_U8 10
-                LOCAL_U8 3
-                STORE
-                LOCAL_U8 2
-                LOAD
-                LOCAL_U8 3
-                LOAD
+                LOCAL_U8_STORE 3
+                LOCAL_U8_LOAD 2
+                LOCAL_U8_LOAD 3
                 ILE
                 JZ else
                 PUSH_CONST_U8 15
-                LOCAL_U8 2
-                STORE
+                LOCAL_U8_STORE 2
                 J endif
             else:
                 PUSH_CONST_U8 15
-                LOCAL_U8 3
-                STORE
+                LOCAL_U8_STORE 3
             endif:
                 LEAVE 0, 0
             ");
@@ -148,31 +135,23 @@
             expectedAssembly: @"
                 ENTER 0, 4
                 PUSH_CONST_5
-                LOCAL_U8 2
-                STORE
+                LOCAL_U8_STORE 2
                 PUSH_CONST_U8 10
-                LOCAL_U8 3
-                STORE
-                LOCAL_U8 2
-                LOAD
-                LOCAL_U8 3
-                LOAD
+                LOCAL_U8_STORE 3
+                LOCAL_U8_LOAD 2
+                LOCAL_U8_LOAD 3
                 IGT
                 JZ elif
                 PUSH_CONST_U8 15
-                LOCAL_U8 2
-                STORE
+                LOCAL_U8_STORE 2
                 J endif
             elif:
-                LOCAL_U8 2
-                LOAD
-                LOCAL_U8 3
-                LOAD
+                LOCAL_U8_LOAD 2
+                LOCAL_U8_LOAD 3
                 ILT
                 JZ endif
                 PUSH_CONST_U8 15
-                LOCAL_U8 3
-                STORE
+                LOCAL_U8_STORE 3
             endif:
                 LEAVE 0, 0
             ");
@@ -195,36 +174,27 @@
             expectedAssembly: @"
                 ENTER 0, 4
                 PUSH_CONST_5
-                LOCAL_U8 2
-                STORE
+                LOCAL_U8_STORE 2
                 PUSH_CONST_U8 10
-                LOCAL_U8 3
-                STORE
-                LOCAL_U8 2
-                LOAD
-                LOCAL_U8 3
-                LOAD
+                LOCAL_U8_STORE 3
+                LOCAL_U8_LOAD 2
+                LOCAL_U8_LOAD 3
                 IGT
                 JZ elif
                 PUSH_CONST_U8 15
-                LOCAL_U8 2
-                STORE
+                LOCAL_U8_STORE 2
                 J endif
             elif:
-                LOCAL_U8 2
-                LOAD
-                LOCAL_U8 3
-                LOAD
+                LOCAL_U8_LOAD 2
+                LOCAL_U8_LOAD 3
                 ILT
                 JZ else
                 PUSH_CONST_U8 15
-                LOCAL_U8 3
-                STORE
+                LOCAL_U8_STORE 3
                 J endif
             else:
                 PUSH_CONST_U8 20
-                LOCAL_U8 3
-                STORE
+                LOCAL_U8_STORE 3
             endif:
                 LEAVE 0, 0
             ");
@@ -247,8 +217,7 @@
                 PUSH_CONST_1
                 JZ endwhile
                 PUSH_CONST_5
-                LOCAL_U8 2
-                STORE
+                LOCAL_U8_STORE 2
                 J while
                 J endwhile
                 J while
