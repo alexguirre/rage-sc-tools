@@ -16,7 +16,11 @@
 
         public AddressEmitter(CodeGenerator cg) => CG = cg;
 
-        public override Void Visit(FieldAccessExpression node, Void param) => default;
+        public override Void Visit(FieldAccessExpression node, Void param)
+        {
+            node.SubExpression.Type!.CGFieldAddress(CG, node);
+            return default;
+        }
 
         public override Void Visit(IndexingExpression node, Void param)
         {

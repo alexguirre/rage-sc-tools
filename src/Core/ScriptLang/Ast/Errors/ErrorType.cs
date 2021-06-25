@@ -32,5 +32,6 @@
         public void AssignInit(IType rhs, bool rhsIsLValue, SourceRange source, DiagnosticsReport diagnostics) { }
         public void CGBinaryOperation(CodeGenerator cg, BinaryExpression expr) => throw new NotImplementedException();
         public void CGUnaryOperation(CodeGenerator cg, UnaryExpression expr) => throw new NotImplementedException();
+        public void CGFieldAddress(CodeGenerator cg, FieldAccessExpression expr) => throw new NotImplementedException();
     }
 }

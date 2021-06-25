@@ -1,5 +1,7 @@
 ﻿namespace ScTools.ScriptLang.CodeGen
 {
+    using System.Diagnostics;
+
     using ScTools.ScriptAssembly;
     using ScTools.ScriptLang.Ast;
     using ScTools.ScriptLang.Ast.Expressions;
@@ -26,7 +28,11 @@
             return default;
         }
 
-        public override Void Visit(FieldAccessExpression node, Void param) => default;
+        public override Void Visit(FieldAccessExpression node, Void param)
+        {
+            LoadAddress(node);
+            return default;
+        }
 
         public override Void Visit(FloatLiteralExpression node, Void param)
         {
@@ -36,20 +42,7 @@
 
         public override Void Visit(IndexingExpression node, Void param)
         {
-            var size = node.Type!.SizeOf;
-
-            if (size == 1)
-            {
-                CG.EmitAddress(node);
-                CG.Emit(Opcode.LOAD);
-            }
-            else
-            {
-                CG.EmitPushConstInt(size);
-                CG.EmitAddress(node);
-                CG.Emit(Opcode.LOAD_N);
-            }
-
+            LoadAddress(node);
             return default;
         }
 
@@ -97,19 +90,7 @@
         {
             if (node.IsLValue)
             {
-                var size = node.Type!.SizeOf;
-
-                if (size == 1)
-                {
-                    CG.EmitAddress(node);
-                    CG.Emit(Opcode.LOAD);
-                }
-                else
-                {
-                    CG.EmitPushConstInt(size);
-                    CG.EmitAddress(node);
-                    CG.Emit(Opcode.LOAD_N);
-                }
+                LoadAddress(node);
             }
             else
             {
@@ -125,6 +106,24 @@
             node.Y.Accept(this, param);
             node.Z.Accept(this, param);
             return default;
+        }
+
+        private void LoadAddress(IExpression expr)
+        {
+            Debug.Assert(expr.IsLValue);
+            var size = expr.Type!.SizeOf;
+
+            if (size == 1)
+            {
+                CG.EmitAddress(expr);
+                CG.Emit(Opcode.LOAD);
+            }
+            else
+            {
+                CG.EmitPushConstInt(size);
+                CG.EmitAddress(expr);
+                CG.Emit(Opcode.LOAD_N);
+            }
         }
     }
 }

@@ -591,6 +591,146 @@
             ");
         }
 
+        [Fact]
+        public void TestStructFieldAssignment()
+        {
+            CompileMain(
+            source: @"
+                VPAIR pair
+                pair.v1 = <<10.0, 20.0, 30.0>>
+                pair.v2 = <<0.0, 0.0, 0.0>>
+            ",
+            sourceStatics: @"
+                STRUCT VPAIR
+                    VECTOR v1, v2
+                ENDSTRUCT
+            ",
+            expectedAssembly: @"
+                ENTER 0, 8
+
+                ; pair.v1 = <<10.0, 20.0, 30.0>>
+                PUSH_CONST_F 10.0
+                PUSH_CONST_F 20.0
+                PUSH_CONST_F 30.0
+                PUSH_CONST_3
+                LOCAL_U8 2
+                STORE_N
+
+                ; pair.v2 = <<0.0, 0.0, 0.0>>
+                PUSH_CONST_F0
+                PUSH_CONST_F0
+                PUSH_CONST_F0
+                PUSH_CONST_3
+                LOCAL_U8 2
+                IOFFSET_U8 3
+                STORE_N
+
+                LEAVE 0, 0
+            ");
+        }
+
+        [Fact]
+        public void TestStructFieldAssignmentSize1()
+        {
+            CompileMain(
+            source: @"
+                VECTOR v
+                v.x = 1.0
+                v.y = 2.0
+                v.z = 3.0
+            ",
+            expectedAssembly: @"
+                ENTER 0, 5
+
+                ; v.x = 1.0
+                PUSH_CONST_F1
+                LOCAL_U8_STORE 2
+
+                ; v.y = 2.0
+                PUSH_CONST_F2
+                LOCAL_U8 2
+                IOFFSET_U8_STORE 1
+
+                ; v.z = 3.0
+                PUSH_CONST_F3
+                LOCAL_U8 2
+                IOFFSET_U8_STORE 2
+
+                LEAVE 0, 0
+            ");
+        }
+
+        [Fact]
+        public void TestStructFieldAccess()
+        {
+            CompileMain(
+            source: @"
+                VPAIR pair
+                VECTOR v
+                v = pair.v1
+                v = pair.v2
+            ",
+            sourceStatics: @"
+                STRUCT VPAIR
+                    VECTOR v1, v2
+                ENDSTRUCT
+            ",
+            expectedAssembly: @"
+                ENTER 0, 11
+
+                ; v = pair.v1
+                PUSH_CONST_3
+                LOCAL_U8 2
+                LOAD_N
+                PUSH_CONST_3
+                LOCAL_U8 8
+                STORE_N
+
+                ; v = pair.v2
+                PUSH_CONST_3
+                LOCAL_U8 2
+                IOFFSET_U8 3
+                LOAD_N
+                PUSH_CONST_3
+                LOCAL_U8 8
+                STORE_N
+
+                LEAVE 0, 0
+            ");
+        }
+
+        [Fact]
+        public void TestStructFieldAccessSize1()
+        {
+            CompileMain(
+            source: @"
+                VECTOR v
+                FLOAT f
+                f = v.x
+                f = v.y
+                f = v.z
+            ",
+            expectedAssembly: @"
+                ENTER 0, 6
+
+                ; f = v.x
+                LOCAL_U8_LOAD 2
+                LOCAL_U8_STORE 5
+
+                ; f = v.y
+                LOCAL_U8 2
+                IOFFSET_U8_LOAD 1
+                LOCAL_U8_STORE 5
+
+                ; f = v.y
+                LOCAL_U8 2
+                IOFFSET_U8_LOAD 2
+                LOCAL_U8_STORE 5
+
+                LEAVE 0, 0
+            ");
+        }
+
         private static void CompileMain(string source, string expectedAssembly, string sourceStatics = "")
         {
             using var sourceReader = new StringReader($@"

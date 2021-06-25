@@ -1,6 +1,7 @@
 ﻿namespace ScTools.ScriptLang.Ast.Types
 {
     using System;
+    using System.Diagnostics;
     using System.Linq;
 
     using ScTools.ScriptAssembly;
@@ -126,6 +127,30 @@
             }
 
             throw new NotImplementedException();
+        }
+
+        public override void CGFieldAddress(CodeGenerator cg, FieldAccessExpression expr)
+        {
+            var field = Declaration.FindField(expr.FieldName);
+            if (field is null)
+            {
+                throw new ArgumentException($"Unknown field '{expr.FieldName}'", nameof(expr));
+            }
+
+            cg.EmitAddress(expr.SubExpression);
+            var offset = field.Offset;
+            switch (offset)
+            {
+                case >= byte.MinValue and <= byte.MaxValue:
+                    cg.Emit(Opcode.IOFFSET_U8, offset);
+                    break;
+
+                case >= short.MinValue and <= short.MaxValue:
+                    cg.Emit(Opcode.IOFFSET_S16, offset);
+                    break;
+
+                default: Debug.Assert(false, "Field offset too big"); break;
+            }
         }
     }
 }

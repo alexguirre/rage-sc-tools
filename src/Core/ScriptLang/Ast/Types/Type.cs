@@ -76,6 +76,7 @@
         // CodeGen
         void CGBinaryOperation(CodeGenerator cg, BinaryExpression expr);
         void CGUnaryOperation(CodeGenerator cg, UnaryExpression expr);
+        void CGFieldAddress(CodeGenerator cg, FieldAccessExpression expr);
     }
 
     public interface IArrayType : IType
@@ -134,6 +135,7 @@
 
         public virtual void CGBinaryOperation(CodeGenerator cg, BinaryExpression expr) => throw new NotImplementedException();
         public virtual void CGUnaryOperation(CodeGenerator cg, UnaryExpression expr) => throw new NotImplementedException();
+        public virtual void CGFieldAddress(CodeGenerator cg, FieldAccessExpression expr) => throw new NotImplementedException();
     }
 
     public abstract class BaseArrayType : BaseType, IArrayType
