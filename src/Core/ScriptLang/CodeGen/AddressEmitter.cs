@@ -24,23 +24,7 @@
 
         public override Void Visit(IndexingExpression node, Void param)
         {
-            CG.EmitValue(node.Index);
-            node.Array.Accept(this, param);
-
-            var itemSize = node.Type!.SizeOf;
-            switch (itemSize)
-            {
-                case >= 0 and <= 0x000000FF:
-                    CG.Emit(Opcode.ARRAY_U8, itemSize);
-                    break;
-
-                case >= 0 and <= 0x0000FFFF:
-                    CG.Emit(Opcode.ARRAY_U16, itemSize);
-                    break;
-
-                default: Debug.Assert(false, "Array item size too big"); break;
-            }
-
+            node.Array.Type!.CGArrayItemAddress(CG, node);
             return default;
         }
 

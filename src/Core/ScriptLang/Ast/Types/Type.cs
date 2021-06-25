@@ -1,7 +1,9 @@
 ﻿namespace ScTools.ScriptLang.Ast.Types
 {
     using System;
+    using System.Diagnostics;
 
+    using ScTools.ScriptAssembly;
     using ScTools.ScriptLang.Ast.Errors;
     using ScTools.ScriptLang.Ast.Expressions;
     using ScTools.ScriptLang.CodeGen;
@@ -77,6 +79,7 @@
         void CGBinaryOperation(CodeGenerator cg, BinaryExpression expr);
         void CGUnaryOperation(CodeGenerator cg, UnaryExpression expr);
         void CGFieldAddress(CodeGenerator cg, FieldAccessExpression expr);
+        void CGArrayItemAddress(CodeGenerator cg, IndexingExpression expr);
     }
 
     public interface IArrayType : IType
@@ -136,6 +139,7 @@
         public virtual void CGBinaryOperation(CodeGenerator cg, BinaryExpression expr) => throw new NotImplementedException();
         public virtual void CGUnaryOperation(CodeGenerator cg, UnaryExpression expr) => throw new NotImplementedException();
         public virtual void CGFieldAddress(CodeGenerator cg, FieldAccessExpression expr) => throw new NotImplementedException();
+        public virtual void CGArrayItemAddress(CodeGenerator cg, IndexingExpression expr) => throw new NotImplementedException();
     }
 
     public abstract class BaseArrayType : BaseType, IArrayType
@@ -166,6 +170,26 @@
             }
 
             return ItemType;
+        }
+
+        public override void CGArrayItemAddress(CodeGenerator cg, IndexingExpression expr)
+        {
+            cg.EmitValue(expr.Index);
+            cg.EmitAddress(expr.Array);
+
+            var itemSize = expr.Type!.SizeOf;
+            switch (itemSize)
+            {
+                case >= byte.MinValue and <= byte.MaxValue:
+                    cg.Emit(Opcode.ARRAY_U8, itemSize);
+                    break;
+
+                case >= ushort.MinValue and <= ushort.MaxValue:
+                    cg.Emit(Opcode.ARRAY_U16, itemSize);
+                    break;
+
+                default: Debug.Assert(false, "Array item size too big"); break;
+            }
         }
     }
 }
