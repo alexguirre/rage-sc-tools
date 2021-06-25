@@ -60,7 +60,10 @@
                         expr.Arguments.ForEach(e => cg.EmitValue(e));
                         cg.EmitCall(func.Name);
                         break;
-                    case FuncKind.Native: throw new NotImplementedException("native invocation");
+                    case FuncKind.Native:
+                        expr.Arguments.ForEach(e => cg.EmitValue(e));
+                        cg.EmitNativeCall(Declaration.ParametersSize, Declaration.ReturnType.SizeOf, func.Name);
+                        break;
                     case FuncKind.Intrinsic: throw new NotImplementedException("intrinsic invocation");
                 }
             }

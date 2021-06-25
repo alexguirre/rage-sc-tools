@@ -1084,7 +1084,96 @@
             ");
         }
 
-        private static void CompileMain(string source, string expectedAssembly, string sourceStatics = "")
+        [Fact]
+        public void TestNativeProcedureInvocation()
+        {
+            // TODO: some better way to define NativeDBs for tests
+            var nativeDB = NativeDB.FromJson(@"
+            {
+                ""TranslationTable"": [[1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317]],
+                ""HashToRows"": [{ ""Hash"": 1234605617868164317, ""Rows"": [ 0 ] }],
+                ""Commands"": [{
+                      ""Hash"": 1234605617868164317,
+                      ""Name"": ""TEST"",
+                      ""Build"": 323,
+                      ""Parameters"": [{ ""Type"": ""int"", ""Name"": ""a""}, { ""Type"": ""int"", ""Name"": ""b""}],
+                      ""ReturnType"": ""void""
+                    }
+                ]
+            }");
+
+            CompileMain(
+            nativeDB: nativeDB,
+            source: @"
+                TEST(1234, 5678)
+            ",
+            sourceStatics: @"
+                NATIVE PROC TEST(INT a, INT b)
+            ",
+            expectedAssembly: @"
+                ENTER 0, 2
+
+                ; TEST(1234, 5678)
+                PUSH_CONST_S16 1234
+                PUSH_CONST_S16 5678
+                NATIVE 2, 0, TEST
+
+                LEAVE 0, 0
+
+                .include
+                TEST: .native 0x11223344AABBCCDD
+            ");
+        }
+
+        [Fact]
+        public void TestNativeFunctionInvocation()
+        {
+            var nativeDB = NativeDB.FromJson(@"
+            {
+                ""TranslationTable"": [[1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317]],
+                ""HashToRows"": [{ ""Hash"": 1234605617868164317, ""Rows"": [ 0 ] }],
+                ""Commands"": [{
+                      ""Hash"": 1234605617868164317,
+                      ""Name"": ""TEST"",
+                      ""Build"": 323,
+                      ""Parameters"": [{ ""Type"": ""int"", ""Name"": ""a""}, { ""Type"": ""int"", ""Name"": ""b""}],
+                      ""ReturnType"": ""int""
+                    }
+                ]
+            }");
+
+            CompileMain(
+            nativeDB: nativeDB,
+            source: @"
+                INT n = TEST(1234, 5678)
+                TEST(1234, 5678)
+            ",
+            sourceStatics: @"
+                NATIVE FUNC INT TEST(INT a, INT b)
+            ",
+            expectedAssembly: @"
+                ENTER 0, 3
+
+                ; INT n = TEST(1234, 5678)
+                PUSH_CONST_S16 1234
+                PUSH_CONST_S16 5678
+                NATIVE 2, 1, TEST
+                LOCAL_U8_STORE 2
+
+                ; TEST(1234, 5678)
+                PUSH_CONST_S16 1234
+                PUSH_CONST_S16 5678
+                NATIVE 2, 1, TEST
+                DROP
+
+                LEAVE 0, 0
+
+                .include
+                TEST: .native 0x11223344AABBCCDD
+            ");
+        }
+
+        private static void CompileMain(string source, string expectedAssembly, string sourceStatics = "", NativeDB? nativeDB = null)
         {
             using var sourceReader = new StringReader($@"
                 SCRIPT_NAME test
@@ -1103,13 +1192,13 @@
             Assert.False(d.HasErrors);
 
             using var sink = new StringWriter();
-            new CodeGenerator(sink, p.OutputAst, globalSymbols, d, NativeDB.Empty).Generate();
+            new CodeGenerator(sink, p.OutputAst, globalSymbols, d, nativeDB ?? NativeDB.Empty).Generate();
             var s = sink.ToString();
 
             Assert.False(d.HasErrors);
 
             using var sourceAssemblyReader = new StringReader(s);
-            var sourceAssembler = Assembler.Assemble(sourceAssemblyReader, "test.scasm", NativeDB.Empty, options: new() { IncludeFunctionNames = true });
+            var sourceAssembler = Assembler.Assemble(sourceAssemblyReader, "test.scasm", nativeDB ?? NativeDB.Empty, options: new() { IncludeFunctionNames = true });
 
             Assert.False(sourceAssembler.Diagnostics.HasErrors);
 
@@ -1118,7 +1207,7 @@
                 .code
                 MAIN:
                 {expectedAssembly}");
-            var expectedAssembler = Assembler.Assemble(expectedAssemblyReader, "test_expected.scasm", NativeDB.Empty, options: new() { IncludeFunctionNames = true });
+            var expectedAssembler = Assembler.Assemble(expectedAssemblyReader, "test_expected.scasm", nativeDB ?? NativeDB.Empty, options: new() { IncludeFunctionNames = true });
 
             using StringWriter sourceDumpWriter = new(), expectedDumpWriter = new();
             new Dumper(sourceAssembler.OutputScript).Dump(sourceDumpWriter, true, true, true, true, true);
