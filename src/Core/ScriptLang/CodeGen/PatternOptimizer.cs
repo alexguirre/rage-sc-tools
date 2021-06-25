@@ -34,12 +34,19 @@
             new Pattern(new[]{ Opcode.IOFFSET_S16, Opcode.STORE }, Opcode.IOFFSET_S16_STORE),
             new Pattern(new[]{ Opcode.IOFFSET_S16, Opcode.LOAD }, Opcode.IOFFSET_S16_LOAD),
 
+            new Pattern(new[]{ Opcode.ARRAY_U8, Opcode.STORE }, Opcode.ARRAY_U8_STORE),
+            new Pattern(new[]{ Opcode.ARRAY_U8, Opcode.LOAD }, Opcode.ARRAY_U8_LOAD),
+            new Pattern(new[]{ Opcode.ARRAY_U16, Opcode.STORE }, Opcode.ARRAY_U16_STORE),
+            new Pattern(new[]{ Opcode.ARRAY_U16, Opcode.LOAD }, Opcode.ARRAY_U16_LOAD),
+
             new Offset0StorePattern(Opcode.LOCAL_U8, Opcode.LOCAL_U8_STORE),
             new Offset0StorePattern(Opcode.LOCAL_U16, Opcode.LOCAL_U16_STORE),
             new Offset0StorePattern(Opcode.STATIC_U8, Opcode.STATIC_U8_STORE),
             new Offset0StorePattern(Opcode.STATIC_U16, Opcode.STATIC_U16_STORE),
             new Offset0StorePattern(Opcode.GLOBAL_U16, Opcode.GLOBAL_U16_STORE),
             new Offset0StorePattern(Opcode.GLOBAL_U24, Opcode.GLOBAL_U24_STORE),
+            new Offset0StorePattern(Opcode.ARRAY_U8, Opcode.ARRAY_U8_STORE),
+            new Offset0StorePattern(Opcode.ARRAY_U16, Opcode.ARRAY_U16_STORE),
 
             new Offset0LoadPattern(Opcode.LOCAL_U8, Opcode.LOCAL_U8_LOAD),
             new Offset0LoadPattern(Opcode.LOCAL_U16, Opcode.LOCAL_U16_LOAD),
@@ -47,6 +54,8 @@
             new Offset0LoadPattern(Opcode.STATIC_U16, Opcode.STATIC_U16_LOAD),
             new Offset0LoadPattern(Opcode.GLOBAL_U16, Opcode.GLOBAL_U16_LOAD),
             new Offset0LoadPattern(Opcode.GLOBAL_U24, Opcode.GLOBAL_U24_LOAD),
+            new Offset0LoadPattern(Opcode.ARRAY_U8, Opcode.ARRAY_U8_LOAD),
+            new Offset0LoadPattern(Opcode.ARRAY_U16, Opcode.ARRAY_U16_LOAD),
 
             new Offset0AddressPattern(Opcode.LOCAL_U8),
             new Offset0AddressPattern(Opcode.LOCAL_U16),
@@ -54,6 +63,8 @@
             new Offset0AddressPattern(Opcode.STATIC_U16),
             new Offset0AddressPattern(Opcode.GLOBAL_U16),
             new Offset0AddressPattern(Opcode.GLOBAL_U24),
+            new Offset0AddressPattern(Opcode.ARRAY_U8),
+            new Offset0AddressPattern(Opcode.ARRAY_U16),
         };
 
         public IEnumerable<EmittedInstruction> Optimize(List<EmittedInstruction> instructions)

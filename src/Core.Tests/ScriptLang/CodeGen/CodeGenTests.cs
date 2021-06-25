@@ -731,6 +731,238 @@
             ");
         }
 
+        [Fact]
+        public void TestArrayItemAssignment()
+        {
+            CompileMain(
+            source: @"
+                iNumbers[4] = 123
+                iNumbers[5] = 456
+            ",
+            sourceStatics: @"
+                INT iNumbers[8]
+            ",
+            expectedAssembly: @"
+                ENTER 0, 2
+
+                ; iNumbers[4] = 123
+                PUSH_CONST_U8 123
+                PUSH_CONST_4
+                STATIC_U8 iNumbers
+                ARRAY_U8_STORE SIZE_OF_INT
+
+                ; iNumbers[5] = 456
+                PUSH_CONST_S16 456
+                PUSH_CONST_5
+                STATIC_U8 iNumbers
+                ARRAY_U8_STORE SIZE_OF_INT
+
+                LEAVE 0, 0
+
+                .static
+                .const SIZE_OF_INT 1
+                iNumbers: .int 8, 8 dup (0)
+            ");
+        }
+
+        [Fact]
+        public void TestArrayItemAccess()
+        {
+            CompileMain(
+            source: @"
+                INT n = iNumbers[4]
+                n = iNumbers[5]
+            ",
+            sourceStatics: @"
+                INT iNumbers[8]
+            ",
+            expectedAssembly: @"
+                ENTER 0, 3
+
+                ; INT n = iNumbers[4]
+                PUSH_CONST_4
+                STATIC_U8 iNumbers
+                ARRAY_U8_LOAD SIZE_OF_INT
+                LOCAL_U8_STORE 2
+
+                ; n = iNumbers[5]
+                PUSH_CONST_5
+                STATIC_U8 iNumbers
+                ARRAY_U8_LOAD SIZE_OF_INT
+                LOCAL_U8_STORE 2
+
+                LEAVE 0, 0
+
+                .static
+                .const SIZE_OF_INT 1
+                iNumbers: .int 8, 8 dup (0)
+            ");
+        }
+
+        [Fact]
+        public void TestArrayStructItemAssignment()
+        {
+            CompileMain(
+            source: @"
+                vPositions[4] = <<1.0, 2.0, 3.0>>
+                vPositions[5] = vPositions[4]
+            ",
+            sourceStatics: @"
+                VECTOR vPositions[8]
+            ",
+            expectedAssembly: @"
+                ENTER 0, 2
+
+                ; vPositions[4] = <<1.0, 2.0, 3.0>>
+                PUSH_CONST_F1
+                PUSH_CONST_F2
+                PUSH_CONST_F3
+                PUSH_CONST_3
+                PUSH_CONST_4
+                STATIC_U8 vPositions
+                ARRAY_U8 SIZE_OF_VECTOR
+                STORE_N
+
+                ; vPositions[5] = vPositions[4]
+                PUSH_CONST_3
+                PUSH_CONST_4
+                STATIC_U8 vPositions
+                ARRAY_U8 SIZE_OF_VECTOR
+                LOAD_N
+                PUSH_CONST_3
+                PUSH_CONST_5
+                STATIC_U8 vPositions
+                ARRAY_U8 SIZE_OF_VECTOR
+                STORE_N
+
+                LEAVE 0, 0
+
+                .static
+                .const SIZE_OF_VECTOR 3
+                vPositions: .int 8, 8 dup (0, 0, 0)
+            ");
+        }
+
+        [Fact]
+        public void TestArrayStructItemAccess()
+        {
+            CompileMain(
+            source: @"
+                VECTOR v = vPositions[4]
+                v = vPositions[5]
+            ",
+            sourceStatics: @"
+                VECTOR vPositions[8]
+            ",
+            expectedAssembly: @"
+                ENTER 0, 5
+
+                ; VECTOR v = vPositions[4]
+                PUSH_CONST_3
+                PUSH_CONST_4
+                STATIC_U8 vPositions
+                ARRAY_U8 SIZE_OF_VECTOR
+                LOAD_N
+                PUSH_CONST_3
+                LOCAL_U8 2
+                STORE_N
+
+                ; v = vPositions[5]
+                PUSH_CONST_3
+                PUSH_CONST_5
+                STATIC_U8 vPositions
+                ARRAY_U8 SIZE_OF_VECTOR
+                LOAD_N
+                PUSH_CONST_3
+                LOCAL_U8 2
+                STORE_N
+
+                LEAVE 0, 0
+
+                .static
+                .const SIZE_OF_VECTOR 3
+                vPositions: .int 8, 8 dup (0, 0, 0)
+            ");
+        }
+
+        [Fact]
+        public void TestArrayItemFieldAssignment()
+        {
+            CompileMain(
+            source: @"
+                sDatas[4].a = 123
+                sDatas[4].b = 456
+            ",
+            sourceStatics: @"
+                STRUCT DATA
+                    INT a, b
+                ENDSTRUCT
+
+                DATA sDatas[8]
+            ",
+            expectedAssembly: @"
+                ENTER 0, 2
+
+                ; sDatas[4].a = 123
+                PUSH_CONST_U8 123
+                PUSH_CONST_4
+                STATIC_U8 sDatas
+                ARRAY_U8_STORE SIZE_OF_DATA
+
+                ; sDatas[4].b = 456
+                PUSH_CONST_S16 456
+                PUSH_CONST_4
+                STATIC_U8 sDatas
+                ARRAY_U8 SIZE_OF_DATA
+                IOFFSET_U8_STORE 1
+
+                LEAVE 0, 0
+
+                .static
+                .const SIZE_OF_DATA 2
+                sDatas: .int 8, 8 dup (0, 0)
+            ");
+        }
+
+        [Fact]
+        public void TestArrayItemFieldAccess()
+        {
+            CompileMain(
+            source: @"
+                INT n = sDatas[4].a
+                n = sDatas[4].b
+            ",
+            sourceStatics: @"
+                STRUCT DATA
+                    INT a, b
+                ENDSTRUCT
+
+                DATA sDatas[8]
+            ",
+            expectedAssembly: @"
+                ENTER 0, 3
+
+                ; INT n = sDatas[4].a
+                PUSH_CONST_4
+                STATIC_U8 sDatas
+                ARRAY_U8_LOAD SIZE_OF_DATA
+                LOCAL_U8_STORE 2
+
+                ; n = sDatas[4].b
+                PUSH_CONST_4
+                STATIC_U8 sDatas
+                ARRAY_U8 SIZE_OF_DATA
+                IOFFSET_U8_LOAD 1
+                LOCAL_U8_STORE 2
+
+                LEAVE 0, 0
+
+                .static
+                .const SIZE_OF_DATA 2
+                sDatas: .int 8, 8 dup (0, 0)
+            ");
+        }
+
         private static void CompileMain(string source, string expectedAssembly, string sourceStatics = "")
         {
             using var sourceReader = new StringReader($@"
