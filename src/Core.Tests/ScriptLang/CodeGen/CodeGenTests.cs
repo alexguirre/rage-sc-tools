@@ -963,6 +963,127 @@
             ");
         }
 
+        [Fact]
+        public void TestProcedureInvocation()
+        {
+            CompileMain(
+            source: @"
+                THE_PROC(1.0, 2.0)
+            ",
+            sourceStatics: @"
+                PROC THE_PROC(FLOAT a, FLOAT b)
+                ENDPROC
+            ",
+            expectedAssembly: @"
+                ENTER 0, 2
+
+                ; THE_PROC(1.0, 2.0)
+                PUSH_CONST_F1
+                PUSH_CONST_F2
+                CALL THE_PROC
+
+                LEAVE 0, 0
+
+            THE_PROC:
+                ENTER 2, 4
+                LEAVE 2, 0
+            ");
+        }
+
+        [Fact]
+        public void TestFunctionInvocation()
+        {
+            CompileMain(
+            source: @"
+                INT n = ADD(1234, 5678)
+                ADD(1234, 5678)
+            ",
+            sourceStatics: @"
+                FUNC INT ADD(INT a, INT b)
+                    RETURN a + b
+                ENDFUNC
+            ",
+            expectedAssembly: @"
+                ENTER 0, 3
+
+                ; INT n = ADD(1234, 5678)
+                PUSH_CONST_S16 1234
+                PUSH_CONST_S16 5678
+                CALL ADD
+                LOCAL_U8_STORE 2
+
+                ; ADD(1234, 5678)
+                PUSH_CONST_S16 1234
+                PUSH_CONST_S16 5678
+                CALL ADD
+                DROP
+
+                LEAVE 0, 0
+
+            ADD:
+                ENTER 2, 4
+                LOCAL_U8_LOAD 0
+                LOCAL_U8_LOAD 1
+                IADD
+                LEAVE 2, 1
+            ");
+        }
+
+        [Fact]
+        public void TestFunctionInvocationWithStructs()
+        {
+            CompileMain(
+            source: @"
+                VECTOR v = ADD(<<1.0, 1.0, 1.0>>, <<2.0, 2.0, 2.0>>)
+                ADD(<<1.0, 1.0, 1.0>>, <<2.0, 2.0, 2.0>>)
+            ",
+            sourceStatics: @"
+                FUNC VECTOR ADD(VECTOR a, VECTOR b)
+                    RETURN a + b
+                ENDFUNC
+            ",
+            expectedAssembly: @"
+                ENTER 0, 5
+
+                ; VECTOR v = ADD(<<1.0, 1.0, 1.0>>, <<2.0, 2.0, 2.0>>)
+                PUSH_CONST_F1
+                PUSH_CONST_F1
+                PUSH_CONST_F1
+                PUSH_CONST_F2
+                PUSH_CONST_F2
+                PUSH_CONST_F2
+                CALL ADD
+                PUSH_CONST_3
+                LOCAL_U8 2
+                STORE_N
+
+                ; ADD(<<1.0, 1.0, 1.0>>, <<2.0, 2.0, 2.0>>)
+                PUSH_CONST_F1
+                PUSH_CONST_F1
+                PUSH_CONST_F1
+                PUSH_CONST_F2
+                PUSH_CONST_F2
+                PUSH_CONST_F2
+                CALL ADD
+                DROP
+                DROP
+                DROP
+
+                LEAVE 0, 0
+
+            ADD:
+                ENTER 6, 8
+                PUSH_CONST_3
+                LOCAL_U8 0
+                LOAD_N
+                PUSH_CONST_3
+                LOCAL_U8 3
+                LOAD_N
+                VADD
+                LEAVE 6, 3
+            ");
+        }
+
         private static void CompileMain(string source, string expectedAssembly, string sourceStatics = "")
         {
             using var sourceReader = new StringReader($@"

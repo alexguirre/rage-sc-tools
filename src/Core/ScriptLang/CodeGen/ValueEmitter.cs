@@ -5,7 +5,6 @@
     using ScTools.ScriptAssembly;
     using ScTools.ScriptLang.Ast;
     using ScTools.ScriptLang.Ast.Expressions;
-    using ScTools.ScriptLang.Ast.Types;
 
     /// <summary>
     /// Emits code to push the value of expressions.
@@ -52,7 +51,11 @@
             return default;
         }
 
-        public override Void Visit(InvocationExpression node, Void param) => default;
+        public override Void Visit(InvocationExpression node, Void param)
+        {
+            node.Callee.Type!.CGInvocation(CG, node);
+            return default;
+        }
 
         public override Void Visit(NullExpression node, Void param)
         {

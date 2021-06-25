@@ -80,6 +80,7 @@
         void CGUnaryOperation(CodeGenerator cg, UnaryExpression expr);
         void CGFieldAddress(CodeGenerator cg, FieldAccessExpression expr);
         void CGArrayItemAddress(CodeGenerator cg, IndexingExpression expr);
+        void CGInvocation(CodeGenerator cg, InvocationExpression expr);
     }
 
     public interface IArrayType : IType
@@ -140,6 +141,7 @@
         public virtual void CGUnaryOperation(CodeGenerator cg, UnaryExpression expr) => throw new NotImplementedException();
         public virtual void CGFieldAddress(CodeGenerator cg, FieldAccessExpression expr) => throw new NotImplementedException();
         public virtual void CGArrayItemAddress(CodeGenerator cg, IndexingExpression expr) => throw new NotImplementedException();
+        public virtual void CGInvocation(CodeGenerator cg, InvocationExpression expr) => throw new NotImplementedException();
     }
 
     public abstract class BaseArrayType : BaseType, IArrayType

@@ -206,6 +206,7 @@
 
         public void EmitLabel(string label) => funcInstructions.Add(new() { Label = label });
 
+        public void EmitCall(string label) => Emit(Opcode.CALL, label);
         public void EmitJump(string label) => Emit(Opcode.J, label);
         public void EmitJumpIfZero(string label) => Emit(Opcode.JZ, label);
 

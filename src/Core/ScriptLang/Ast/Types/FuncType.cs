@@ -5,6 +5,8 @@
 
     using ScTools.ScriptLang.Ast.Declarations;
     using ScTools.ScriptLang.Ast.Errors;
+    using ScTools.ScriptLang.Ast.Expressions;
+    using ScTools.ScriptLang.CodeGen;
 
     public sealed class FuncType : BaseType
     {
@@ -46,6 +48,27 @@
             }
 
             return Declaration.ReturnType;
+        }
+
+        public override void CGInvocation(CodeGenerator cg, InvocationExpression expr)
+        {
+            if (expr.Callee is ValueDeclRefExpression { Declaration: FuncDeclaration func })
+            {
+                switch (Declaration.Kind)
+                {
+                    case FuncKind.UserDefined:
+                        expr.Arguments.ForEach(e => cg.EmitValue(e));
+                        cg.EmitCall(func.Name);
+                        break;
+                    case FuncKind.Native: throw new NotImplementedException("native invocation");
+                    case FuncKind.Intrinsic: throw new NotImplementedException("intrinsic invocation");
+                }
+            }
+            else
+            {
+                // TODO: function pointer invocation
+                throw new NotImplementedException("function pointer invocation");
+            }
         }
     }
 }

@@ -34,5 +34,6 @@
         public void CGUnaryOperation(CodeGenerator cg, UnaryExpression expr) => throw new NotImplementedException();
         public void CGFieldAddress(CodeGenerator cg, FieldAccessExpression expr) => throw new NotImplementedException();
         public void CGArrayItemAddress(CodeGenerator cg, IndexingExpression expr) => throw new NotImplementedException();
+        public void CGInvocation(CodeGenerator cg, InvocationExpression expr) => throw new NotImplementedException();
     }
 }
