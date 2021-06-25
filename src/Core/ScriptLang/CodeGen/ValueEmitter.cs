@@ -4,6 +4,7 @@
 
     using ScTools.ScriptAssembly;
     using ScTools.ScriptLang.Ast;
+    using ScTools.ScriptLang.Ast.Declarations;
     using ScTools.ScriptLang.Ast.Expressions;
 
     /// <summary>
@@ -98,6 +99,13 @@
             else
             {
                 // TODO: non-lvalues
+                switch (node.Declaration)
+                {
+                    case FuncDeclaration { Prototype: { Kind: FuncKind.UserDefined } } func:
+                        CG.Emit(Opcode.PUSH_CONST_U24, func.Name);
+                        break;
+                    default: throw new System.NotImplementedException();
+                }
             }
 
             return default;

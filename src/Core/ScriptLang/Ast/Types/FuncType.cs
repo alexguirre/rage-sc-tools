@@ -3,6 +3,7 @@
     using System;
     using System.Linq;
 
+    using ScTools.ScriptAssembly;
     using ScTools.ScriptLang.Ast.Declarations;
     using ScTools.ScriptLang.Ast.Errors;
     using ScTools.ScriptLang.Ast.Expressions;
@@ -69,8 +70,9 @@
             }
             else
             {
-                // TODO: function pointer invocation
-                throw new NotImplementedException("function pointer invocation");
+                expr.Arguments.ForEach(e => cg.EmitValue(e));
+                cg.EmitValue(expr.Callee);
+                cg.Emit(Opcode.CALLINDIRECT);
             }
         }
     }

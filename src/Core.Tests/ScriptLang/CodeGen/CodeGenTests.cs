@@ -1173,6 +1173,56 @@
             ");
         }
 
+        [Fact]
+        public void TestFunctionPointerInvocation()
+        {
+            CompileMain(
+            source: @"
+                MY_FUNC_T myFunc = ADD
+                MY_FUNC_T myFunc2 = myFunc
+                INT n = myFunc2(1234, 5678)
+                myFunc2(1234, 5678)
+            ",
+            sourceStatics: @"
+                PROTO FUNC INT MY_FUNC_T(INT a, INT b)
+                FUNC INT ADD(INT a, INT b)
+                    RETURN a + b
+                ENDFUNC
+            ",
+            expectedAssembly: @"
+                ENTER 0, 5
+                ; MY_FUNC_T myFunc = ADD
+                PUSH_CONST_U24 ADD
+                LOCAL_U8_STORE 2
+                ; MY_FUNC_T myFunc2 = myFunc
+                LOCAL_U8_LOAD 2
+                LOCAL_U8_STORE 3
+
+                ; INT n = myFunc2(1234, 5678)
+                PUSH_CONST_S16 1234
+                PUSH_CONST_S16 5678
+                LOCAL_U8_LOAD 3
+                CALLINDIRECT
+                LOCAL_U8_STORE 4
+
+                ; myFunc2(1234, 5678)
+                PUSH_CONST_S16 1234
+                PUSH_CONST_S16 5678
+                LOCAL_U8_LOAD 3
+                CALLINDIRECT
+                DROP
+
+                LEAVE 0, 0
+
+            ADD:
+                ENTER 2, 4
+                LOCAL_U8_LOAD 0
+                LOCAL_U8_LOAD 1
+                IADD
+                LEAVE 2, 1
+            ");
+        }
+
         private static void CompileMain(string source, string expectedAssembly, string sourceStatics = "", NativeDB? nativeDB = null)
         {
             using var sourceReader = new StringReader($@"
