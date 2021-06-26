@@ -257,6 +257,23 @@
             }
         }
 
+        public void EmitOffset(int offset)
+        {
+            switch (offset)
+            {
+                case >= byte.MinValue and <= byte.MaxValue:
+                    Emit(Opcode.IOFFSET_U8, offset);
+                    break;
+
+                case >= short.MinValue and <= short.MaxValue:
+                    Emit(Opcode.IOFFSET_S16, offset);
+                    break;
+
+                // TODO: support IOFFSET opcode
+                default: Debug.Assert(false, "Offset too big"); break;
+            }
+        }
+
         private void WriteValues(Span<ScriptValue> values)
         {
             long repeatedValue = 0;

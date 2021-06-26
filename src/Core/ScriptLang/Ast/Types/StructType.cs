@@ -138,19 +138,7 @@
             }
 
             cg.EmitAddress(expr.SubExpression);
-            var offset = field.Offset;
-            switch (offset)
-            {
-                case >= byte.MinValue and <= byte.MaxValue:
-                    cg.Emit(Opcode.IOFFSET_U8, offset);
-                    break;
-
-                case >= short.MinValue and <= short.MaxValue:
-                    cg.Emit(Opcode.IOFFSET_S16, offset);
-                    break;
-
-                default: Debug.Assert(false, "Field offset too big"); break;
-            }
+            cg.EmitOffset(field.Offset);
         }
     }
 }

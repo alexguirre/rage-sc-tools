@@ -78,6 +78,20 @@
             return true;
         }
 
+        public static bool IsDefaultInitialized(IType type)
+        {
+            if (type is StructType structTy)
+            {
+                return structTy.Declaration.Fields.Any(f => f.Initializer is not null || IsDefaultInitialized(f.Type));
+            }
+            else if (type is ArrayType arrayTy)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// Gets whether <paramref name="func"/> matches the signature needed to be the entrypoint procedure.
         /// </summary>

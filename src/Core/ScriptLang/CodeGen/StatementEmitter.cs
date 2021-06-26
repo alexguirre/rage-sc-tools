@@ -1,5 +1,6 @@
 ﻿namespace ScTools.ScriptLang.CodeGen
 {
+    using System.Diagnostics;
     using System.Linq;
 
     using ScTools.ScriptAssembly;
@@ -7,7 +8,9 @@
     using ScTools.ScriptLang.Ast.Declarations;
     using ScTools.ScriptLang.Ast.Expressions;
     using ScTools.ScriptLang.Ast.Statements;
+    using ScTools.ScriptLang.Ast.Types;
     using ScTools.ScriptLang.BuiltIns;
+    using ScTools.ScriptLang.Semantics;
 
     /// <summary>
     /// Emits code to execute statements.
@@ -27,11 +30,11 @@
 
         public override Void Visit(VarDeclaration node, FuncDeclaration func)
         {
-            if (node.Initializer is null)
+            if (node.Initializer is null && TypeHelper.IsDefaultInitialized(node.Type))
             {
-                // TODO: default initialize var
+                EmitDefaultInit(node.Address, node.Type);
             }
-            else
+            else if (node.Initializer is not null)
             {
                 var dest = new ValueDeclRefExpression(node.Source, node.Name) { Declaration = node, Type = node.Type!, IsLValue = true, IsConstant = false };
                 new AssignmentStatement(node.Source, compoundOperator: null,
@@ -40,6 +43,109 @@
             }
 
             return default;
+        }
+
+        /// <summary>
+        /// Emits code to default initialize a local variable.
+        /// </summary>
+        private void EmitDefaultInit(int localAddress, IType type)
+        {
+            // push local address
+            switch (localAddress)
+            {
+                case >= byte.MinValue and <= byte.MaxValue:
+                    CG.Emit(Opcode.LOCAL_U8, localAddress);
+                    break;
+
+                case >= ushort.MinValue and <= ushort.MaxValue:
+                    CG.Emit(Opcode.LOCAL_U16, localAddress);
+                    break;
+
+                default: Debug.Assert(false, "Local var address too big"); break;
+            }
+
+            EmitDefaultInitNoPushAddress(type);
+
+            CG.Emit(Opcode.DROP); // drop local address
+        }
+
+        private void EmitDefaultInitNoPushAddress(IType type)
+        {
+            switch (type)
+            {
+                case StructType ty: EmitDefaultInitStruct(ty); break;
+                case ArrayType ty: EmitDefaultInitArray(ty); break;
+                default: throw new System.NotImplementedException();
+            }
+        }
+
+        private void EmitDefaultInitStruct(StructType structTy)
+        {
+            foreach (var field in structTy.Declaration.Fields)
+            {
+                var hasInitializer = field.Initializer is not null;
+                if (hasInitializer || TypeHelper.IsDefaultInitialized(field.Type))
+                {
+                    CG.Emit(Opcode.DUP); // duplicate struct address
+                    if (field.Offset != 0)
+                    {
+                        CG.EmitOffset(field.Offset); // advance to field offset
+                    }
+
+                    // initialize field
+                    if (hasInitializer)
+                    {
+                        switch (field.Type)
+                        {
+                            case IntType:
+                                CG.EmitPushConstInt(ExpressionEvaluator.EvalInt(field.Initializer!, CG.Symbols));
+                                CG.Emit(Opcode.STORE_REV);
+                                break;
+                            case FloatType:
+                                // TODO: game scripts use PUSH_CONST_U32 to default initialize FLOAT fields, should we change it?
+                                CG.EmitPushConstFloat(ExpressionEvaluator.EvalFloat(field.Initializer!, CG.Symbols));
+                                CG.Emit(Opcode.STORE_REV);
+                                break;
+                            case BoolType:
+                                CG.EmitPushConstInt(ExpressionEvaluator.EvalBool(field.Initializer!, CG.Symbols) ? 1 : 0);
+                                CG.Emit(Opcode.STORE_REV); 
+                                break;
+                            // TODO: should VECTOR or STRING fields be allowed to be default initialized? it doesn't seem to happen in the game scripts
+                            //case StructType sTy when BuiltInTypes.IsVectorType(sTy):
+                            //    DefaultInitVector(field.Initializer!);
+                            //    break;
+                            default: throw new System.NotImplementedException();
+                        }
+                    }
+                    else
+                    {
+                        Debug.Assert(TypeHelper.IsDefaultInitialized(field.Type));
+                        EmitDefaultInitNoPushAddress(field.Type);
+                    }
+
+                    CG.Emit(Opcode.DROP); // drop duplicated address
+                }
+            }
+        }
+
+        private void EmitDefaultInitArray(ArrayType arrayTy)
+        {
+            // write array size
+            CG.EmitPushConstInt(arrayTy.Length);
+            CG.Emit(Opcode.STORE_REV);
+
+            if (TypeHelper.IsDefaultInitialized(arrayTy.ItemType))
+            {
+                CG.Emit(Opcode.DUP); // duplicate array address
+                CG.EmitOffset(1); // advance duplicated address to the first item (skip array size)
+                var itemSize = arrayTy.ItemType.SizeOf;
+                for (int i = 0; i < arrayTy.Length; i++)
+                {
+                    EmitDefaultInitNoPushAddress(arrayTy.ItemType); // initialize item
+                    CG.EmitOffset(itemSize); // advance to the next item
+                }
+                CG.Emit(Opcode.DROP); // drop duplicated address
+            }
         }
 
         public override Void Visit(AssignmentStatement node, FuncDeclaration func)
