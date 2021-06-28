@@ -65,6 +65,8 @@
             new Offset0AddressPattern(Opcode.GLOBAL_U24),
             new Offset0AddressPattern(Opcode.ARRAY_U8),
             new Offset0AddressPattern(Opcode.ARRAY_U16),
+
+            new AddU8Pattern(),
         };
 
         public IEnumerable<EmittedInstruction> Optimize(List<EmittedInstruction> instructions)
@@ -227,6 +229,47 @@
                 replacementInstruction = default;
                 return false;
             }
+        }
+
+        public sealed class AddU8Pattern : IPattern
+        {
+            public AddU8Pattern()
+            {
+            }
+
+            public bool Match(List<EmittedInstruction> instructions, int index, out EmittedInstruction replacementInstruction, out int numInstructionToReplace)
+            {
+                const int NumInstructions = 2; // Target -> IOFFSET_U8 0
+
+                if (index >= (instructions.Count - NumInstructions + 1))
+                {
+                    numInstructionToReplace = 0;
+                    replacementInstruction = default;
+                    return false;
+                }
+
+                var inst0 = instructions[index + 0].Instruction;
+                var inst1 = instructions[index + 1].Instruction;
+                if (inst0 is ((>= Opcode.PUSH_CONST_0 and <= Opcode.PUSH_CONST_7) or Opcode.PUSH_CONST_U8, _) &&
+                    inst1 is (Opcode.IADD, _))
+                {
+                    numInstructionToReplace = NumInstructions;
+                    replacementInstruction = new() { Instruction = (Opcode.IADD_U8, new[] { GetValueOperand(inst0.Value) }) };
+                    return true;
+                }
+
+                numInstructionToReplace = 0;
+                replacementInstruction = default;
+                return false;
+            }
+
+            private object GetValueOperand((Opcode Opcode, object[] Operands) i)
+                => i.Opcode switch
+                {
+                    >= Opcode.PUSH_CONST_0 and <= Opcode.PUSH_CONST_7 => (int)(i.Opcode - Opcode.PUSH_CONST_0),
+                    Opcode.PUSH_CONST_U8 => i.Operands[0],
+                    _ => throw new System.NotImplementedException(),
+                };
         }
     }
 }

@@ -11,6 +11,7 @@
         public IList<IStatement> Body { get; set; } = new List<IStatement>();
         public string? ExitLabel { get; set; }
         public string? BeginLabel { get; set; }
+        public string? ContinueLabel { get; set; }
 
         public RepeatStatement(SourceRange source, IExpression limit, IExpression counter) : base(source)
             => (Limit, Counter) = (limit, counter);

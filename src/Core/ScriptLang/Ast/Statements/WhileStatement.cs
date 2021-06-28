@@ -10,6 +10,10 @@
         public IList<IStatement> Body { get; set; } = new List<IStatement>();
         public string? ExitLabel { get; set; }
         public string? BeginLabel { get; set; }
+        /// <summary>
+        /// Same as <see cref="BeginLabel"/>.
+        /// </summary>
+        public string? ContinueLabel { get => BeginLabel; set => BeginLabel = value; }
 
         public WhileStatement(SourceRange source, IExpression condition) : base(source)
             => Condition = condition;

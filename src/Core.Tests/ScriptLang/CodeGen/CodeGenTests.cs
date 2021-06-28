@@ -947,22 +947,39 @@
             ");
         }
 
-        [Fact(Skip = "Ref assignment not yet implemented")]
-        public void TestRefAssignment()
+        [Fact]
+        public void TestRepeatStatement()
         {
             CompileMain(
             source: @"
-                FLOAT f
-                FLOAT& fref = f
-                fref = 1.0
+                INT i
+                REPEAT 10 i
+                    INT n = 5
+                    CONTINUE
+                    BREAK
+                ENDREPEAT
             ",
             expectedAssembly: @"
                 ENTER 0, 4
-                LOCAL_U8 2
+                PUSH_CONST_0
+                LOCAL_U8_STORE 2
+            repeat:
+                LOCAL_U8_LOAD 2
+                PUSH_CONST_U8 10
+                ILT_JZ endrepeat
+
+                ; body
+                PUSH_CONST_5
                 LOCAL_U8_STORE 3
-                PUSH_CONST_F1
-                LOCAL_U8_LOAD 3
-                STORE
+                J increment_counter
+                J endrepeat
+
+            increment_counter:
+                LOCAL_U8_LOAD 2
+                IADD_U8 1
+                LOCAL_U8_STORE 2
+                J repeat
+            endrepeat:
                 LEAVE 0, 0
             ");
         }
@@ -1889,6 +1906,30 @@
                 LOCAL_U8 21
                 TEXT_LABEL_COPY
 
+                LEAVE 0, 0
+            ");
+        }
+
+        [Fact(Skip = "Optimization not implemented yet")]
+        public void TestPushU8Optimization()
+        {
+            CompileMain(
+            source: @"
+                TEST(8, 11 + 1)
+            ",
+            sourceStatics: @"
+                PROC TEST(INT a, INT b)
+                ENDPROC
+            ",
+            expectedAssembly: @"
+                ENTER 0, 2
+                PUSH_CONST_U8_U8 8, 11
+                IADD_U8 1
+                CALL TEST
+                LEAVE 0, 0
+
+            TEST:
+                ENTER 0, 2
                 LEAVE 0, 0
             ");
         }

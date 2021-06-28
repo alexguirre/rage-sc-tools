@@ -6,6 +6,7 @@
     {
         public string? ExitLabel { get; set; }
         public string? BeginLabel { get; set; }
+        public string? ContinueLabel { get; set; }
 
         public ErrorStatement(SourceRange source, Diagnostic diagnostic) : base(source, diagnostic) { }
         public ErrorStatement(SourceRange source, DiagnosticsReport diagnostics, string message) : base(source, diagnostics, message) { }

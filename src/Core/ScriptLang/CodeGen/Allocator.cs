@@ -156,6 +156,7 @@
             public override Void Visit(RepeatStatement node, AllocatorContext ctx)
             {
                 node.BeginLabel = ctx.NextLabel();
+                node.ContinueLabel = ctx.NextLabel();
                 node.ExitLabel = ctx.NextLabel();
                 return base.Visit(node, ctx);
             }

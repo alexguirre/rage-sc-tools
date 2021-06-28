@@ -161,7 +161,7 @@
 
         public override Void Visit(ContinueStatement node, FuncDeclaration func)
         {
-            CG.EmitJump(node.EnclosingLoop!.BeginLabel!);
+            CG.EmitJump(node.EnclosingLoop!.ContinueLabel!);
             return default;
         }
 
@@ -213,6 +213,8 @@
 
             // body
             node.Body.ForEach(stmt => stmt.Accept(this, func));
+
+            CG.EmitLabel(node.ContinueLabel!);
 
             // increment counter
             var counterPlusOne = new BinaryExpression(node.Source, BinaryOperator.Add, node.Counter, constantOne) { Type = intTy, IsConstant = false, IsLValue = false };
