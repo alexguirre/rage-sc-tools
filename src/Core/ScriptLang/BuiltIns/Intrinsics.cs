@@ -12,22 +12,22 @@
         private static readonly StringOrIntDecl StringOrInt = new();
         private static readonly GenericTextLabelRefDecl GenericTextLabelRef = new();
 
-        public static FuncDeclaration F2V { get; } = CreateFunc("F2V", BuiltInTypes.Vector, (BuiltInTypes.Float, "value"));
-        public static FuncDeclaration F2I { get; } = CreateFunc("F2I", BuiltInTypes.Int, (BuiltInTypes.Float, "value"));
-        public static FuncDeclaration I2F { get; } = CreateFunc("I2F", BuiltInTypes.Float, (BuiltInTypes.Int, "value"));
-        public static FuncDeclaration Append { get; } = CreateProc("APPEND", (GenericTextLabelRef, "tl"), (StringOrInt, "value"));
+        public static FuncDeclaration F2V { get; } = CreateFunc("F2V", BuiltInTypes.Vector, (BuiltInTypes.Float, "value", false));
+        public static FuncDeclaration F2I { get; } = CreateFunc("F2I", BuiltInTypes.Int, (BuiltInTypes.Float, "value", false));
+        public static FuncDeclaration I2F { get; } = CreateFunc("I2F", BuiltInTypes.Float, (BuiltInTypes.Int, "value", false));
+        public static FuncDeclaration Append { get; } = CreateProc("APPEND", (GenericTextLabelRef, "tl", true), (StringOrInt, "value", false));
 
-        private static FuncDeclaration CreateProc(string name, params (ITypeDeclaration Type, string Name)[] parameters)
+        private static FuncDeclaration CreateProc(string name, params (ITypeDeclaration Type, string Name, bool IsRef)[] parameters)
             => CreateFunc(name, new VoidType(SourceRange.Unknown), parameters);
 
-        private static FuncDeclaration CreateFunc(string name, ITypeDeclaration returnType, params (ITypeDeclaration Type, string Name)[] parameters)
+        private static FuncDeclaration CreateFunc(string name, ITypeDeclaration returnType, params (ITypeDeclaration Type, string Name, bool IsRef)[] parameters)
             => CreateFunc(name, returnType.CreateType(SourceRange.Unknown), parameters);
 
-        private static FuncDeclaration CreateFunc(string name, IType returnType, params (ITypeDeclaration Type, string Name)[] parameters)
+        private static FuncDeclaration CreateFunc(string name, IType returnType, params (ITypeDeclaration Type, string Name, bool IsRef)[] parameters)
             => new(SourceRange.Unknown, name,
                 new(SourceRange.Unknown, name + "@proto", FuncKind.Intrinsic, returnType)
                 {
-                    Parameters = parameters.Select(p => new VarDeclaration(SourceRange.Unknown, p.Name, p.Type.CreateType(SourceRange.Unknown), VarKind.Parameter)).ToList()
+                    Parameters = parameters.Select(p => new VarDeclaration(SourceRange.Unknown, p.Name, p.Type.CreateType(SourceRange.Unknown), VarKind.Parameter, p.IsRef)).ToList()
                 });
 
         /// <summary>
@@ -53,8 +53,8 @@
             public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param) => throw new NotImplementedException();
             public override bool Equivalent(IType other) => other is StringOrIntType;
 
-            public override bool CanAssignInit(IType rhs, bool isLValue)
-                => String.CanAssignInit(rhs, isLValue) || Int.CanAssignInit(rhs, isLValue);
+            public override bool CanAssign(IType rhs, bool rhsIsLValue)
+                => String.CanAssign(rhs, rhsIsLValue) || Int.CanAssign(rhs, rhsIsLValue);
 
             public override string ToString() => "STRING|INT";
         }
@@ -64,8 +64,8 @@
         /// </summary>
         private sealed class GenericTextLabelRefDecl : BaseTypeDeclaration
         {
-            public GenericTextLabelRefDecl() : base(SourceRange.Unknown, "TEXT_LABEL_*&") { }
-            public override RefType CreateType(SourceRange source) => new(source, new GenericTextLabelType(source));
+            public GenericTextLabelRefDecl() : base(SourceRange.Unknown, "TEXT_LABEL_*") { }
+            public override GenericTextLabelType CreateType(SourceRange source) => new(source);
             public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param) => throw new NotImplementedException();
         }
 

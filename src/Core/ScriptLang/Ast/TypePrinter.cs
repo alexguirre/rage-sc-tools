@@ -10,8 +10,8 @@
     /// </summary>
     public static class TypePrinter
     {
-        public static string ToString(IType type, string? name)
-            => type switch
+        public static string ToString(IType type, string? name, bool isRef)
+            => isRef ? Ref(type, name) : type switch
             {
                 AnyType => Simple("ANY", name),
                 IArrayType arrayTy => Array(arrayTy, name),
@@ -20,9 +20,8 @@
                 FloatType => Simple("FLOAT", name),
                 FuncType funcTy => Func(funcTy, name),
                 IntType => Simple("INT", name),
-                NamedType namedTy => namedTy.ResolvedType is not null ? ToString(namedTy.ResolvedType, name) : Simple($"(unresolved type '{namedTy.Name}')", name),
+                NamedType namedTy => namedTy.ResolvedType is not null ? ToString(namedTy.ResolvedType, name, isRef) : Simple($"(unresolved type '{namedTy.Name}')", name),
                 NullType => Simple("(null)", name),
-                RefType refTy => Ref(refTy, name),
                 StringType => Simple("STRING", name),
                 StructType structTy => Simple(structTy.Declaration.Name, name),
                 TextLabelType lblTy => Simple($"TEXT_LABEL_{lblTy.Length-1}", name),
@@ -55,8 +54,8 @@
             }
 
             return string.IsNullOrEmpty(name) ?
-                  $"{ToString(arrayTy.ItemType, null)}{lengths}" :
-                  $"{ToString(arrayTy.ItemType, null)} {name}{lengths}";
+                  $"{ToString(arrayTy.ItemType, null, false)}{lengths}" :
+                  $"{ToString(arrayTy.ItemType, null, false)} {name}{lengths}";
         }
 
         private static string Func(FuncType funcTy, string? name)
@@ -67,10 +66,10 @@
                 FuncKind.Intrinsic => "INTRINSIC ",
                 _ => "",
             };
-            var argsStr = $"({string.Join(", ", funcTy.Declaration.Parameters.Select(p => ToString(p.Type, p.Name)))})";
+            var argsStr = $"({string.Join(", ", funcTy.Declaration.Parameters.Select(p => ToString(p.Type, p.Name, p.IsReference)))})";
             var returnStr = funcTy.Declaration.IsProc ?
                                 "PROC" :
-                                $"FUNC {ToString(funcTy.Declaration.ReturnType, string.Empty)}";
+                                $"FUNC {ToString(funcTy.Declaration.ReturnType, string.Empty, false)}";
             var nameStr = string.IsNullOrEmpty(name) ?
                                 "" :
                                 $" {name}";
@@ -78,15 +77,15 @@
             return prefixStr + returnStr + nameStr + argsStr;
         }
 
-        private static string Ref(RefType refTy, string? name)
+        private static string Ref(IType pointeeType, string? name)
         {
-            if (refTy.PointeeType is IArrayType arrTy)
+            if (pointeeType is IArrayType arrTy)
             {
                 return Array(arrTy, string.IsNullOrEmpty(name) ? $"(&)" : $"(&{name})");
             }
             else
             {
-                return string.IsNullOrEmpty(name) ? $"{ToString(refTy.PointeeType, null)}&" : $"{ToString(refTy.PointeeType, null)}& { name}";
+                return string.IsNullOrEmpty(name) ? $"{ToString(pointeeType, null, false)}&" : $"{ToString(pointeeType, null, false)}& {name}";
             }
         }
     }

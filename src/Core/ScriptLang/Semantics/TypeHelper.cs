@@ -30,14 +30,6 @@
         /// Unsafe types:
         /// <list type="bullet">
         /// <item>
-        ///     <term>References</term>
-        ///     <description>
-        ///         References are stored as a native memory address, normally from memory
-        ///         owned by the script thread. When the owning script thread is terminated,
-        ///         the memory will be freed and re-used by another script thread.
-        ///     </description>
-        /// </item>
-        /// <item>
         ///     <term>Function Pointers</term>
         ///     <description>
         ///         Function pointers are stored as an address specific to the script program,
@@ -62,7 +54,7 @@
         /// </summary>
         public static bool IsCrossScriptThreadSafe(IType type)
         {
-            if (type is RefType or FuncType or StringType)
+            if (type is FuncType or StringType)
             {
                 return false;
             }

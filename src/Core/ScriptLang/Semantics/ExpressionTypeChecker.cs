@@ -147,7 +147,7 @@
             {
                 var src = i switch { 0 => node.X, 1 => node.Y, 2 => node.Z, _ => throw new System.NotImplementedException() };
                 var dest = vectorTy.Declaration.Fields[i];
-                if (!dest.Type.CanAssignInit(src.Type!, src.IsLValue))
+                if (!dest.Type.CanAssign(src.Type!, src.IsLValue))
                 {
                     Diagnostics.AddError($"Vector component {dest.Name.ToUpperInvariant()} requires type '{dest.Type}', found '{src.Type}'", src.Source);
                 }

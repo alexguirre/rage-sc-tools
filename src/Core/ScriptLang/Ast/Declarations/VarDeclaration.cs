@@ -36,11 +36,15 @@
     public sealed class VarDeclaration : BaseValueDeclaration, IStatement
     {
         public VarKind Kind { get; set; }
+        /// <summary>
+        /// Gets or sets whether this variable is a reference. Only valid with kind <see cref="VarKind.Parameter"/>.
+        /// </summary>
+        public bool IsReference { get; set; }
         public IExpression? Initializer { get; set; }
         public int Address { get; set; }
 
-        public VarDeclaration(SourceRange source, string name, IType type, VarKind kind) : base(source, name, type)
-            => Kind = kind;
+        public VarDeclaration(SourceRange source, string name, IType type, VarKind kind, bool isReference) : base(source, name, type)
+            => (Kind, IsReference) = (kind, isReference);
 
         public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
             => visitor.Visit(this, param);

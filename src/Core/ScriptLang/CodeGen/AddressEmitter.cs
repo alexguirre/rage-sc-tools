@@ -66,7 +66,30 @@
                     }
                     break;
 
-                case VarKind.Local or VarKind.Parameter:
+                case VarKind.Parameter:
+                    if (varDecl.IsReference)
+                    {
+                        // parameter passed by reference, the address is its value
+                        switch (varDecl.Address)
+                        {
+                            case >= 0 and <= 0x000000FF:
+                                CG.Emit(Opcode.LOCAL_U8_LOAD, varDecl.Address);
+                                break;
+
+                            case >= 0 and <= 0x0000FFFF:
+                                CG.Emit(Opcode.LOCAL_U8_LOAD, varDecl.Address);
+                                break;
+
+                            default: Debug.Assert(false, "Local var address too big"); break;
+                        }
+                    }
+                    else
+                    {
+                        // parameter passed by value, treat it as a local variable
+                        goto case VarKind.Local;
+                    }
+                    break;
+                case VarKind.Local:
                     switch (varDecl.Address)
                     {
                         case >= 0 and <= 0x000000FF:

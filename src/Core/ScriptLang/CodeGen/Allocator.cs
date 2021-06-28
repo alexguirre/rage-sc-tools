@@ -133,7 +133,7 @@
                     case VarKind.Parameter:
                         Debug.Assert(ctx.FuncProto is not null);
                         node.Address = ctx.FuncProto.ParametersSize;
-                        ctx.FuncProto.ParametersSize += node.Type.SizeOf;
+                        ctx.FuncProto.ParametersSize += node.IsReference ? 1 : node.Type.SizeOf;
                         break;
 
                     case VarKind.Local:

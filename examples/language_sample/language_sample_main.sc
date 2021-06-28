@@ -284,10 +284,10 @@ PROC MAIN()
 
         INT test1 = 1, test2 = 1 + test1
 
-        FLOAT &ref1 = f1, &ref2 = f2
-        ref1 = 10.0
-        ref1 = f1
-        ref1 = ref2
+        // FLOAT &ref1 = f1, &ref2 = f2
+        // ref1 = 10.0
+        // ref1 = f1
+        // ref1 = ref2
     ENDWHILE
 ENDPROC
 
@@ -381,24 +381,24 @@ PROC TEST_HANDLES()
     // ent = player
 ENDPROC
 
-PROC TEST_REFS()
-    FLOAT f1 = 1.0, f2 = 2.0
-    INT i = 1
+// PROC TEST_REFS()
+//     FLOAT f1 = 1.0, f2 = 2.0
+//     INT i = 1
 
-    FLOAT& ref1 = f1
-    FLOAT& ref2 = f2
-    // FLOAT& ref3 = i
-    FLOAT& ref4 = ref1
+//     FLOAT& ref1 = f1
+//     FLOAT& ref2 = f2
+//     // FLOAT& ref3 = i
+//     FLOAT& ref4 = ref1
 
-    ref4 = ref2 + ref1
+//     ref4 = ref2 + ref1
 
-    INT& iref = i
+//     INT& iref = i
 
-    SWITCH iref
-        CASE 1
-            BREAK
-    ENDSWITCH
-ENDPROC
+//     SWITCH iref
+//         CASE 1
+//             BREAK
+//     ENDSWITCH
+// ENDPROC
 
 // STRUCT STRUCT_WITH_REF
 //     INT& intRef
@@ -458,10 +458,10 @@ PROC TEST_ANY()
     // ANY& any6 = <<1.0, 2.0, 3.0>>
 
     VECTOR v = <<1.0, 2.0, 3.0>>
-    ANY& any7 = v
+    // ANY& any7 = v
 
     // any7 = v
-    any7 = 1234
+    // any7 = 1234
 ENDPROC
 
 PROC TEST_ASSIGNMENT()

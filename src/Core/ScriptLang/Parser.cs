@@ -443,16 +443,19 @@
             => BuildVarDecl(kind, Source(initDecl), type, initDecl.declarator(), initDecl.initializer);
 
         private VarDeclaration BuildVarDecl(VarKind kind, SourceRange source, ScLangParser.IdentifierContext type, ScLangParser.DeclaratorContext decl, ScLangParser.ExpressionContext? init)
-            => new(source, GetNameFromDeclarator(decl), BuildTypeFromDeclarator(type, decl, isParameter: kind is VarKind.Parameter), kind)
+        {
+            var ty = BuildTypeFromDeclarator(type, decl, isParameter: kind is VarKind.Parameter, out var isRef);
+            return new(source, GetNameFromDeclarator(decl), ty, kind, isRef)
             {
                 Initializer = BuildAstOpt(init),
             };
+        }
 
         private List<StructField> BuildStructFields(ScLangParser.StructFieldListContext structFieldsContext)
         {
             return new(structFieldsContext.varDeclaration()
                         .SelectMany(declNoInit => declNoInit.initDeclaratorList().initDeclarator()
-                                                            .Select(initDecl => new StructField(Source(initDecl), GetNameFromDeclarator(initDecl.declarator()), BuildTypeFromDeclarator(declNoInit.type, initDecl.declarator(), isParameter: false))
+                                                            .Select(initDecl => new StructField(Source(initDecl), GetNameFromDeclarator(initDecl.declarator()), BuildTypeFromDeclarator(declNoInit.type, initDecl.declarator(), isParameter: false, out _))
                                                             {
                                                                 Initializer = BuildAstOpt(initDecl.initializer),
                                                             })));
@@ -471,10 +474,11 @@
             };
         }
 
-        private IType BuildTypeFromDeclarator(ScLangParser.IdentifierContext baseTypeName, ScLangParser.DeclaratorContext declarator, bool isParameter)
+        private IType BuildTypeFromDeclarator(ScLangParser.IdentifierContext baseTypeName, ScLangParser.DeclaratorContext declarator, bool isParameter, out bool isRef)
         {
             var baseType = BuildType(baseTypeName);
 
+            isRef = false;
             var allowIncompleteArrayType = isParameter; // incomplete arrays are only allowed as parameters
             var source = Source(declarator);
             IType ty = baseType;
@@ -483,7 +487,7 @@
             {
                 switch (pair)
                 {
-                    case (null, ScLangParser.ArrayDeclaratorContext) when ty is RefType:
+                    case (null, ScLangParser.ArrayDeclaratorContext) when isRef:
                         return new ErrorType(source, Diagnostics, $"Array of references is not valid");
                     case (null, ScLangParser.ArrayDeclaratorContext d):
                         if (allowIncompleteArrayType && d.expression() is null)
@@ -507,10 +511,17 @@
                         pair = (null, d.noRefDeclarator());
                         break;
 
-                    case (ScLangParser.RefDeclaratorContext, null) when ty is RefType:
+                    case (ScLangParser.RefDeclaratorContext, null) when isRef:
                         return new ErrorType(source, Diagnostics, $"Reference to reference is not valid");
                     case (ScLangParser.RefDeclaratorContext d, null):
-                        ty = new RefType(Source(d), ty);
+                        if (isParameter)
+                        {
+                            isRef = true;
+                        }
+                        else
+                        {
+                            return new ErrorType(source, Diagnostics, $"References are only allowed as parameters");
+                        }
                         pair = (null, d.noRefDeclarator());
                         break;
 
@@ -524,8 +535,8 @@
 
             if (isParameter && ty is IArrayType)
             {
-                // arrays are passed by reference, so wrap them in a RefType when used as parameters
-                ty = new RefType(ty.Source, ty);
+                // arrays are passed by reference when used as parameters
+                isRef = true;
             }
 
             return ty;

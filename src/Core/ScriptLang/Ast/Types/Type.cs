@@ -14,18 +14,12 @@
         int SizeOf { get; }
 
         /// <summary>
-        /// Gets the <see cref="IType"/> this type should be treated as when used as a value.
-        /// This is the same as this type except for <see cref="RefType"/>s where it returns its <see cref="RefType.PointeeType"/>.
-        /// </summary>
-        IType ByValue { get; }
-
-        /// <summary>
         /// Gets whether this and <paramref name="other"/> represent the same type.
         /// </summary>
         bool Equivalent(IType other);
 
         /// <summary>
-        /// Gets whether a <see cref="RefType"/> of this type can be binded to a lvalue of type <paramref name="other"/>.
+        /// Gets whether a reference of this type can be binded to a lvalue of type <paramref name="other"/>.
         /// </summary>
         bool CanBindRefTo(IType other);
 
@@ -33,11 +27,6 @@
         /// Gets whether the type <paramref name="rhs"/> can be assigned to this type.
         /// </summary>
         bool CanAssign(IType rhs, bool rhsIsLValue);
-
-        /// <summary>
-        /// Gets whether the type <paramref name="rhs"/> can be assigned to this type in an initializer or when passed as parameter.
-        /// </summary>
-        bool CanAssignInit(IType rhs, bool rhsIsLValue);
 
         // Semantic Checks
 
@@ -71,11 +60,6 @@
         /// </summary>
         void Assign(IType rhs, bool rhsIsLValue, SourceRange source, DiagnosticsReport diagnostics);
 
-        /// <summary>
-        /// Checks if the type <paramref name="rhs"/> can be assigned to this type in an initializer or when passed as parameter.
-        /// </summary>
-        void AssignInit(IType rhs, bool rhsIsLValue, SourceRange source, DiagnosticsReport diagnostics);
-
         // CodeGen
         void CGAssign(CodeGenerator cg, AssignmentStatement stmt);
         void CGBinaryOperation(CodeGenerator cg, BinaryExpression expr);
@@ -97,12 +81,11 @@
 
         public BaseType(SourceRange source) : base(source) {}
 
-        public override string ToString() => TypePrinter.ToString(this, null);
+        public override string ToString() => TypePrinter.ToString(this, null, false);
 
         public abstract bool Equivalent(IType other);
         public virtual bool CanBindRefTo(IType other) => Equivalent(other);
         public virtual bool CanAssign(IType rhs, bool rhsIsLValue) => false;
-        public virtual bool CanAssignInit(IType rhs, bool rhsIsLValue) => CanAssign(rhs, rhsIsLValue);
 
         public virtual IType BinaryOperation(BinaryOperator op, IType rhs, SourceRange source, DiagnosticsReport diagnostics)
             => new ErrorType(source, diagnostics, $"Binary operator '{op.ToToken()}' is not supported with operands of type '{this}' and '{rhs}'");
@@ -122,16 +105,6 @@
         public virtual void Assign(IType rhs, bool rhsIsLValue, SourceRange source, DiagnosticsReport diagnostics)
         {
             if (CanAssign(rhs, rhsIsLValue))
-            {
-                return;
-            }
-
-            diagnostics.AddError($"Cannot assign type '{rhs}' to '{this}'", source);
-        }
-
-        public virtual void AssignInit(IType rhs, bool rhsIsLValue, SourceRange source, DiagnosticsReport diagnostics)
-        {
-            if (CanAssignInit(rhs, rhsIsLValue))
             {
                 return;
             }

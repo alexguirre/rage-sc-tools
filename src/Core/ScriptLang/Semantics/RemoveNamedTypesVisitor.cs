@@ -58,12 +58,6 @@
             return base.Visit(node, param);
         }
 
-        public override Void Visit(RefType node, Void param)
-        {
-            node.PointeeType = Clean(node.PointeeType);
-            return base.Visit(node, param);
-        }
-
         public override Void Visit(NamedType node, Void param)
         {
             Debug.Assert(false, $"{nameof(NamedType)} reached but it should have been removed already");

@@ -58,7 +58,6 @@
         TReturn Visit(IntType node, TParam param);
         TReturn Visit(NamedType node, TParam param);
         TReturn Visit(NullType node, TParam param);
-        TReturn Visit(RefType node, TParam param);
         TReturn Visit(StringType node, TParam param);
         TReturn Visit(StructType node, TParam param);
         TReturn Visit(TextLabelType node, TParam param);
@@ -344,12 +343,6 @@
             return DefaultReturn;
         }
 
-        public virtual TReturn Visit(RefType node, TParam param)
-        {
-            node.PointeeType.Accept(this, param);
-            return DefaultReturn;
-        }
-
         public virtual TReturn Visit(StringType node, TParam param)
         {
             return DefaultReturn;
@@ -448,7 +441,6 @@
         public virtual TReturn Visit(IntType node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(NamedType node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(NullType node, TParam param) => throw new NotImplementedException();
-        public virtual TReturn Visit(RefType node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(StringType node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(StructType node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(TextLabelType node, TParam param) => throw new NotImplementedException();

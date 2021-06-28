@@ -19,11 +19,10 @@
 
         public override bool Equivalent(IType other) => other is BoolType;
 
-        public override bool CanAssign(IType rhs, bool rhsIsLValue) => rhs.ByValue is BoolType or NullType or ErrorType;
+        public override bool CanAssign(IType rhs, bool rhsIsLValue) => rhs is BoolType or NullType or ErrorType;
 
         public override IType BinaryOperation(BinaryOperator op, IType rhs, SourceRange source, DiagnosticsReport diagnostics)
         {
-            rhs = rhs.ByValue;
             if (rhs is ErrorType)
             {
                 return rhs;

@@ -1910,6 +1910,159 @@
             ");
         }
 
+        [Fact]
+        public void TestReferences()
+        {
+            CompileMain(
+            source: @"
+                FLOAT f
+                TEST(f, f)
+            ",
+            sourceStatics: @"
+                PROC TEST(FLOAT& a, FLOAT b)
+                    b = a
+                    a = b
+                    TEST(a, b)
+                ENDPROC
+            ",
+            expectedAssembly: @"
+                ENTER 0, 3
+                LOCAL_U8 2
+                LOCAL_U8_LOAD 2
+                CALL TEST
+                LEAVE 0, 0
+
+            TEST:
+                ENTER 2, 4
+
+                ; b = a
+                LOCAL_U8_LOAD 0
+                LOAD
+                LOCAL_U8_STORE 1
+
+                ; a = b
+                LOCAL_U8_LOAD 1
+                LOCAL_U8_LOAD 0
+                STORE
+
+                ; TEST(a, b)
+                LOCAL_U8_LOAD 0
+                LOCAL_U8_LOAD 1
+                CALL TEST
+                LEAVE 2, 0
+            ");
+        }
+
+        [Fact]
+        public void TestStructReferences()
+        {
+            CompileMain(
+            source: @"
+                VECTOR v
+                TEST(v, v)
+            ",
+            sourceStatics: @"
+                PROC TEST(VECTOR& a, VECTOR b)
+                    b = a
+                    a = b
+                    TEST(a, b)
+                ENDPROC
+            ",
+            expectedAssembly: @"
+                ENTER 0, 5
+                LOCAL_U8 2
+                PUSH_CONST_3
+                LOCAL_U8 2
+                LOAD_N
+                CALL TEST
+                LEAVE 0, 0
+
+            TEST:
+                ENTER 4, 6
+
+                ; b = a
+                PUSH_CONST_3
+                LOCAL_U8_LOAD 0
+                LOAD_N
+                PUSH_CONST_3
+                LOCAL_U8 1
+                STORE_N
+
+                ; a = b
+                PUSH_CONST_3
+                LOCAL_U8 1
+                LOAD_N
+                PUSH_CONST_3
+                LOCAL_U8_LOAD 0
+                STORE_N
+
+                ; TEST(a, b)
+                LOCAL_U8_LOAD 0
+                PUSH_CONST_3
+                LOCAL_U8 1
+                LOAD_N
+                CALL TEST
+                LEAVE 4, 0
+            ");
+        }
+
+        [Fact]
+        public void TestArrayReferences()
+        {
+            CompileMain(
+            source: @"
+                INT v[10]
+                TEST(v, v)
+            ",
+            sourceStatics: @"
+                PROC TEST(INT a[10], INT b[]) // arrays are passed by reference
+                    a[1] = b[1]
+                    b[1] = a[1]
+                    TEST(a, b)
+                ENDPROC
+            ",
+            expectedAssembly: @"
+                ENTER 0, 13
+
+                ; array initializer
+                LOCAL_U8 2
+                PUSH_CONST_U8 10
+                STORE_REV
+                DROP
+
+                LOCAL_U8 2
+                LOCAL_U8 2
+                CALL TEST
+                LEAVE 0, 0
+
+            TEST:
+                ENTER 2, 4
+
+                ; a[1] = b[1]
+                PUSH_CONST_1
+                LOCAL_U8_LOAD 1
+                ARRAY_U8_LOAD 1
+                PUSH_CONST_1
+                LOCAL_U8_LOAD 0
+                ARRAY_U8_STORE 1
+
+                ; b[1] = a[1]
+                PUSH_CONST_1
+                LOCAL_U8_LOAD 0
+                ARRAY_U8_LOAD 1
+                PUSH_CONST_1
+                LOCAL_U8_LOAD 1
+                ARRAY_U8_STORE 1
+
+                ; TEST(a, b)
+                LOCAL_U8_LOAD 0
+                LOCAL_U8_LOAD 1
+                CALL TEST
+
+                LEAVE 2, 0
+            ");
+        }
+
         [Fact(Skip = "Optimization not implemented yet")]
         public void TestPushU8Optimization()
         {
@@ -1922,11 +2075,11 @@
                 ENDPROC
             ",
             expectedAssembly: @"
-                ENTER 0, 2
+                ENTER 2, 4
                 PUSH_CONST_U8_U8 8, 11
                 IADD_U8 1
                 CALL TEST
-                LEAVE 0, 0
+                LEAVE 2, 0
 
             TEST:
                 ENTER 0, 2

@@ -33,11 +33,11 @@
         public override bool Equivalent(IType other) => other is TextLabelType otherLbl && Length == otherLbl.Length;
 
         public override bool CanAssign(IType rhs, bool rhsIsLValue)
-            => rhs.ByValue is TextLabelType or StringType or IntType or ErrorType;
+            => rhs is TextLabelType or StringType or IntType or ErrorType;
 
         public override void CGAssign(CodeGenerator cg, AssignmentStatement stmt)
         {
-            var rhsType = stmt.RHS.Type!.ByValue;
+            var rhsType = stmt.RHS.Type!;
             if (rhsType is StringType)
             {
                 cg.EmitValue(stmt.RHS);

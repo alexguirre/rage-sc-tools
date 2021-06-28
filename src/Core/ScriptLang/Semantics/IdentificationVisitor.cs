@@ -59,7 +59,7 @@
             {
                 if (!TypeHelper.HasMainProcedureSignature(node))
                 {
-                    Diagnostics.AddError($"'{TypePrinter.ToString(node.Type, node.Name)}' is not a valid entrypoint procedure signature, expected 'PROC MAIN()'", node.Source);
+                    Diagnostics.AddError($"'{TypePrinter.ToString(node.Type, node.Name, false)}' is not a valid entrypoint procedure signature, expected 'PROC MAIN()'", node.Source);
                 }
                 mainProc = node;
             }
