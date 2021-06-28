@@ -214,6 +214,42 @@
         public void EmitSwitch(IEnumerable<ValueSwitchCase> cases)
             => Emit(Opcode.SWITCH, cases.Select(c => $"{unchecked((uint)ExpressionEvaluator.EvalInt(c.Value, Symbols))}:{c.Label}"));
 
+        public void EmitLoadFrom(IExpression lvalueExpr)
+        {
+            Debug.Assert(lvalueExpr.IsLValue);
+
+            var size = lvalueExpr.Type!.SizeOf;
+            if (size == 1)
+            {
+                EmitAddress(lvalueExpr);
+                Emit(Opcode.LOAD);
+            }
+            else
+            {
+                EmitPushConstInt(size);
+                EmitAddress(lvalueExpr);
+                Emit(Opcode.LOAD_N);
+            }
+        }
+
+        public void EmitStoreAt(IExpression lvalueExpr)
+        {
+            Debug.Assert(lvalueExpr.IsLValue);
+
+            var size = lvalueExpr.Type!.SizeOf;
+            if (size == 1)
+            {
+                EmitAddress(lvalueExpr);
+                Emit(Opcode.STORE);
+            }
+            else
+            {
+                EmitPushConstInt(size);
+                EmitAddress(lvalueExpr);
+                Emit(Opcode.STORE_N);
+            }
+        }
+
         public void EmitPushConstInt(int value)
         {
             switch (value)

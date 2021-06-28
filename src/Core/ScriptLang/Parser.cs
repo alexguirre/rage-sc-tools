@@ -321,7 +321,17 @@
 
                 case ScLangParser.AssignmentStatementContext c:
                     var op = c.op.Text is "=" ? (BinaryOperator?)null : BinaryOperatorExtensions.FromToken(c.op.Text[0..1]);
-                    yield return new AssignmentStatement(Source(c), op, BuildAst(c.left), BuildAst(c.right));
+                    if (op is null)
+                    {
+                        yield return new AssignmentStatement(Source(c), BuildAst(c.left), BuildAst(c.right));
+                    }
+                    else
+                    {
+                        // represent `lhs op= rhs` as `lhs = lhs op rhs`
+                        // functions cannot return lvalues so it is fine to evaluate `lhs` twice
+                        var binExpr = new BinaryExpression(Source(c), op.Value, BuildAst(c.left), BuildAst(c.right));
+                        yield return new AssignmentStatement(Source(c), BuildAst(c.left), binExpr);
+                    }
                     break;
 
                 case ScLangParser.VariableDeclarationStatementContext c:

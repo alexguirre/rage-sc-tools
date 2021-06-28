@@ -3,6 +3,7 @@
     using System;
 
     using ScTools.ScriptLang.Ast.Expressions;
+    using ScTools.ScriptLang.Ast.Statements;
     using ScTools.ScriptLang.Ast.Types;
     using ScTools.ScriptLang.CodeGen;
 
@@ -30,6 +31,7 @@
         public IType Invocation((IType Type, bool IsLValue, SourceRange Source)[] args, SourceRange source, DiagnosticsReport diagnostics) => this;
         public void Assign(IType rhs, bool rhsIsLValue, SourceRange source, DiagnosticsReport diagnostics) { }
         public void AssignInit(IType rhs, bool rhsIsLValue, SourceRange source, DiagnosticsReport diagnostics) { }
+        public void CGAssign(CodeGenerator cg, AssignmentStatement stmt) => throw new NotImplementedException();
         public void CGBinaryOperation(CodeGenerator cg, BinaryExpression expr) => throw new NotImplementedException();
         public void CGUnaryOperation(CodeGenerator cg, UnaryExpression expr) => throw new NotImplementedException();
         public void CGFieldAddress(CodeGenerator cg, FieldAccessExpression expr) => throw new NotImplementedException();

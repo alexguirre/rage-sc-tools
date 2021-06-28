@@ -1736,6 +1736,163 @@
             ");
         }
 
+        [Fact]
+        public void TestTextLabelAssignString()
+        {
+            CompileMain(
+            source: @"
+                TEXT_LABEL_7 tl7 = 'hello world'
+                TEXT_LABEL_15 tl15 = 'hello world'
+                TEXT_LABEL_31 tl31 = 'hello world'
+                TEXT_LABEL_63 tl63 = 'hello world'
+                TEXT_LABEL_127 tl127 = 'hello world'
+            ",
+            expectedAssembly: @"
+                ENTER 0, 33
+
+                ; TEXT_LABEL_7 tl7 = 'hello world'
+                PUSH_CONST_0
+                STRING
+                LOCAL_U8 2
+                TEXT_LABEL_ASSIGN_STRING 8
+
+                ; TEXT_LABEL_15 tl15 = 'hello world'
+                PUSH_CONST_0
+                STRING
+                LOCAL_U8 3
+                TEXT_LABEL_ASSIGN_STRING 16
+
+                ; TEXT_LABEL_31 tl31 = 'hello world'
+                PUSH_CONST_0
+                STRING
+                LOCAL_U8 5
+                TEXT_LABEL_ASSIGN_STRING 32
+
+                ; TEXT_LABEL_63 tl63 = 'hello world'
+                PUSH_CONST_0
+                STRING
+                LOCAL_U8 9
+                TEXT_LABEL_ASSIGN_STRING 64
+
+                ; TEXT_LABEL_127 tl127 = 'hello world'
+                PUSH_CONST_0
+                STRING
+                LOCAL_U8 17
+                TEXT_LABEL_ASSIGN_STRING 128
+
+                LEAVE 0, 0
+
+                .string
+                strHelloWorld: .str 'hello world'
+            ");
+        }
+
+        [Fact]
+        public void TestTextLabelAssignInt()
+        {
+            CompileMain(
+            source: @"
+                TEXT_LABEL_7 tl7 = 123456
+                TEXT_LABEL_15 tl15 = 123456
+                TEXT_LABEL_31 tl31 = 123456
+                TEXT_LABEL_63 tl63 = 123456
+                TEXT_LABEL_127 tl127 = 123456
+            ",
+            expectedAssembly: @"
+                ENTER 0, 33
+
+                ; TEXT_LABEL_7 tl7 = 123456
+                PUSH_CONST_U24 123456
+                LOCAL_U8 2
+                TEXT_LABEL_ASSIGN_INT 8
+
+                ; TEXT_LABEL_15 tl15 = 123456
+                PUSH_CONST_U24 123456
+                LOCAL_U8 3
+                TEXT_LABEL_ASSIGN_INT 16
+
+                ; TEXT_LABEL_31 tl31 = 123456
+                PUSH_CONST_U24 123456
+                LOCAL_U8 5
+                TEXT_LABEL_ASSIGN_INT 32
+
+                ; TEXT_LABEL_63 tl63 = 123456
+                PUSH_CONST_U24 123456
+                LOCAL_U8 9
+                TEXT_LABEL_ASSIGN_INT 64
+
+                ; TEXT_LABEL_127 tl127 = 123456
+                PUSH_CONST_U24 123456
+                LOCAL_U8 17
+                TEXT_LABEL_ASSIGN_INT 128
+
+                LEAVE 0, 0
+            ");
+        }
+
+        [Fact]
+        public void TestTextLabelAssignTextLabel()
+        {
+            CompileMain(
+            source: @"
+                TEXT_LABEL_31 src
+                TEXT_LABEL_7 tl7 = src
+                TEXT_LABEL_15 tl15 = src
+                TEXT_LABEL_31 tl31 = src
+                TEXT_LABEL_63 tl63 = src
+                TEXT_LABEL_127 tl127 = src
+            ",
+            expectedAssembly: @"
+                ENTER 0, 37
+
+                ; TEXT_LABEL_7 tl7 = src
+                PUSH_CONST_4
+                LOCAL_U8 2
+                LOAD_N
+                PUSH_CONST_4
+                PUSH_CONST_1
+                LOCAL_U8 6
+                TEXT_LABEL_COPY
+
+                ; TEXT_LABEL_15 tl15 = src
+                PUSH_CONST_4
+                LOCAL_U8 2
+                LOAD_N
+                PUSH_CONST_4
+                PUSH_CONST_2
+                LOCAL_U8 7
+                TEXT_LABEL_COPY
+
+                ; TEXT_LABEL_31 tl31 = src
+                PUSH_CONST_4
+                LOCAL_U8 2
+                LOAD_N
+                PUSH_CONST_4
+                LOCAL_U8 9
+                STORE_N
+
+                ; TEXT_LABEL_63 tl63 = src
+                PUSH_CONST_4
+                LOCAL_U8 2
+                LOAD_N
+                PUSH_CONST_4
+                PUSH_CONST_U8 8
+                LOCAL_U8 13
+                TEXT_LABEL_COPY
+
+                ; TEXT_LABEL_127 tl127 = src
+                PUSH_CONST_4
+                LOCAL_U8 2
+                LOAD_N
+                PUSH_CONST_4
+                PUSH_CONST_U8 16
+                LOCAL_U8 21
+                TEXT_LABEL_COPY
+
+                LEAVE 0, 0
+            ");
+        }
+
         private static void CompileMain(string source, string expectedAssembly, string sourceStatics = "", NativeDB? nativeDB = null)
         {
             using var sourceReader = new StringReader($@"

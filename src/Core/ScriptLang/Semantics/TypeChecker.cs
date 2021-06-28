@@ -207,19 +207,7 @@
             }
             else
             {
-                IType assignedType;
-                if (node.CompoundOperator is null)
-                {
-                    assignedType = node.RHS.Type!;
-                }
-                else
-                {
-                    node.CompoundExpression = new BinaryExpression(node.Source, node.CompoundOperator.Value, node.LHS, node.RHS);
-                    node.CompoundExpression.Accept(this, param);
-                    assignedType = node.CompoundExpression.Type!;
-                }
-
-                node.LHS.Type!.Assign(assignedType, rhsIsLValue: false, node.Source, Diagnostics);
+                node.LHS.Type!.Assign(node.RHS.Type!, node.RHS.IsLValue, node.Source, Diagnostics);
             }
 
             return DefaultReturn;

@@ -37,8 +37,7 @@
             else if (node.Initializer is not null)
             {
                 var dest = new ValueDeclRefExpression(node.Source, node.Name) { Declaration = node, Type = node.Type!, IsLValue = true, IsConstant = false };
-                new AssignmentStatement(node.Source, compoundOperator: null,
-                                        lhs: dest, rhs: node.Initializer)
+                new AssignmentStatement(node.Source, lhs: dest, rhs: node.Initializer)
                     .Accept(this, func);
             }
 
@@ -150,21 +149,7 @@
 
         public override Void Visit(AssignmentStatement node, FuncDeclaration func)
         {
-            var size = node.LHS.Type!.SizeOf;
-
-            CG.EmitValue(node.CompoundExpression ?? node.RHS);
-            if (size == 1)
-            {
-                CG.EmitAddress(node.LHS);
-                CG.Emit(Opcode.STORE);
-            }
-            else
-            {
-                CG.EmitPushConstInt(size);
-                CG.EmitAddress(node.LHS);
-                CG.Emit(Opcode.STORE_N);
-            }
-
+            node.LHS.Type!.CGAssign(CG, node);
             return default;
         }
 
@@ -216,8 +201,7 @@
             var constantOne = new IntLiteralExpression(node.Source, 1) { Type = intTy, IsConstant = true, IsLValue = false };
 
             // set counter to 0
-            new AssignmentStatement(node.Source, compoundOperator: null,
-                                    lhs: node.Counter, rhs: constantZero)
+            new AssignmentStatement(node.Source, lhs: node.Counter, rhs: constantZero)
                 .Accept(this, func);
 
             CG.EmitLabel(node.BeginLabel!);
@@ -231,8 +215,8 @@
             node.Body.ForEach(stmt => stmt.Accept(this, func));
 
             // increment counter
-            new AssignmentStatement(node.Source, compoundOperator: BinaryOperator.Add,
-                                    lhs: node.Counter, rhs: constantOne)
+            var counterPlusOne = new BinaryExpression(node.Source, BinaryOperator.Add, node.Counter, constantOne) { Type = intTy, IsConstant = false, IsLValue = false };
+            new AssignmentStatement(node.Source, lhs: node.Counter, rhs: counterPlusOne)
                 .Accept(this, func);
 
             // jump back to condition check

@@ -6,6 +6,7 @@
     using ScTools.ScriptAssembly;
     using ScTools.ScriptLang.Ast.Errors;
     using ScTools.ScriptLang.Ast.Expressions;
+    using ScTools.ScriptLang.Ast.Statements;
     using ScTools.ScriptLang.CodeGen;
 
     public interface IType : INode
@@ -76,6 +77,7 @@
         void AssignInit(IType rhs, bool rhsIsLValue, SourceRange source, DiagnosticsReport diagnostics);
 
         // CodeGen
+        void CGAssign(CodeGenerator cg, AssignmentStatement stmt);
         void CGBinaryOperation(CodeGenerator cg, BinaryExpression expr);
         void CGUnaryOperation(CodeGenerator cg, UnaryExpression expr);
         void CGFieldAddress(CodeGenerator cg, FieldAccessExpression expr);
@@ -135,6 +137,13 @@
             }
 
             diagnostics.AddError($"Cannot assign type '{rhs}' to '{this}'", source);
+        }
+
+        public virtual void CGAssign(CodeGenerator cg, AssignmentStatement stmt)
+        {
+            // by default just copy rhs to lhs by value
+            cg.EmitValue(stmt.RHS);
+            cg.EmitStoreAt(stmt.LHS);
         }
 
         public virtual void CGBinaryOperation(CodeGenerator cg, BinaryExpression expr) => throw new NotImplementedException();
