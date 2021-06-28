@@ -104,6 +104,9 @@
                     case FuncDeclaration { Prototype: { Kind: FuncKind.UserDefined } } func:
                         CG.Emit(Opcode.PUSH_CONST_U24, func.Name);
                         break;
+                    case VarDeclaration { Kind: VarKind.Constant } var:
+                        CG.EmitValue(var.Initializer!);
+                        break;
                     default: throw new System.NotImplementedException();
                 }
             }

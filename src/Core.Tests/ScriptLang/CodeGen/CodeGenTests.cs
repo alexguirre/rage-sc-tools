@@ -2063,6 +2063,49 @@
             ");
         }
 
+        [Fact]
+        public void TestConstants()
+        {
+            CompileMain(
+            source: @"
+                INT i = MY_INT
+                FLOAT f = MY_FLOAT
+                BOOL b = MY_BOOL
+                STRING s = MY_STRING
+            ",
+            sourceStatics: @"
+                CONST INT MY_INT = 1234
+                CONST FLOAT MY_FLOAT = 12.34
+                CONST BOOL MY_BOOL = TRUE
+                CONST STRING MY_STRING = 'hello'
+            ",
+            expectedAssembly: @"
+                ENTER 0, 6
+
+                ; INT i = MY_INT
+                PUSH_CONST_S16 1234
+                LOCAL_U8_STORE 2
+
+                ; FLOAT f = MY_FLOAT
+                PUSH_CONST_F 12.34
+                LOCAL_U8_STORE 3
+
+                ; BOOL b = MY_BOOL
+                PUSH_CONST_1
+                LOCAL_U8_STORE 4
+
+                ; STRING s = MY_STRING
+                PUSH_CONST_0
+                STRING
+                LOCAL_U8_STORE 5
+
+                LEAVE 0, 0
+
+                .string
+                .str 'hello'
+            ");
+        }
+
         [Fact(Skip = "Optimization not implemented yet")]
         public void TestPushU8Optimization()
         {
