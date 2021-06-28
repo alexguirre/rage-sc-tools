@@ -46,7 +46,8 @@
             node.SubExpression.Accept(this, param);
 
             node.IsConstant = false;
-            (node.Type, node.IsLValue) = node.SubExpression.Type!.FieldAccess(node.FieldName, node.Source, Diagnostics);
+            node.IsLValue = node.SubExpression.IsLValue;
+            node.Type = node.SubExpression.Type!.FieldAccess(node.FieldName, node.Source, Diagnostics);
             return default;
         }
 

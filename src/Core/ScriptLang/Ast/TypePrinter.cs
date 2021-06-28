@@ -81,7 +81,7 @@
         {
             if (pointeeType is IArrayType arrTy)
             {
-                return Array(arrTy, string.IsNullOrEmpty(name) ? $"(&)" : $"(&{name})");
+                return Array(arrTy, name); // arrays are always passed by reference so don't need to include '&'
             }
             else
             {

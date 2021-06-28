@@ -41,9 +41,9 @@
         IType UnaryOperation(UnaryOperator op, SourceRange source, DiagnosticsReport diagnostics);
 
         /// <summary>
-        /// Checks if this type has the field <paramref name="fieldName"/> and returns its type and whether it is an lvalue.
+        /// Checks if this type has the field <paramref name="fieldName"/> and returns its type.
         /// </summary>
-        (IType Type, bool LValue) FieldAccess(string fieldName, SourceRange source, DiagnosticsReport diagnostics);
+        IType FieldAccess(string fieldName, SourceRange source, DiagnosticsReport diagnostics);
 
         /// <summary>
         /// Checks if this type supports indexing with <paramref name="index"/> and returns the resulting item type.
@@ -93,8 +93,8 @@
         public virtual IType UnaryOperation(UnaryOperator op, SourceRange source, DiagnosticsReport diagnostics)
             => new ErrorType(source, diagnostics, $"Unary operator '{op.ToToken()}' is not supported by type '{this}'");
 
-        public virtual (IType Type, bool LValue) FieldAccess(string fieldName, SourceRange source, DiagnosticsReport diagnostics)
-            => (new ErrorType(source, diagnostics, $"Field access is not supported by type '{this}'"), false);
+        public virtual IType FieldAccess(string fieldName, SourceRange source, DiagnosticsReport diagnostics)
+            => new ErrorType(source, diagnostics, $"Field access is not supported by type '{this}'");
 
         public virtual IType Indexing(IType index, SourceRange source, DiagnosticsReport diagnostics)
             => new ErrorType(source, diagnostics, $"Indexing is not supported by type '{this}'");
@@ -132,18 +132,6 @@
 
         public BaseArrayType(SourceRange source, IType itemType) : base(source)
             => ItemType = itemType;
-
-        public override (IType Type, bool LValue) FieldAccess(string fieldName, SourceRange source, DiagnosticsReport diagnostics)
-        {
-            if (Parser.CaseInsensitiveComparer.Equals(fieldName, "length"))
-            {
-                return (new IntType(source), false);
-            }
-            else
-            {
-                return (new ErrorType(source, diagnostics, $"Unknown field '{fieldName}'"), false);
-            }
-        }
 
         public override IType Indexing(IType index, SourceRange source, DiagnosticsReport diagnostics)
         {

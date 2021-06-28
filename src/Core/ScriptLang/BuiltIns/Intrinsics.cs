@@ -10,12 +10,14 @@
     public static class Intrinsics
     {
         private static readonly StringOrIntDecl StringOrInt = new();
-        private static readonly GenericTextLabelRefDecl GenericTextLabelRef = new();
+        private static readonly GenericTextLabelDecl GenericTextLabel = new();
+        private static readonly GenericArrayDecl GenericArray = new();
 
         public static FuncDeclaration F2V { get; } = CreateFunc("F2V", BuiltInTypes.Vector, (BuiltInTypes.Float, "value", false));
         public static FuncDeclaration F2I { get; } = CreateFunc("F2I", BuiltInTypes.Int, (BuiltInTypes.Float, "value", false));
         public static FuncDeclaration I2F { get; } = CreateFunc("I2F", BuiltInTypes.Float, (BuiltInTypes.Int, "value", false));
-        public static FuncDeclaration Append { get; } = CreateProc("APPEND", (GenericTextLabelRef, "tl", true), (StringOrInt, "value", false));
+        public static FuncDeclaration Append { get; } = CreateProc("APPEND", (GenericTextLabel, "tl", true), (StringOrInt, "value", false));
+        public static FuncDeclaration ArraySize { get; } = CreateFunc("ARRAY_SIZE", BuiltInTypes.Int, (GenericArray, "array", true));
 
         private static FuncDeclaration CreateProc(string name, params (ITypeDeclaration Type, string Name, bool IsRef)[] parameters)
             => CreateFunc(name, new VoidType(SourceRange.Unknown), parameters);
@@ -62,9 +64,9 @@
         /// <summary>
         /// Used for parameters that can be a reference to any TEXT_LABEL_*.
         /// </summary>
-        private sealed class GenericTextLabelRefDecl : BaseTypeDeclaration
+        private sealed class GenericTextLabelDecl : BaseTypeDeclaration
         {
-            public GenericTextLabelRefDecl() : base(SourceRange.Unknown, "TEXT_LABEL_*") { }
+            public GenericTextLabelDecl() : base(SourceRange.Unknown, "TEXT_LABEL_*") { }
             public override GenericTextLabelType CreateType(SourceRange source) => new(source);
             public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param) => throw new NotImplementedException();
         }
@@ -78,11 +80,49 @@
             public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param) => throw new NotImplementedException();
             public override bool Equivalent(IType other) => other is GenericTextLabelType;
 
-            // incomplete array types can reference arrays of any size if their item types are equivalent
             public override bool CanBindRefTo(IType other)
                 => other is TextLabelType;
 
             public override string ToString() => "TEXT_LABEL_*";
+        }
+
+        /// <summary>
+        /// Used for parameters that can be a reference to any array.
+        /// </summary>
+        private sealed class GenericArrayDecl : BaseTypeDeclaration
+        {
+            public GenericArrayDecl() : base(SourceRange.Unknown, "<array>") { }
+            public override GenericArrayType CreateType(SourceRange source) => new(source);
+            public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param) => throw new NotImplementedException();
+        }
+
+        private sealed class GenericArrayType : BaseType, IArrayType
+        {
+            public override int SizeOf => 0;
+
+            public IType ItemType { get; set; }
+
+            public GenericArrayType(SourceRange source) : base(source) => ItemType = new GenericType(source);
+
+            public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param) => throw new NotImplementedException();
+            public override bool Equivalent(IType other) => other is GenericArrayType;
+
+            public override bool CanBindRefTo(IType other)
+                => other is IArrayType;
+        }
+
+        private sealed class GenericType : BaseType
+        {
+            public override int SizeOf => 0;
+
+            public GenericType(SourceRange source) : base(source) { }
+
+            public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param) => throw new NotImplementedException();
+            public override bool Equivalent(IType other) => other is GenericType;
+
+            public override bool CanBindRefTo(IType other) => true;
+
+            public override string ToString() => "<any type>";
         }
     }
 }

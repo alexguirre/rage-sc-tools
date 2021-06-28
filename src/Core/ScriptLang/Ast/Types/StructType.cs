@@ -54,16 +54,16 @@
             return false;
         }
 
-        public override (IType Type, bool LValue) FieldAccess(string fieldName, SourceRange source, DiagnosticsReport diagnostics)
+        public override IType FieldAccess(string fieldName, SourceRange source, DiagnosticsReport diagnostics)
         {
             var field = Declaration.FindField(fieldName);
             if (field is null)
             {
-                return (new ErrorType(source, diagnostics, $"Unknown field '{fieldName}'"), true);
+                return new ErrorType(source, diagnostics, $"Unknown field '{fieldName}'");
             }
             else
             {
-                return (field.Type, true);
+                return field.Type;
             }
         }
 

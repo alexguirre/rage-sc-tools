@@ -49,6 +49,7 @@
             AddValue(Intrinsics.F2I);
             AddValue(Intrinsics.I2F);
             AddValue(Intrinsics.Append);
+            AddValue(Intrinsics.ArraySize);
         }
     }
 }

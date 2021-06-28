@@ -129,7 +129,7 @@ PROC MAIN()
     // tmp.unk = 120
 
     INT i
-    REPEAT aItems.length i
+    REPEAT ARRAY_SIZE(aItems) i
         INIT_STRUCT(aItems[i], GET_DEFAULT_A(), GET_DEFAULT_B(), GET_DEFAULT_C(), GET_DEFAULT_D())
 
         IF i % 2 == 0
@@ -340,14 +340,14 @@ ENDPROC
 
 PROC INCREMENT_ALL(INT arr[])
     INT i
-    REPEAT arr.length i
+    REPEAT ARRAY_SIZE(arr) i
         arr[i] += 1
     ENDREPEAT
 ENDPROC
 
 PROC INCREMENT_ALL_ONLY_SIZE_10(INT arr[SIZE_10]) // arrays are passed by reference
     INT i
-    REPEAT arr.length i
+    REPEAT ARRAY_SIZE(arr) i
         arr[i] += 1
     ENDREPEAT
 ENDPROC
@@ -356,7 +356,7 @@ PROC RAW_LOOP(INT arr[])
 
     INT i = 0
 begin:
-    IF i >= arr.length
+    IF i >= ARRAY_SIZE(arr)
         GOTO exit
     ENDIF
 
