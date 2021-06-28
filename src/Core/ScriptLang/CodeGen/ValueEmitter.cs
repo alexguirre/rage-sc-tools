@@ -107,6 +107,9 @@
                     case VarDeclaration { Kind: VarKind.Constant } var:
                         CG.EmitValue(var.Initializer!);
                         break;
+                    case EnumMemberDeclaration enumMember:
+                        CG.EmitPushConstInt(enumMember.Value);
+                        break;
                     default: throw new System.NotImplementedException();
                 }
             }

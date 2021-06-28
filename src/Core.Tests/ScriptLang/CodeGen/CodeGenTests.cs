@@ -2106,6 +2106,47 @@
             ");
         }
 
+        [Fact]
+        public void TestEnums()
+        {
+            CompileMain(
+            source: @"
+                MY_ENUM e
+                e = MY_ENUM_A
+                e = MY_ENUM_B
+                e = MY_ENUM_C
+                e = MY_ENUM_D
+            ",
+            sourceStatics: @"
+                ENUM MY_ENUM
+                    MY_ENUM_A, MY_ENUM_B
+                    MY_ENUM_C = -10
+                    MY_ENUM_D
+                ENDENUM
+            ",
+            expectedAssembly: @"
+                ENTER 0, 3
+
+                ; e = MY_ENUM_A
+                PUSH_CONST_0
+                LOCAL_U8_STORE 2
+
+                ; e = MY_ENUM_B
+                PUSH_CONST_1
+                LOCAL_U8_STORE 2
+
+                ; e = MY_ENUM_C
+                PUSH_CONST_S16 -10
+                LOCAL_U8_STORE 2
+
+                ; e = MY_ENUM_D
+                PUSH_CONST_S16 -9
+                LOCAL_U8_STORE 2
+
+                LEAVE 0, 0
+            ");
+        }
+
         [Fact(Skip = "Optimization not implemented yet")]
         public void TestPushU8Optimization()
         {
