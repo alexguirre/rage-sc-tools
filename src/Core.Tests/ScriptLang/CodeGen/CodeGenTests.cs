@@ -2401,21 +2401,21 @@
         }
 
         [Fact]
-        public void TestIntrinsicArraySize()
+        public void TestIntrinsicCountOf()
         {
             CompileMain(
             source: @"
                 INT array[10]
-                INT i = ARRAY_SIZE(array)
+                INT i = COUNT_OF(array)
                 TEST1(array)
                 TEST2(array)
             ",
             sourceStatics: @"
                 PROC TEST1(INT array[])
-                    INT i = ARRAY_SIZE(array)
+                    INT i = COUNT_OF(array)
                 ENDPROC
                 PROC TEST2(INT array[10])
-                    INT i = ARRAY_SIZE(array)
+                    INT i = COUNT_OF(array)
                 ENDPROC
             ",
             expectedAssembly: @"
@@ -2426,7 +2426,7 @@
                 STORE_REV
                 DROP
 
-                ; INT i = ARRAY_SIZE(array)
+                ; INT i = COUNT_OF(array)
                 PUSH_CONST_U8 10
                 LOCAL_U8_STORE 13
 
@@ -2440,7 +2440,7 @@
             TEST1:
                 ENTER 1, 4
 
-                ; INT i = ARRAY_SIZE(array)
+                ; INT i = COUNT_OF(array)
                 LOCAL_U8_LOAD 0
                 LOAD
                 LOCAL_U8_STORE 3
@@ -2450,7 +2450,7 @@
             TEST2:
                 ENTER 1, 4
 
-                ; INT i = ARRAY_SIZE(array)
+                ; INT i = COUNT_OF(array)
                 PUSH_CONST_U8 10
                 LOCAL_U8_STORE 3
 

@@ -28,9 +28,9 @@
         public static IIntrinsic F2I { get; } = new F2IIntrinsic();
         public static IIntrinsic I2F { get; } = new I2FIntrinsic();
         public static IIntrinsic Append { get; } = new AppendIntrinsic();
-        public static IIntrinsic ArraySize { get; } = new ArraySizeIntrinsic();
+        public static IIntrinsic CountOf { get; } = new CountOfIntrinsic();
 
-        public static ImmutableArray<IIntrinsic> AllIntrinsics { get; } = ImmutableArray.Create(F2V, F2I, I2F, Append, ArraySize);
+        public static ImmutableArray<IIntrinsic> AllIntrinsics { get; } = ImmutableArray.Create(F2V, F2I, I2F, Append, CountOf);
 
         public static IIntrinsic? FindIntrinsic(string name) => AllIntrinsics.FirstOrDefault(i => Parser.CaseInsensitiveComparer.Equals(name, i.Declaration.Name));
 
@@ -87,9 +87,9 @@
             public void Emit(CodeGenerator cg, IList<IExpression> args) => throw new NotImplementedException();
         }
 
-        private sealed class ArraySizeIntrinsic : IIntrinsic
+        private sealed class CountOfIntrinsic : IIntrinsic
         {
-            public FuncDeclaration Declaration { get; } = CreateFunc("ARRAY_SIZE", BuiltInTypes.Int, (GenericArray, "array", true));
+            public FuncDeclaration Declaration { get; } = CreateFunc("COUNT_OF", BuiltInTypes.Int, (GenericArray, "array", true));
 
             public void Emit(CodeGenerator cg, IList<IExpression> args)
             {
