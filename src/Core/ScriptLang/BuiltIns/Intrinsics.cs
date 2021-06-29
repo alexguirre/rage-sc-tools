@@ -1,11 +1,22 @@
 ﻿namespace ScTools.ScriptLang.BuiltIns
 {
     using System;
+    using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Linq;
 
+    using ScTools.ScriptAssembly;
     using ScTools.ScriptLang.Ast;
     using ScTools.ScriptLang.Ast.Declarations;
+    using ScTools.ScriptLang.Ast.Expressions;
     using ScTools.ScriptLang.Ast.Types;
+    using ScTools.ScriptLang.CodeGen;
+
+    public interface IIntrinsic
+    {
+        FuncDeclaration Declaration { get; }
+        void Emit(CodeGenerator cg, IList<IExpression> args);
+    }
 
     public static class Intrinsics
     {
@@ -13,11 +24,15 @@
         private static readonly GenericTextLabelDecl GenericTextLabel = new();
         private static readonly GenericArrayDecl GenericArray = new();
 
-        public static FuncDeclaration F2V { get; } = CreateFunc("F2V", BuiltInTypes.Vector, (BuiltInTypes.Float, "value", false));
-        public static FuncDeclaration F2I { get; } = CreateFunc("F2I", BuiltInTypes.Int, (BuiltInTypes.Float, "value", false));
-        public static FuncDeclaration I2F { get; } = CreateFunc("I2F", BuiltInTypes.Float, (BuiltInTypes.Int, "value", false));
-        public static FuncDeclaration Append { get; } = CreateProc("APPEND", (GenericTextLabel, "tl", true), (StringOrInt, "value", false));
-        public static FuncDeclaration ArraySize { get; } = CreateFunc("ARRAY_SIZE", BuiltInTypes.Int, (GenericArray, "array", true));
+        public static IIntrinsic F2V { get; } = new F2VIntrinsic();
+        public static IIntrinsic F2I { get; } = new F2IIntrinsic();
+        public static IIntrinsic I2F { get; } = new I2FIntrinsic();
+        public static IIntrinsic Append { get; } = new AppendIntrinsic();
+        public static IIntrinsic ArraySize { get; } = new ArraySizeIntrinsic();
+
+        public static ImmutableArray<IIntrinsic> AllIntrinsics { get; } = ImmutableArray.Create(F2V, F2I, I2F, Append, ArraySize);
+
+        public static IIntrinsic? FindIntrinsic(string name) => AllIntrinsics.FirstOrDefault(i => Parser.CaseInsensitiveComparer.Equals(name, i.Declaration.Name));
 
         private static FuncDeclaration CreateProc(string name, params (ITypeDeclaration Type, string Name, bool IsRef)[] parameters)
             => CreateFunc(name, new VoidType(SourceRange.Unknown), parameters);
@@ -31,6 +46,68 @@
                 {
                     Parameters = parameters.Select(p => new VarDeclaration(SourceRange.Unknown, p.Name, p.Type.CreateType(SourceRange.Unknown), VarKind.Parameter, p.IsRef)).ToList()
                 });
+
+        private sealed class F2VIntrinsic : IIntrinsic
+        {
+            public FuncDeclaration Declaration { get; } = CreateFunc("F2V", BuiltInTypes.Vector, (BuiltInTypes.Float, "value", false));
+
+            public void Emit(CodeGenerator cg, IList<IExpression> args)
+            {
+                cg.EmitValue(args[0]);
+                cg.Emit(Opcode.F2V);
+            }
+        }
+
+        private sealed class F2IIntrinsic : IIntrinsic
+        {
+            public FuncDeclaration Declaration { get; } = CreateFunc("F2I", BuiltInTypes.Int, (BuiltInTypes.Float, "value", false));
+
+            public void Emit(CodeGenerator cg, IList<IExpression> args)
+            {
+                cg.EmitValue(args[0]);
+                cg.Emit(Opcode.F2I);
+            }
+        }
+
+        private sealed class I2FIntrinsic : IIntrinsic
+        {
+            public FuncDeclaration Declaration { get; } = CreateFunc("I2F", BuiltInTypes.Float, (BuiltInTypes.Int, "value", false));
+
+            public void Emit(CodeGenerator cg, IList<IExpression> args)
+            {
+                cg.EmitValue(args[0]);
+                cg.Emit(Opcode.I2F);
+            }
+        }
+
+        private sealed class AppendIntrinsic : IIntrinsic
+        {
+            public FuncDeclaration Declaration { get; } = CreateProc("APPEND", (GenericTextLabel, "tl", true), (StringOrInt, "value", false));
+
+            public void Emit(CodeGenerator cg, IList<IExpression> args) => throw new NotImplementedException();
+        }
+
+        private sealed class ArraySizeIntrinsic : IIntrinsic
+        {
+            public FuncDeclaration Declaration { get; } = CreateFunc("ARRAY_SIZE", BuiltInTypes.Int, (GenericArray, "array", true));
+
+            public void Emit(CodeGenerator cg, IList<IExpression> args)
+            {
+                var array = args[0];
+                var arrayTy = (IArrayType)array.Type!;
+                if (arrayTy is ArrayType constantSizeArrayTy)
+                {
+                    // Size known at compile-time
+                    cg.EmitPushConstInt(constantSizeArrayTy.Length);
+                }
+                else
+                {
+                    // Size known at runtime. The size is store at offset 0 of the array
+                    cg.EmitAddress(array);
+                    cg.Emit(Opcode.LOAD);
+                }
+            }
+        }
 
         /// <summary>
         /// Used for parameters that can be STRING or INT.

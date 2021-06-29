@@ -1753,6 +1753,38 @@
             ");
         }
 
+        [Fact(Skip = "TEXT_LABEL to STRING implicit conversion is not properly generated yet")]
+        public void TestTextLabelAsString()
+        {
+            CompileMain(
+            source: @"
+                TEXT_LABEL_31 tl31
+                STRING s = tl31
+                TEST(tl31)
+            ",
+            sourceStatics: @"
+                PROC TEST(STRING s)
+                ENDPROC
+            ",
+            expectedAssembly: @"
+                ENTER 0, 7
+
+                ; STRING s = tl31
+                LOCAL_U8 2
+                LOCAL_U8_STORE 6
+
+                ; TEST(tl31)
+                LOCAL_U8 2
+                CALL TEST
+
+                LEAVE 0, 0
+
+            TEST:
+                ENTER 1, 3
+                LEAVE 1, 0
+            ");
+        }
+
         [Fact]
         public void TestTextLabelAssignString()
         {
@@ -1800,7 +1832,7 @@
                 LEAVE 0, 0
 
                 .string
-                strHelloWorld: .str 'hello world'
+                .str 'hello world'
             ");
         }
 
@@ -1907,6 +1939,171 @@
                 TEXT_LABEL_COPY
 
                 LEAVE 0, 0
+            ");
+        }
+
+        [Fact(Skip = "APPEND intrinsic not supported yet")]
+        public void TestTextLabelAppendString()
+        {
+            CompileMain(
+            source: @"
+                TEXT_LABEL_7 tl7
+                TEXT_LABEL_15 tl15
+                TEXT_LABEL_31 tl31
+                TEXT_LABEL_63 tl63
+                TEXT_LABEL_127 tl127
+
+                APPEND(tl7, 'hello world')
+                APPEND(tl15, 'hello world')
+                APPEND(tl31, 'hello world')
+                APPEND(tl63, 'hello world')
+                APPEND(tl127, 'hello world')
+            ",
+            expectedAssembly: @"
+                ENTER 0, 33
+
+                ; APPEND(tl7, 'hello world')
+                PUSH_CONST_0
+                STRING
+                LOCAL_U8 2
+                TEXT_LABEL_APPEND_STRING 8
+
+                ; APPEND(tl15, 'hello world')
+                PUSH_CONST_0
+                STRING
+                LOCAL_U8 3
+                TEXT_LABEL_APPEND_STRING 16
+
+                ; APPEND(tl31, 'hello world')
+                PUSH_CONST_0
+                STRING
+                LOCAL_U8 5
+                TEXT_LABEL_APPEND_STRING 32
+
+                ; APPEND(tl63, 'hello world')
+                PUSH_CONST_0
+                STRING
+                LOCAL_U8 9
+                TEXT_LABEL_APPEND_STRING 64
+
+                ; APPEND(tl127, 'hello world')
+                PUSH_CONST_0
+                STRING
+                LOCAL_U8 17
+                TEXT_LABEL_APPEND_STRING 128
+
+                LEAVE 0, 0
+
+                .string
+                .str 'hello world'
+            ");
+        }
+
+        [Fact(Skip = "APPEND intrinsic not supported yet")]
+        public void TestTextLabelAppendInt()
+        {
+            CompileMain(
+            source: @"
+                TEXT_LABEL_7 tl7 = 123456
+                TEXT_LABEL_15 tl15 = 123456
+                TEXT_LABEL_31 tl31 = 123456
+                TEXT_LABEL_63 tl63 = 123456
+                TEXT_LABEL_127 tl127 = 123456
+
+                APPEND(tl7, 123456)
+                APPEND(tl15, 123456)
+                APPEND(tl31, 123456)
+                APPEND(tl63, 123456)
+                APPEND(tl127, 123456)
+            ",
+            expectedAssembly: @"
+                ENTER 0, 33
+
+                ; APPEND(tl7, 123456)
+                PUSH_CONST_U24 123456
+                LOCAL_U8 2
+                TEXT_LABEL_APPEND_INT 8
+
+                ; APPEND(tl15, 123456)
+                PUSH_CONST_U24 123456
+                LOCAL_U8 3
+                TEXT_LABEL_APPEND_INT 16
+
+                ; APPEND(tl31, 123456)
+                PUSH_CONST_U24 123456
+                LOCAL_U8 5
+                TEXT_LABEL_APPEND_INT 32
+
+                ; APPEND(tl63, 123456)
+                PUSH_CONST_U24 123456
+                LOCAL_U8 9
+                TEXT_LABEL_APPEND_INT 64
+
+                ; APPEND(tl127, 123456)
+                PUSH_CONST_U24 123456
+                LOCAL_U8 17
+                TEXT_LABEL_APPEND_INT 128
+
+                LEAVE 0, 0
+            ");
+        }
+
+        [Fact(Skip = "APPEND intrinsic not supported yet")]
+        public void TestTextLabelAppendTextLabel()
+        {
+            // supported due to TEXT_LABEL to STRING implicit conversion
+            CompileMain(
+            source: @"
+                TEXT_LABEL_31 src
+                TEXT_LABEL_7 tl7
+                TEXT_LABEL_15 tl15
+                TEXT_LABEL_31 tl31
+                TEXT_LABEL_63 tl63
+                TEXT_LABEL_127 tl127
+
+                APPEND(tl7, src)
+                APPEND(tl15, src)
+                APPEND(tl31, src)
+                APPEND(tl63, src)
+                APPEND(tl127, src)
+            ",
+            expectedAssembly: @"
+                ENTER 0, 37
+
+                ; APPEND(tl7, 'hello world')
+                PUSH_CONST_0
+                STRING
+                LOCAL_U8 2
+                TEXT_LABEL_APPEND_STRING 8
+
+                ; APPEND(tl15, 'hello world')
+                PUSH_CONST_0
+                STRING
+                LOCAL_U8 3
+                TEXT_LABEL_APPEND_STRING 16
+
+                ; APPEND(tl31, 'hello world')
+                PUSH_CONST_0
+                STRING
+                LOCAL_U8 5
+                TEXT_LABEL_APPEND_STRING 32
+
+                ; APPEND(tl63, 'hello world')
+                PUSH_CONST_0
+                STRING
+                LOCAL_U8 9
+                TEXT_LABEL_APPEND_STRING 64
+
+                ; APPEND(tl127, 'hello world')
+                PUSH_CONST_0
+                STRING
+                LOCAL_U8 17
+                TEXT_LABEL_APPEND_STRING 128
+
+                LEAVE 0, 0
+
+                .string
+                .str 'hello world'
             ");
         }
 
@@ -2144,6 +2341,120 @@
                 LOCAL_U8_STORE 2
 
                 LEAVE 0, 0
+            ");
+        }
+
+        [Fact]
+        public void TestIntrinsicF2V()
+        {
+            CompileMain(
+            source: @"
+                VECTOR v = F2V(1.0)
+            ",
+            expectedAssembly: @"
+                ENTER 0, 5
+
+                PUSH_CONST_F1
+                F2V
+                PUSH_CONST_3
+                LOCAL_U8 2
+                STORE_N
+
+                LEAVE 0, 0
+            ");
+        }
+
+        [Fact]
+        public void TestIntrinsicF2I()
+        {
+            CompileMain(
+            source: @"
+                INT i = F2I(1.0)
+            ",
+            expectedAssembly: @"
+                ENTER 0, 3
+
+                PUSH_CONST_F1
+                F2I
+                LOCAL_U8_STORE 2
+
+                LEAVE 0, 0
+            ");
+        }
+
+        [Fact]
+        public void TestIntrinsicI2F()
+        {
+            CompileMain(
+            source: @"
+                FLOAT f = I2F(1)
+            ",
+            expectedAssembly: @"
+                ENTER 0, 3
+
+                PUSH_CONST_1
+                I2F
+                LOCAL_U8_STORE 2
+
+                LEAVE 0, 0
+            ");
+        }
+
+        [Fact]
+        public void TestIntrinsicArraySize()
+        {
+            CompileMain(
+            source: @"
+                INT array[10]
+                INT i = ARRAY_SIZE(array)
+                TEST1(array)
+                TEST2(array)
+            ",
+            sourceStatics: @"
+                PROC TEST1(INT array[])
+                    INT i = ARRAY_SIZE(array)
+                ENDPROC
+                PROC TEST2(INT array[10])
+                    INT i = ARRAY_SIZE(array)
+                ENDPROC
+            ",
+            expectedAssembly: @"
+                ENTER 0, 14
+                ; array initializer
+                LOCAL_U8 2
+                PUSH_CONST_U8 10
+                STORE_REV
+                DROP
+
+                ; INT i = ARRAY_SIZE(array)
+                PUSH_CONST_U8 10
+                LOCAL_U8_STORE 13
+
+                LOCAL_U8 2
+                CALL TEST1
+
+                LOCAL_U8 2
+                CALL TEST2
+                LEAVE 0, 0
+
+            TEST1:
+                ENTER 1, 4
+
+                ; INT i = ARRAY_SIZE(array)
+                LOCAL_U8_LOAD 0
+                LOAD
+                LOCAL_U8_STORE 3
+
+                LEAVE 1, 0
+
+            TEST2:
+                ENTER 1, 4
+
+                ; INT i = ARRAY_SIZE(array)
+                PUSH_CONST_U8 10
+                LOCAL_U8_STORE 3
+
+                LEAVE 1, 0
             ");
         }
 

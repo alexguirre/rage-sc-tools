@@ -45,11 +45,7 @@
             AddType(BuiltInTypes.BlipInfoId);
             BuiltInTypes.TextLabels.ForEach(lbl => AddType(lbl));
 
-            AddValue(Intrinsics.F2V);
-            AddValue(Intrinsics.F2I);
-            AddValue(Intrinsics.I2F);
-            AddValue(Intrinsics.Append);
-            AddValue(Intrinsics.ArraySize);
+            Intrinsics.AllIntrinsics.ForEach(intrin => AddValue(intrin.Declaration));
         }
     }
 }

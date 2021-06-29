@@ -2,12 +2,14 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
 
     using ScTools.ScriptAssembly;
     using ScTools.ScriptLang.Ast.Declarations;
     using ScTools.ScriptLang.Ast.Errors;
     using ScTools.ScriptLang.Ast.Expressions;
+    using ScTools.ScriptLang.BuiltIns;
     using ScTools.ScriptLang.CodeGen;
 
     public sealed class FuncType : BaseType
@@ -76,11 +78,19 @@
                         EmitArgs(cg, func.Prototype.Parameters, expr.Arguments);
                         cg.EmitCall(func.Name);
                         break;
+
                     case FuncKind.Native:
                         EmitArgs(cg, func.Prototype.Parameters, expr.Arguments);
                         cg.EmitNativeCall(Declaration.ParametersSize, Declaration.ReturnType.SizeOf, func.Name);
                         break;
-                    case FuncKind.Intrinsic: throw new NotImplementedException("intrinsic invocation");
+
+                    case FuncKind.Intrinsic:
+                        var intrin = Intrinsics.FindIntrinsic(func.Name);
+                        Debug.Assert(intrin is not null);
+                        intrin.Emit(cg, expr.Arguments);
+                        break;
+
+                    default: throw new NotImplementedException();
                 }
             }
             else
