@@ -51,7 +51,7 @@
                     }
                     break;
 
-                case VarKind.Static or VarKind.StaticArg:
+                case VarKind.Static or VarKind.ScriptParameter:
                     switch (varDecl.Address)
                     {
                         case >= 0 and <= 0x000000FF:

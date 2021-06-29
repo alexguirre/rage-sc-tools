@@ -24,6 +24,8 @@
                 var d = new DiagnosticsReport();
                 using var r = new StringReader(@$"
                     SCRIPT_HASH {s}
+                    SCRIPT test
+                    ENDSCRIPT
                 ");
                 var parser = new Parser(r, "test.sc");
                 parser.Parse(d);

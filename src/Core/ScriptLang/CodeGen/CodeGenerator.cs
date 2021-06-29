@@ -77,7 +77,7 @@
 
         private void EmitDirectives()
         {
-            Sink.WriteLine("\t.script_name {0}", Program.ScriptName);
+            Sink.WriteLine("\t.script_name {0}", Program.Script!.Name);
             Sink.WriteLine("\t.script_hash {0}", Program.ScriptHash);
         }
 
@@ -100,16 +100,16 @@
         {
             var staticVars = InitializeStaticVars();
 
-            if (Program.StaticsSize > Program.ArgsSize)
+            if (Program.StaticsSize > Program.ScriptParametersSize)
             {
                 Sink.WriteLine("\t.static");
-                WriteValues(staticVars.AsSpan(0, Program.StaticsSize - Program.ArgsSize));
+                WriteValues(staticVars.AsSpan(0, Program.StaticsSize - Program.ScriptParametersSize));
             }
 
-            if (Program.ArgsSize > 0)
+            if (Program.ScriptParametersSize > 0)
             {
                 Sink.WriteLine("\t.arg");
-                WriteValues(staticVars.AsSpan(Program.StaticsSize - Program.ArgsSize, Program.ArgsSize));
+                WriteValues(staticVars.AsSpan(Program.StaticsSize - Program.ScriptParametersSize, Program.ScriptParametersSize));
             }
         }
 
@@ -152,10 +152,10 @@
 
         private void EmitCodeSegment()
         {
-            Debug.Assert(Program.Main is not null);
+            Debug.Assert(Program.Script is not null);
 
             var funcs = Program.Declarations.Where(decl => decl is FuncDeclaration { Prototype: { Kind: FuncKind.UserDefined } }).Cast<FuncDeclaration>();
-            funcs = funcs.Where(f => f != Program.Main).Prepend(Program.Main); // place MAIN first, it has to be compiled at address 0
+            funcs = funcs.Prepend(Program.Script); // place SCRIPT first, it has to be compiled at address 0
 
             Sink.WriteLine("\t.code");
             funcs.ForEach(EmitFunc);
@@ -163,13 +163,15 @@
 
         private void EmitFunc(FuncDeclaration func)
         {
-            Debug.Assert(func.Prototype.Kind is FuncKind.UserDefined);
+            Debug.Assert(func.Prototype.Kind is FuncKind.Script or FuncKind.UserDefined);
             Debug.Assert(funcInstructions.Count == 0);
 
-            EmitLabel(func.Name);
+            var isScript = func.Prototype.Kind is FuncKind.Script;
+
+            EmitLabel(isScript ? "SCRIPT" : func.Name);
 
             // prologue
-            Emit(Opcode.ENTER, func.Prototype.ParametersSize, func.FrameSize);
+            Emit(Opcode.ENTER, func.ParametersSize, func.FrameSize);
 
             // body
             func.Body.ForEach(stmt => EmitStatement(stmt, func));
@@ -177,7 +179,7 @@
             // epilogue
             if (func.Body.LastOrDefault() is not ReturnStatement)
             {
-                Emit(Opcode.LEAVE, func.Prototype.ParametersSize, func.Prototype.ReturnType.SizeOf);
+                Emit(Opcode.LEAVE, func.ParametersSize, func.Prototype.ReturnType.SizeOf);
             }
 
             // optimize and write instructions

@@ -68,7 +68,7 @@
             };
             var argsStr = $"({string.Join(", ", funcTy.Declaration.Parameters.Select(p => ToString(p.Type, p.Name, p.IsReference)))})";
             var returnStr = funcTy.Declaration.IsProc ?
-                                "PROC" :
+                                (funcTy.Declaration.Kind is FuncKind.Script ? "SCRIPT" : "PROC") :
                                 $"FUNC {ToString(funcTy.Declaration.ReturnType, string.Empty, false)}";
             var nameStr = string.IsNullOrEmpty(name) ?
                                 "" :

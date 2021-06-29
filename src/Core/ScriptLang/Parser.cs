@@ -41,7 +41,7 @@
         public IUsingResolver? UsingResolver { get; set; }
         public Program OutputAst { get; private set; }
         private readonly HashSet<string> usings = new();
-        private bool scriptNameFound = false, scriptHashFound = false, argVarFound = false;
+        private bool scriptFound = false, scriptHashFound = false;
 
         /// <summary>
         /// Stack with the files currently being parsed.
@@ -77,6 +77,11 @@
                 usings.Add(UsingResolver.NormalizeFilePath(FilePath));
             }
             ParseFile(Input, FilePath, diagnostics);
+
+            if (!scriptFound)
+            {
+                diagnostics.AddError("SCRIPT declaration is missing", new(OutputAst.Source.FilePath, OutputAst.Source.End, OutputAst.Source.End));
+            }
         }
 
         private void ParseFile(TextReader input, string filePath, DiagnosticsReport diagnostics)
@@ -93,7 +98,9 @@
             parser.RemoveErrorListeners();
             parser.AddErrorListener(new SyntaxErrorListener<IToken>(this));
 
-            ProcessParseTree(parser.program());
+            var program = parser.program();
+            OutputAst.Source = Source(program);
+            ProcessParseTree(program);
 
             filesStack.Pop();
         }
@@ -127,18 +134,6 @@
                     }
                     break;
 
-                case ScLangParser.ScriptNameDirectiveContext n:
-                    if (!scriptNameFound)
-                    {
-                        OutputAst.ScriptName = n.identifier().GetText();
-                        scriptNameFound = true;
-                    }
-                    else
-                    {
-                        Diagnostics.AddError("SCRIPT_NAME directive is repeated", Source(n));
-                    }
-                    break;
-
                 case ScLangParser.UsingDirectiveContext u:
                     if (UsingResolver == null)
                     {
@@ -165,6 +160,23 @@
         {
             switch (context)
             {
+                case ScLangParser.ScriptDeclarationContext c:
+                    if (!scriptFound)
+                    {
+                        OutputAst.Script = new FuncDeclaration(Source(c), c.name.GetText(),
+                                                         BuildFuncProtoDecl(Source(c), c.name.GetText() + "@proto", FuncKind.Script, null, c.parameterList()))
+                        {
+                            Body = BuildStatementBlock(c.statementBlock())
+                        };
+                        yield return OutputAst.Script;
+                        scriptFound = true;
+                    }
+                    else
+                    {
+                        Diagnostics.AddError("SCRIPT declaration is repeated", Source(c));
+                    }
+                    break;
+
                 case ScLangParser.ProcedureDeclarationContext c:
                     yield return new FuncDeclaration(Source(c), c.name.GetText(),
                                                      BuildFuncProtoDecl(Source(c), c.name.GetText() + "@proto", FuncKind.UserDefined, null, c.parameterList()))
@@ -231,18 +243,6 @@
                         }
 
                         yield return varDecl;
-                    }
-                    break;
-
-                case ScLangParser.ArgVariableDeclarationContext c:
-                    if (!argVarFound)
-                    {
-                        yield return BuildSingleVarDecl(VarKind.StaticArg, c.singleVarDeclaration());
-                        argVarFound = true;
-                    }
-                    else
-                    {
-                        Diagnostics.AddError("ARG variable is repeated", Source(c));
                     }
                     break;
 
@@ -464,13 +464,14 @@
         private List<IStatement> BuildStatementBlock(ScLangParser.StatementBlockContext context)
             => new(context.labeledStatement().SelectMany(BuildAst));
 
-        private FuncProtoDeclaration BuildFuncProtoDecl(SourceRange source, string name, FuncKind kind, ScLangParser.IdentifierContext? returnType, ScLangParser.ParameterListContext paramsContext)
+        private FuncProtoDeclaration BuildFuncProtoDecl(SourceRange source, string name, FuncKind kind, ScLangParser.IdentifierContext? returnType, ScLangParser.ParameterListContext? paramsContext)
         {
             return new FuncProtoDeclaration(source, name, kind, returnType is null ? new VoidType(source) : BuildType(returnType))
             {
-                Parameters = paramsContext.singleVarDeclarationNoInit()
-                                .Select(pDecl => BuildSingleVarDecl(VarKind.Parameter, pDecl))
-                                .ToList(),
+                Parameters = paramsContext?.singleVarDeclarationNoInit()
+                                .Select(pDecl => BuildSingleVarDecl(kind is FuncKind.Script ? VarKind.ScriptParameter : VarKind.Parameter, pDecl))
+                                .ToList() ?? 
+                                new List<VarDeclaration>(),
             };
         }
 

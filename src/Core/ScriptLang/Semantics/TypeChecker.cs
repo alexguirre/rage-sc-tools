@@ -159,16 +159,16 @@
 
             node.Type.Accept(this, param);
 
-            if (node.Kind is VarKind.Global or VarKind.StaticArg && !TypeHelper.IsCrossScriptThreadSafe(node.Type))
+            if (node.Kind is VarKind.Global or VarKind.ScriptParameter && !TypeHelper.IsCrossScriptThreadSafe(node.Type))
             {
-                Diagnostics.AddError($"Type '{node.Type}' of {KindToString(node.Kind)} variable '{node.Name}' cannot be shared between script threads safely", node.Source);
+                Diagnostics.AddError($"Type '{node.Type}' of {KindToString(node.Kind)} '{node.Name}' cannot be shared between script threads safely", node.Source);
             }
 
             if (node.Initializer is not null)
             {
                 node.Initializer.Accept(this, param);
 
-                if (node.Kind is VarKind.Global or VarKind.Static or VarKind.StaticArg && !node.Initializer.IsConstant)
+                if (node.Kind is VarKind.Global or VarKind.Static && !node.Initializer.IsConstant)
                 {
                     node.Initializer = new ErrorExpression(node.Initializer.Source, Diagnostics, $"Initializer of {KindToString(node.Kind)} variable '{node.Name}' must be a constant expression");
                 }
@@ -181,7 +181,7 @@
             return DefaultReturn;
 
             static string KindToString(VarKind kind)
-                => kind switch { VarKind.Global => "global", VarKind.Static => "static", VarKind.StaticArg => "ARG", _ => throw new System.NotImplementedException() };
+                => kind switch { VarKind.Global => "global variable", VarKind.Static => "static variable", VarKind.ScriptParameter => "SCRIPT parameter", _ => throw new System.NotImplementedException() };
     }
         #endregion Declarations
 

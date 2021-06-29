@@ -19,10 +19,10 @@
         /// </summary>
         Static,
         /// <summary>
-        /// A static variable with the ARG modifier. Initialized by other script thread when starting
+        /// A static variable that represents a parameter of a SCRIPT declaration. Initialized by other script thread when starting
         /// this script with `START_NEW_SCRIPT_WITH_ARGS` or `START_NEW_SCRIPT_WITH_NAME_HASH_AND_ARGS`.
         /// </summary>
-        StaticArg,
+        ScriptParameter,
         /// <summary>
         /// A variable defined inside a function/procedure.
         /// </summary>

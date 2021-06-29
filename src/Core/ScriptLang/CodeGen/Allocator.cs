@@ -41,13 +41,13 @@
                 ctx.Program = node;
                 base.Visit(node, ctx);
 
-                if (ctx.Program.ArgVar is not null)
+                // fix up script parameters, they need to be placed after the static vars
+                foreach (var scriptParam in ctx.Program.Script!.Prototype.Parameters)
                 {
-                    ctx.Program.ArgVar.Address = ctx.Program.StaticsSize;
-                    ctx.Program.ArgsSize = ctx.Program.ArgVar.Type.SizeOf;
-                    ctx.Program.StaticsSize += ctx.Program.ArgsSize;
-                    ctx.Program.Statics.Add(ctx.Program.ArgVar.Address, ctx.Program.ArgVar);
+                    scriptParam.Address += ctx.Program.StaticsSize;
+                    ctx.Program.Statics.Add(scriptParam.Address, scriptParam);
                 }
+                ctx.Program.StaticsSize += ctx.Program.ScriptParametersSize;
 
                 ctx.Program = null;
                 return default;
@@ -56,7 +56,7 @@
             public override Void Visit(GlobalBlockDeclaration node, AllocatorContext ctx)
             {
                 Debug.Assert(ctx.Program is not null);
-                if (Parser.CaseInsensitiveComparer.Equals(ctx.Program.ScriptName, node.Name))
+                if (Parser.CaseInsensitiveComparer.Equals(ctx.Program.Script!.Name, node.Name))
                 {
                     ctx.Program.GlobalBlock = node;
                 }
@@ -124,13 +124,7 @@
                         ctx.Program.Statics.Add(node.Address, node);
                         break;
 
-                    case VarKind.StaticArg:
-                        Debug.Assert(ctx.Program is not null);
-                        // ARG var is stored after all static vars, so save it to resolve its address later
-                        ctx.Program.ArgVar = node;
-                        break;
-
-                    case VarKind.Parameter:
+                    case VarKind.Parameter or VarKind.ScriptParameter:
                         Debug.Assert(ctx.FuncProto is not null);
                         node.Address = ctx.FuncProto.ParametersSize;
                         ctx.FuncProto.ParametersSize += node.IsReference ? 1 : node.Type.SizeOf;

@@ -235,7 +235,7 @@
             {
                 CG.EmitValue(node.Expression);
             }
-            CG.Emit(Opcode.LEAVE, func.Prototype.ParametersSize, func.Prototype.ReturnType.SizeOf);
+            CG.Emit(Opcode.LEAVE, func.ParametersSize, func.Prototype.ReturnType.SizeOf);
             return default;
         }
 

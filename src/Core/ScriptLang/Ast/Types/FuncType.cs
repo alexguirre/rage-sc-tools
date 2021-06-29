@@ -34,6 +34,11 @@
 
         public override IType Invocation((IType Type, bool IsLValue, SourceRange Source)[] args, SourceRange source, DiagnosticsReport diagnostics)
         {
+            if (Declaration.Kind is FuncKind.Script)
+            {
+                return new ErrorType(source, diagnostics, "Cannot invoke SCRIPT");
+            }
+
             var parameters = Declaration.Parameters;
             if (args.Length != parameters.Count)
             {
@@ -89,6 +94,8 @@
                         Debug.Assert(intrin is not null);
                         intrin.Emit(cg, expr.Arguments);
                         break;
+
+                    case FuncKind.Script: throw new InvalidOperationException("Cannot invoke SCRIPT");
 
                     default: throw new NotImplementedException();
                 }

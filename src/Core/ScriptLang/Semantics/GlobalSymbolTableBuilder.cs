@@ -49,7 +49,7 @@
 
         public override Void Visit(VarDeclaration node, Void param)
         {
-            Debug.Assert(node.Kind is VarKind.Constant or VarKind.Global or VarKind.Static or VarKind.StaticArg);
+            Debug.Assert(node.Kind is VarKind.Constant or VarKind.Global or VarKind.Static);
             AddValueChecked(node);
             return DefaultReturn;
         }

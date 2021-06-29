@@ -1,6 +1,3 @@
-SCRIPT_NAME language_sample_main
-SCRIPT_HASH `language_sample_main`
-
 USING 'language_sample_shared.sch'
 
 ENUM eState
@@ -108,7 +105,9 @@ INT arr2D[10][20]   // array 10 of array 20 of int
 
 CONST STRING CHILD_SCRIPT_NAME = "language_sample_child"
 
-PROC MAIN()
+SCRIPT_HASH `language_sample_main`
+
+SCRIPT language_sample_main
     g_nTimesMainScriptExecuted += 1
 
     fnMyProc = DEFAULT_MY_PROCEDURE
@@ -289,7 +288,7 @@ PROC MAIN()
         // ref1 = f1
         // ref1 = ref2
     ENDWHILE
-ENDPROC
+ENDSCRIPT
 
 PROC MODIFY_STRUCT(MY_STRUCT& s)
     s.a = 42

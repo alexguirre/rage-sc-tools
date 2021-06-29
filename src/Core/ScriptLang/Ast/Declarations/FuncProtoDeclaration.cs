@@ -7,6 +7,10 @@
     public enum FuncKind
     {
         /// <summary>
+        /// A entrypoint function. It cannot be invoked anywhere in the script and its parameters are <see cref="VarKind.ScriptParameter"/>s.
+        /// </summary>
+        Script,
+        /// <summary>
         /// A function defined in the script source code.
         /// </summary>
         UserDefined,

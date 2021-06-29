@@ -83,17 +83,5 @@
 
             return false;
         }
-
-        /// <summary>
-        /// Gets whether <paramref name="func"/> matches the signature needed to be the entrypoint procedure.
-        /// </summary>
-        public static bool HasMainProcedureSignature(FuncDeclaration func)
-        {
-            return func.Prototype.Kind is FuncKind.UserDefined &&
-                   func.Prototype.IsProc &&
-                   func.Prototype.Parameters.Count == 0;
-        }
-
-        public static bool HasMainProcedureName(FuncDeclaration func) => Parser.CaseInsensitiveComparer.Equals(func.Name, "MAIN");
     }
 }

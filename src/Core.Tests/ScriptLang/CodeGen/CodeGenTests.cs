@@ -2470,26 +2470,102 @@
                 ENDPROC
             ",
             expectedAssembly: @"
-                ENTER 2, 4
+                ENTER 0, 2
                 PUSH_CONST_U8_U8 8, 11
                 IADD_U8 1
                 CALL TEST
-                LEAVE 2, 0
+                LEAVE 0, 0
 
             TEST:
-                ENTER 0, 2
+                ENTER 2, 4
+                LEAVE 2, 0
+            ");
+        }
+
+        [Fact]
+        public void TestScriptParameters()
+        {
+            CompileRaw(
+            source: @"
+                SCRIPT test(VECTOR v, FLOAT a)
+                    FLOAT f = v.x + v.y + v.z + a
+                ENDSCRIPT
+            ",
+            expectedAssembly: @"
+            .script_name test
+            .code
+            SCRIPT:
+                ENTER 0, 3
+                STATIC_U8_LOAD v
+                STATIC_U8 v
+                IOFFSET_U8_LOAD 1
+                FADD
+                STATIC_U8 v
+                IOFFSET_U8_LOAD 2
+                FADD
+                STATIC_U8_LOAD a
+                FADD
+                LOCAL_U8_STORE 2
                 LEAVE 0, 0
+
+            .arg
+            v: .float 0, 0, 0
+            a: .float 0
+            ");
+        }
+
+        [Fact]
+        public void TestScriptParameterWithDefaultInitializer()
+        {
+            CompileRaw(
+            source: @"
+                STRUCT ARGS
+                    INT a = 1, b = 2, c = 3
+                ENDSTRUCT
+
+                SCRIPT test(ARGS args)
+                    INT i = args.a + args.b + args.c
+                ENDSCRIPT
+            ",
+            expectedAssembly: @"
+            .script_name test
+            .code
+            SCRIPT:
+                ENTER 0, 3
+                STATIC_U8_LOAD args
+                STATIC_U8 args
+                IOFFSET_U8_LOAD 1
+                IADD
+                STATIC_U8 args
+                IOFFSET_U8_LOAD 2
+                IADD
+                LOCAL_U8_STORE 2
+                LEAVE 0, 0
+
+            .arg
+            args: .int 1, 2, 3
             ");
         }
 
         private static void CompileMain(string source, string expectedAssembly, string sourceStatics = "", NativeDB? nativeDB = null)
+            => CompileRaw(
+                source: $@"
+                    {sourceStatics}
+                    SCRIPT test_script
+                    {source}
+                    ENDSCRIPT",
+
+                expectedAssembly: $@"
+                    .script_name test_script
+                    .code
+                    SCRIPT:
+                    {expectedAssembly}",
+                
+                nativeDB: nativeDB);
+
+        private static void CompileRaw(string source, string expectedAssembly, NativeDB? nativeDB = null)
         {
-            using var sourceReader = new StringReader($@"
-                SCRIPT_NAME test
-                {sourceStatics}
-                PROC MAIN()
-                {source}
-                ENDPROC");
+            using var sourceReader = new StringReader(source);
             var d = new DiagnosticsReport();
             var p = new Parser(sourceReader, "test.sc");
             p.Parse(d);
@@ -2511,11 +2587,7 @@
 
             Assert.False(sourceAssembler.Diagnostics.HasErrors);
 
-            using var expectedAssemblyReader = new StringReader($@"
-                .script_name test
-                .code
-                MAIN:
-                {expectedAssembly}");
+            using var expectedAssemblyReader = new StringReader(expectedAssembly);
             var expectedAssembler = Assembler.Assemble(expectedAssemblyReader, "test_expected.scasm", nativeDB ?? NativeDB.Empty, options: new() { IncludeFunctionNames = true });
 
             using StringWriter sourceDumpWriter = new(), expectedDumpWriter = new();

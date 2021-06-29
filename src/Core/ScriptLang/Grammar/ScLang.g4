@@ -5,13 +5,16 @@ program
     ;
 
 directive
-    : K_SCRIPT_NAME identifier                                          #scriptNameDirective
-    | K_SCRIPT_HASH integer                                             #scriptHashDirective
+    : K_SCRIPT_HASH integer                                             #scriptHashDirective
     | K_USING string                                                    #usingDirective
     ;
 
 declaration
-    : K_PROC name=identifier parameterList EOL
+    : K_SCRIPT name=identifier parameterList? EOL
+      statementBlock
+      K_ENDSCRIPT                                                           #scriptDeclaration
+      
+    | K_PROC name=identifier parameterList EOL
       statementBlock
       K_ENDPROC                                                             #procedureDeclaration
 
@@ -34,7 +37,6 @@ declaration
       K_ENDENUM                                                         #enumDeclaration
 
     | K_CONST varDeclaration                                            #constantVariableDeclaration
-    | K_ARG singleVarDeclaration                                        #argVariableDeclaration
     | varDeclaration                                                    #staticVariableDeclaration
 
     | K_GLOBAL block=integer owner=identifier EOL
@@ -216,6 +218,8 @@ bool
     ; 
 
 // keywords
+K_SCRIPT : S C R I P T;
+K_ENDSCRIPT : E N D S C R I P T;
 K_PROC : P R O C;
 K_ENDPROC : E N D P R O C;
 K_FUNC : F U N C;
@@ -247,11 +251,9 @@ K_BREAK : B R E A K;
 K_CONTINUE : C O N T I N U E;
 K_RETURN : R E T U R N;
 K_GOTO : G O T O;
-K_SCRIPT_NAME : S C R I P T '_' N A M E;
 K_SCRIPT_HASH : S C R I P T '_' H A S H;
 K_USING : U S I N G;
 K_CONST : C O N S T;
-K_ARG : A R G;
 K_GLOBAL : G L O B A L;
 K_ENDGLOBAL : E N D G L O B A L;
 K_SIZE_OF : S I Z E '_' O F;
