@@ -63,7 +63,14 @@
                 }
                 else
                 {
-                    if (!param.Type.CanAssign(arg.Type, arg.IsLValue))
+                    // TODO: this check here to disallow passing INT/STRING/TEXT_LABELs of different size to TEXT_LABELs
+                    //       (which TextLabelType.CanAssign allows) is a bit of a hack.
+                    //       Supporting this would require creating a temporary variable because the opcodes used for these
+                    //       conversions need an address to write to, but currently temporary variables are not supported
+                    //       anywhere in the compiler
+
+                    if ((param.Type is TextLabelType && !param.Type.Equivalent(arg.Type)) ||
+                        !param.Type.CanAssign(arg.Type, arg.IsLValue))
                     {
                         diagnostics.AddError($"Argument {i + 1}: cannot pass '{arg.Type}' as parameter '{TypePrinter.ToString(param.Type, param.Name, param.IsReference)}'", arg.Source);
                     }
@@ -118,8 +125,11 @@
 
             static void EmitArg(CodeGenerator cg, VarDeclaration param, IExpression arg)
             {
-                if (param.IsReference)
+                // TODO: this TEXT_LABEL -> STRING conversion check here is a bit of a hack
+
+                if (param.IsReference || (param.Type is StringType && arg.Type is TextLabelType))
                 {
+                    Debug.Assert(arg.IsLValue);
                     cg.EmitAddress(arg);
                 }
                 else

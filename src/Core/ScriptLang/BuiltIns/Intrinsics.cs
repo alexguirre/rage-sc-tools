@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
+    using System.Diagnostics;
     using System.Linq;
 
     using ScTools.ScriptAssembly;
@@ -84,7 +85,30 @@
         {
             public FuncDeclaration Declaration { get; } = CreateProc("APPEND", (GenericTextLabel, "tl", true), (StringOrInt, "value", false));
 
-            public void Emit(CodeGenerator cg, IList<IExpression> args) => throw new NotImplementedException();
+            public void Emit(CodeGenerator cg, IList<IExpression> args)
+            {
+                Debug.Assert(args[0].Type is TextLabelType && args[0].IsLValue);
+                Debug.Assert((args[1].Type is StringType or IntType) ||
+                             (args[1].Type is TextLabelType && args[1].IsLValue));
+
+                var destTextLabel = args[0];
+                var destTextLabelTy = (TextLabelType)destTextLabel.Type!;
+                var argToAppend = args[1];
+
+                if (argToAppend.Type is TextLabelType)
+                {
+                    // convert to string by taking the address of the TEXT_LABEL
+                    cg.EmitAddress(argToAppend);
+                }
+                else
+                {
+                    cg.EmitValue(argToAppend);
+                }
+                cg.EmitAddress(destTextLabel);
+                cg.Emit(argToAppend.Type is IntType ? Opcode.TEXT_LABEL_APPEND_INT :
+                                                      Opcode.TEXT_LABEL_APPEND_STRING,
+                        destTextLabelTy.Length);
+            }
         }
 
         private sealed class CountOfIntrinsic : IIntrinsic

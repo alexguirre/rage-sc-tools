@@ -77,7 +77,6 @@
     public abstract class BaseType: BaseNode, IType
     {
         public abstract int SizeOf { get; }
-        public virtual IType ByValue => this;
 
         public BaseType(SourceRange source) : base(source) {}
 

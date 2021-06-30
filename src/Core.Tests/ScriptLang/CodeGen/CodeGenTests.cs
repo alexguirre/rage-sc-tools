@@ -1753,7 +1753,7 @@
             ");
         }
 
-        [Fact(Skip = "TEXT_LABEL to STRING implicit conversion is not properly generated yet")]
+        [Fact]
         public void TestTextLabelAsString()
         {
             CompileMain(
@@ -1942,7 +1942,7 @@
             ");
         }
 
-        [Fact(Skip = "APPEND intrinsic not supported yet")]
+        [Fact]
         public void TestTextLabelAppendString()
         {
             CompileMain(
@@ -1999,16 +1999,16 @@
             ");
         }
 
-        [Fact(Skip = "APPEND intrinsic not supported yet")]
+        [Fact]
         public void TestTextLabelAppendInt()
         {
             CompileMain(
             source: @"
-                TEXT_LABEL_7 tl7 = 123456
-                TEXT_LABEL_15 tl15 = 123456
-                TEXT_LABEL_31 tl31 = 123456
-                TEXT_LABEL_63 tl63 = 123456
-                TEXT_LABEL_127 tl127 = 123456
+                TEXT_LABEL_7 tl7
+                TEXT_LABEL_15 tl15
+                TEXT_LABEL_31 tl31
+                TEXT_LABEL_63 tl63
+                TEXT_LABEL_127 tl127
 
                 APPEND(tl7, 123456)
                 APPEND(tl15, 123456)
@@ -2048,7 +2048,7 @@
             ");
         }
 
-        [Fact(Skip = "APPEND intrinsic not supported yet")]
+        [Fact]
         public void TestTextLabelAppendTextLabel()
         {
             // supported due to TEXT_LABEL to STRING implicit conversion
@@ -2070,40 +2070,68 @@
             expectedAssembly: @"
                 ENTER 0, 37
 
-                ; APPEND(tl7, 'hello world')
-                PUSH_CONST_0
-                STRING
+                ; APPEND(tl7, src)
                 LOCAL_U8 2
+                LOCAL_U8 6
                 TEXT_LABEL_APPEND_STRING 8
 
-                ; APPEND(tl15, 'hello world')
-                PUSH_CONST_0
-                STRING
-                LOCAL_U8 3
+                ; APPEND(tl15, src)
+                LOCAL_U8 2
+                LOCAL_U8 7
                 TEXT_LABEL_APPEND_STRING 16
 
-                ; APPEND(tl31, 'hello world')
-                PUSH_CONST_0
-                STRING
-                LOCAL_U8 5
+                ; APPEND(tl31, src)
+                LOCAL_U8 2
+                LOCAL_U8 9
                 TEXT_LABEL_APPEND_STRING 32
 
-                ; APPEND(tl63, 'hello world')
-                PUSH_CONST_0
-                STRING
-                LOCAL_U8 9
+                ; APPEND(tl63, src)
+                LOCAL_U8 2
+                LOCAL_U8 13
                 TEXT_LABEL_APPEND_STRING 64
 
-                ; APPEND(tl127, 'hello world')
-                PUSH_CONST_0
-                STRING
-                LOCAL_U8 17
+                ; APPEND(tl127, src)
+                LOCAL_U8 2
+                LOCAL_U8 21
                 TEXT_LABEL_APPEND_STRING 128
 
                 LEAVE 0, 0
+            ");
+        }
 
-                .string
-                .str 'hello world'
+        [Fact]
+        public void TestTextLabelAsParameter()
+        {
+            CompileMain(
+            source: @"
+                TEXT_LABEL_31 tl
+                TEST(tl)
+            ",
+            sourceStatics: @"
+                PROC TEST(TEXT_LABEL_31 tl)
+                    APPEND(tl, 1234)
+                ENDPROC
+            ",
+            expectedAssembly: @"
+                ENTER 0, 6
+
+                ; TEST(tl)
+                PUSH_CONST_4
+                LOCAL_U8 2
+                LOAD_N
+                CALL TEST
+
+                LEAVE 0, 0
+
+            TEST:
+                ENTER 4, 6
+
+                ; APPEND(tl, 1234)
+                PUSH_CONST_S16 1234
+                LOCAL_U8 0
+                TEXT_LABEL_APPEND_INT 32
+
+                LEAVE 4, 0
             ");
         }
 
