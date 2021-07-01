@@ -3,6 +3,7 @@ USING 'menu.sch'
 USING 'natives.sch'
 
 MENU sTrainerMenu
+BOOL bTrainerMenuVisible = FALSE
 BOOL bSpawnCar = FALSE, bGiveWeapons = FALSE
 VEHICLE_INDEX vehSpawned = NULL
 
@@ -10,10 +11,22 @@ SCRIPT trainer_menu
     MENU_INIT(sTrainerMenu, "Trainer")
     MENU_ADD_ITEM(sTrainerMenu, "Spawn Car", SPAWN_CAR_CALLBACK)
     MENU_ADD_ITEM(sTrainerMenu, "Give Weapons", GIVE_WEAPONS_CALLBACK)
+    INT i
+    REPEAT 6 i
+        TEXT_LABEL_15 tlName = "Item #"
+        APPEND(tlName, i + 3)
+        MENU_ADD_ITEM(sTrainerMenu, tlName, EMPTY_CALLBACK)
+    ENDREPEAT
 
     WHILE TRUE
-        MENU_PROCESS_CONTROLS(sTrainerMenu)
-        MENU_DRAW(sTrainerMenu)
+        IF IS_CONTROL_JUST_PRESSED(2, INPUT_REPLAY_START_STOP_RECORDING)
+            bTrainerMenuVisible = NOT bTrainerMenuVisible
+        ENDIF
+
+        IF bTrainerMenuVisible
+            MENU_PROCESS_CONTROLS(sTrainerMenu)
+            MENU_DRAW(sTrainerMenu)
+        ENDIF
 
         IF bSpawnCar
             IF DOES_ENTITY_EXIST(vehSpawned)
@@ -48,4 +61,7 @@ ENDPROC
 
 PROC GIVE_WEAPONS_CALLBACK(MENU_ITEM& sItem)
     bGiveWeapons = TRUE
+ENDPROC
+
+PROC EMPTY_CALLBACK(MENU_ITEM& sItem)
 ENDPROC

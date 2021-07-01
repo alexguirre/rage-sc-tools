@@ -6,6 +6,7 @@ STRUCT MENU
     MENU_ITEM sItems[32]
     INT iItemCount = 0
     INT iSelectedItem = 0
+    INT iLastInputTime = 0
 ENDSTRUCT
 
 STRUCT MENU_ITEM
@@ -15,6 +16,7 @@ ENDSTRUCT
 
 PROTO PROC MENU_ITEM_CALLBACK(MENU_ITEM& item)
 
+CONST INT MENU_TIME_BETWEEN_INPUTS = 175
 
 PROC MENU_INIT(MENU& sMenu, STRING tlTitle)
     MENU sResultMenu
@@ -25,18 +27,26 @@ ENDPROC
 
 PROC MENU_PROCESS_CONTROLS(MENU& sMenu)
 
-    IF IS_CONTROL_JUST_PRESSED(2, INPUT_FRONTEND_UP)
+    IF IS_CONTROL_PRESSED(2, INPUT_FRONTEND_UP) AND (GET_GAME_TIMER() - sMenu.iLastInputTime) > MENU_TIME_BETWEEN_INPUTS
+
+        sMenu.iLastInputTime = GET_GAME_TIMER()
+        PLAY_SOUND_FRONTEND(-1, "NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET", FALSE)
         sMenu.iSelectedItem -= 1
-    ENDIF
 
-    IF IS_CONTROL_JUST_PRESSED(2, INPUT_FRONTEND_DOWN)
+        IF sMenu.iSelectedItem < 0
+            sMenu.iSelectedItem = sMenu.iItemCount - 1
+        ENDIF
+
+    ELIF IS_CONTROL_PRESSED(2, INPUT_FRONTEND_DOWN)  AND (GET_GAME_TIMER() - sMenu.iLastInputTime) > MENU_TIME_BETWEEN_INPUTS
+
+        sMenu.iLastInputTime = GET_GAME_TIMER()
+        PLAY_SOUND_FRONTEND(-1, "NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET", FALSE)
         sMenu.iSelectedItem += 1
-    ENDIF
 
-    IF sMenu.iSelectedItem >= sMenu.iItemCount
-        sMenu.iSelectedItem = 0
-    ELIF sMenu.iSelectedItem < 0
-        sMenu.iSelectedItem = sMenu.iItemCount - 1
+        IF sMenu.iSelectedItem >= sMenu.iItemCount
+            sMenu.iSelectedItem = 0
+        ENDIF
+
     ENDIF
 
     IF sMenu.iSelectedItem >= 0 AND sMenu.iSelectedItem < sMenu.iItemCount AND IS_CONTROL_JUST_PRESSED(2, INPUT_FRONTEND_ACCEPT)
