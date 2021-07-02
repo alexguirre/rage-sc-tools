@@ -50,7 +50,12 @@ PROC MENU_PROCESS_CONTROLS(MENU& sMenu)
     ENDIF
 
     IF sMenu.iSelectedItem >= 0 AND sMenu.iSelectedItem < sMenu.iItemCount AND IS_CONTROL_JUST_PRESSED(2, INPUT_FRONTEND_ACCEPT)
-        sMenu.sItems[sMenu.iSelectedItem].procCallback(sMenu.sItems[sMenu.iSelectedItem])
+        IF sMenu.sItems[sMenu.iSelectedItem].procCallback <> NULL 
+            PLAY_SOUND_FRONTEND(-1, "SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET", FALSE)
+            sMenu.sItems[sMenu.iSelectedItem].procCallback(sMenu.sItems[sMenu.iSelectedItem])
+        ELSE
+            PLAY_SOUND_FRONTEND(-1, "ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET", FALSE)
+        ENDIF
     ENDIF
 
 ENDPROC
