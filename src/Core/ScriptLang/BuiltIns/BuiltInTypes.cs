@@ -10,50 +10,21 @@
 
     public static class BuiltInTypes
     {
-        private static readonly HashSet<StructDeclaration> HandleTypes = new();
-
-        public static  ITypeDeclaration Int { get; } = new IntDecl();
-        public static  ITypeDeclaration Float { get; } = new FloatDecl();
-        public static  ITypeDeclaration Bool { get; } = new BoolDecl();
-        public static  ITypeDeclaration String { get; } = new StringDecl();
-        public static  ITypeDeclaration Any { get; } = new AnyDecl();
-        public static  StructDeclaration Vector { get; } = new(SourceRange.Unknown, "VECTOR")
-        {
-            Fields = new List<StructField>
-                {
-                    new StructField(SourceRange.Unknown, "x", Float.CreateType(SourceRange.Unknown)) { Offset = 0 },
-                    new StructField(SourceRange.Unknown, "y", Float.CreateType(SourceRange.Unknown)) { Offset = 1 },
-                    new StructField(SourceRange.Unknown, "z", Float.CreateType(SourceRange.Unknown)) { Offset = 2 },
-                },
-        };
-        public static StructDeclaration PlayerIndex { get; } = CreateHandleType("PLAYER_INDEX");
-        public static StructDeclaration EntityIndex { get; } = CreateHandleType("ENTITY_INDEX");
-        public static StructDeclaration PedIndex { get; } = CreateHandleType("PED_INDEX");
-        public static StructDeclaration VehicleIndex { get; } = CreateHandleType("VEHICLE_INDEX");
-        public static StructDeclaration ObjectIndex { get; } = CreateHandleType("OBJECT_INDEX");
-        public static StructDeclaration CameraIndex { get; } = CreateHandleType("CAMERA_INDEX");
-        public static StructDeclaration PickupIndex { get; } = CreateHandleType("PICKUP_INDEX");
-        public static StructDeclaration BlipInfoId { get; } = CreateHandleType("BLIP_INFO_ID");
+        public static ITypeDeclaration Int { get; } = new IntDecl();
+        public static ITypeDeclaration Float { get; } = new FloatDecl();
+        public static ITypeDeclaration Bool { get; } = new BoolDecl();
+        public static ITypeDeclaration String { get; } = new StringDecl();
+        public static ITypeDeclaration Any { get; } = new AnyDecl();
+        public static ITypeDeclaration Vector { get; } = new VectorDecl();
+        public static ITypeDeclaration PlayerIndex { get; } = new HandleDecl(HandleKind.PlayerIndex);
+        public static ITypeDeclaration EntityIndex { get; } = new HandleDecl(HandleKind.EntityIndex);
+        public static ITypeDeclaration PedIndex { get; } = new HandleDecl(HandleKind.PedIndex);
+        public static ITypeDeclaration VehicleIndex { get; } = new HandleDecl(HandleKind.VehicleIndex);
+        public static ITypeDeclaration ObjectIndex { get; } = new HandleDecl(HandleKind.ObjectIndex);
+        public static ITypeDeclaration CameraIndex { get; } = new HandleDecl(HandleKind.CameraIndex);
+        public static ITypeDeclaration PickupIndex { get; } = new HandleDecl(HandleKind.PickupIndex);
+        public static ITypeDeclaration BlipInfoId { get; } = new HandleDecl(HandleKind.BlipInfoId);
         public static ITypeDeclaration[] TextLabels { get; } = CreateTextLabels();
-
-        public static bool IsHandleType(IType type)
-            => type is StructType structTy && HandleTypes.Contains(structTy.Declaration);
-
-        public static bool IsVectorType(IType type)
-            => type is StructType structTy && structTy.Declaration == Vector;
-
-        private static StructDeclaration CreateHandleType(string name)
-        {
-            var decl = new StructDeclaration(SourceRange.Unknown, name)
-            {
-                Fields = new List<StructField>
-                {
-                    new StructField(SourceRange.Unknown, "value", Int.CreateType(SourceRange.Unknown)) { Offset = 0 },
-                },
-            };
-            HandleTypes.Add(decl);
-            return decl;
-        }
 
         private static ITypeDeclaration[] CreateTextLabels()
         {
@@ -111,6 +82,21 @@
                 Length = length;
             }
             public override TextLabelType CreateType(SourceRange source) => new(source, Length);
+            public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param) => throw new NotImplementedException();
+        }
+
+        private sealed class VectorDecl : BaseTypeDeclaration
+        {
+            public VectorDecl() : base(SourceRange.Unknown, "VECTOR") { }
+            public override VectorType CreateType(SourceRange source) => new(source);
+            public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param) => throw new NotImplementedException();
+        }
+
+        private sealed class HandleDecl : BaseTypeDeclaration
+        {
+            public HandleKind Kind { get; }
+            public HandleDecl(HandleKind kind) : base(SourceRange.Unknown, HandleType.KindToTypeName(kind)) => Kind = kind;
+            public override HandleType CreateType(SourceRange source) => new(source, Kind);
             public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param) => throw new NotImplementedException();
         }
     }

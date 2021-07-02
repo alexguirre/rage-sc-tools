@@ -98,7 +98,6 @@
             }
             else
             {
-                // TODO: non-lvalues
                 switch (node.Declaration)
                 {
                     case FuncDeclaration { Prototype: { Kind: FuncKind.UserDefined } } func:

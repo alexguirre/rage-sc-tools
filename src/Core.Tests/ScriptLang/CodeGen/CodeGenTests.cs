@@ -1164,24 +1164,29 @@
         {
             CompileMain(
             source: @"
-                VECTOR v
-                v.x = 1.0
-                v.y = 2.0
-                v.z = 3.0
+                MY_STRUCT s
+                s.a = 1.0
+                s.b = 2.0
+                s.c = 3.0
+            ",
+            sourceStatics: @"
+                STRUCT MY_STRUCT
+                    FLOAT a, b, c
+                ENDSTRUCT
             ",
             expectedAssembly: @"
                 ENTER 0, 5
 
-                ; v.x = 1.0
+                ; s.a = 1.0
                 PUSH_CONST_F1
                 LOCAL_U8_STORE 2
 
-                ; v.y = 2.0
+                ; s.b = 2.0
                 PUSH_CONST_F2
                 LOCAL_U8 2
                 IOFFSET_U8_STORE 1
 
-                ; v.z = 3.0
+                ; s.c = 3.0
                 PUSH_CONST_F3
                 LOCAL_U8 2
                 IOFFSET_U8_STORE 2
@@ -1231,6 +1236,74 @@
 
         [Fact]
         public void TestStructFieldAccessSize1()
+        {
+            CompileMain(
+            source: @"
+                MY_STRUCT s
+                FLOAT f
+                f = s.a
+                f = s.b
+                f = s.c
+            ",
+            sourceStatics: @"
+                STRUCT MY_STRUCT
+                    FLOAT a, b, c
+                ENDSTRUCT
+            ",
+            expectedAssembly: @"
+                ENTER 0, 6
+
+                ; f = s.a
+                LOCAL_U8_LOAD 2
+                LOCAL_U8_STORE 5
+
+                ; f = s.b
+                LOCAL_U8 2
+                IOFFSET_U8_LOAD 1
+                LOCAL_U8_STORE 5
+
+                ; f = s.c
+                LOCAL_U8 2
+                IOFFSET_U8_LOAD 2
+                LOCAL_U8_STORE 5
+
+                LEAVE 0, 0
+            ");
+        }
+
+        [Fact]
+        public void TestVectorFieldAssignment()
+        {
+            CompileMain(
+            source: @"
+                VECTOR v
+                v.x = 1.0
+                v.y = 2.0
+                v.z = 3.0
+            ",
+            expectedAssembly: @"
+                ENTER 0, 5
+
+                ; v.x = 1.0
+                PUSH_CONST_F1
+                LOCAL_U8_STORE 2
+
+                ; v.y = 2.0
+                PUSH_CONST_F2
+                LOCAL_U8 2
+                IOFFSET_U8_STORE 1
+
+                ; v.z = 3.0
+                PUSH_CONST_F3
+                LOCAL_U8 2
+                IOFFSET_U8_STORE 2
+
+                LEAVE 0, 0
+            ");
+        }
+
+        [Fact]
+        public void TestVectorFieldAccess()
         {
             CompileMain(
             source: @"
@@ -1741,6 +1814,77 @@
                 LOCAL_U8_LOAD 3
                 CALLINDIRECT
                 DROP
+
+                LEAVE 0, 0
+
+            ADD:
+                ENTER 2, 4
+                LOCAL_U8_LOAD 0
+                LOCAL_U8_LOAD 1
+                IADD
+                LEAVE 2, 1
+            ");
+        }
+
+        [Fact]
+        public void TestFunctionPointerComparison()
+        {
+            CompileMain(
+            source: @"
+                MY_FUNC_T myFunc
+                MY_FUNC_T myFunc2
+                BOOL b
+                b = myFunc2 == NULL
+                b = myFunc2 <> NULL
+                b = myFunc2 == myFunc
+                b = myFunc2 <> myFunc
+                b = myFunc2 == ADD
+                b = myFunc2 <> ADD
+            ",
+            sourceStatics: @"
+                PROTO FUNC INT MY_FUNC_T(INT a, INT b)
+                FUNC INT ADD(INT a, INT b)
+                    RETURN a + b
+                ENDFUNC
+            ",
+            expectedAssembly: @"
+                ENTER 0, 5
+
+                ; b = myFunc2 == NULL
+                LOCAL_U8_LOAD 3
+                PUSH_CONST_0
+                IEQ
+                LOCAL_U8_STORE 4
+
+                ; b = myFunc2 <> NULL
+                LOCAL_U8_LOAD 3
+                PUSH_CONST_0
+                INE
+                LOCAL_U8_STORE 4
+
+                ; b = myFunc2 == myFunc
+                LOCAL_U8_LOAD 3
+                LOCAL_U8_LOAD 2
+                IEQ
+                LOCAL_U8_STORE 4
+
+                ; b = myFunc2 <> myFunc
+                LOCAL_U8_LOAD 3
+                LOCAL_U8_LOAD 2
+                INE
+                LOCAL_U8_STORE 4
+
+                ; b = myFunc2 == ADD
+                LOCAL_U8_LOAD 3
+                PUSH_CONST_U24 ADD
+                IEQ
+                LOCAL_U8_STORE 4
+
+                ; b = myFunc2 <> ADD
+                LOCAL_U8_LOAD 3
+                PUSH_CONST_U24 ADD
+                INE
+                LOCAL_U8_STORE 4
 
                 LEAVE 0, 0
 
@@ -2572,6 +2716,186 @@
 
             .arg
             args: .int 1, 2, 3
+            ");
+        }
+
+        [Fact]
+        public void TestConversionToEntityIndex()
+        {
+            CompileMain(
+            source: @"
+                ENTITY_INDEX entity
+                PED_INDEX ped
+                VEHICLE_INDEX vehicle
+                OBJECT_INDEX object
+
+                entity = ped
+                entity = vehicle
+                entity = object
+
+                TEST(ped, vehicle, object)
+            ",
+            sourceStatics: @"
+                PROC TEST(ENTITY_INDEX e1, ENTITY_INDEX e2, ENTITY_INDEX e3)
+                ENDPROC
+            ",
+            expectedAssembly: @"
+                ENTER 0, 6
+                
+                ; entity = ped
+                LOCAL_U8_LOAD 3
+                LOCAL_U8_STORE 2
+                
+                ; entity = vehicle
+                LOCAL_U8_LOAD 4
+                LOCAL_U8_STORE 2
+                
+                ; entity = object
+                LOCAL_U8_LOAD 5
+                LOCAL_U8_STORE 2
+
+                ; TEST(ped, vehicle, object)
+                LOCAL_U8_LOAD 3
+                LOCAL_U8_LOAD 4
+                LOCAL_U8_LOAD 5
+                CALL TEST
+
+                LEAVE 0, 0
+
+            TEST:
+                ENTER 3, 5
+                LEAVE 3, 0
+            ");
+        }
+
+        [Fact]
+        public void TestHandleTypeAssignNull()
+        {
+            CompileMain(
+            source: @"
+                ENTITY_INDEX entity = NULL
+                PED_INDEX ped = NULL
+                VEHICLE_INDEX vehicle = NULL
+                OBJECT_INDEX object = NULL
+            ",
+            expectedAssembly: @"
+                ENTER 0, 6
+
+                ; entity = NULL
+                PUSH_CONST_0
+                LOCAL_U8_STORE 2
+
+                ; ped = NULL
+                PUSH_CONST_0
+                LOCAL_U8_STORE 3
+
+                ; vehicle = NULL
+                PUSH_CONST_0
+                LOCAL_U8_STORE 4
+
+                ; object = NULL
+                PUSH_CONST_0
+                LOCAL_U8_STORE 5
+
+                LEAVE 0, 0
+            ");
+        }
+
+        [Theory]
+        [InlineData("==", "IEQ")]
+        [InlineData("<>", "INE")]
+        public void TestHandleTypeComparison(string comparisonOperator, string opcode)
+        {
+            CompileMain(
+            source: $@"
+                ENTITY_INDEX entity
+                PED_INDEX ped
+                VEHICLE_INDEX vehicle
+                OBJECT_INDEX object
+
+                BOOL b
+                b = entity {comparisonOperator} NULL
+                b = entity {comparisonOperator} entity
+                b = ped {comparisonOperator} entity
+                b = ped {comparisonOperator} NULL
+                b = ped {comparisonOperator} ped
+                b = vehicle {comparisonOperator} entity
+                b = vehicle {comparisonOperator} NULL
+                b = vehicle {comparisonOperator} vehicle
+                b = object {comparisonOperator} entity
+                b = object {comparisonOperator} NULL
+                b = object {comparisonOperator} object
+            ",
+            expectedAssembly: $@"
+                ENTER 0, 7
+
+                ; b = entity op NULL
+                LOCAL_U8_LOAD 2
+                PUSH_CONST_0
+                {opcode}
+                LOCAL_U8_STORE 6
+
+                ; b = entity op entity
+                LOCAL_U8_LOAD 2
+                LOCAL_U8_LOAD 2
+                {opcode}
+                LOCAL_U8_STORE 6
+
+                ; b = ped op entity
+                LOCAL_U8_LOAD 3
+                LOCAL_U8_LOAD 2
+                {opcode}
+                LOCAL_U8_STORE 6
+
+                ; b = ped op NULL
+                LOCAL_U8_LOAD 3
+                PUSH_CONST_0
+                {opcode}
+                LOCAL_U8_STORE 6
+
+                ; b = ped op ped
+                LOCAL_U8_LOAD 3
+                LOCAL_U8_LOAD 3
+                {opcode}
+                LOCAL_U8_STORE 6
+
+                ; b = vehicle op entity
+                LOCAL_U8_LOAD 4
+                LOCAL_U8_LOAD 2
+                {opcode}
+                LOCAL_U8_STORE 6
+
+                ; b = vehicle op NULL
+                LOCAL_U8_LOAD 4
+                PUSH_CONST_0
+                {opcode}
+                LOCAL_U8_STORE 6
+
+                ; b = vehicle op vehicle
+                LOCAL_U8_LOAD 4
+                LOCAL_U8_LOAD 4
+                {opcode}
+                LOCAL_U8_STORE 6
+
+                ; b = object op entity
+                LOCAL_U8_LOAD 5
+                LOCAL_U8_LOAD 2
+                {opcode}
+                LOCAL_U8_STORE 6
+
+                ; b = object op NULL
+                LOCAL_U8_LOAD 5
+                PUSH_CONST_0
+                {opcode}
+                LOCAL_U8_STORE 6
+
+                ; b = object op object
+                LOCAL_U8_LOAD 5
+                LOCAL_U8_LOAD 5
+                {opcode}
+                LOCAL_U8_STORE 6
+
+                LEAVE 0, 0
             ");
         }
 

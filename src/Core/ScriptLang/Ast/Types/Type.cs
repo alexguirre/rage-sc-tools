@@ -87,7 +87,7 @@
         public virtual bool CanAssign(IType rhs, bool rhsIsLValue) => false;
 
         public virtual IType BinaryOperation(BinaryOperator op, IType rhs, SourceRange source, DiagnosticsReport diagnostics)
-            => new ErrorType(source, diagnostics, $"Binary operator '{op.ToToken()}' is not supported with operands of type '{this}' and '{rhs}'");
+            => rhs is ErrorType ? rhs : new ErrorType(source, diagnostics, $"Binary operator '{op.ToToken()}' is not supported with operands of type '{this}' and '{rhs}'");
 
         public virtual IType UnaryOperation(UnaryOperator op, SourceRange source, DiagnosticsReport diagnostics)
             => new ErrorType(source, diagnostics, $"Unary operator '{op.ToToken()}' is not supported by type '{this}'");
@@ -96,7 +96,7 @@
             => new ErrorType(source, diagnostics, $"Field access is not supported by type '{this}'");
 
         public virtual IType Indexing(IType index, SourceRange source, DiagnosticsReport diagnostics)
-            => new ErrorType(source, diagnostics, $"Indexing is not supported by type '{this}'");
+            => index is ErrorType ? index : new ErrorType(source, diagnostics, $"Indexing is not supported by type '{this}'");
 
         public virtual IType Invocation((IType Type, bool IsLValue, SourceRange Source)[] args, SourceRange source, DiagnosticsReport diagnostics)
             => new ErrorType(source, diagnostics, $"Invocation is not supported by type '{this}'");

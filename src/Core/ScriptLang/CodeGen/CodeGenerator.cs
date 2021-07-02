@@ -399,7 +399,7 @@
                     dest[0].AsInt32 = initializer is not null && ExpressionEvaluator.EvalBool(initializer, Symbols) ? 1 : 0;
                     break;
 
-                case {} when BuiltInTypes.IsVectorType(type):
+                case VectorType:
                     (dest[0].AsFloat, dest[1].AsFloat, dest[2].AsFloat) = initializer is not null ? ExpressionEvaluator.EvalVector(initializer, Symbols) : (0.0f, 0.0f, 0.0f);
                     break;
 

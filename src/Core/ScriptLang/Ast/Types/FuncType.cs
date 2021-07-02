@@ -32,6 +32,19 @@
 
         public override bool CanAssign(IType rhs, bool rhsIsLValue) => rhs is NullType or ErrorType || Equivalent(rhs);
 
+        public override IType BinaryOperation(BinaryOperator op, IType rhs, SourceRange source, DiagnosticsReport diagnostics)
+        {
+            if (op is BinaryOperator.Equals or BinaryOperator.NotEquals)
+            {
+                if (rhs is NullType || Equivalent(rhs))
+                {
+                    return new BoolType(source);
+                }
+            }
+
+            return base.BinaryOperation(op, rhs, source, diagnostics);
+        }
+
         public override IType Invocation((IType Type, bool IsLValue, SourceRange Source)[] args, SourceRange source, DiagnosticsReport diagnostics)
         {
             if (Declaration.Kind is FuncKind.Script)
@@ -78,6 +91,19 @@
             }
 
             return Declaration.ReturnType;
+        }
+
+        public override void CGBinaryOperation(CodeGenerator cg, BinaryExpression expr)
+        {
+            cg.EmitValue(expr.LHS);
+            cg.EmitValue(expr.RHS);
+            switch (expr.Operator)
+            {
+                case BinaryOperator.Equals: cg.Emit(Opcode.IEQ); break;
+                case BinaryOperator.NotEquals: cg.Emit(Opcode.INE); break;
+
+                default: throw new NotImplementedException();
+            }
         }
 
         public override void CGInvocation(CodeGenerator cg, InvocationExpression expr)

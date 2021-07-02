@@ -144,13 +144,14 @@
             node.IsConstant = node.X.IsConstant && node.Y.IsConstant && node.Z.IsConstant;
             node.Type = vectorTy;
 
-            for (int i = 0; i < vectorTy.Declaration.Fields.Count; i++)
+            var floatTy = BuiltInTypes.Float.CreateType(node.Source);
+            for (int i = 0; i < 3; i++)
             {
                 var src = i switch { 0 => node.X, 1 => node.Y, 2 => node.Z, _ => throw new System.NotImplementedException() };
-                var dest = vectorTy.Declaration.Fields[i];
-                if (!dest.Type.CanAssign(src.Type!, src.IsLValue))
+                if (!floatTy.CanAssign(src.Type!, src.IsLValue))
                 {
-                    Diagnostics.AddError($"Vector component {dest.Name.ToUpperInvariant()} requires type '{dest.Type}', found '{src.Type}'", src.Source);
+                    var comp = i switch { 0 => "X", 1 => "Y", 2 => "Z", _ => throw new System.NotImplementedException() };
+                    Diagnostics.AddError($"Vector component {comp} requires type '{floatTy}', found '{src.Type}'", src.Source);
                 }
             }
 

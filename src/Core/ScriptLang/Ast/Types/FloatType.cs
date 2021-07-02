@@ -22,11 +22,6 @@
 
         public override IType BinaryOperation(BinaryOperator op, IType rhs, SourceRange source, DiagnosticsReport diagnostics)
         {
-            if (rhs is ErrorType)
-            {
-                return rhs;
-            }
-
             if (rhs is FloatType)
             {
                 IType? ty = op switch
