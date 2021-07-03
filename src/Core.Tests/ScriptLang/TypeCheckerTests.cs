@@ -142,6 +142,383 @@
             Assert.False(d.HasErrors);
         }
 
+        [Fact]
+        public void TestCannotAssignEnumToInt()
+        {
+            var d = TypeCheck($@"
+                SCRIPT test_script
+                    INT n = MY_ENUM_A
+                ENDSCRIPT
+
+                ENUM MY_ENUM
+                    MY_ENUM_A
+                ENDENUM
+            ");
+
+            Assert.True(d.HasErrors);
+            Assert.Single(d.Errors);
+        }
+
+        [Fact]
+        public void TestCannotAssignIntToEnum()
+        {
+            var d = TypeCheck($@"
+                SCRIPT test_script
+                    MY_ENUM n = 0
+                ENDSCRIPT
+
+                ENUM MY_ENUM
+                    MY_ENUM_A
+                ENDENUM
+            ");
+
+            Assert.True(d.HasErrors);
+            Assert.Single(d.Errors);
+        }
+
+        [Fact]
+        public void TestCannotCompareEnumAndInt()
+        {
+            var d = TypeCheck($@"
+                SCRIPT test_script
+                    BOOL b = MY_ENUM_A >= 0
+                ENDSCRIPT
+
+                ENUM MY_ENUM
+                    MY_ENUM_A
+                ENDENUM
+            ");
+
+            Assert.True(d.HasErrors);
+            Assert.Single(d.Errors);
+        }
+
+        [Fact]
+        public void TestCannotOperateEnumAndInt()
+        {
+            var d = TypeCheck($@"
+                SCRIPT test_script
+                    INT n = MY_ENUM_A + 1
+                ENDSCRIPT
+
+                ENUM MY_ENUM
+                    MY_ENUM_A
+                ENDENUM
+            ");
+
+            Assert.True(d.HasErrors);
+            Assert.Single(d.Errors);
+        }
+
+        [Fact]
+        public void TestEnumToInt()
+        {
+            var d = TypeCheck($@"
+                SCRIPT test_script
+                    INT n = ENUM_TO_INT(MY_ENUM_A)
+                    BOOL b = ENUM_TO_INT(MY_ENUM_A) >= 0
+                ENDSCRIPT
+
+                ENUM MY_ENUM
+                    MY_ENUM_A
+                ENDENUM
+            ");
+
+            Assert.False(d.HasErrors);
+        }
+
+        [Fact]
+        public void TestIntToEnum()
+        {
+            var d = TypeCheck($@"
+                SCRIPT test_script
+                    MY_ENUM n = INT_TO_ENUM(MY_ENUM, 0)
+                    BOOL b = n >= INT_TO_ENUM(MY_ENUM, 0)
+                ENDSCRIPT
+
+                ENUM MY_ENUM
+                    MY_ENUM_A
+                ENDENUM
+            ");
+
+            Assert.False(d.HasErrors);
+        }
+
+        [Fact]
+        public void TestCannotSetArraySizeToEnumValue()
+        {
+            var d = TypeCheck($@"
+                SCRIPT test_script
+                ENDSCRIPT
+
+                INT iNumbers[NUM_MY_ENUM]
+
+                ENUM MY_ENUM
+                    MY_ENUM_A, MY_ENUM_B, NUM_MY_ENUM
+                ENDENUM
+            ");
+
+            Assert.True(d.HasErrors);
+            Assert.Single(d.Errors);
+        }
+
+        [Fact]
+        public void TestArraySizeWithEnumToInt()
+        {
+            var d = TypeCheck($@"
+                SCRIPT test_script
+                ENDSCRIPT
+
+                INT iNumbers[ENUM_TO_INT(NUM_MY_ENUM)]
+
+                ENUM MY_ENUM
+                    MY_ENUM_A, MY_ENUM_B, NUM_MY_ENUM
+                ENDENUM
+            ");
+
+            Assert.False(d.HasErrors);
+        }
+
+        [Fact]
+        public void TestArraySizeWithEnumToIntAndIntToEnum()
+        {
+            var d = TypeCheck($@"
+                SCRIPT test_script
+                ENDSCRIPT
+
+                INT iNumbers[ENUM_TO_INT(INT_TO_ENUM(MY_ENUM, ENUM_TO_INT(NUM_MY_ENUM)))]
+
+                ENUM MY_ENUM
+                    MY_ENUM_A, MY_ENUM_B, NUM_MY_ENUM
+                ENDENUM
+            ");
+
+            Assert.False(d.HasErrors);
+        }
+
+        [Fact]
+        public void TestIntConstantWithEnumToInt()
+        {
+            var d = TypeCheck($@"
+                SCRIPT test_script
+                ENDSCRIPT
+
+                CONST INT NUM_MY_ENUM_INT = ENUM_TO_INT(NUM_MY_ENUM)
+
+                ENUM MY_ENUM
+                    MY_ENUM_A, MY_ENUM_B, NUM_MY_ENUM
+                ENDENUM
+            ");
+
+            Assert.False(d.HasErrors);
+        }
+
+        [Fact]
+        public void TestOperationsWithTypeNames()
+        {
+            var d = TypeCheck($@"
+                SCRIPT test_script
+                    INT n = 1 + MY_STRUCT
+                ENDSCRIPT
+
+                STRUCT MY_STRUCT
+                    FLOAT a
+                ENDSTRUCT
+            ");
+
+            Assert.True(d.HasErrors);
+            Assert.Single(d.Errors);
+        }
+
+        [Fact]
+        public void TestCountOfWithArray()
+        {
+            var d = TypeCheck($@"
+                SCRIPT test_script
+                    INT array[10]
+                    INT i = COUNT_OF(array)
+                    TEST1(array)
+                    TEST2(array)
+                ENDSCRIPT
+
+                PROC TEST1(INT array[])
+                    INT i = COUNT_OF(array)
+                ENDPROC
+                PROC TEST2(INT array[10])
+                    INT i = COUNT_OF(array)
+                ENDPROC
+            ");
+
+            Assert.False(d.HasErrors);
+        }
+
+        [Fact]
+        public void TestCountOfWithEnumType()
+        {
+            var d = TypeCheck($@"
+                SCRIPT test_script
+                    INT i = COUNT_OF(MY_ENUM)
+                ENDSCRIPT
+
+                ENUM MY_ENUM
+                    MY_ENUM_A, MY_ENUM_B, MY_ENUM_C
+                ENDENUM
+            ");
+
+            Assert.False(d.HasErrors);
+        }
+
+        [Fact]
+        public void TestCannotUseCountOfWithStructType()
+        {
+            var d = TypeCheck($@"
+                SCRIPT test_script
+                    INT i = COUNT_OF(MY_STRUCT)
+                ENDSCRIPT
+
+                STRUCT MY_STRUCT
+                    INT a, b, c
+                ENDSTRUCT
+            ");
+
+            Assert.True(d.HasErrors);
+            Assert.Single(d.Errors);
+        }
+
+        [Fact]
+        public void TestCannotAssignIntrinsicToFunctionPointer()
+        {
+            var d = TypeCheck($@"
+                SCRIPT test_script
+                    MY_FUNC_T fp = F2I
+                ENDSCRIPT
+
+                PROTO FUNC INT MY_FUNC_T(FLOAT value)
+            ");
+
+            Assert.True(d.HasErrors);
+            Assert.Single(d.Errors);
+        }
+
+        [Fact]
+        public void TestSwitchCaseWithInt()
+        {
+            var d = TypeCheck($@"
+                SCRIPT test_script
+                    SWITCH 5
+                        CASE 1
+                            BREAK
+                        CASE 2
+                            BREAK
+                        CASE 3
+                            BREAK
+                        DEFAULT
+                            BREAK
+                    ENDSWITCH
+                ENDSCRIPT
+            ");
+
+            Assert.False(d.HasErrors);
+        }
+
+        [Fact]
+        public void TestSwitchCaseWithIntAndHashes()
+        {
+            var d = TypeCheck($@"
+                SCRIPT test_script
+                    SWITCH 5
+                        CASE 1
+                            BREAK
+                        CASE 2
+                            BREAK
+                        CASE `hello`
+                            BREAK
+                        CASE `world`
+                            BREAK
+                        DEFAULT
+                            BREAK
+                    ENDSWITCH
+                ENDSCRIPT
+            ");
+
+            Assert.False(d.HasErrors);
+        }
+
+        [Fact]
+        public void TestSwitchCaseWithEnum()
+        {
+            var d = TypeCheck($@"
+                SCRIPT test_script
+                    SWITCH MY_ENUM_B
+                        CASE MY_ENUM_A
+                            BREAK
+                        CASE MY_ENUM_B
+                            BREAK
+                        CASE INT_TO_ENUM(MY_ENUM, ENUM_TO_INT(MY_ENUM_B) + 1)
+                            BREAK
+                        CASE INT_TO_ENUM(MY_ENUM, -1)
+                            BREAK
+                        DEFAULT
+                            BREAK
+                    ENDSWITCH
+                ENDSCRIPT
+
+                ENUM MY_ENUM
+                    MY_ENUM_A, MY_ENUM_B
+                ENDENUM
+            ");
+
+            Assert.False(d.HasErrors);
+        }
+
+        [Fact]
+        public void TestSwitchCaseCannotMixEnumWithInt()
+        {
+            var d = TypeCheck($@"
+                SCRIPT test_script
+                    SWITCH 5
+                        CASE 1
+                            BREAK
+                        CASE 2
+                            BREAK
+                        CASE MY_ENUM_A
+                            BREAK
+                    ENDSWITCH
+                ENDSCRIPT
+
+                ENUM MY_ENUM
+                    MY_ENUM_A, MY_ENUM_B
+                ENDENUM
+            ");
+
+            Assert.True(d.HasErrors);
+            Assert.Single(d.Errors);
+        }
+
+        [Fact]
+        public void TestSwitchCaseCannotMixIntWithEnum()
+        {
+            var d = TypeCheck($@"
+                SCRIPT test_script
+                    SWITCH MY_ENUM_A
+                        CASE MY_ENUM_A
+                            BREAK
+                        CASE MY_ENUM_B
+                            BREAK
+                        CASE 1
+                            BREAK
+                    ENDSWITCH
+                ENDSCRIPT
+
+                ENUM MY_ENUM
+                    MY_ENUM_A, MY_ENUM_B
+                ENDENUM
+            ");
+
+            Assert.True(d.HasErrors);
+            Assert.Single(d.Errors);
+        }
+
         private static DiagnosticsReport TypeCheck(string source)
         {
             using var sourceReader = new StringReader(source);

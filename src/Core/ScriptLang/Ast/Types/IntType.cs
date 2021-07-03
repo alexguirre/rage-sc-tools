@@ -18,11 +18,11 @@
 
         public override bool Equivalent(IType other) => other is IntType;
 
-        public override bool CanAssign(IType rhs, bool rhsIsLValue) => rhs is IntType or EnumType or NullType or ErrorType;
+        public override bool CanAssign(IType rhs, bool rhsIsLValue) => rhs is NullType or ErrorType || Equivalent(rhs);
 
         public override IType BinaryOperation(BinaryOperator op, IType rhs, SourceRange source, DiagnosticsReport diagnostics)
         {
-            if (rhs is IntType or EnumType)
+            if (Equivalent(rhs))
             {
                 IType? ty = op switch
                 {

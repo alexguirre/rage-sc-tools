@@ -45,11 +45,11 @@
             return base.BinaryOperation(op, rhs, source, diagnostics);
         }
 
-        public override IType Invocation((IType Type, bool IsLValue, SourceRange Source)[] args, SourceRange source, DiagnosticsReport diagnostics)
+        public override (IType ReturnType, bool IsConstant) Invocation(IExpression[] args, SourceRange source, DiagnosticsReport diagnostics)
         {
             if (Declaration.Kind is FuncKind.Script)
             {
-                return new ErrorType(source, diagnostics, "Cannot invoke SCRIPT");
+                return (new ErrorType(source, diagnostics, "Cannot invoke SCRIPT"), false);
             }
 
             var parameters = Declaration.Parameters;
@@ -82,15 +82,15 @@
                     //       conversions need an address to write to, but currently temporary variables are not supported
                     //       anywhere in the compiler
 
-                    if ((param.Type is TextLabelType && !param.Type.Equivalent(arg.Type)) ||
-                        !param.Type.CanAssign(arg.Type, arg.IsLValue))
+                    if ((param.Type is TextLabelType && !param.Type.Equivalent(arg.Type!)) ||
+                        !param.Type.CanAssign(arg.Type!, arg.IsLValue))
                     {
                         diagnostics.AddError($"Argument {i + 1}: cannot pass '{arg.Type}' as parameter '{TypePrinter.ToString(param.Type, param.Name, param.IsReference)}'", arg.Source);
                     }
                 }
             }
 
-            return Declaration.ReturnType;
+            return (Declaration.ReturnType, false);
         }
 
         public override void CGBinaryOperation(CodeGenerator cg, BinaryExpression expr)
@@ -108,7 +108,7 @@
 
         public override void CGInvocation(CodeGenerator cg, InvocationExpression expr)
         {
-            if (expr.Callee is ValueDeclRefExpression { Declaration: FuncDeclaration func })
+            if (expr.Callee is DeclarationRefExpression { Declaration: FuncDeclaration func })
             {
                 switch (Declaration.Kind)
                 {
@@ -120,12 +120,6 @@
                     case FuncKind.Native:
                         EmitArgs(cg, func.Prototype.Parameters, expr.Arguments);
                         cg.EmitNativeCall(Declaration.ParametersSize, Declaration.ReturnType.SizeOf, func.Name);
-                        break;
-
-                    case FuncKind.Intrinsic:
-                        var intrin = Intrinsics.FindIntrinsic(func.Name);
-                        Debug.Assert(intrin is not null);
-                        intrin.Emit(cg, expr.Arguments);
                         break;
 
                     case FuncKind.Script: throw new InvalidOperationException("Cannot invoke SCRIPT");

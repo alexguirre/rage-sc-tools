@@ -45,7 +45,7 @@
             AddType(BuiltInTypes.BlipInfoId);
             BuiltInTypes.TextLabels.ForEach(lbl => AddType(lbl));
 
-            Intrinsics.AllIntrinsics.ForEach(intrin => AddValue(intrin.Declaration));
+            Intrinsics.AllIntrinsics.ForEach(intrin => AddValue(intrin));
         }
     }
 }

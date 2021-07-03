@@ -285,7 +285,7 @@
                     => new VectorExpression(Source(c), BuildAst(c.x), BuildAst(c.y), BuildAst(c.z)),
 
                 ScLangParser.IdentifierExpressionContext c
-                    => new ValueDeclRefExpression(Source(c), c.identifier().GetText()),
+                    => new DeclarationRefExpression(Source(c), c.identifier().GetText()),
 
                 ScLangParser.IntLiteralExpressionContext c
                     => new IntLiteralExpression(Source(c), Parse(c.integer())),
@@ -387,11 +387,11 @@
                     {
                         SwitchCase switchCaseAst = switchCase switch
                         {
-                            ScLangParser.ValueSwitchCaseContext v => new ValueSwitchCase(Source(v), BuildAst(v.value))
+                            ScLangParser.ValueSwitchCaseContext v => new ValueSwitchCase(Source(v), switchStmt, BuildAst(v.value))
                             {
                                 Body = BuildStatementBlock(v.statementBlock())
                             },
-                            ScLangParser.DefaultSwitchCaseContext d => new DefaultSwitchCase(Source(d))
+                            ScLangParser.DefaultSwitchCaseContext d => new DefaultSwitchCase(Source(d), switchStmt)
                             {
                                 Body = BuildStatementBlock(d.statementBlock())
                             },

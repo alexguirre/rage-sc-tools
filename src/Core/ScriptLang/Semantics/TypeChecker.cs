@@ -69,7 +69,7 @@
         public override Void Visit(SizeOfExpression node, TypeCheckerContext param) => node.Accept(exprTypeChecker, default);
         public override Void Visit(StringLiteralExpression node, TypeCheckerContext param) => node.Accept(exprTypeChecker, default);
         public override Void Visit(UnaryExpression node, TypeCheckerContext param) => node.Accept(exprTypeChecker, default);
-        public override Void Visit(ValueDeclRefExpression node, TypeCheckerContext param) => node.Accept(exprTypeChecker, default);
+        public override Void Visit(DeclarationRefExpression node, TypeCheckerContext param) => node.Accept(exprTypeChecker, default);
         public override Void Visit(VectorExpression node, TypeCheckerContext param) => node.Accept(exprTypeChecker, default);
         #endregion Expressions
 
@@ -277,9 +277,10 @@
         {
             node.Expression.Accept(this, param);
 
-            if (!BuiltInTypes.Int.CreateType(node.Expression.Source).CanAssign(node.Expression.Type!, node.Expression.IsLValue))
+            if (!BuiltInTypes.Int.CreateType(node.Expression.Source).CanAssign(node.Expression.Type!, node.Expression.IsLValue) &&
+                node.Expression.Type is not EnumType)
             {
-                Diagnostics.AddError($"SWITCH expression requires type '{BuiltInTypes.Int.Name}', found '{node.Expression.Type}'", node.Expression.Source);
+                Diagnostics.AddError($"SWITCH expression requires type '{BuiltInTypes.Int.Name}' or ENUM, found '{node.Expression.Type}'", node.Expression.Source);
             }
 
             param = param.Enter(node);
@@ -295,9 +296,9 @@
             {
                 node.Value = new ErrorExpression(node.Value.Source, Diagnostics, $"CASE value must be a constant expression");
             }
-            else if (!BuiltInTypes.Int.CreateType(node.Value.Source).CanAssign(node.Value.Type!, node.Value.IsLValue))
+            else if (!node.Switch.Expression.Type!.CanAssign(node.Value.Type!, node.Value.IsLValue))
             {
-                Diagnostics.AddError($"CASE value requires type '{BuiltInTypes.Int.Name}', found '{node.Value.Type}'", node.Value.Source);
+                Diagnostics.AddError($"CASE value requires type '{node.Switch.Expression.Type!}', found '{node.Value.Type}'", node.Value.Source);
             }
             else
             {

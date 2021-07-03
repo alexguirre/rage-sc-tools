@@ -3,6 +3,7 @@
     using ScTools.ScriptLang.Ast;
     using ScTools.ScriptLang.Ast.Declarations;
     using ScTools.ScriptLang.Ast.Expressions;
+    using ScTools.ScriptLang.BuiltIns;
     using ScTools.ScriptLang.SymbolTables;
 
     public static class ExpressionEvaluator
@@ -62,7 +63,17 @@
                 };
             }
 
-            public override int Visit(ValueDeclRefExpression node, Void param)
+            public override int Visit(InvocationExpression node, Void param)
+            {
+                if (node.Callee is DeclarationRefExpression { Declaration: IIntrinsicDeclaration intrin })
+                {
+                    return intrin.EvalInt(node, Symbols);
+                }
+
+                throw new System.NotImplementedException();
+            }
+
+            public override int Visit(DeclarationRefExpression node, Void param)
             {
                 if (node.Declaration is VarDeclaration { Kind: VarKind.Constant } varDecl)
                 {
@@ -114,7 +125,17 @@
                 };
             }
 
-            public override float Visit(ValueDeclRefExpression node, Void param)
+            public override float Visit(InvocationExpression node, Void param)
+            {
+                if (node.Callee is DeclarationRefExpression { Declaration: IIntrinsicDeclaration intrin })
+                {
+                    return intrin.EvalFloat(node, Symbols);
+                }
+
+                throw new System.NotImplementedException();
+            }
+
+            public override float Visit(DeclarationRefExpression node, Void param)
             {
                 if (node.Declaration is VarDeclaration { Kind: VarKind.Constant } varDecl)
                 {
@@ -159,7 +180,17 @@
                 };
             }
 
-            public override bool Visit(ValueDeclRefExpression node, Void param)
+            public override bool Visit(InvocationExpression node, Void param)
+            {
+                if (node.Callee is DeclarationRefExpression { Declaration: IIntrinsicDeclaration intrin })
+                {
+                    return intrin.EvalBool(node, Symbols);
+                }
+
+                throw new System.NotImplementedException();
+            }
+
+            public override bool Visit(DeclarationRefExpression node, Void param)
             {
                 if (node.Declaration is VarDeclaration { Kind: VarKind.Constant } varDecl)
                 {
@@ -182,7 +213,17 @@
             public override string? Visit(NullExpression node, Void param)
                 => null;
 
-            public override string? Visit(ValueDeclRefExpression node, Void param)
+            public override string Visit(InvocationExpression node, Void param)
+            {
+                if (node.Callee is DeclarationRefExpression { Declaration: IIntrinsicDeclaration intrin })
+                {
+                    return intrin.EvalString(node, Symbols);
+                }
+
+                throw new System.NotImplementedException();
+            }
+
+            public override string? Visit(DeclarationRefExpression node, Void param)
             {
                 if (node.Declaration is VarDeclaration { Kind: VarKind.Constant } varDecl)
                 {
@@ -228,7 +269,17 @@
                 };
             }
 
-            public override (float X, float Y, float Z) Visit(ValueDeclRefExpression node, Void param)
+            public override (float X, float Y, float Z) Visit(InvocationExpression node, Void param)
+            {
+                if (node.Callee is DeclarationRefExpression { Declaration: IIntrinsicDeclaration intrin })
+                {
+                    return intrin.EvalVector(node, Symbols);
+                }
+
+                throw new System.NotImplementedException();
+            }
+
+            public override (float X, float Y, float Z) Visit(DeclarationRefExpression node, Void param)
             {
                 if (node.Declaration is VarDeclaration { Kind: VarKind.Constant } varDecl)
                 {

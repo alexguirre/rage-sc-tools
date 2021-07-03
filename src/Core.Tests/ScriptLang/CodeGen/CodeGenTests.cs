@@ -2517,6 +2517,60 @@
         }
 
         [Fact]
+        public void TestEnumsWithInitializers()
+        {
+            CompileMain(
+            source: @"
+                MY_ENUM e
+                e = MY_ENUM_A
+                e = MY_ENUM_B
+                e = MY_ENUM_C
+                e = MY_ENUM_D
+                e = MY_ENUM_E
+                e = MY_ENUM_F
+            ",
+            sourceStatics: @"
+                ENUM MY_ENUM
+                    MY_ENUM_A
+                    MY_ENUM_B = ENUM_TO_INT(MY_ENUM_A) + 1
+                    MY_ENUM_C = ENUM_TO_INT(MY_ENUM_B) + 1
+                    MY_ENUM_D
+                    MY_ENUM_E = -10
+                    MY_ENUM_F = MY_ENUM_E
+                ENDENUM
+            ",
+            expectedAssembly: @"
+                ENTER 0, 3
+
+                ; e = MY_ENUM_A
+                PUSH_CONST_0
+                LOCAL_U8_STORE 2
+
+                ; e = MY_ENUM_B
+                PUSH_CONST_1
+                LOCAL_U8_STORE 2
+
+                ; e = MY_ENUM_C
+                PUSH_CONST_2
+                LOCAL_U8_STORE 2
+
+                ; e = MY_ENUM_D
+                PUSH_CONST_3
+                LOCAL_U8_STORE 2
+
+                ; e = MY_ENUM_E
+                PUSH_CONST_S16 -10
+                LOCAL_U8_STORE 2
+
+                ; e = MY_ENUM_F
+                PUSH_CONST_S16 -10
+                LOCAL_U8_STORE 2
+
+                LEAVE 0, 0
+            ");
+        }
+
+        [Fact]
         public void TestIntrinsicF2V()
         {
             CompileMain(
@@ -2895,6 +2949,365 @@
                 {opcode}
                 LOCAL_U8_STORE 6
 
+                LEAVE 0, 0
+            ");
+        }
+
+        [Fact]
+        public void TestEnumCountOf()
+        {
+            CompileMain(
+            source: @"
+                INT n1 = COUNT_OF(MY_ENUM)
+            ",
+            sourceStatics: @"
+                ENUM MY_ENUM
+                    MY_ENUM_A, MY_ENUM_B, MY_ENUM_C
+                ENDENUM
+            ",
+            expectedAssembly: @"
+                ENTER 0, 3
+
+                ; INT n1 = COUNT_OF(MY_ENUM)
+                PUSH_CONST_3
+                LOCAL_U8_STORE 2
+
+                LEAVE 0, 0
+            ");
+        }
+
+        [Fact]
+        public void TestEnumToInt()
+        {
+            CompileMain(
+            source: @"
+                INT n1 = ENUM_TO_INT(MY_ENUM_B)
+            ",
+            sourceStatics: @"
+                ENUM MY_ENUM
+                    MY_ENUM_A, MY_ENUM_B, MY_ENUM_C
+                ENDENUM
+            ",
+            expectedAssembly: @"
+                ENTER 0, 3
+
+                ; INT n1 = ENUM_TO_INT(MY_ENUM_B)
+                PUSH_CONST_1
+                LOCAL_U8_STORE 2
+
+                LEAVE 0, 0
+            ");
+        }
+
+        [Fact]
+        public void TestIntToEnum()
+        {
+            CompileMain(
+            source: @"
+                INT n1 = ENUM_TO_INT(MY_ENUM_B)
+                MY_ENUM e1 = INT_TO_ENUM(MY_ENUM, n1)
+                MY_ENUM e2 = INT_TO_ENUM(MY_ENUM, 1)
+            ",
+            sourceStatics: @"
+                ENUM MY_ENUM
+                    MY_ENUM_A, MY_ENUM_B, MY_ENUM_C
+                ENDENUM
+            ",
+            expectedAssembly: @"
+                ENTER 0, 5
+
+                ; INT n1 = ENUM_TO_INT(MY_ENUM_B)
+                PUSH_CONST_1
+                LOCAL_U8_STORE 2
+
+                ; MY_ENUM e1 = INT_TO_ENUM(MY_ENUM, n1)
+                LOCAL_U8_LOAD 2
+                LOCAL_U8_STORE 3
+
+                ; MY_ENUM e2 = INT_TO_ENUM(MY_ENUM, 1)
+                PUSH_CONST_1
+                LOCAL_U8_STORE 4
+
+                LEAVE 0, 0
+            ");
+        }
+
+        [Fact]
+        public void TestArraySizeWithEnumToInt()
+        {
+            CompileMain(
+            source: @"
+            ",
+            sourceStatics: @"
+                INT iNumbers[ENUM_TO_INT(NUM_MY_ENUM)]
+
+                ENUM MY_ENUM
+                    MY_ENUM_A, MY_ENUM_B, NUM_MY_ENUM
+                ENDENUM
+            ",
+            expectedAssembly: @"
+                ENTER 0, 2
+                LEAVE 0, 0
+
+                .static
+                .int 2, 2 dup (0)
+            ");
+        }
+
+        [Fact]
+        public void TestArraySizeWithEnumToIntAndIntToEnum()
+        {
+            CompileMain(
+            source: @"
+            ",
+            sourceStatics: @"
+                INT iNumbers[ENUM_TO_INT(INT_TO_ENUM(MY_ENUM, ENUM_TO_INT(NUM_MY_ENUM)))]
+
+                ENUM MY_ENUM
+                    MY_ENUM_A, MY_ENUM_B, NUM_MY_ENUM
+                ENDENUM
+            ",
+            expectedAssembly: @"
+                ENTER 0, 2
+                LEAVE 0, 0
+
+                .static
+                .int 2, 2 dup (0)
+            ");
+        }
+
+        [Fact]
+        public void TestArraySizeWithCountOf()
+        {
+            CompileMain(
+            source: @"
+            ",
+            sourceStatics: @"
+                INT iNumbers[COUNT_OF(MY_ENUM)]
+
+                ENUM MY_ENUM
+                    MY_ENUM_A, MY_ENUM_B, MY_ENUM_C
+                ENDENUM
+            ",
+            expectedAssembly: @"
+                ENTER 0, 2
+                LEAVE 0, 0
+
+                .static
+                .int 3, 3 dup (0)
+            ");
+        }
+
+        [Fact]
+        public void TestIntConstantWithEnumToInt()
+        {
+            CompileMain(
+            source: @"
+                INT n = NUM_MY_ENUM_INT
+            ",
+            sourceStatics: @"
+                CONST INT NUM_MY_ENUM_INT = ENUM_TO_INT(NUM_MY_ENUM)
+
+                ENUM MY_ENUM
+                    MY_ENUM_A, MY_ENUM_B, NUM_MY_ENUM
+                ENDENUM
+            ",
+            expectedAssembly: @"
+                ENTER 0, 3
+
+                ; INT n = NUM_MY_ENUM_INT
+                PUSH_CONST_2
+                LOCAL_U8_STORE 2
+
+                LEAVE 0, 0
+            ");
+        }
+
+        [Fact]
+        public void TestIntConstantWithCountOf()
+        {
+            CompileMain(
+            source: @"
+                INT n = MY_NUMBER
+            ",
+            sourceStatics: @"
+                CONST INT MY_NUMBER = COUNT_OF(MY_ENUM)
+
+                ENUM MY_ENUM
+                    MY_ENUM_A, MY_ENUM_B, MY_ENUM_C
+                ENDENUM
+            ",
+            expectedAssembly: @"
+                ENTER 0, 3
+
+                ; INT n = MY_NUMBER
+                PUSH_CONST_3
+                LOCAL_U8_STORE 2
+
+                LEAVE 0, 0
+            ");
+        }
+
+        [Fact]
+        public void TestIntConstantWithF2I()
+        {
+            CompileMain(
+            source: @"
+                INT n = MY_INT
+            ",
+            sourceStatics: @"
+                CONST INT MY_INT = F2I(1.8)
+            ",
+            expectedAssembly: @"
+                ENTER 0, 3
+
+                ; INT n = MY_INT
+                PUSH_CONST_1
+                LOCAL_U8_STORE 2
+
+                LEAVE 0, 0
+            ");
+        }
+
+        [Fact]
+        public void TestFloatConstantWithI2F()
+        {
+            CompileMain(
+            source: @"
+                FLOAT f = MY_FLOAT
+            ",
+            sourceStatics: @"
+                CONST FLOAT MY_FLOAT = I2F(2)
+            ",
+            expectedAssembly: @"
+                ENTER 0, 3
+
+                ; FLOAT f = MY_FLOAT
+                PUSH_CONST_F2
+                LOCAL_U8_STORE 2
+
+                LEAVE 0, 0
+            ");
+        }
+
+        [Fact]
+        public void TestIntConstantWithF2IAndI2F()
+        {
+            CompileMain(
+            source: @"
+                INT n = MY_INT
+            ",
+            sourceStatics: @"
+                CONST INT MY_INT = F2I(I2F(2))
+            ",
+            expectedAssembly: @"
+                ENTER 0, 3
+
+                ; INT n = MY_INT
+                PUSH_CONST_2
+                LOCAL_U8_STORE 2
+
+                LEAVE 0, 0
+            ");
+        }
+
+        [Fact]
+        public void TestSwitchCaseWithInt()
+        {
+            CompileMain(
+            source: @"
+                SWITCH 5
+                    CASE 1
+                        BREAK
+                    CASE 2
+                        BREAK
+                    CASE 3
+                        BREAK
+                    DEFAULT
+                        BREAK
+                ENDSWITCH
+            ",
+            expectedAssembly: @"
+                ENTER 0, 2
+                PUSH_CONST_5
+                SWITCH 1:case1, 2:case2, 3:case3
+                J default
+            case1:   J endswitch
+            case2:   J endswitch
+            case3:   J endswitch
+            default: J endswitch
+            endswitch:
+                LEAVE 0, 0
+            ");
+        }
+
+        [Fact]
+        public void TestSwitchCaseWithIntAndHashes()
+        {
+            CompileMain(
+            source: @"
+                SWITCH 5
+                    CASE 1
+                        BREAK
+                    CASE 2
+                        BREAK
+                    CASE `hello`
+                        BREAK
+                    CASE `world`
+                        BREAK
+                    DEFAULT
+                        BREAK
+                ENDSWITCH
+            ",
+            expectedAssembly: @"
+                ENTER 0, 2
+                PUSH_CONST_5
+                SWITCH 1:case1, 2:case2, 0xC8FD181B:caseHello, 0x9099ABE4:caseWorld
+                J default
+            case1:      J endswitch
+            case2:      J endswitch
+            caseHello:  J endswitch
+            caseWorld:  J endswitch
+            default:    J endswitch
+            endswitch:
+                LEAVE 0, 0
+            ");
+        }
+
+        [Fact]
+        public void TestSwitchCaseWithEnum()
+        {
+            CompileMain(
+            source: @"
+                SWITCH MY_ENUM_B
+                    CASE MY_ENUM_A
+                        BREAK
+                    CASE MY_ENUM_B
+                        BREAK
+                    CASE INT_TO_ENUM(MY_ENUM, ENUM_TO_INT(MY_ENUM_B) + 1)
+                        BREAK
+                    CASE INT_TO_ENUM(MY_ENUM, -1)
+                        BREAK
+                    DEFAULT
+                        BREAK
+                ENDSWITCH
+            ",
+            sourceStatics: @"
+                ENUM MY_ENUM
+                    MY_ENUM_A, MY_ENUM_B
+                ENDENUM
+            ",
+            expectedAssembly: @"
+                ENTER 0, 2
+                PUSH_CONST_1
+                SWITCH 0:case0, 1:case1, 2:case2, 0xFFFFFFFF:caseM1
+                J default
+            case0:   J endswitch
+            case1:   J endswitch
+            case2:   J endswitch
+            caseM1:  J endswitch
+            default: J endswitch
+            endswitch:
                 LEAVE 0, 0
             ");
         }

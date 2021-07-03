@@ -9,6 +9,7 @@
     using ScTools.ScriptLang.Ast.Errors;
     using ScTools.ScriptLang.Ast.Expressions;
     using ScTools.ScriptLang.Ast.Types;
+    using ScTools.ScriptLang.BuiltIns;
     using ScTools.ScriptLang.SymbolTables;
 
     /// <summary>
@@ -80,27 +81,29 @@
             }
             else
             {
-                enumMember.Initializer.Accept(exprTypeChecker, default);
-                if (!enumMember.Initializer!.IsConstant)
+                var init = enumMember.Initializer!;
+                init.Accept(exprTypeChecker, default);
+                if (!init.IsConstant)
                 {
-                    enumMember.Initializer = new ErrorExpression(enumMember.Initializer!.Source, Diagnostics, $"The expression assigned to '{enumMember.Name}' must be constant");
+                    enumMember.Initializer = new ErrorExpression(init.Source, Diagnostics, $"The expression assigned to '{enumMember.Name}' must be constant");
                     return;
                 }
 
-                if (enumMember.Initializer is IntLiteralExpression lit)
+                if (init is IntLiteralExpression lit)
                 {
                     // already a literal, don't need to simplify the expression
                     enumMember.Value = lit.Value;
                     return;
                 }
 
-                if (!enumMember.Type.CanAssign(enumMember.Initializer.Type!, enumMember.Initializer.IsLValue))
+                if (!enumMember.Type.CanAssign(init.Type!, init.IsLValue) &&
+                    !BuiltInTypes.Int.CreateType(init.Source).CanAssign(init.Type!, init.IsLValue))
                 {
-                    enumMember.Type = new ErrorType(enumMember.Initializer.Source, Diagnostics, $"Cannot assign type '{enumMember.Initializer.Type}' to '{enumMember.Type}'");
+                    enumMember.Type = new ErrorType(init.Source, Diagnostics, $"Cannot assign type '{init.Type}' to '{enumMember.Type}'");
                     return;
                 }
 
-                enumMember.Value = enumMember.Initializer.Type is IError ? 0 : ExpressionEvaluator.EvalInt(enumMember.Initializer, Symbols);
+                enumMember.Value = init.Type is IError ? 0 : ExpressionEvaluator.EvalInt(init, Symbols);
             }
 
             // simplify the initializer expression
@@ -246,8 +249,8 @@
             public override IEnumerable<IValueDeclaration> Visit(UnaryExpression node, Void param)
                 => node.SubExpression.Accept(this, param);
 
-            public override IEnumerable<IValueDeclaration> Visit(ValueDeclRefExpression node, Void param)
-                => new[] { node.Declaration! };
+            public override IEnumerable<IValueDeclaration> Visit(DeclarationRefExpression node, Void param)
+                => node.Declaration is IValueDeclaration valueDecl ? new[] { valueDecl } : None;
 
             public override IEnumerable<IValueDeclaration> Visit(VectorExpression node, Void param)
                 => node.X.Accept(this, param).Concat(node.Y.Accept(this, param)).Concat(node.Z.Accept(this, param));

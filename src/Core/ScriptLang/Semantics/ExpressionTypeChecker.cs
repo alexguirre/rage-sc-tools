@@ -1,5 +1,6 @@
 ﻿namespace ScTools.ScriptLang.Semantics
 {
+    using System.Diagnostics;
     using System.Linq;
 
     using ScTools.ScriptLang.Ast;
@@ -84,8 +85,7 @@
             node.Arguments.ForEach(arg => arg.Accept(this, param));
 
             node.IsLValue = false;
-            node.IsConstant = false;
-            node.Type = node.Callee.Type!.Invocation(node.Arguments.Select(arg => (arg.Type!, arg.IsLValue, arg.Source)).ToArray(), node.Source, Diagnostics);
+            (node.Type, node.IsConstant) = node.Callee.Type!.Invocation(node.Arguments.ToArray(), node.Source, Diagnostics);
             return default;
         }
 
@@ -125,11 +125,30 @@
             return default;
         }
 
-        public override Void Visit(ValueDeclRefExpression node, Void param)
+        public override Void Visit(DeclarationRefExpression node, Void param)
         {
-            node.IsLValue = node.Declaration is VarDeclaration { Kind: not VarKind.Constant };
-            node.IsConstant = node.Declaration is EnumMemberDeclaration or VarDeclaration { Kind: VarKind.Constant };
-            node.Type = node.Declaration!.Type;
+            if (node.Declaration is IValueDeclaration valueDecl)
+            {
+                node.IsLValue = valueDecl is VarDeclaration { Kind: not VarKind.Constant };
+                node.IsConstant = valueDecl is EnumMemberDeclaration or VarDeclaration { Kind: VarKind.Constant };
+                node.Type = valueDecl.Type;
+            }
+            else if (node.Declaration is ITypeDeclaration typeDecl)
+            {
+                node.IsLValue = false;
+                node.IsConstant = true;
+                node.Type = new TypeNameType(node.Source, typeDecl);
+            }
+            else if (node.Declaration is IError error)
+            {
+                node.IsLValue = false;
+                node.IsConstant = false;
+                node.Type = new ErrorType(error.Source, error.Diagnostic);
+            }
+            else
+            {
+                Debug.Assert(false);
+            }
             return default;
         }
 

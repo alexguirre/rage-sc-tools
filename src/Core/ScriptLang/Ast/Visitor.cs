@@ -33,7 +33,7 @@
         TReturn Visit(SizeOfExpression node, TParam param);
         TReturn Visit(StringLiteralExpression node, TParam param);
         TReturn Visit(UnaryExpression node, TParam param);
-        TReturn Visit(ValueDeclRefExpression node, TParam param);
+        TReturn Visit(DeclarationRefExpression node, TParam param);
         TReturn Visit(VectorExpression node, TParam param);
 
         TReturn Visit(AssignmentStatement node, TParam param);
@@ -62,6 +62,7 @@
         TReturn Visit(StringType node, TParam param);
         TReturn Visit(StructType node, TParam param);
         TReturn Visit(TextLabelType node, TParam param);
+        TReturn Visit(TypeNameType node, TParam param);
         TReturn Visit(VectorType node, TParam param);
         TReturn Visit(VoidType node, TParam param);
 
@@ -207,7 +208,7 @@
             return DefaultReturn;
         }
 
-        public virtual TReturn Visit(ValueDeclRefExpression node, TParam param)
+        public virtual TReturn Visit(DeclarationRefExpression node, TParam param)
         {
             return DefaultReturn;
         }
@@ -365,6 +366,11 @@
             return DefaultReturn;
         }
 
+        public virtual TReturn Visit(TypeNameType node, TParam param)
+        {
+            return DefaultReturn;
+        }
+
         public virtual TReturn Visit(VectorType node, TParam param)
         {
             return DefaultReturn;
@@ -430,7 +436,7 @@
         public virtual TReturn Visit(SizeOfExpression node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(StringLiteralExpression node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(UnaryExpression node, TParam param) => throw new NotImplementedException();
-        public virtual TReturn Visit(ValueDeclRefExpression node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(DeclarationRefExpression node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(VectorExpression node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(AssignmentStatement node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(BreakStatement node, TParam param) => throw new NotImplementedException();
@@ -457,6 +463,7 @@
         public virtual TReturn Visit(StringType node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(StructType node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(TextLabelType node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(TypeNameType node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(VectorType node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(VoidType node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(ErrorDeclaration node, TParam param) => throw new NotImplementedException();

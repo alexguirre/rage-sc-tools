@@ -97,18 +97,18 @@
             return DefaultReturn;
         }
 
-        public override Void Visit(ValueDeclRefExpression node, Void param)
+        public override Void Visit(DeclarationRefExpression node, Void param)
         {
             Debug.Assert(node.Declaration is null); // verify we are not visiting the same node multiple times
 
-            var valueDecl = Symbols.FindValue(node.Name);
-            if (valueDecl is null)
+            var decl = Symbols.FindValue(node.Name) ?? Symbols.GlobalSymbols.FindType(node.Name) as IDeclaration;
+            if (decl is null)
             {
                 node.Declaration = new ErrorDeclaration(node.Source, Diagnostics, $"Unknown symbol '{node.Name}'");
             }
             else
             {
-                node.Declaration = valueDecl;
+                node.Declaration = decl;
             }
 
             return DefaultReturn;

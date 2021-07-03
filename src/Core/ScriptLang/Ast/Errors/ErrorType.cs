@@ -28,7 +28,7 @@
         public IType UnaryOperation(UnaryOperator op, SourceRange source, DiagnosticsReport diagnostics) => this;
         public IType FieldAccess(string fieldName, SourceRange source, DiagnosticsReport diagnostics) => this;
         public IType Indexing(IType index, SourceRange source, DiagnosticsReport diagnostics) => this;
-        public IType Invocation((IType Type, bool IsLValue, SourceRange Source)[] args, SourceRange source, DiagnosticsReport diagnostics) => this;
+        public (IType ReturnType, bool IsConstant) Invocation(IExpression[] args, SourceRange source, DiagnosticsReport diagnostics) => (this, false);
         public void Assign(IType rhs, bool rhsIsLValue, SourceRange source, DiagnosticsReport diagnostics) { }
         public void CGAssign(CodeGenerator cg, AssignmentStatement stmt) => throw new NotImplementedException();
         public void CGBinaryOperation(CodeGenerator cg, BinaryExpression expr) => throw new NotImplementedException();

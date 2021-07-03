@@ -26,6 +26,7 @@
                 StringType => Simple("STRING", name),
                 StructType structTy => Simple(structTy.Declaration.Name, name),
                 TextLabelType lblTy => Simple($"TEXT_LABEL_{lblTy.Length-1}", name),
+                TypeNameType => Simple("(type)", name),
                 VectorType => Simple("VECTOR", name),
                 VoidType => Simple("(void)", name),
                 _ => Simple(type.ToString() ?? "<type.ToString() is null>", name),
@@ -65,7 +66,6 @@
             var prefixStr = funcTy.Declaration.Kind switch
             {
                 FuncKind.Native => "NATIVE ",
-                FuncKind.Intrinsic => "INTRINSIC ",
                 _ => "",
             };
             var argsStr = $"({string.Join(", ", funcTy.Declaration.Parameters.Select(p => ToString(p.Type, p.Name, p.IsReference)))})";

@@ -19,17 +19,19 @@
 
     public abstract class SwitchCase : BaseNode
     {
+        public SwitchStatement Switch { get; set; }
         public IList<IStatement> Body { get; set; } = new List<IStatement>();
         public string? Label { get; set; }
 
-        public SwitchCase(SourceRange source) : base(source) { }
+        public SwitchCase(SourceRange source, SwitchStatement @switch) : base(source)
+            => Switch = @switch;
     }
 
     public sealed class ValueSwitchCase : SwitchCase
     {
         public IExpression Value { get; set; }
 
-        public ValueSwitchCase(SourceRange source, IExpression value) : base(source)
+        public ValueSwitchCase(SourceRange source, SwitchStatement @switch, IExpression value) : base(source, @switch)
             => Value = value;
 
         public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
@@ -38,7 +40,7 @@
 
     public sealed class DefaultSwitchCase : SwitchCase
     {
-        public DefaultSwitchCase(SourceRange source) : base(source) { }
+        public DefaultSwitchCase(SourceRange source, SwitchStatement @switch) : base(source, @switch) { }
 
         public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
             => visitor.Visit(this, param);

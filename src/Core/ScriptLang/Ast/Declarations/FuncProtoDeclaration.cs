@@ -19,11 +19,6 @@
         /// With this kind, <see cref="FuncDeclaration.Body"/> is empty.
         /// </summary>
         Native,
-        /// <summary>
-        /// A function defined by the compiler.
-        /// With this kind, <see cref="FuncDeclaration.Body"/> is empty.
-        /// </summary>
-        Intrinsic,
     }
 
     /// <summary>

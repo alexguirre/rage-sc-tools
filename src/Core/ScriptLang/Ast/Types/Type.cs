@@ -53,7 +53,7 @@
         /// <summary>
         /// Checks if this type supports invocation with the specified <paramref name="args"/> and returns the returned type.
         /// </summary>
-        IType Invocation((IType Type, bool IsLValue, SourceRange Source)[] args, SourceRange source, DiagnosticsReport diagnostics);
+        (IType ReturnType, bool IsConstant) Invocation(IExpression[] args, SourceRange source, DiagnosticsReport diagnostics);
 
         /// <summary>
         /// Checks if the type <paramref name="rhs"/> can be assigned to this type.
@@ -98,8 +98,8 @@
         public virtual IType Indexing(IType index, SourceRange source, DiagnosticsReport diagnostics)
             => index is ErrorType ? index : new ErrorType(source, diagnostics, $"Indexing is not supported by type '{this}'");
 
-        public virtual IType Invocation((IType Type, bool IsLValue, SourceRange Source)[] args, SourceRange source, DiagnosticsReport diagnostics)
-            => new ErrorType(source, diagnostics, $"Invocation is not supported by type '{this}'");
+        public virtual (IType ReturnType, bool IsConstant) Invocation(IExpression[] args, SourceRange source, DiagnosticsReport diagnostics)
+            => (new ErrorType(source, diagnostics, $"Invocation is not supported by type '{this}'"), false);
 
         public virtual void Assign(IType rhs, bool rhsIsLValue, SourceRange source, DiagnosticsReport diagnostics)
         {

@@ -36,7 +36,7 @@
             }
             else if (node.Initializer is not null)
             {
-                var dest = new ValueDeclRefExpression(node.Source, node.Name) { Declaration = node, Type = node.Type!, IsLValue = true, IsConstant = false };
+                var dest = new DeclarationRefExpression(node.Source, node.Name) { Declaration = node, Type = node.Type!, IsLValue = true, IsConstant = false };
                 new AssignmentStatement(node.Source, lhs: dest, rhs: node.Initializer)
                     .Accept(this, func);
             }
