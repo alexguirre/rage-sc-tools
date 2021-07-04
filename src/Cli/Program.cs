@@ -28,7 +28,10 @@
 
             Command dump = new Command("dump")
             {
-                new Argument<FileInfo>("input", "The input YSC file.").ExistingOnly(),
+                new Argument<FileGlob[]>(
+                    "input",
+                    "The input YSC files. Supports glob patterns.")
+                    .AtLeastOne(),
                 new Option<FileInfo>(
                     new[] { "--output", "-o" },
                     "The output file. If not specified, the dump is printed to the console.")
@@ -631,7 +634,7 @@
 
         private class DumpOptions
         {
-            public FileInfo Input { get; set; }
+            public FileGlob[] Input { get; set; }
             public FileInfo Output { get; set; }
             public bool NoMetadata { get; set; }
             public bool NoDisassembly { get; set; }
@@ -642,21 +645,24 @@
 
         private static void Dump(DumpOptions o)
         {
-            byte[] fileData = File.ReadAllBytes(o.Input.FullName);
-
-            YscFile ysc = new YscFile();
-            ysc.Load(fileData);
-
-            Script sc = ysc.Script;
-
-            using TextWriter w = o.Output switch
+            Parallel.ForEach(o.Input.SelectMany(i => i.Matches), inputFile =>
             {
-                null => Console.Out,
-                _ => new StreamWriter(o.Output.Open(FileMode.Create))
-            };
+                var fileData =  File.ReadAllBytes(inputFile.FullName);
 
-            new Dumper(sc).Dump(w, showMetadata: !o.NoMetadata, showDisassembly: !o.NoDisassembly,
-                                showOffsets: !o.NoOffsets, showBytes: !o.NoBytes, showInstructions: !o.NoInstructions);
+                var ysc = new YscFile();
+                ysc.Load(fileData);
+
+                var sc = ysc.Script;
+
+                using var w = o.Output switch
+                {
+                    null => Console.Out,
+                    _ => new StreamWriter(Path.Combine(o.Output.FullName, Path.ChangeExtension(inputFile.Name, "txt")))
+                };
+
+                new Dumper(sc).Dump(w, showMetadata: !o.NoMetadata, showDisassembly: !o.NoDisassembly,
+                                    showOffsets: !o.NoOffsets, showBytes: !o.NoBytes, showInstructions: !o.NoInstructions);
+            });
         }
 
         private class FetchNativeDbOptions
