@@ -1,5 +1,6 @@
 ﻿namespace ScTools.ScriptLang.CodeGen
 {
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
 
@@ -66,11 +67,15 @@
             new Offset0AddressPattern(Opcode.ARRAY_U8),
             new Offset0AddressPattern(Opcode.ARRAY_U16),
 
-            new AddU8Pattern(),
+            new AddMulS16Pattern(),
+            new AddMulU8Pattern(),
+
+            new PushConstU8Pattern(),
         };
 
         public IEnumerable<EmittedInstruction> Optimize(List<EmittedInstruction> instructions)
         {
+            instructions = new(instructions); // create a copy of the list, the patterns are going to modify it
             for (int i = 0; i < instructions.Count; i++)
             {
                 if (instructions[i].Label is not null)
@@ -84,16 +89,18 @@
                 for (int patternIdx = 0; patternIdx < patterns.Length; patternIdx++)
                 {
                     var pattern = patterns[patternIdx];
-                    if (pattern.Match(instructions, i, out var replacementInst, out var numInstToReplace))
+                    if (pattern.Match(instructions, i))
                     {
-                        yield return replacementInst;
-                        i += numInstToReplace - 1;
                         anyMatch = true;
                         break;
                     }
                 }
 
-                if (!anyMatch)
+                if (anyMatch)
+                {
+                    i--;
+                }
+                else
                 {
                     yield return instructions[i];
                 }
@@ -102,7 +109,7 @@
 
         public interface IPattern
         {
-            bool Match(List<EmittedInstruction> instructions, int index, out EmittedInstruction replacementInstruction, out int numInstructionToReplace);
+            bool Match(List<EmittedInstruction> instructions, int index);
         }
 
         public sealed class Pattern : IPattern
@@ -116,13 +123,11 @@
                 Replacement = replacement;
             }
 
-            public bool Match(List<EmittedInstruction> instructions, int index, out EmittedInstruction replacementInstruction, out int numInstructionToReplace)
+            public bool Match(List<EmittedInstruction> instructions, int index)
             {
                 var target = Target;
                 if (index >= (instructions.Count - target.Length + 1))
                 {
-                    numInstructionToReplace = 0;
-                    replacementInstruction = default;
                     return false;
                 }
 
@@ -131,14 +136,15 @@
                     var inst = instructions[index + offset].Instruction;
                     if (inst.HasValue && inst.Value.Opcode != target[offset])
                     {
-                        numInstructionToReplace = 0;
-                        replacementInstruction = default;
                         return false;
                     }
                 }
 
-                numInstructionToReplace = Target.Length;
-                replacementInstruction = new() { Instruction = (Replacement, instructions[index].Instruction!.Value.Operands) };
+                instructions[index] = new() { Instruction = (Replacement, instructions[index].Instruction!.Value.Operands) };
+                for (int i = 1; i < target.Length; i++)
+                {
+                    instructions.RemoveAt(index + 1);
+                }
                 return true;
             }
         }
@@ -156,14 +162,12 @@
                 Replacement = replacement;
             }
 
-            public bool Match(List<EmittedInstruction> instructions, int index, out EmittedInstruction replacementInstruction, out int numInstructionToReplace)
+            public bool Match(List<EmittedInstruction> instructions, int index)
             {
                 const int NumInstructions = 3; // Target -> IOFFSET_U8 0 -> LOAD/STORE
 
                 if (index >= (instructions.Count - NumInstructions + 1))
                 {
-                    numInstructionToReplace = 0;
-                    replacementInstruction = default;
                     return false;
                 }
 
@@ -174,13 +178,14 @@
                     inst1 is (Opcode.IOFFSET_U8, _) && System.Convert.ToInt32(inst1.Value.Operands[0]) == 0 &&
                     inst2.HasValue && inst2.Value.Opcode == LoadOrStore)
                 {
-                    numInstructionToReplace = NumInstructions;
-                    replacementInstruction = new() { Instruction = (Replacement, inst0.Value.Operands) };
+                    instructions[index] = new() { Instruction = (Replacement, inst0.Value.Operands) };
+                    for (int i = 1; i < NumInstructions; i++)
+                    {
+                        instructions.RemoveAt(index + 1);
+                    }
                     return true;
                 }
 
-                numInstructionToReplace = 0;
-                replacementInstruction = default;
                 return false;
             }
         }
@@ -204,14 +209,12 @@
                 Target = target;
             }
 
-            public bool Match(List<EmittedInstruction> instructions, int index, out EmittedInstruction replacementInstruction, out int numInstructionToReplace)
+            public bool Match(List<EmittedInstruction> instructions, int index)
             {
                 const int NumInstructions = 2; // Target -> IOFFSET_U8 0
 
                 if (index >= (instructions.Count - NumInstructions + 1))
                 {
-                    numInstructionToReplace = 0;
-                    replacementInstruction = default;
                     return false;
                 }
 
@@ -220,56 +223,151 @@
                 if (inst0.HasValue && inst0.Value.Opcode == Target &&
                     inst1 is (Opcode.IOFFSET_U8, _) && System.Convert.ToInt32(inst1.Value.Operands[0]) == 0)
                 {
-                    numInstructionToReplace = NumInstructions;
-                    replacementInstruction = new() { Instruction = inst0 };
+                    instructions[index] = new() { Instruction = inst0 };
+                    for (int i = 1; i < NumInstructions; i++)
+                    {
+                        instructions.RemoveAt(index + 1);
+                    }
                     return true;
                 }
 
-                numInstructionToReplace = 0;
-                replacementInstruction = default;
                 return false;
             }
         }
 
-        public sealed class AddU8Pattern : IPattern
+        /// <summary>
+        /// Merges a PUSH_CONST_S16 instruction followed by IADD/IMUL to IADD_S16/IMUL_S16.
+        /// </summary>
+        public sealed class AddMulS16Pattern : IPattern
         {
-            public AddU8Pattern()
+            public AddMulS16Pattern()
             {
             }
 
-            public bool Match(List<EmittedInstruction> instructions, int index, out EmittedInstruction replacementInstruction, out int numInstructionToReplace)
+            public bool Match(List<EmittedInstruction> instructions, int index)
             {
-                const int NumInstructions = 2; // Target -> IOFFSET_U8 0
-
-                if (index >= (instructions.Count - NumInstructions + 1))
+                if (index >= (instructions.Count - 1))
                 {
-                    numInstructionToReplace = 0;
-                    replacementInstruction = default;
                     return false;
                 }
 
                 var inst0 = instructions[index + 0].Instruction;
                 var inst1 = instructions[index + 1].Instruction;
-                if (inst0 is ((>= Opcode.PUSH_CONST_0 and <= Opcode.PUSH_CONST_7) or Opcode.PUSH_CONST_U8, _) &&
-                    inst1 is (Opcode.IADD, _))
+                if (inst1 is not (Opcode.IADD or Opcode.IMUL, _))
                 {
-                    numInstructionToReplace = NumInstructions;
-                    replacementInstruction = new() { Instruction = (Opcode.IADD_U8, new[] { GetValueOperand(inst0.Value) }) };
+                    return false;
+                }
+
+                if (inst0 is (Opcode.PUSH_CONST_S16, _))
+                {
+                    var newOpcode = inst1.Value.Opcode switch { Opcode.IADD => Opcode.IADD_S16, Opcode.IMUL => Opcode.IMUL_S16, _ => throw new NotImplementedException() };
+                    instructions[index + 0] = new() { Instruction = (newOpcode, new[] { inst0.Value.Operands[0] }) };
+                    instructions.RemoveAt(index + 1);
                     return true;
                 }
 
-                numInstructionToReplace = 0;
-                replacementInstruction = default;
                 return false;
             }
+        }
 
-            private object GetValueOperand((Opcode Opcode, object[] Operands) i)
-                => i.Opcode switch
+        /// <summary>
+        /// Merges a PUSH_CONST_U8 instruction followed by IADD/IMUL to IADD_U8/IMUL_U8.
+        /// </summary>
+        public sealed class AddMulU8Pattern : IPattern
+        {
+            public AddMulU8Pattern()
+            {
+            }
+
+            public bool Match(List<EmittedInstruction> instructions, int index)
+            {
+                if (index >= (instructions.Count - 1))
                 {
-                    >= Opcode.PUSH_CONST_0 and <= Opcode.PUSH_CONST_7 => (int)(i.Opcode - Opcode.PUSH_CONST_0),
-                    Opcode.PUSH_CONST_U8 => i.Operands[0],
-                    _ => throw new System.NotImplementedException(),
-                };
+                    return false;
+                }
+
+                var inst0 = instructions[index + 0].Instruction;
+                var inst1 = instructions[index + 1].Instruction;
+                if (inst1 is not (Opcode.IADD or Opcode.IMUL, _))
+                {
+                    return false;
+                }
+
+                var newOpcode = inst1.Value.Opcode switch { Opcode.IADD => Opcode.IADD_U8, Opcode.IMUL => Opcode.IMUL_U8, _ => throw new NotImplementedException() };
+                if (inst0 is (>= Opcode.PUSH_CONST_0 and <= Opcode.PUSH_CONST_7, _))
+                {
+                    instructions[index] = new() { Instruction = (newOpcode, new object[] { (int)(inst0.Value.Opcode - Opcode.PUSH_CONST_0) }) };
+                    instructions.RemoveAt(index + 1);
+                    return true;
+                }
+                else if (inst0 is (Opcode.PUSH_CONST_U8, _))
+                {
+                    instructions[index + 0] = new() { Instruction = (newOpcode, new[] { inst0.Value.Operands[0] }) };
+                    instructions.RemoveAt(index + 1);
+                    return true;
+                }
+                else if (inst0 is (Opcode.PUSH_CONST_U8_U8, _))
+                {
+                    var operands = inst0.Value.Operands;
+                    instructions[index + 0] = new() { Instruction = (Opcode.PUSH_CONST_U8, new[] { operands[0] }) };
+                    instructions[index + 1] = new() { Instruction = (newOpcode, new[] { operands[1] }) };
+                    return true;
+                }
+                else if (inst0 is (Opcode.PUSH_CONST_U8_U8_U8, _))
+                {
+                    var operands = inst0.Value.Operands;
+                    instructions[index + 0] = new() { Instruction = (Opcode.PUSH_CONST_U8_U8, new[] { operands[0], operands[1] }) };
+                    instructions[index + 1] = new() { Instruction = (newOpcode, new[] { operands[2] }) };
+                    return true;
+                }
+
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Merges sequential PUSH_CONST_U8 instructions to PUSH_CONST_U8_U8 and PUSH_CONST_U8_U8_U8.
+        /// </summary>
+        public sealed class PushConstU8Pattern : IPattern
+        {
+            public PushConstU8Pattern()
+            {
+            }
+
+            public bool Match(List<EmittedInstruction> instructions, int index)
+            {
+                const int NumInstructions = 2; // PUSH_CONST_U8_* -> PUSH_CONST_U8
+
+                if (index >= (instructions.Count - NumInstructions + 1))
+                {
+                    return false;
+                }
+
+                var inst0 = instructions[index + 0].Instruction;
+                var inst1 = instructions[index + 1].Instruction;
+                if (inst0 is (Opcode.PUSH_CONST_U8 or Opcode.PUSH_CONST_U8_U8, _) &&
+                    inst1 is (Opcode.PUSH_CONST_U8, _))
+                {
+                    Opcode newOpcode;
+                    object[] newArgs;
+                    if (inst0 is (Opcode.PUSH_CONST_U8, _))
+                    {
+                        newOpcode = Opcode.PUSH_CONST_U8_U8;
+                        newArgs = new[] { inst0.Value.Operands[0], inst1.Value.Operands[0] };
+                    }
+                    else
+                    {
+                        newOpcode = Opcode.PUSH_CONST_U8_U8_U8;
+                        newArgs = new[] { inst0.Value.Operands[0], inst0.Value.Operands[1], inst1.Value.Operands[0] };
+                    }
+
+                    instructions[index] = new() { Instruction = (newOpcode, newArgs) };
+                    instructions.RemoveAt(index + 1);
+                    return true;
+                }
+
+                return false;
+            }
         }
     }
 }
