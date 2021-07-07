@@ -799,9 +799,35 @@
                 LOCAL_U8_STORE 3
                 LOCAL_U8_LOAD 2
                 LOCAL_U8_LOAD 3
-                IGT
-                JZ endif
+                IGT_JZ endif
                 PUSH_CONST_U8 15
+                LOCAL_U8_STORE 2
+            endif:
+                LEAVE 0, 0
+            ");
+        }
+
+        [Fact]
+        public void TestIfStatement2()
+        {
+            CompileMain(
+            source: @"
+                FLOAT n = 5.0, m = 10.0
+                IF n > m
+                    n = 15.0
+                ENDIF
+            ",
+            expectedAssembly: @"
+                ENTER 0, 4
+                PUSH_CONST_F5
+                LOCAL_U8_STORE 2
+                PUSH_CONST_F 10.0
+                LOCAL_U8_STORE 3
+                LOCAL_U8_LOAD 2
+                LOCAL_U8_LOAD 3
+                FGT
+                JZ endif
+                PUSH_CONST_F 15.0
                 LOCAL_U8_STORE 2
             endif:
                 LEAVE 0, 0
@@ -828,13 +854,45 @@
                 LOCAL_U8_STORE 3
                 LOCAL_U8_LOAD 2
                 LOCAL_U8_LOAD 3
-                ILE
-                JZ else
+                ILE_JZ else
                 PUSH_CONST_U8 15
                 LOCAL_U8_STORE 2
                 J endif
             else:
                 PUSH_CONST_U8 15
+                LOCAL_U8_STORE 3
+            endif:
+                LEAVE 0, 0
+            ");
+        }
+
+        [Fact]
+        public void TestIfElseStatement2()
+        {
+            CompileMain(
+            source: @"
+                FLOAT n = 5.0, m = 10.0
+                IF n <= m
+                    n = 15.0
+                ELSE
+                    m = 15.0
+                ENDIF
+            ",
+            expectedAssembly: @"
+                ENTER 0, 4
+                PUSH_CONST_F5
+                LOCAL_U8_STORE 2
+                PUSH_CONST_F 10.0
+                LOCAL_U8_STORE 3
+                LOCAL_U8_LOAD 2
+                LOCAL_U8_LOAD 3
+                FLE
+                JZ else
+                PUSH_CONST_F 15.0
+                LOCAL_U8_STORE 2
+                J endif
+            else:
+                PUSH_CONST_F 15.0
                 LOCAL_U8_STORE 3
             endif:
                 LEAVE 0, 0
@@ -861,17 +919,52 @@
                 LOCAL_U8_STORE 3
                 LOCAL_U8_LOAD 2
                 LOCAL_U8_LOAD 3
-                IGT
-                JZ elif
+                IGT_JZ elif
                 PUSH_CONST_U8 15
                 LOCAL_U8_STORE 2
                 J endif
             elif:
                 LOCAL_U8_LOAD 2
                 LOCAL_U8_LOAD 3
-                ILT
-                JZ endif
+                ILT_JZ endif
                 PUSH_CONST_U8 15
+                LOCAL_U8_STORE 3
+            endif:
+                LEAVE 0, 0
+            ");
+        }
+
+        [Fact]
+        public void TestIfElifStatement2()
+        {
+            CompileMain(
+            source: @"
+                FLOAT n = 5.0, m = 10.0
+                IF n > m
+                    n = 15.0
+                ELIF n < m
+                    m = 15.0
+                ENDIF
+            ",
+            expectedAssembly: @"
+                ENTER 0, 4
+                PUSH_CONST_F5
+                LOCAL_U8_STORE 2
+                PUSH_CONST_F 10.0
+                LOCAL_U8_STORE 3
+                LOCAL_U8_LOAD 2
+                LOCAL_U8_LOAD 3
+                FGT
+                JZ elif
+                PUSH_CONST_F 15.0
+                LOCAL_U8_STORE 2
+                J endif
+            elif:
+                LOCAL_U8_LOAD 2
+                LOCAL_U8_LOAD 3
+                FLT
+                JZ endif
+                PUSH_CONST_F 15.0
                 LOCAL_U8_STORE 3
             endif:
                 LEAVE 0, 0
@@ -900,21 +993,62 @@
                 LOCAL_U8_STORE 3
                 LOCAL_U8_LOAD 2
                 LOCAL_U8_LOAD 3
-                IGT
-                JZ elif
+                IGT_JZ elif
                 PUSH_CONST_U8 15
                 LOCAL_U8_STORE 2
                 J endif
             elif:
                 LOCAL_U8_LOAD 2
                 LOCAL_U8_LOAD 3
-                ILT
-                JZ else
+                ILT_JZ else
                 PUSH_CONST_U8 15
                 LOCAL_U8_STORE 3
                 J endif
             else:
                 PUSH_CONST_U8 20
+                LOCAL_U8_STORE 3
+            endif:
+                LEAVE 0, 0
+            ");
+        }
+
+        [Fact]
+        public void TestIfElifElseStatement2()
+        {
+            CompileMain(
+            source: @"
+                FLOAT n = 5.0, m = 10.0
+                IF n > m
+                    n = 15.0
+                ELIF n < m
+                    m = 15.0
+                ELSE
+                    m = 20.0
+                ENDIF
+            ",
+            expectedAssembly: @"
+                ENTER 0, 4
+                PUSH_CONST_F5
+                LOCAL_U8_STORE 2
+                PUSH_CONST_F 10.0
+                LOCAL_U8_STORE 3
+                LOCAL_U8_LOAD 2
+                LOCAL_U8_LOAD 3
+                FGT
+                JZ elif
+                PUSH_CONST_F 15.0
+                LOCAL_U8_STORE 2
+                J endif
+            elif:
+                LOCAL_U8_LOAD 2
+                LOCAL_U8_LOAD 3
+                FLT
+                JZ else
+                PUSH_CONST_F 15.0
+                LOCAL_U8_STORE 3
+                J endif
+            else:
+                PUSH_CONST_F 20.0
                 LOCAL_U8_STORE 3
             endif:
                 LEAVE 0, 0

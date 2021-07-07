@@ -71,6 +71,8 @@
             new AddMulU8Pattern(),
 
             new PushConstU8Pattern(),
+
+            new IntCompareAndJZPattern(),
         };
 
         public IEnumerable<EmittedInstruction> Optimize(List<EmittedInstruction> instructions)
@@ -362,6 +364,41 @@
                     }
 
                     instructions[index] = new() { Instruction = (newOpcode, newArgs) };
+                    instructions.RemoveAt(index + 1);
+                    return true;
+                }
+
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Merges a IEQ/INE/IGT/IGE/ILT/ILE instruction followed by JZ to IEQ_JZ/INE_JZ/IGT_JZ/IGE_JZ/ILT_JZ/ILE_JZ.
+        /// </summary>
+        public sealed class IntCompareAndJZPattern : IPattern
+        {
+            public IntCompareAndJZPattern()
+            {
+            }
+
+            public bool Match(List<EmittedInstruction> instructions, int index)
+            {
+                if (index >= (instructions.Count - 1))
+                {
+                    return false;
+                }
+
+                var inst0 = instructions[index + 0].Instruction;
+                var inst1 = instructions[index + 1].Instruction;
+                if (inst1 is not (Opcode.JZ, _))
+                {
+                    return false;
+                }
+
+                if (inst0 is (>= Opcode.IEQ and <= Opcode.ILE, _))
+                {
+                    var newOpcode = Opcode.IEQ_JZ + (inst0.Value.Opcode - Opcode.IEQ);
+                    instructions[index + 0] = new() { Instruction = (newOpcode, new[] { inst1.Value.Operands[0] }) };
                     instructions.RemoveAt(index + 1);
                     return true;
                 }
