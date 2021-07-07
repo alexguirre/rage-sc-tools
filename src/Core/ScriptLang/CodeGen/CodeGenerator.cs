@@ -307,8 +307,10 @@
                     Emit(Opcode.IOFFSET_S16, offset);
                     break;
 
-                // TODO: support IOFFSET opcode
-                default: Debug.Assert(false, "Offset too big"); break;
+                default:
+                    EmitPushConstInt(offset);
+                    Emit(Opcode.IOFFSET);
+                    break;
             }
         }
 

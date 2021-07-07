@@ -1272,6 +1272,99 @@
         }
 
         [Fact]
+        public void TestBigStructFieldAssignment()
+        {
+            CompileMain(
+            source: @"
+                pair.v1 = <<10.0, 20.0, 30.0>>
+                pair.v2 = <<0.0, 0.0, 0.0>>
+            ",
+            sourceStatics: @"
+                VPAIR pair
+                STRUCT VPAIR
+                    INT padding[99999]
+                    VECTOR v1, v2
+                ENDSTRUCT
+            ",
+            expectedAssembly: @"
+                ENTER 0, 2
+
+                ; pair.v1 = <<10.0, 20.0, 30.0>>
+                PUSH_CONST_F 10.0
+                PUSH_CONST_F 20.0
+                PUSH_CONST_F 30.0
+                PUSH_CONST_3
+                STATIC_U8 0
+                PUSH_CONST_U24 100000
+                IOFFSET
+                STORE_N
+
+                ; pair.v2 = <<0.0, 0.0, 0.0>>
+                PUSH_CONST_F0
+                PUSH_CONST_F0
+                PUSH_CONST_F0
+                PUSH_CONST_3
+                STATIC_U8 0
+                PUSH_CONST_U24 100003
+                IOFFSET
+                STORE_N
+
+                LEAVE 0, 0
+
+                .static
+                .int 99999, 99999 dup (0)
+                .float 6 dup (0.0)
+            ");
+        }
+
+        [Fact]
+        public void TestBigStructFieldAccess()
+        {
+            CompileMain(
+            source: @"
+                VECTOR v
+                v = pair.v1
+                v = pair.v2
+            ",
+            sourceStatics: @"
+                VPAIR pair
+                STRUCT VPAIR
+                    INT padding[99999]
+                    VECTOR v1, v2
+                ENDSTRUCT
+            ",
+            expectedAssembly: @"
+                ENTER 0, 5
+
+                ; v = pair.v1
+                PUSH_CONST_3
+                STATIC_U8 0
+                PUSH_CONST_U24 100000
+                IOFFSET
+                LOAD_N
+                PUSH_CONST_3
+                LOCAL_U8 2
+                STORE_N
+
+                ; v = pair.v2
+                PUSH_CONST_3
+                STATIC_U8 0
+                PUSH_CONST_U24 100003
+                IOFFSET
+                LOAD_N
+                PUSH_CONST_3
+                LOCAL_U8 2
+                STORE_N
+
+                LEAVE 0, 0
+
+                .static
+                .int 99999, 99999 dup (0)
+                .float 6 dup (0.0)
+            ");
+        }
+
+        [Fact]
         public void TestVectorFieldAssignment()
         {
             CompileMain(
