@@ -3568,30 +3568,32 @@
 
         private static void CompileRaw(string source, string expectedAssembly, NativeDB? nativeDB = null)
         {
+            nativeDB ??= NativeDB.Empty;
+
             using var sourceReader = new StringReader(source);
             var d = new DiagnosticsReport();
             var p = new Parser(sourceReader, "test.sc");
             p.Parse(d);
 
             var globalSymbols = GlobalSymbolTableBuilder.Build(p.OutputAst, d);
-            IdentificationVisitor.Visit(p.OutputAst, d, globalSymbols);
+            IdentificationVisitor.Visit(p.OutputAst, d, globalSymbols, nativeDB);
             TypeChecker.Check(p.OutputAst, d, globalSymbols);
 
             Assert.False(d.HasErrors);
 
             using var sink = new StringWriter();
-            new CodeGenerator(sink, p.OutputAst, globalSymbols, d, nativeDB ?? NativeDB.Empty).Generate();
+            new CodeGenerator(sink, p.OutputAst, globalSymbols, d, nativeDB).Generate();
             var s = sink.ToString();
 
             Assert.False(d.HasErrors);
 
             using var sourceAssemblyReader = new StringReader(s);
-            var sourceAssembler = Assembler.Assemble(sourceAssemblyReader, "test.scasm", nativeDB ?? NativeDB.Empty, options: new() { IncludeFunctionNames = true });
+            var sourceAssembler = Assembler.Assemble(sourceAssemblyReader, "test.scasm", nativeDB, options: new() { IncludeFunctionNames = true });
 
             Assert.False(sourceAssembler.Diagnostics.HasErrors);
 
             using var expectedAssemblyReader = new StringReader(expectedAssembly);
-            var expectedAssembler = Assembler.Assemble(expectedAssemblyReader, "test_expected.scasm", nativeDB ?? NativeDB.Empty, options: new() { IncludeFunctionNames = true });
+            var expectedAssembler = Assembler.Assemble(expectedAssemblyReader, "test_expected.scasm", nativeDB, options: new() { IncludeFunctionNames = true });
 
             using StringWriter sourceDumpWriter = new(), expectedDumpWriter = new();
             new Dumper(sourceAssembler.OutputScript).Dump(sourceDumpWriter, true, true, true, true, true);

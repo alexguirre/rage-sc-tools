@@ -268,7 +268,7 @@
 
             LoadGTA5Keys();
 
-            NativeDB nativeDB = null;
+            NativeDB nativeDB = NativeDB.Empty;
             if (options.NativeDB != null)
             {
                 nativeDB = NativeDB.FromJson(File.ReadAllText(options.NativeDB.FullName));
@@ -288,14 +288,14 @@
 
                     // TODO: refactor this
                     var globalSymbols = GlobalSymbolTableBuilder.Build(p.OutputAst, d);
-                    IdentificationVisitor.Visit(p.OutputAst, d, globalSymbols);
+                    IdentificationVisitor.Visit(p.OutputAst, d, globalSymbols, nativeDB);
                     TypeChecker.Check(p.OutputAst, d, globalSymbols);
 
                     var sourceAssembly = "";
                     if (!d.HasErrors)
                     {
                         using var sink = new StringWriter();
-                        new CodeGenerator(sink, p.OutputAst, globalSymbols, d, nativeDB ?? NativeDB.Empty).Generate();
+                        new CodeGenerator(sink, p.OutputAst, globalSymbols, d, nativeDB).Generate();
                         sourceAssembly = sink.ToString();
                     }
 
@@ -303,7 +303,7 @@
                     if (!d.HasErrors)
                     {
                         using var sourceAssemblyReader = new StringReader(sourceAssembly);
-                        var sourceAssembler = Assembler.Assemble(sourceAssemblyReader, Path.ChangeExtension(inputFile.FullName, "scasm"), nativeDB ?? NativeDB.Empty, options: new() { IncludeFunctionNames = true });
+                        var sourceAssembler = Assembler.Assemble(sourceAssemblyReader, Path.ChangeExtension(inputFile.FullName, "scasm"), nativeDB, options: new() { IncludeFunctionNames = true });
 
                         if (sourceAssembler.Diagnostics.HasErrors)
                         {

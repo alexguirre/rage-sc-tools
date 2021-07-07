@@ -11,7 +11,7 @@
     public class IdentificationTests
     {
         [Fact]
-        public void TestMissingMain()
+        public void TestMissingScript()
         {
             var d = ParseAndIdentify($@"");
 
@@ -19,7 +19,62 @@
             Assert.Single(d.Errors);
         }
 
-        private static DiagnosticsReport ParseAndIdentify(string source)
+        [Fact]
+        public void TestKnownNative()
+        {
+            var nativeDB = NativeDB.FromJson(@"
+            {
+                ""TranslationTable"": [[1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317]],
+                ""HashToRows"": [{ ""Hash"": 1234605617868164317, ""Rows"": [ 0 ] }],
+                ""Commands"": [{
+                      ""Hash"": 1234605617868164317,
+                      ""Name"": ""TEST"",
+                      ""Build"": 323,
+                      ""Parameters"": [{ ""Type"": ""int"", ""Name"": ""a""}, { ""Type"": ""int"", ""Name"": ""b""}],
+                      ""ReturnType"": ""void""
+                    }
+                ]
+            }");
+
+            var d = ParseAndIdentify($@"
+                NATIVE PROC TEST(INT a, INT b)
+
+                SCRIPT test_script
+                ENDSCRIPT
+            ", nativeDB);
+
+            Assert.False(d.HasErrors);
+        }
+
+        [Fact]
+        public void TestUnknownNative()
+        {
+            var nativeDB = NativeDB.FromJson(@"
+            {
+                ""TranslationTable"": [[1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317, 1234605617868164317]],
+                ""HashToRows"": [{ ""Hash"": 1234605617868164317, ""Rows"": [ 0 ] }],
+                ""Commands"": [{
+                      ""Hash"": 1234605617868164317,
+                      ""Name"": ""TEST"",
+                      ""Build"": 323,
+                      ""Parameters"": [{ ""Type"": ""int"", ""Name"": ""a""}, { ""Type"": ""int"", ""Name"": ""b""}],
+                      ""ReturnType"": ""void""
+                    }
+                ]
+            }");
+
+            var d = ParseAndIdentify($@"
+                NATIVE PROC UNKNOWN_TEST(INT a, INT b)
+
+                SCRIPT test_script
+                ENDSCRIPT
+            ", nativeDB);
+
+            Assert.True(d.HasErrors);
+            Assert.Single(d.Errors);
+        }
+
+        private static DiagnosticsReport ParseAndIdentify(string source, NativeDB? nativeDB = null)
         {
             using var sourceReader = new StringReader($@"
                 {source}");
@@ -28,7 +83,7 @@
             p.Parse(d);
 
             var globalSymbols = GlobalSymbolTableBuilder.Build(p.OutputAst, d);
-            IdentificationVisitor.Visit(p.OutputAst, d, globalSymbols);
+            IdentificationVisitor.Visit(p.OutputAst, d, globalSymbols, nativeDB ?? NativeDB.Empty);
             return d;
         }
     }

@@ -527,7 +527,7 @@
             p.Parse(d);
 
             var globalSymbols = GlobalSymbolTableBuilder.Build(p.OutputAst, d);
-            IdentificationVisitor.Visit(p.OutputAst, d, globalSymbols);
+            IdentificationVisitor.Visit(p.OutputAst, d, globalSymbols, NativeDB.Empty);
             TypeChecker.Check(p.OutputAst, d, globalSymbols);
 
             return d;

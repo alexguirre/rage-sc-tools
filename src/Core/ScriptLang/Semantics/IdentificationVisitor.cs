@@ -30,12 +30,18 @@
 
         public DiagnosticsReport Diagnostics { get; }
         public ScopeSymbolTable Symbols { get; }
+        public NativeDB NativeDB { get; }
 
-        private IdentificationVisitor(DiagnosticsReport diagnostics, GlobalSymbolTable symbols)
-            => (Diagnostics, Symbols) = (diagnostics, new(symbols));
+        private IdentificationVisitor(DiagnosticsReport diagnostics, GlobalSymbolTable symbols, NativeDB nativeDB)
+            => (Diagnostics, Symbols, NativeDB) = (diagnostics, new(symbols), nativeDB);
 
         public override Void Visit(FuncDeclaration node, Void param)
         {
+            if (node.Prototype.Kind is FuncKind.Native && NativeDB.FindOriginalHash(node.Name) == null)
+            {
+                Diagnostics.AddError($"Unknown native '{node.Name}'", node.Source);
+            }
+
             currFuncLabels = LabelSymbolTableBuilder.Build(node, Diagnostics);
             Symbols.PushScope();
             base.Visit(node, param);
@@ -60,7 +66,6 @@
             {
                 base.Visit(node, param);
             }
-
 
             return DefaultReturn;
         }
@@ -239,9 +244,9 @@
             return DefaultReturn;
         }
 
-        public static void Visit(Program root, DiagnosticsReport diagnostics, GlobalSymbolTable symbols)
+        public static void Visit(Program root, DiagnosticsReport diagnostics, GlobalSymbolTable symbols, NativeDB nativeDB)
         {
-            root.Accept(new IdentificationVisitor(diagnostics, symbols), default);
+            root.Accept(new IdentificationVisitor(diagnostics, symbols, nativeDB), default);
             root.Accept(new RemoveNamedTypesVisitor(), default);
         }
     }

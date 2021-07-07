@@ -138,7 +138,6 @@
 
             var natives = nativesDecls.Select(decl =>
             {
-                // TODO: check that the natives exist in the semantic analysis
                 var hash = NativeDB.FindOriginalHash(decl.Name) ?? throw new InvalidOperationException($"Unknown native '{decl.Name}'");
                 return (decl.Name, hash);
             });
