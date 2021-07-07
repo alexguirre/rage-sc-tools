@@ -137,151 +137,38 @@
     {
         public const int NumberOfOpcodes = 127;
 
-        public static ref readonly Instruction Instruction(this Opcode opcode) => ref ScriptAssembly.Instruction.Set[(byte)opcode];
-        public static bool IsJump(this Opcode opcode) => opcode.Instruction().IsJump;
-        public static bool IsControlFlow(this Opcode opcode) => opcode.Instruction().IsControlFlow;
-        public static string Mnemonic(this Opcode opcode) => opcode.Instruction().Mnemonic;
+        public static bool IsJump(this Opcode opcode)
+            => opcode is Opcode.J or Opcode.JZ or
+                         Opcode.IEQ_JZ or Opcode.INE_JZ or Opcode.IGT_JZ or
+                         Opcode.IGE_JZ or Opcode.ILT_JZ or Opcode.ILE_JZ;
 
-        public static int ByteSize(this Opcode opcode) => (int)opcode < NumberOfOpcodes ? InstructionSizes[(int)opcode] : 0;
+        public static bool IsControlFlow(this Opcode opcode)
+            => IsJump(opcode) ||
+               opcode is Opcode.LEAVE or Opcode.CALL or Opcode.SWITCH or Opcode.THROW or Opcode.CALLINDIRECT;
+
+        public static string Mnemonic(this Opcode opcode) => opcode.ToString();
 
         /// <returns>
-        /// The number of operands required by <see cref="opcode"/>; or, <c>-1</c> if it accepts a variable number of operands, like <see cref="Opcode.SWITCH"/>.
+        /// The byte size of a instruction with this <paramref name="opcode"/>; or, <c>0</c> if the size is variable (i.e. <paramref name="opcode"/> is <see cref="Opcode.CALL"/> or <see cref="Opcode.SWITCH"/>).
         /// </returns>
-        public static int GetNumberOfOperands(this Opcode opcode)
-            => opcode switch
-            {
-                Opcode.NOP => 0,
-                Opcode.IADD => 0,
-                Opcode.ISUB => 0,
-                Opcode.IMUL => 0,
-                Opcode.IDIV => 0,
-                Opcode.IMOD => 0,
-                Opcode.INOT => 0,
-                Opcode.INEG => 0,
-                Opcode.IEQ => 0,
-                Opcode.INE => 0,
-                Opcode.IGT => 0,
-                Opcode.IGE => 0,
-                Opcode.ILT => 0,
-                Opcode.ILE => 0,
-                Opcode.FADD => 0,
-                Opcode.FSUB => 0,
-                Opcode.FMUL => 0,
-                Opcode.FDIV => 0,
-                Opcode.FMOD => 0,
-                Opcode.FNEG => 0,
-                Opcode.FEQ => 0,
-                Opcode.FNE => 0,
-                Opcode.FGT => 0,
-                Opcode.FGE => 0,
-                Opcode.FLT => 0,
-                Opcode.FLE => 0,
-                Opcode.VADD => 0,
-                Opcode.VSUB => 0,
-                Opcode.VMUL => 0,
-                Opcode.VDIV => 0,
-                Opcode.VNEG => 0,
-                Opcode.IAND => 0,
-                Opcode.IOR => 0,
-                Opcode.IXOR => 0,
-                Opcode.I2F => 0,
-                Opcode.F2I => 0,
-                Opcode.F2V => 0,
-                Opcode.PUSH_CONST_U8 => 1,
-                Opcode.PUSH_CONST_U8_U8 => 2,
-                Opcode.PUSH_CONST_U8_U8_U8 => 3,
-                Opcode.PUSH_CONST_U32 => 1,
-                Opcode.PUSH_CONST_F => 1,
-                Opcode.DUP => 0,
-                Opcode.DROP => 0,
-                Opcode.NATIVE => 3,
-                Opcode.ENTER => 2,
-                Opcode.LEAVE => 2,
-                Opcode.LOAD => 0,
-                Opcode.STORE => 0,
-                Opcode.STORE_REV => 0,
-                Opcode.LOAD_N => 0,
-                Opcode.STORE_N => 0,
-                Opcode.ARRAY_U8 => 1,
-                Opcode.ARRAY_U8_LOAD => 1,
-                Opcode.ARRAY_U8_STORE => 1,
-                Opcode.LOCAL_U8 => 1,
-                Opcode.LOCAL_U8_LOAD => 1,
-                Opcode.LOCAL_U8_STORE => 1,
-                Opcode.STATIC_U8 => 1,
-                Opcode.STATIC_U8_LOAD => 1,
-                Opcode.STATIC_U8_STORE => 1,
-                Opcode.IADD_U8 => 1,
-                Opcode.IMUL_U8 => 1,
-                Opcode.IOFFSET => 0,
-                Opcode.IOFFSET_U8 => 1,
-                Opcode.IOFFSET_U8_LOAD => 1,
-                Opcode.IOFFSET_U8_STORE => 1,
-                Opcode.PUSH_CONST_S16 => 1,
-                Opcode.IADD_S16 => 1,
-                Opcode.IMUL_S16 => 1,
-                Opcode.IOFFSET_S16 => 1,
-                Opcode.IOFFSET_S16_LOAD => 1,
-                Opcode.IOFFSET_S16_STORE => 1,
-                Opcode.ARRAY_U16 => 1,
-                Opcode.ARRAY_U16_LOAD => 1,
-                Opcode.ARRAY_U16_STORE => 1,
-                Opcode.LOCAL_U16 => 1,
-                Opcode.LOCAL_U16_LOAD => 1,
-                Opcode.LOCAL_U16_STORE => 1,
-                Opcode.STATIC_U16 => 1,
-                Opcode.STATIC_U16_LOAD => 1,
-                Opcode.STATIC_U16_STORE => 1,
-                Opcode.GLOBAL_U16 => 1,
-                Opcode.GLOBAL_U16_LOAD => 1,
-                Opcode.GLOBAL_U16_STORE => 1,
-                Opcode.J => 1,
-                Opcode.JZ => 1,
-                Opcode.IEQ_JZ => 1,
-                Opcode.INE_JZ => 1,
-                Opcode.IGT_JZ => 1,
-                Opcode.IGE_JZ => 1,
-                Opcode.ILT_JZ => 1,
-                Opcode.ILE_JZ => 1,
-                Opcode.CALL => 1,
-                Opcode.GLOBAL_U24 => 1,
-                Opcode.GLOBAL_U24_LOAD => 1,
-                Opcode.GLOBAL_U24_STORE => 1,
-                Opcode.PUSH_CONST_U24 => 1,
-                Opcode.SWITCH => -1,
-                Opcode.STRING => 0,
-                Opcode.STRINGHASH => 0,
-                Opcode.TEXT_LABEL_ASSIGN_STRING => 1,
-                Opcode.TEXT_LABEL_ASSIGN_INT => 1,
-                Opcode.TEXT_LABEL_APPEND_STRING => 1,
-                Opcode.TEXT_LABEL_APPEND_INT => 1,
-                Opcode.TEXT_LABEL_COPY => 0,
-                Opcode.CATCH => 0,
-                Opcode.THROW => 0,
-                Opcode.CALLINDIRECT => 0,
-                Opcode.PUSH_CONST_M1 => 0,
-                Opcode.PUSH_CONST_0 => 0,
-                Opcode.PUSH_CONST_1 => 0,
-                Opcode.PUSH_CONST_2 => 0,
-                Opcode.PUSH_CONST_3 => 0,
-                Opcode.PUSH_CONST_4 => 0,
-                Opcode.PUSH_CONST_5 => 0,
-                Opcode.PUSH_CONST_6 => 0,
-                Opcode.PUSH_CONST_7 => 0,
-                Opcode.PUSH_CONST_FM1 => 0,
-                Opcode.PUSH_CONST_F0 => 0,
-                Opcode.PUSH_CONST_F1 => 0,
-                Opcode.PUSH_CONST_F2 => 0,
-                Opcode.PUSH_CONST_F3 => 0,
-                Opcode.PUSH_CONST_F4 => 0,
-                Opcode.PUSH_CONST_F5 => 0,
-                Opcode.PUSH_CONST_F6 => 0,
-                Opcode.PUSH_CONST_F7 => 0,
-                _ => throw new ArgumentException($"Unknown opcode '{opcode}'", nameof(opcode)),
-            };
+        public static int ByteSize(this Opcode opcode)
+            => (int)opcode < NumberOfOpcodes ? ByteSizeTable[(int)opcode] : throw new ArgumentException($"Unknown opcode '{opcode}'", nameof(opcode));
 
+        /// <returns>
+        /// The number of operands required by <see cref="opcode"/>; or, <c>-1</c> if it accepts a variable number of operands (i.e. <paramref name="opcode"/> is <see cref="Opcode.SWITCH"/>).
+        /// </returns>
+        public static int NumberOfOperands(this Opcode opcode)
+            => (int)opcode < NumberOfOpcodes ? NumberOfOperandsTable[(int)opcode] : throw new ArgumentException($"Unknown opcode '{opcode}'", nameof(opcode));
 
-        private static readonly byte[] InstructionSizes = new byte[NumberOfOpcodes]
+        private static readonly sbyte[] NumberOfOperandsTable = new sbyte[NumberOfOpcodes]
+        {
+            0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            0,0,0,0,0,1,2,3,1,1,0,0,3,2,2,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,0,
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            1,1,-1,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        };
+
+        private static readonly byte[] ByteSizeTable = new byte[NumberOfOpcodes]
         {
             1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
             1,1,1,1,1,2,3,4,5,5,1,1,4,0,3,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,1,

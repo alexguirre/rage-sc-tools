@@ -78,7 +78,7 @@ namespace ScTools.ScriptAssembly
         public Assembler(IAssemblySource source)
         {
             AssemblySource = source;
-            Diagnostics = new(source.FilePath);
+            Diagnostics = new();
             OutputScript = new()
             {
                 Name = DefaultScriptName,
@@ -272,7 +272,7 @@ namespace ScTools.ScriptAssembly
                     var constFloat = constDirective.@float();
 
                     var constValue = constInteger != null ?
-                                        new ConstantValue(constInteger.GetText().ParseAsInt()) :
+                                        new ConstantValue(constInteger.GetText().ParseAsInt64()) :
                                         new ConstantValue(constFloat.GetText().ParseAsFloat());
 
                     if (Labels.ContainsKey(constNameStr))
@@ -285,10 +285,13 @@ namespace ScTools.ScriptAssembly
                     }
                     break;
                 case ScAsmParser.IntDirectiveContext intDirective:
-                    WriteIntFloatDirectiveOperands(intDirective.directiveOperandList(), isFloat: false);
+                    WriteIntFloatDirectiveOperands(intDirective.directiveOperandList(), isFloat: false, isInt64: false);
+                    break;
+                case ScAsmParser.Int64DirectiveContext int64Directive:
+                    WriteIntFloatDirectiveOperands(int64Directive.directiveOperandList(), isFloat: false, isInt64: true);
                     break;
                 case ScAsmParser.FloatDirectiveContext floatDirective:
-                    WriteIntFloatDirectiveOperands(floatDirective.directiveOperandList(), isFloat: true);
+                    WriteIntFloatDirectiveOperands(floatDirective.directiveOperandList(), isFloat: true, isInt64: false);
                     break;
                 case ScAsmParser.StrDirectiveContext strDirective:
                     CurrentSegmentBuilder.String(strDirective.@string().GetText()[1..^1].Unescape());
@@ -326,7 +329,7 @@ namespace ScTools.ScriptAssembly
                 return;
             }
 
-            var expectedNumOperands = opcode.GetNumberOfOperands();
+            var expectedNumOperands = opcode.NumberOfOperands();
             var operands = instruction.operandList()?.operand() ?? Array.Empty<ScAsmParser.OperandContext>();
             if (expectedNumOperands != -1 && operands.Length != expectedNumOperands)
             {
@@ -458,7 +461,7 @@ namespace ScTools.ScriptAssembly
             }
 
             var (offset, length) = codeBuilder.Flush();
-            instructions.Add(new(instruction, opcode, offset, length));
+            instructions.Add(new(AssemblySource.FilePath, instruction, opcode, offset, length));
         }
 
         private void AssembleInstruction(Instruction instruction)
@@ -817,7 +820,7 @@ namespace ScTools.ScriptAssembly
             }
         }
 
-        private void WriteIntFloatDirectiveOperands(ScAsmParser.DirectiveOperandListContext operandList, bool isFloat)
+        private void WriteIntFloatDirectiveOperands(ScAsmParser.DirectiveOperandListContext operandList, bool isFloat, bool isInt64)
         {
             foreach (var operand in operandList.directiveOperand())
             {
@@ -832,19 +835,33 @@ namespace ScTools.ScriptAssembly
                             }
                             else
                             {
-                                CurrentSegmentBuilder.Int((int)constValue.Integer); // TODO: check for data loss
+                                if (isInt64)
+                                {
+                                    CurrentSegmentBuilder.Int64(constValue.Integer);
+                                }
+                                else
+                                {
+                                    CurrentSegmentBuilder.Int((int)constValue.Integer); // TODO: check for data loss
+                                }
                             }
                         }
                         break;
                     case ScAsmParser.IntegerDirectiveOperandContext integerOperand:
-                        var intValue = integerOperand.integer().GetText().ParseAsInt();
+                        var intValue = integerOperand.integer().GetText().ParseAsInt64();
                         if (isFloat)
                         {
                             CurrentSegmentBuilder.Float(intValue);
                         }
                         else
                         {
-                            CurrentSegmentBuilder.Int(intValue);
+                            if (isInt64)
+                            {
+                                CurrentSegmentBuilder.Int64(intValue);
+                            }
+                            else
+                            {
+                                CurrentSegmentBuilder.Int((int)intValue); // TODO: check for data loss
+                            }
                         }
                         break;
                     case ScAsmParser.FloatDirectiveOperandContext floatOperand:
@@ -855,23 +872,30 @@ namespace ScTools.ScriptAssembly
                         }
                         else
                         {
-                            CurrentSegmentBuilder.Int((int)Math.Truncate(floatValue));
+                            if (isInt64)
+                            {
+                                CurrentSegmentBuilder.Int64((long)Math.Truncate(floatValue));
+                            }
+                            else
+                            {
+                                CurrentSegmentBuilder.Int((int)Math.Truncate(floatValue));
+                            }
                         }
                         break;
                     case ScAsmParser.DupDirectiveOperandContext dupOperand:
-                        int count = 0;
+                        long count = 0;
                         if (dupOperand.identifier() != null && TryGetConstant(dupOperand.identifier(), out var countConst))
                         {
-                            count = (int)countConst.Integer; // TODO: check for data loss
+                            count = countConst.Integer;
                         }
                         else if (dupOperand.integer() != null)
                         {
-                            count = dupOperand.integer().GetText().ParseAsInt();
+                            count = dupOperand.integer().GetText().ParseAsInt64();
                         }
 
-                        for (int i = 0; i < count; i++)
+                        for (long i = 0; i < count; i++)
                         {
-                            WriteIntFloatDirectiveOperands(dupOperand.directiveOperandList(), isFloat);
+                            WriteIntFloatDirectiveOperands(dupOperand.directiveOperandList(), isFloat, isInt64);
                         }
                         break;
                 }
@@ -919,6 +943,9 @@ namespace ScTools.ScriptAssembly
             }
         }
 
+        private SourceRange Source(ParserRuleContext context) => Source(AssemblySource.FilePath, context);
+        private static SourceRange Source(string filePath, ParserRuleContext context) => SourceRange.FromTokens(filePath, context.Start, context.Stop);
+
         private static (ScriptValue[] Statics, uint StaticsCount, uint ArgsCount) SegmentToStaticsArray(SegmentBuilder staticSegment, SegmentBuilder argSegment)
         {
             var statics = MemoryMarshal.Cast<byte, ScriptValue>(staticSegment.RawDataBuffer);
@@ -949,8 +976,6 @@ namespace ScTools.ScriptAssembly
 
         public static StringComparer CaseInsensitiveComparer => StringComparer.OrdinalIgnoreCase;
 
-        private static SourceRange Source(ParserRuleContext context) => SourceRange.FromTokens(context.Start, context.Stop);
-
         public readonly struct ConstantValue
         {
             public long Integer { get; }
@@ -977,25 +1002,25 @@ namespace ScTools.ScriptAssembly
             public int Offset { get; }
             public int Length { get; }
 
-            public Instruction(ScAsmParser.InstructionContext context, Opcode opcode, int offset, int length)
+            public Instruction(string filePath, ScAsmParser.InstructionContext context, Opcode opcode, int offset, int length)
             {
-                (Source, Opcode, Offset, Length) = (Source(context), opcode, offset, length);
+                (Source, Opcode, Offset, Length) = (Source(filePath, context), opcode, offset, length);
 
                 var operands = context.operandList()?.operand() ?? Array.Empty<ScAsmParser.OperandContext>();
                 var operandsBuilder = ImmutableArray.CreateBuilder<InstructionOperand>(operands.Length);
                 foreach (var operand in operands)
                 {
-                    operandsBuilder.Add(CreateOperand(operand));
+                    operandsBuilder.Add(CreateOperand(filePath, operand));
                 }
                 Operands = operandsBuilder.MoveToImmutable();
 
 
-                static InstructionOperand CreateOperand(ScAsmParser.OperandContext operand)
+                static InstructionOperand CreateOperand(string filePath, ScAsmParser.OperandContext operand)
                 {
                     var start = (LightToken)operand.Start;
                     var stop = (LightToken)operand.Stop;
                     var switchCaseOperands = operand is ScAsmParser.SwitchCaseOperandContext switchCase ?
-                                          new[] { CreateOperand(switchCase.value), CreateOperand(switchCase.jumpTo) } :
+                                          new[] { CreateOperand(filePath, switchCase.value), CreateOperand(filePath, switchCase.jumpTo) } :
                                           Array.Empty<InstructionOperand>();
 
                     return new(
@@ -1008,7 +1033,7 @@ namespace ScTools.ScriptAssembly
                             _ => throw new InvalidOperationException(),
                         },
                         ((LightInputStream)start.InputStream).GetTextMemory(start.StartIndex, stop.StopIndex),
-                        Source(operand),
+                        Source(filePath, operand),
                         switchCaseOperands
                     );
                 }

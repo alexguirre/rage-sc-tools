@@ -1,5 +1,4 @@
-﻿#nullable enable
-namespace ScTools
+﻿namespace ScTools
 {
     using System;
 
@@ -56,18 +55,21 @@ namespace ScTools
         public static readonly SourceRange Unknown = default;
 
         public bool IsUnknown => Start.IsUnknown || End.IsUnknown;
+        public string FilePath { get; }
         public SourceLocation Start { get; }
         public SourceLocation End { get; }
 
-        public SourceRange(SourceLocation start, SourceLocation end) => (Start, End) = (start, end);
+        public SourceRange(string filePath, SourceLocation start, SourceLocation end)
+            => (FilePath, Start, End) = (filePath, start, end);
 
         public override string ToString()
-            => $"{{ {nameof(Start)}: {Start}, {nameof(End)}: {End} }}";
+            => $"{{ {nameof(FilePath)}: '{FilePath}', {nameof(Start)}: {Start}, {nameof(End)}: {End} }}";
 
-        public void Deconstruct(out SourceLocation start, out SourceLocation end) => (start, end) = (Start, End);
+        public void Deconstruct(out string filePath, out SourceLocation start, out SourceLocation end)
+            => (filePath, start, end) = (FilePath, Start, End);
 
         public bool Contains(SourceLocation location) => location >= Start && location <= End;
-        public bool Contains(SourceRange range) => Contains(range.Start) && Contains(range.End);
+        public bool Contains(SourceRange range) => FilePath == range.FilePath && Contains(range.Start) && Contains(range.End);
 
         public bool Equals(SourceRange other) => (Start, End).Equals((other.Start, other.End));
 
@@ -77,10 +79,11 @@ namespace ScTools
         public static bool operator ==(SourceRange left, SourceRange right) => left.Equals(right);
         public static bool operator !=(SourceRange left, SourceRange right) => !left.Equals(right);
 
-        public static SourceRange FromTokens(IToken start, IToken? stop)
+        public static SourceRange FromTokens(string filePath, IToken start, IToken? stop)
         {
             stop ??= start;
-            return new SourceRange((start.Line, start.Column + 1),
+            return new SourceRange(filePath,
+                                   (start.Line, start.Column + 1),
                                    (stop.Line, stop.Column + 1 + Interval.Of(stop.StartIndex, stop.StopIndex).Length));
         }
     }

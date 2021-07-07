@@ -1,5 +1,3 @@
-SCRIPT_NAME spawn_enemies
-
 USING 'lib/entity_commands.sch'
 USING 'lib/misc_commands.sch'
 USING 'lib/pad_commands.sch'
@@ -18,18 +16,20 @@ INT nState = STATE_WAITING_INPUT
 PED_INDEX aEnemies[MAX_ENEMIES]
 INT nEnemyCount = 0
 
-PROC MAIN()
+SCRIPT spawn_enemies
     WHILE TRUE
         WAIT(0)
 
         SWITCH nState
             CASE STATE_WAITING_INPUT
                 CHECK_INPUT()
+                BREAK
             CASE STATE_SPAWNING_ENEMIES
                 TRY_SPAWN_ENEMIES()
+                BREAK
         ENDSWITCH
     ENDWHILE
-ENDPROC
+ENDSCRIPT
 
 PROC CHECK_INPUT()
     IF IS_CONTROL_PRESSED(0, INPUT_CONTEXT_SECONDARY) AND IS_CONTROL_JUST_PRESSED(0, INPUT_CONTEXT)
@@ -42,14 +42,14 @@ PROC CHECK_INPUT()
 ENDPROC
 
 PROC TRY_SPAWN_ENEMIES()
-    SPAWN_ENEMIES()
+    DO_SPAWN_ENEMIES()
     IF nEnemyCount > 0
         nState = STATE_WAITING_INPUT
     ENDIF
 ENDPROC
 
 
-PROC SPAWN_ENEMIES()
+PROC DO_SPAWN_ENEMIES()
     DELETE_ENEMIES()
 
     INT enemyModel = GET_ENEMY_MODEL()

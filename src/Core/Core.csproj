@@ -9,6 +9,7 @@
     <Platforms>x64</Platforms>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

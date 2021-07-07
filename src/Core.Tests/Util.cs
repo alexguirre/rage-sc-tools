@@ -11,26 +11,6 @@
 
     internal static class Util
     {
-        public static Module ParseAndAnalyze(string src, string path = "test.sc")
-        {
-            var m = new Module(path);
-            using var r = new StringReader(src);
-            m.Parse(r);
-            m.DoFirstSemanticAnalysisPass(null);
-            m.DoSecondSemanticAnalysisPass();
-            m.DoBinding();
-            return m;
-        }
-
-        public static Compilation Compile(string src, string path = "test.sc", IUsingSourceResolver? sourceResolver = null)
-        {
-            var c = new Compilation { SourceResolver = sourceResolver };
-            using var r = new StringReader(src);
-            c.SetMainModule(r, path);
-            c.Compile();
-            return c;
-        }
-
         public static Assembler Assemble(string src, string path = "test.sc")
         {
             using var r = new StringReader(src);
@@ -126,17 +106,21 @@
                 }
             }
         }
-    }
 
-    internal sealed class DelegatedUsingResolver : IUsingSourceResolver
-    {
-        public Func<string, string> Resolver { get; }
+        public static uint CalculateHash(ReadOnlySpan<char> s)
+        {
+            uint h = 0;
+            for (int i = 0; i < s.Length; i++)
+            {
+                h += (byte)char.ToLowerInvariant(s[i]);
+                h += (h << 10);
+                h ^= (h >> 6);
+            }
+            h += (h << 3);
+            h ^= (h >> 11);
+            h += (h << 15);
 
-        public DelegatedUsingResolver(Func<string, string> resolver) => Resolver = resolver;
-
-        public string NormalizePath(string usingPath) => usingPath;
-        public bool IsValid(string usingPath) => Resolver(usingPath) != null;
-        public bool HasChanged(string usingPath) => false;
-        public TextReader Resolve(string usingPath) => new StringReader(Resolver(usingPath));
+            return h;
+        }
     }
 }

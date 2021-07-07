@@ -8,6 +8,7 @@
     <Platforms>x64</Platforms>
     <IsPackable>false</IsPackable>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

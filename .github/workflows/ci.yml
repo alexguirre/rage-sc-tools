@@ -50,6 +50,10 @@ jobs:
         run: |
           msbuild sc-tools.sln -p:Configuration=${{ matrix.config }} -p:Platform=x64 -restore
 
+      - name: Run Tests
+        run: |
+          dotnet test --no-build -c ${{ matrix.config }} sc-tools.sln
+
       # TODO: upload artifacts
       # - name: Upload Artifact
       #   uses: actions/upload-artifact@v1

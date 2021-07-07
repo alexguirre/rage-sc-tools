@@ -1,49 +1,57 @@
 grammar ScLang;
 
-script
-    : (topLevelStatement? EOL)* topLevelStatement?
+program
+    : ((directive | declaration)? EOL)* (directive | declaration)? // repeated so a new line is not required at the end of the file, TODO: is there a better way to do this?
     ;
 
-topLevelStatement
-    : K_SCRIPT_NAME identifier                                  #scriptNameStatement
-    | K_SCRIPT_HASH integer                                     #scriptHashStatement
+directive
+    : K_SCRIPT_HASH integer                                             #scriptHashDirective
+    | K_USING string                                                    #usingDirective
+    ;
 
-    | K_USING string                                            #usingStatement
-
-    | K_PROC identifier parameterList EOL
+declaration
+    : K_SCRIPT name=identifier parameterList? EOL
       statementBlock
-      K_ENDPROC                                                 #procedureStatement
-
-    | K_FUNC returnType=identifier identifier parameterList EOL
+      K_ENDSCRIPT                                                           #scriptDeclaration
+      
+    | K_PROC name=identifier parameterList EOL
       statementBlock
-      K_ENDFUNC                                                 #functionStatement
+      K_ENDPROC                                                             #procedureDeclaration
 
-    | K_PROTO K_PROC identifier parameterList                   #procedurePrototypeStatement
-    | K_PROTO K_FUNC returnType=identifier identifier parameterList   #functionPrototypeStatement
+    | K_FUNC returnType=identifier name=identifier parameterList EOL
+      statementBlock
+      K_ENDFUNC                                                             #functionDeclaration
 
-    | K_NATIVE K_PROC identifier parameterList                   #procedureNativeStatement
-    | K_NATIVE K_FUNC returnType=identifier identifier parameterList   #functionNativeStatement
+    | K_PROTO K_PROC name=identifier parameterList                          #procedurePrototypeDeclaration
+    | K_PROTO K_FUNC returnType=identifier name=identifier parameterList    #functionPrototypeDeclaration
+
+    | K_NATIVE K_PROC name=identifier parameterList                         #procedureNativeDeclaration
+    | K_NATIVE K_FUNC returnType=identifier name=identifier parameterList   #functionNativeDeclaration
 
     | K_STRUCT identifier EOL
       structFieldList
-      K_ENDSTRUCT                                               #structStatement
-    
-    | K_CONST declaration                                       #constantVariableStatement
-    | declaration                                               #staticVariableStatement
+      K_ENDSTRUCT                                                       #structDeclaration
+
+    | K_ENUM identifier EOL
+      enumList
+      K_ENDENUM                                                         #enumDeclaration
+
+    | K_CONST varDeclaration                                            #constantVariableDeclaration
+    | varDeclaration                                                    #staticVariableDeclaration
 
     | K_GLOBAL block=integer owner=identifier EOL
-      (declaration? EOL)*
-      K_ENDGLOBAL                                               #globalBlockStatement
+      (varDeclaration? EOL)*
+      K_ENDGLOBAL                                                       #globalBlockDeclaration
     ;
 
 statement
-    : declaration                                               #variableDeclarationStatement
+    : varDeclaration                                                    #variableDeclarationStatement
     | left=expression op=('=' | '*=' | '/=' | '%=' | '+=' | '-=' | '&=' | '^=' | '|=') right=expression   #assignmentStatement
 
     | K_IF condition=expression EOL
       thenBlock=statementBlock
-      (K_ELSE EOL
-      elseBlock=statementBlock)?
+      elifBlock*
+      elseBlock?
       K_ENDIF                                                   #ifStatement
     
     | K_WHILE condition=expression EOL
@@ -58,19 +66,40 @@ statement
       switchCase*
       K_ENDSWITCH                                               #switchStatement
 
+    | K_BREAK                                                   #breakStatement
+    | K_CONTINUE                                                #continueStatement
     | K_RETURN expression?                                      #returnStatement
+    | K_GOTO identifier                                         #gotoStatement
     | expression argumentList                                   #invocationStatement
     ;
 
+elifBlock
+    : K_ELIF condition=expression EOL
+      statementBlock
+    ;
+
+elseBlock
+    : K_ELSE EOL
+      statementBlock
+    ;
+
+label
+    : identifier ':'
+    ;
+
+labeledStatement
+    : label? statement?
+    ;
+
 statementBlock
-    : (statement? EOL)*
+    : (labeledStatement EOL)*
     ;
 
 expression
     : '(' expression ')'                                            #parenthesizedExpression
-    | expression '.' identifier                                     #memberAccessExpression
+    | expression '.' identifier                                     #fieldAccessExpression
     | expression argumentList                                       #invocationExpression
-    | expression arrayIndexer                                       #arrayAccessExpression
+    | expression arrayIndexer                                       #indexingExpression
     | op=(K_NOT | '-') expression                                   #unaryExpression
     | left=expression op=('*' | '/' | '%') right=expression         #binaryExpression
     | left=expression op=('+' | '-') right=expression               #binaryExpression
@@ -81,9 +110,14 @@ expression
     | left=expression op=('==' | '<>') right=expression             #binaryExpression
     | left=expression op=K_AND right=expression                     #binaryExpression
     | left=expression op=K_OR right=expression                      #binaryExpression
-    | '<<' expression ',' expression ',' expression '>>'            #vectorExpression
+    | '<<' x=expression ',' y=expression ',' z=expression '>>'            #vectorExpression
     | identifier                                                    #identifierExpression
-    | (integer | float | string | bool)                             #literalExpression
+    | integer                                                       #intLiteralExpression
+    | float                                                         #floatLiteralExpression
+    | string                                                        #stringLiteralExpression
+    | bool                                                          #boolLiteralExpression
+    | K_SIZE_OF '(' expression ')'                                  #sizeOfExpression
+    | K_NULL                                                        #nullExpression
     ;
 
 switchCase
@@ -93,15 +127,27 @@ switchCase
       statementBlock                                                #defaultSwitchCase
     ;
 
-declaration
+enumList
+    : (enumMemberDeclarationList? EOL)*
+    ;
+
+enumMemberDeclarationList
+    : enumMemberDeclaration (',' enumMemberDeclaration)*
+    ;
+
+enumMemberDeclaration
+    : identifier ('=' initializer=expression)?
+    ;
+
+varDeclaration
     : type=identifier initDeclaratorList
     ;
 
-declarationNoInit
-    : type=identifier declaratorList
+singleVarDeclaration
+    : type=identifier initDeclarator
     ;
 
-singleDeclarationNoInit
+singleVarDeclarationNoInit
     : type=identifier declarator
     ;
     
@@ -128,12 +174,12 @@ refDeclarator
 
 noRefDeclarator
     : identifier                            #simpleDeclarator
-    | noRefDeclarator '[' expression ']'    #arrayDeclarator
+    | noRefDeclarator '[' expression? ']'    #arrayDeclarator
     | '(' refDeclarator ')'                 #parenthesizedRefDeclarator
     ;
 
 structFieldList
-    : (declarationNoInit? EOL)*
+    : (varDeclaration? EOL)*
     ;
 
 argumentList
@@ -141,7 +187,7 @@ argumentList
     ;
 
 parameterList
-    : '(' (singleDeclarationNoInit (',' singleDeclarationNoInit)*)? ')'
+    : '(' (singleVarDeclarationNoInit (',' singleVarDeclarationNoInit)*)? ')'
     ;
 
 arrayIndexer
@@ -155,6 +201,7 @@ identifier
 integer
     : DECIMAL_INTEGER
     | HEX_INTEGER
+    | HASH_STRING
     ;
 
 float
@@ -171,12 +218,16 @@ bool
     ; 
 
 // keywords
+K_SCRIPT : S C R I P T;
+K_ENDSCRIPT : E N D S C R I P T;
 K_PROC : P R O C;
 K_ENDPROC : E N D P R O C;
 K_FUNC : F U N C;
 K_ENDFUNC : E N D F U N C;
 K_STRUCT : S T R U C T;
 K_ENDSTRUCT : E N D S T R U C T;
+K_ENUM : E N U M;
+K_ENDENUM : E N D E N U M;
 K_PROTO : P R O T O;
 K_NATIVE : N A T I V E;
 K_TRUE : T R U E;
@@ -185,6 +236,7 @@ K_NOT : N O T;
 K_AND : A N D;
 K_OR : O R;
 K_IF : I F;
+K_ELIF : E L I F;
 K_ELSE : E L S E;
 K_ENDIF : E N D I F;
 K_WHILE : W H I L E;
@@ -195,13 +247,17 @@ K_SWITCH : S W I T C H;
 K_ENDSWITCH : E N D S W I T C H;
 K_CASE : C A S E;
 K_DEFAULT : D E F A U L T;
+K_BREAK : B R E A K;
+K_CONTINUE : C O N T I N U E;
 K_RETURN : R E T U R N;
-K_SCRIPT_NAME : S C R I P T '_' N A M E;
+K_GOTO : G O T O;
 K_SCRIPT_HASH : S C R I P T '_' H A S H;
 K_USING : U S I N G;
 K_CONST : C O N S T;
 K_GLOBAL : G L O B A L;
 K_ENDGLOBAL : E N D G L O B A L;
+K_SIZE_OF : S I Z E '_' O F;
+K_NULL : N U L L;
 
 OP_ADD: '+';
 OP_SUBTRACT: '-';
@@ -232,7 +288,13 @@ IDENTIFIER
     ;
 
 FLOAT
-    : DECIMAL_INTEGER '.' DIGIT+
+    : DECIMAL_INTEGER '.' DIGIT* FLOAT_EXPONENT?
+    | '.' DIGIT+ FLOAT_EXPONENT?
+    | DECIMAL_INTEGER FLOAT_EXPONENT
+    ;
+
+fragment FLOAT_EXPONENT
+    : [eE] DECIMAL_INTEGER
     ;
 
 DECIMAL_INTEGER
@@ -241,6 +303,14 @@ DECIMAL_INTEGER
 
 HEX_INTEGER
     :   '0x' HEX_DIGIT+
+    ;
+
+HASH_STRING
+    : UNCLOSED_HASH_STRING '`'
+    ;
+
+UNCLOSED_HASH_STRING
+    : '`' (~[`\\\r\n] | '\\' (. | EOF))*
     ;
 
 STRING

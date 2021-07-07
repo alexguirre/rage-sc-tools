@@ -69,7 +69,7 @@
 
         public static string Escape(this ReadOnlySpan<char> str)
         {
-            StringBuilder sb = null;
+            StringBuilder? sb = null;
 
             for (int i = 0; i < str.Length; i++)
             {
@@ -105,7 +105,7 @@
 
         public static string Unescape(this ReadOnlySpan<char> str)
         {
-            StringBuilder sb = null;
+            StringBuilder? sb = null;
 
             for (int i = 0; i < str.Length; i++)
             {
