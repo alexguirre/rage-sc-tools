@@ -9,17 +9,23 @@ VEHICLE_INDEX vehSpawned = NULL
 CAMERA_INDEX camFreecam = NULL
 BOOL bFreecam = FALSE
 
+TEXT_LABEL_31 tlScriptToStart
+BOOL bStartScript = FALSE
+
 SCRIPT trainer_menu
     MENU_INIT(sTrainerMenu, "Trainer")
     MENU_ADD_ITEM(sTrainerMenu, "Spawn Car", SPAWN_CAR_CALLBACK)
     MENU_ADD_ITEM(sTrainerMenu, "Give Weapons", GIVE_WEAPONS_CALLBACK)
     MENU_ADD_ITEM(sTrainerMenu, "Toggle Freecam", TOGGLE_FREECAM_CALLBACK)
-    INT i
-    REPEAT 5 i
-        TEXT_LABEL_15 tlName = "Item #"
-        APPEND(tlName, i + 4)
-        MENU_ADD_ITEM(sTrainerMenu, tlName, NULL)
-    ENDREPEAT
+    MENU_ADD_ITEM(sTrainerMenu, "fps_display", START_SCRIPT_CALLBACK)
+    MENU_ADD_ITEM(sTrainerMenu, "random_vehicle_colors", START_SCRIPT_CALLBACK)
+    MENU_ADD_ITEM(sTrainerMenu, "spawn_enemies", START_SCRIPT_CALLBACK)
+    // INT i
+    // REPEAT 5 i
+    //     TEXT_LABEL_15 tlName = "Item #"
+    //     APPEND(tlName, i + 4)
+    //     MENU_ADD_ITEM(sTrainerMenu, tlName, NULL)
+    // ENDREPEAT
 
     WHILE TRUE
         IF IS_CONTROL_JUST_PRESSED(2, INPUT_REPLAY_START_STOP_RECORDING)
@@ -64,6 +70,16 @@ SCRIPT trainer_menu
             PROCESS_FREECAM_CONTROLS()
         ENDIF
 
+        IF bStartScript
+            REQUEST_SCRIPT(tlScriptToStart)
+            IF HAS_SCRIPT_LOADED(tlScriptToStart)
+                START_NEW_SCRIPT(tlScriptToStart, 512)
+                SET_SCRIPT_AS_NO_LONGER_NEEDED(tlScriptToStart)
+                tlScriptToStart = ""
+                bStartScript = FALSE
+            ENDIF
+        ENDIF
+
         WAIT(0)
     ENDWHILE
 ENDSCRIPT
@@ -78,6 +94,11 @@ ENDPROC
 
 PROC TOGGLE_FREECAM_CALLBACK(MENU_ITEM& sItem)
     bToggleFreecam = TRUE
+ENDPROC
+
+PROC START_SCRIPT_CALLBACK(MENU_ITEM& sItem)
+    bStartScript = TRUE
+    tlScriptToStart = sItem.tlName
 ENDPROC
 
 PROC ENABLE_FREECAM(BOOL bEnable)

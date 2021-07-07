@@ -2,7 +2,7 @@
 USING 'natives.sch'
 
 STRUCT MENU
-    TEXT_LABEL_15 tlTitle
+    TEXT_LABEL_31 tlTitle
     MENU_ITEM sItems[32]
     INT iItemCount = 0
     INT iSelectedItem = 0
@@ -10,7 +10,7 @@ STRUCT MENU
 ENDSTRUCT
 
 STRUCT MENU_ITEM
-    TEXT_LABEL_15 tlName
+    TEXT_LABEL_31 tlName
     MENU_ITEM_CALLBACK procCallback
 ENDSTRUCT
 
