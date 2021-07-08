@@ -268,6 +268,18 @@
                 pageIndex++;
             }
         }
+
+        public byte[] MergeCodePages()
+        {
+            var buffer = new byte[CodeLength];
+            var offset = 0;
+            foreach (var page in CodePages)
+            {
+                page.Data.CopyTo(buffer.AsSpan(offset));
+                offset += page.Data.Length;
+            }
+            return buffer;
+        }
     }
 
     public class ScriptPage<T> : ResourceSystemBlock where T : struct

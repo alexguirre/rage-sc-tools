@@ -23,8 +23,8 @@ namespace ScTools.ScriptAssembly
         private (string Label, ulong Hash)[] nativesTable = Array.Empty<(string, ulong)>();
         private (string Label, string String)[] stringsTable = Array.Empty<(string, string)>();
         private readonly Dictionary<uint, int> stringIndicesById = new(); // value is index into stringsTable
-        private readonly Dictionary<uint, string> codeLabels = new();
-        private readonly Dictionary<uint, string> staticsLabels = new();
+        private readonly Dictionary<int, string> codeLabels = new();
+        private readonly Dictionary<int, string> staticsLabels = new();
         private bool hasIndirectCalls = false;
 
         public Script Script { get; }
@@ -34,7 +34,7 @@ namespace ScTools.ScriptAssembly
         {
             Script = sc ?? throw new ArgumentNullException(nameof(sc));
             NativeDB = nativeDB;
-            code = MergeCodePages(sc);
+            code = sc.MergeCodePages();
         }
 
         public void Disassemble(TextWriter w)
@@ -162,12 +162,12 @@ namespace ScTools.ScriptAssembly
             }
         }
 
-        private void WriteStaticsValues(TextWriter w, uint from, uint toExclusive)
+        private void WriteStaticsValues(TextWriter w, int from, int toExclusive)
         {
             var sc = Script;
             int repeatedValue = 0;
             int repeatedCount = 0;
-            for (uint i = from; i < toExclusive; i++)
+            for (int i = from; i < toExclusive; i++)
             {
                 Debug.Assert(sc.Statics[i].AsUInt64 <= uint.MaxValue, $"{nameof(WriteStaticsValues)} only handles 32-bit values");
 
@@ -214,7 +214,7 @@ namespace ScTools.ScriptAssembly
 
             w.WriteLine(".static");
             var numStatics = sc.StaticsCount - sc.ArgsCount;
-            WriteStaticsValues(w, from: 0, toExclusive: numStatics);
+            WriteStaticsValues(w, from: 0, toExclusive: (int)numStatics);
             w.WriteLine();
         }
 
@@ -227,7 +227,7 @@ namespace ScTools.ScriptAssembly
             }
 
             w.WriteLine(".arg");
-            WriteStaticsValues(w, from: sc.StaticsCount - sc.ArgsCount, toExclusive: sc.StaticsCount);
+            WriteStaticsValues(w, from: (int)(sc.StaticsCount - sc.ArgsCount), toExclusive: (int)sc.StaticsCount);
             w.WriteLine();
         }
 
@@ -269,18 +269,18 @@ namespace ScTools.ScriptAssembly
             }
 
             w.WriteLine(".code");
-            IterateCode(inst =>
+            for (var inst = InstructionIterator.Begin(code); inst; inst = inst.Next())
             {
                 TryWriteLabel(inst.Address);
 
-                DisassembleInstruction(w, inst, inst.Address, inst.Bytes);
-            });
+                DisassembleInstruction(w, inst);
+            }
 
             // in case we have label pointing to the end of the code
-            TryWriteLabel((uint)code.Length);
+            TryWriteLabel(code.Length);
 
 
-            void TryWriteLabel(uint address)
+            void TryWriteLabel(int address)
             {
                 if (codeLabels.TryGetValue(address, out var label))
                 {
@@ -298,10 +298,9 @@ namespace ScTools.ScriptAssembly
             }
         }
 
-        private void DisassembleInstruction(TextWriter w, InstructionContext ctx, uint ip, ReadOnlySpan<byte> inst)
+        private void DisassembleInstruction(TextWriter w, InstructionIterator inst)
         {
-            var opcode = (Opcode)inst[0];
-            inst = inst[1..];
+            var opcode = inst.Opcode;
 
             w.Write("\t\t");
             w.Write(opcode.ToString());
@@ -313,11 +312,10 @@ namespace ScTools.ScriptAssembly
             switch (opcode)
             {
                 case Opcode.PUSH_CONST_U8:
-                    if (!TryWriteStringLabel(this, w, ctx, inst[0]))
+                    if (!TryWriteStringLabel(this, w, inst, inst.Bytes[1]))
                     {
-                        w.Write(inst[0]);
+                        w.Write(inst.Bytes[1]);
                     }
-                    inst = inst[1..];
                     break;
                 case Opcode.ARRAY_U8:
                 case Opcode.ARRAY_U8_LOAD:
@@ -334,53 +332,47 @@ namespace ScTools.ScriptAssembly
                 case Opcode.TEXT_LABEL_ASSIGN_INT:
                 case Opcode.TEXT_LABEL_APPEND_STRING:
                 case Opcode.TEXT_LABEL_APPEND_INT:
-                    w.Write(inst[0]);
-                    inst = inst[1..];
+                    w.Write(inst.Bytes[1]);
                     break;
                 case Opcode.STATIC_U8:
                 case Opcode.STATIC_U8_LOAD:
                 case Opcode.STATIC_U8_STORE:
-                    var staticU8 = inst[0];
+                    var staticU8 = inst.Bytes[1];
                     w.Write(staticsLabels.TryGetValue(staticU8, out var staticU8Label) ? staticU8Label : staticU8);
-                    inst = inst[1..];
                     break;
                 case Opcode.PUSH_CONST_U8_U8:
                 case Opcode.LEAVE:
-                    w.Write(inst[0]);
+                    w.Write(inst.Bytes[1]);
                     w.Write(", ");
-                    if (!TryWriteStringLabel(this, w, ctx, inst[1]))
+                    if (!TryWriteStringLabel(this, w, inst, inst.Bytes[2]))
                     {
-                        w.Write(inst[1]);
+                        w.Write(inst.Bytes[2]);
                     }
-                    inst = inst[2..];
                     break;
                 case Opcode.PUSH_CONST_U8_U8_U8:
-                    w.Write(inst[0]);
+                    w.Write(inst.Bytes[1]);
                     w.Write(", ");
-                    w.Write(inst[1]);
+                    w.Write(inst.Bytes[2]);
                     w.Write(", ");
-                    if (!TryWriteStringLabel(this, w, ctx, inst[2]))
+                    if (!TryWriteStringLabel(this, w, inst, inst.Bytes[3]))
                     {
-                        w.Write(inst[2]);
+                        w.Write(inst.Bytes[3]);
                     }
-                    inst = inst[3..];
                     break;
                 case Opcode.PUSH_CONST_U32:
-                    var u32Value = MemoryMarshal.Read<uint>(inst);
-                    if (!TryWriteStringLabel(this, w, ctx, u32Value))
+                    var u32Value = MemoryMarshal.Read<uint>(inst.Bytes[1..]);
+                    if (!TryWriteStringLabel(this, w, inst, u32Value))
                     {
                         w.Write(u32Value);
                     }
-                    inst = inst[4..];
                     break;
                 case Opcode.PUSH_CONST_F:
-                    w.Write(MemoryMarshal.Read<float>(inst).ToString("R", CultureInfo.InvariantCulture));
-                    inst = inst[4..];
+                    w.Write(MemoryMarshal.Read<float>(inst.Bytes[1..]).ToString("R", CultureInfo.InvariantCulture));
                     break;
                 case Opcode.NATIVE:
-                    var argReturn = inst[0];
-                    var nativeIndexHi = inst[1];
-                    var nativeIndexLo = inst[2];
+                    var argReturn = inst.Bytes[1];
+                    var nativeIndexHi = inst.Bytes[2];
+                    var nativeIndexLo = inst.Bytes[3];
 
                     var argCount = (argReturn >> 2) & 0x3F;
                     var returnCount = argReturn & 0x3;
@@ -397,23 +389,19 @@ namespace ScTools.ScriptAssembly
                     {
                         w.Write(nativeIndex);
                     }
-                    inst = inst[3..];
                     break;
                 case Opcode.ENTER:
-                    w.Write(inst[0]);
+                    w.Write(inst.Bytes[1]);
                     w.Write(", ");
-                    w.Write(MemoryMarshal.Read<ushort>(inst[1..]));
-                    var nameLen = inst[3];
-                    inst = inst[(4 + nameLen)..];
+                    w.Write(MemoryMarshal.Read<ushort>(inst.Bytes[2..]));
                     break;
                 case Opcode.PUSH_CONST_S16:
                 {
-                    var s16Value = MemoryMarshal.Read<short>(inst);
-                    if (!TryWriteStringLabel(this, w, ctx, (uint)s16Value))
+                    var s16Value = MemoryMarshal.Read<short>(inst.Bytes[1..]);
+                    if (!TryWriteStringLabel(this, w, inst, (uint)s16Value))
                     {
                         w.Write(s16Value);
                     }
-                    inst = inst[2..];
                     break;
                 }
                 case Opcode.IADD_S16:
@@ -421,8 +409,7 @@ namespace ScTools.ScriptAssembly
                 case Opcode.IOFFSET_S16:
                 case Opcode.IOFFSET_S16_LOAD:
                 case Opcode.IOFFSET_S16_STORE:
-                    w.Write(MemoryMarshal.Read<short>(inst));
-                    inst = inst[2..];
+                    w.Write(MemoryMarshal.Read<short>(inst.Bytes[1..]));
                     break;
                 case Opcode.ARRAY_U16:
                 case Opcode.ARRAY_U16_LOAD:
@@ -433,15 +420,13 @@ namespace ScTools.ScriptAssembly
                 case Opcode.GLOBAL_U16:
                 case Opcode.GLOBAL_U16_LOAD:
                 case Opcode.GLOBAL_U16_STORE:
-                    w.Write(MemoryMarshal.Read<ushort>(inst));
-                    inst = inst[2..];
+                    w.Write(MemoryMarshal.Read<ushort>(inst.Bytes[1..]));
                     break;
                 case Opcode.STATIC_U16:
                 case Opcode.STATIC_U16_LOAD:
                 case Opcode.STATIC_U16_STORE:
-                    var staticU16 = MemoryMarshal.Read<ushort>(inst);
+                    var staticU16 = MemoryMarshal.Read<ushort>(inst.Bytes[1..]);
                     w.Write(staticsLabels.TryGetValue(staticU16, out var staticU16Label) ? staticU16Label : staticU16);
-                    inst = inst[2..];
                     break;
                 case Opcode.J:
                 case Opcode.JZ:
@@ -451,10 +436,9 @@ namespace ScTools.ScriptAssembly
                 case Opcode.IGE_JZ:
                 case Opcode.ILT_JZ:
                 case Opcode.ILE_JZ:
-                    var jumpOffset = MemoryMarshal.Read<short>(inst);
-                    var jumpAddress = ip + 3 + jumpOffset;
-                    w.Write(codeLabels.TryGetValue((uint)jumpAddress, out var label) ? label : jumpOffset);
-                    inst = inst[2..];
+                    var jumpOffset = MemoryMarshal.Read<short>(inst.Bytes[1..]);
+                    var jumpAddress = inst.Address + 3 + jumpOffset;
+                    w.Write(codeLabels.TryGetValue(jumpAddress, out var label) ? label : jumpOffset);
                     break;
                 case Opcode.CALL:
                 case Opcode.GLOBAL_U24:
@@ -462,33 +446,32 @@ namespace ScTools.ScriptAssembly
                 case Opcode.GLOBAL_U24_STORE:
                 case Opcode.PUSH_CONST_U24:
                 {
-                    var lo = inst[0];
-                    var mi = inst[1];
-                    var hi = inst[2];
+                    var lo = inst.Bytes[1];
+                    var mi = inst.Bytes[2];
+                    var hi = inst.Bytes[3];
 
                     var value = (hi << 16) | (mi << 8) | lo;
-                    if (!(opcode is Opcode.CALL && TryWriteFuncLabel(this, w, (uint)value)) &&
-                        !(opcode is Opcode.PUSH_CONST_U24 && (TryWriteStringLabel(this, w, ctx, (uint)value) || (hasIndirectCalls && TryWriteFuncLabel(this, w, (uint)value)))))
+                    if (!(opcode is Opcode.CALL && TryWriteFuncLabel(this, w, value)) &&
+                        !(opcode is Opcode.PUSH_CONST_U24 && (TryWriteStringLabel(this, w, inst, (uint)value) || (hasIndirectCalls && TryWriteFuncLabel(this, w, value)))))
                     {
                         w.Write(value);
                     }
-                    inst = inst[3..];
                     break;
                 }
                 case Opcode.SWITCH:
-                    var caseCount = inst[0];
-                    inst = inst[1..];
-                    for (int i = 0; i < caseCount; i++, inst = inst[6..])
+                    var caseCount = inst.Bytes[1];
+                    var cases = inst.Bytes[2..];
+                    for (int i = 0; i < caseCount; i++, cases = cases[6..])
                     {
-                        var caseValue = MemoryMarshal.Read<uint>(inst);
-                        var caseJumpToOffset = MemoryMarshal.Read<short>(inst[4..]);
-                        var caseJumpToAddress = ip + 2 + 6 * (i + 1) + caseJumpToOffset;
+                        var caseValue = MemoryMarshal.Read<uint>(cases);
+                        var caseJumpToOffset = MemoryMarshal.Read<short>(cases[4..]);
+                        var caseJumpToAddress = inst.Address + 2 + 6 * (i + 1) + caseJumpToOffset;
 
                         if (i != 0)
                         {
                             w.Write(", ");
                         }
-                        w.Write("{0}:{1}", caseValue, codeLabels.TryGetValue((uint)caseJumpToAddress, out var caseLabel) ? caseLabel : caseJumpToOffset);
+                        w.Write("{0}:{1}", caseValue, codeLabels.TryGetValue(caseJumpToAddress, out var caseLabel) ? caseLabel : caseJumpToOffset);
                     }
                     break;
                 case Opcode.PUSH_CONST_0:
@@ -501,7 +484,7 @@ namespace ScTools.ScriptAssembly
                 case Opcode.PUSH_CONST_7:
                 {
                     var value = opcode - Opcode.PUSH_CONST_0;
-                    if (TryGetStringIndex(this, w, ctx, value, out int strIndex))
+                    if (TryGetStringIndex(this, w, inst, value, out int strIndex))
                     {
                         w.Write("\t; string ref: {0}", stringsTable[strIndex].Label);
                     }
@@ -511,9 +494,9 @@ namespace ScTools.ScriptAssembly
 
             w.WriteLine();
 
-            static bool TryGetStringIndex(Disassembler self, TextWriter w, in InstructionContext ctx, uint strId, out int strIndex)
+            static bool TryGetStringIndex(Disassembler self, TextWriter w, in InstructionIterator inst, uint strId, out int strIndex)
             {
-                var next = ctx.Next();
+                var next = inst.Next();
                 if (next.IsValid && next.Opcode is Opcode.STRING && self.stringIndicesById.TryGetValue(strId, out strIndex))
                 {
                     return true;
@@ -522,9 +505,9 @@ namespace ScTools.ScriptAssembly
                 return false;
             }
 
-            static bool TryWriteStringLabel(Disassembler self, TextWriter w, in InstructionContext ctx, uint strId)
+            static bool TryWriteStringLabel(Disassembler self, TextWriter w, in InstructionIterator inst, uint strId)
             {
-                if (TryGetStringIndex(self, w, ctx, strId, out int strIndex))
+                if (TryGetStringIndex(self, w, inst, strId, out int strIndex))
                 {
                     w.Write(self.stringsTable[strIndex].Label);
                     return true;
@@ -532,7 +515,7 @@ namespace ScTools.ScriptAssembly
                 return false;
             }
 
-            static bool TryWriteFuncLabel(Disassembler self, TextWriter w, uint addr)
+            static bool TryWriteFuncLabel(Disassembler self, TextWriter w, int addr)
             {
                 if (self.codeLabels.TryGetValue(addr, out var funcLabel) && !funcLabel.StartsWith(CodeLabelPrefix))
                 {
@@ -623,8 +606,8 @@ namespace ScTools.ScriptAssembly
 
             if (code.Length != 0)
             {
-                var addressAfterLastLeaveInst = 0u;
-                IterateCode(inst =>
+                var addressAfterLastLeaveInst = 0;
+                for (var inst = InstructionIterator.Begin(code); inst; inst = inst.Next())
                 {
                     switch (inst.Opcode)
                     {
@@ -636,14 +619,9 @@ namespace ScTools.ScriptAssembly
                         case Opcode.IGE_JZ:
                         case Opcode.ILT_JZ:
                         case Opcode.ILE_JZ:
-                            // ignore labels that come after a LEAVE instruction,
-                            // R* compiler inserts them sometimes with the next function or label as target, bug?
-                            if (addressAfterLastLeaveInst != inst.Address)
-                            {
-                                var jumpOffset = MemoryMarshal.Read<short>(inst.Bytes[1..]);
-                                var jumpAddress = inst.Address + 3 + jumpOffset;
-                                AddLabel(codeLabels, (uint)jumpAddress);
-                            }
+                            var jumpOffset = MemoryMarshal.Read<short>(inst.Bytes[1..]);
+                            var jumpAddress = inst.Address + 3 + jumpOffset;
+                            AddLabel(codeLabels, jumpAddress);
                             break;
                         case Opcode.SWITCH:
                             var caseCount = inst.Bytes[1];
@@ -653,7 +631,7 @@ namespace ScTools.ScriptAssembly
                                 var caseValue = MemoryMarshal.Read<uint>(caseSpan);
                                 var caseJumpToOffset = MemoryMarshal.Read<short>(caseSpan[4..]);
                                 var caseJumpToAddress = inst.Address + 2 + 6 * (i + 1) + caseJumpToOffset;
-                                AddLabel(codeLabels, (uint)caseJumpToAddress);
+                                AddLabel(codeLabels, caseJumpToAddress);
                             }
                             break;
                         case Opcode.ENTER:
@@ -674,18 +652,23 @@ namespace ScTools.ScriptAssembly
                             AddFuncLabel(codeLabels, funcAddress, funcName);
                             break;
                         case Opcode.LEAVE:
-                            addressAfterLastLeaveInst = (uint)(inst.Address + Opcode.LEAVE.ByteSize());
+                            addressAfterLastLeaveInst = inst.Address + Opcode.LEAVE.ByteSize();
                             break;
                         case Opcode.CALLINDIRECT:
                             hasIndirectCalls = true;
                             break;
                     }
-                });
+                }
             }
 
-            static void AddFuncLabel(Dictionary<uint, string> codeLabels, uint address, string? name)
-                => codeLabels.TryAdd(address, name ?? CodeFuncPrefix + address);
-            static void AddLabel(Dictionary<uint, string> codeLabels, uint address)
+            static void AddFuncLabel(Dictionary<int, string> codeLabels, int address, string? name)
+                // in some cases, jumps that come after a LEAVE instruction jump to the next function
+                // (R* compiler inserts them sometimes with the next function or label as target, bug?),
+                // and AddLabel creates a label there. The function labels have priority over those labels
+                // so we use [] instead of TryAdd here
+                => codeLabels[address] = name ?? CodeFuncPrefix + address;
+
+            static void AddLabel(Dictionary<int, string> codeLabels, int address)
                 => codeLabels.TryAdd(address, CodeLabelPrefix + address);
         }
 
@@ -695,9 +678,9 @@ namespace ScTools.ScriptAssembly
 
             if (code.Length != 0)
             {
-                IterateCode(inst =>
+                for (var inst = InstructionIterator.Begin(code); inst; inst = inst.Next())
                 {
-                    uint? staticAddress = inst.Opcode switch
+                    int? staticAddress = inst.Opcode switch
                     {
                         Opcode.STATIC_U8 or
                         Opcode.STATIC_U8_LOAD or
@@ -714,10 +697,10 @@ namespace ScTools.ScriptAssembly
                     {
                         AddStaticLabel(Script, staticsLabels, staticAddress.Value);
                     }
-                });
+                }
             }
 
-            static void AddStaticLabel(Script sc, Dictionary<uint, string> statisLabels, uint address)
+            static void AddStaticLabel(Script sc, Dictionary<int, string> statisLabels, int address)
             {
                 var argsStart = sc.StaticsCount - sc.ArgsCount;
                 var label = address < argsStart ?
@@ -726,82 +709,6 @@ namespace ScTools.ScriptAssembly
 
                 statisLabels.TryAdd(address, label);
             }
-        }
-
-        private delegate void IterateCodeCallback(InstructionContext instruction);
-        private void IterateCode(IterateCodeCallback callback)
-        {
-            InstructionContext.CB previousCB = currInst =>
-            {
-                uint prevAddress = 0;
-                uint address = 0;
-                while (address < currInst.Address)
-                {
-                    prevAddress = address;
-                    address += (uint)GetInstructionLength(code, address);
-                }
-                return GetInstructionContext(code, prevAddress, currInst.PreviousCB, currInst.NextCB);
-            };
-            InstructionContext.CB nextCB = currInst =>
-            {
-                var nextAddress = currInst.Address + (uint)currInst.Bytes.Length;
-                return GetInstructionContext(code, nextAddress, currInst.PreviousCB, currInst.NextCB);
-            };
-
-            uint ip = 0;
-            while (ip < code.Length)
-            {
-                var inst = GetInstructionContext(code, ip, previousCB, nextCB);
-                callback(inst);
-                ip += (uint)inst.Bytes.Length;
-            }
-
-            static InstructionContext GetInstructionContext(byte[] code, uint address, InstructionContext.CB previousCB, InstructionContext.CB nextCB)
-                => address >= code.Length ? default : new()
-                {
-                    Address = address,
-                    Bytes = code.AsSpan((int)address, GetInstructionLength(code, address)),
-                    PreviousCB = previousCB,
-                    NextCB = nextCB,
-                };
-
-            static int GetInstructionLength(byte[] code, uint address)
-            {
-                var opcode = (Opcode)code[address];
-                return opcode switch
-                {
-                    Opcode.ENTER => 5 + code[address + 4],  // 5 + nameLength
-                    Opcode.SWITCH => 2 + 6 * code[address + 1], // 2 + 6 * caseCount
-                    _ => opcode.ByteSize(),
-                };
-            }
-        }
-
-        private readonly ref struct InstructionContext
-        {
-            public delegate InstructionContext CB(InstructionContext curr);
-
-            public bool IsValid => Bytes.Length > 0;
-            public uint Address { get; init; }
-            public ReadOnlySpan<byte> Bytes { get; init; }
-            public Opcode Opcode => (Opcode)Bytes[0];
-            public CB PreviousCB { get; init; }
-            public CB NextCB { get; init; }
-
-            public InstructionContext Previous() => PreviousCB(this);
-            public InstructionContext Next() => NextCB(this);
-        }
-
-        private static byte[] MergeCodePages(Script sc)
-        {
-            var buffer = new byte[sc.CodeLength];
-            var offset = 0;
-            foreach (var page in sc.CodePages)
-            {
-                page.Data.CopyTo(buffer.AsSpan(offset));
-                offset += page.Data.Length;
-            }
-            return buffer;
         }
 
         public static void Disassemble(TextWriter output, Script sc, NativeDB? nativeDB = null)
