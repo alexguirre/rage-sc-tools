@@ -269,7 +269,7 @@ namespace ScTools.ScriptAssembly
             }
 
             w.WriteLine(".code");
-            for (var inst = InstructionIterator.Begin(code); inst; inst = inst.Next())
+            foreach (var inst in new InstructionEnumerator(code))
             {
                 TryWriteLabel(inst.Address);
 
@@ -607,7 +607,7 @@ namespace ScTools.ScriptAssembly
             if (code.Length != 0)
             {
                 var addressAfterLastLeaveInst = 0;
-                for (var inst = InstructionIterator.Begin(code); inst; inst = inst.Next())
+                foreach (var inst in new InstructionEnumerator(code))
                 {
                     switch (inst.Opcode)
                     {
@@ -678,7 +678,7 @@ namespace ScTools.ScriptAssembly
 
             if (code.Length != 0)
             {
-                for (var inst = InstructionIterator.Begin(code); inst; inst = inst.Next())
+                foreach (var inst in new InstructionEnumerator(code))
                 {
                     int? staticAddress = inst.Opcode switch
                     {

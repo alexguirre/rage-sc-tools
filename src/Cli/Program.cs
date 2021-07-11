@@ -17,6 +17,7 @@
     using System.Collections.Generic;
     using ScTools.ScriptLang.Semantics;
     using ScTools.ScriptLang.CodeGen;
+    using ScTools.Decompilation;
 
     internal static class Program
     {
@@ -102,6 +103,24 @@
             };
             assemble.Handler = CommandHandler.Create<AssembleOptions>(Assemble);
 
+            Command decompile = new Command("decompile")
+            {
+                new Argument<FileInfo>(
+                    "nativedb",
+                    "The JSON file containing the native commands definitions.")
+                    .ExistingOnly(),
+                new Argument<FileGlob[]>(
+                    "input",
+                    "The input YSC files. Supports glob patterns.")
+                    .AtLeastOne(),
+                new Option<DirectoryInfo>(
+                    new[] { "--output", "-o" },
+                    () => new DirectoryInfo(".\\"),
+                    "The output directory.")
+                    .ExistingOnly(),
+            };
+            decompile.Handler = CommandHandler.Create<DecompileOptions>(Decompile);
+
             Command compile = new Command("compile")
             {
                 new Argument<FileGlob[]>(
@@ -152,6 +171,7 @@
             rootCmd.AddCommand(disassemble);
             rootCmd.AddCommand(disassemblerE2E);
             rootCmd.AddCommand(assemble);
+            rootCmd.AddCommand(decompile);
             rootCmd.AddCommand(compile);
             rootCmd.AddCommand(genNatives);
             rootCmd.AddCommand(fetchNativeDb);
@@ -369,6 +389,40 @@
                 var p = NormalizeFilePath(Path.Combine(Path.GetDirectoryName(originPath), usingPath));
                 return (() => new StreamReader(p), p);
             }
+        }
+
+        private class DecompileOptions
+        {
+            public FileGlob[] Input { get; set; }
+            public DirectoryInfo Output { get; set; }
+            public FileInfo NativeDB { get; set; }
+        }
+
+        private static void Decompile(DecompileOptions options)
+        {
+            static void Print(string str)
+            {
+                lock (Console.Out)
+                {
+                    Console.WriteLine(str);
+                }
+            }
+
+            var totalTime = Stopwatch.StartNew();
+
+            var nativeDB = NativeDB.FromJson(File.ReadAllText(options.NativeDB.FullName));
+
+            var decompiler = new Decompiler(options.Input.SelectMany(i => i.Matches).Select(scFile =>
+            {
+                var fileData = File.ReadAllBytes(scFile.FullName);
+
+                var ysc = new YscFile();
+                ysc.Load(fileData);
+                return ysc.Script;
+            }));
+
+            totalTime.Stop();
+            Print($"Total time: {totalTime.Elapsed}");
         }
 
         private static void GenNatives(FileInfo nativeDB)
