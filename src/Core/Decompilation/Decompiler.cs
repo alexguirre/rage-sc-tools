@@ -4,17 +4,16 @@
     using System.Linq;
 
     using ScTools.GameFiles;
-    using ScTools.ScriptAssembly;
 
     public class Decompiler
     {
-        private readonly DecompiledScript[] scripts;
-        private readonly GlobalBlock[] globalBlocks;
+        public DecompiledScript[] Scripts { get; }
+        public GlobalBlock[] GlobalBlocks { get; }
 
         public Decompiler(IEnumerable<Script> scripts)
         {
-            this.scripts = scripts.AsParallel().Select(sc => new DecompiledScript(sc)).ToArray();
-            globalBlocks = this.scripts.Where(dec => dec.Script.GlobalsLengthAndBlock != 0).Select(dec => new GlobalBlock(dec)).ToArray();
+            Scripts = scripts.AsParallel().Select(sc => new DecompiledScript(sc)).ToArray();
+            GlobalBlocks = Scripts.Where(dec => dec.Script.GlobalsLengthAndBlock != 0).Select(dec => new GlobalBlock(dec)).ToArray();
         }
     }
 }

@@ -411,7 +411,7 @@
             var totalTime = Stopwatch.StartNew();
 
             var nativeDB = NativeDB.FromJson(File.ReadAllText(options.NativeDB.FullName));
-
+            var before = GC.GetTotalMemory(forceFullCollection: true);
             var decompiler = new Decompiler(options.Input.SelectMany(i => i.Matches).Select(scFile =>
             {
                 var fileData = File.ReadAllBytes(scFile.FullName);
@@ -420,9 +420,15 @@
                 ysc.Load(fileData);
                 return ysc.Script;
             }));
+            var after = GC.GetTotalMemory(forceFullCollection: true);
 
             totalTime.Stop();
             Print($"Total time: {totalTime.Elapsed}");
+            Print($"Before: {before}");
+            Print($"After:  {after}");
+
+
+            Print($"Total CFG blocks: {decompiler.Scripts.SelectMany(sc => sc.Functions.Select(func => func.ControlFlowGraph.Blocks.Length)).Sum()}");
         }
 
         private static void GenNatives(FileInfo nativeDB)

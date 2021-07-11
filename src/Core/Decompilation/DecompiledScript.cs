@@ -17,6 +17,7 @@
             Script = sc;
             Code = sc.MergeCodePages();
             IdentifyFunctions();
+            BuildControlFlowGraphs();
         }
 
         private void IdentifyFunctions()
@@ -59,6 +60,14 @@
             if (Functions.Count > 0)
             {
                 Functions.Last().EndAddress = Code.Length;
+            }
+        }
+
+        private void BuildControlFlowGraphs()
+        {
+            foreach (var func in Functions)
+            {
+                func.ControlFlowGraph = new ControlFlowGraphBuilder(func).BuildGraph();
             }
         }
     }

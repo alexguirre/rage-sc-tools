@@ -3,8 +3,9 @@
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Runtime.InteropServices;
 
-    public readonly ref struct InstructionIterator
+    public readonly struct InstructionIterator
     {
         public bool IsValid => Code != null && ByteSize > 0 && Address >= 0 && Address < Code.Length;
         public byte[] Code { get; init; }
@@ -34,6 +35,64 @@
             return CreateIteratorAt(Code, nextAddress);
         }
 
+        public int GetJumpOffset()
+        {
+            if (!IsValid)
+            {
+                throw new InvalidOperationException("This instruction is invalid");
+            }
+
+            if (!Opcode.IsJump())
+            {
+                throw new InvalidOperationException("This instruction is not a jump instruction");
+            }
+
+            return MemoryMarshal.Read<short>(Bytes[1..]);
+        }
+
+        public int GetJumpAddress()
+            => Address + 3 + GetJumpOffset();
+
+        public int GetSwitchCaseCount()
+        {
+            if (!IsValid)
+            {
+                throw new InvalidOperationException("This instruction is invalid");
+            }
+
+            if (Opcode is not Opcode.SWITCH)
+            {
+                throw new InvalidOperationException("This instruction is not a SWITCH instruction");
+            }
+
+            return Bytes[1];
+        }
+
+        public (int Value, int JumpOffset, int JumpAddress) GetSwitchCase(int index)
+        {
+            if (!IsValid)
+            {
+                throw new InvalidOperationException("This instruction is invalid");
+            }
+
+            if (Opcode is not Opcode.SWITCH)
+            {
+                throw new InvalidOperationException("This instruction is not a SWITCH instruction");
+            }
+
+            var caseCount = Bytes[1];
+            if (index < 0 || index  >= caseCount)
+            {
+                throw new ArgumentOutOfRangeException(nameof(index), "Case index is out of range");
+            }
+
+            var caseSpan = Bytes.Slice(2 + 6 * index, 6);
+            var value = MemoryMarshal.Read<int>(caseSpan);
+            var jumpOffset = MemoryMarshal.Read<short>(caseSpan[4..]);
+            var jumpAddress = Address + 2 + 6 * (index + 1) + jumpOffset;
+            return (value, jumpOffset, jumpAddress);
+        }
+
         public static implicit operator bool(InstructionIterator it) => it.IsValid;
 
         public static bool operator ==(InstructionIterator a, InstructionIterator b)
@@ -43,7 +102,7 @@
             => !(a == b);
 
         public bool Equals(InstructionIterator other) => this == other;
-        public override bool Equals(object? obj) => false; // false always, cannot cast ref struct to object
+        public override bool Equals(object? obj) => obj is InstructionIterator other && this == other;
 
         public override int GetHashCode() => HashCode.Combine(Code, Address, ByteSize);
 
@@ -70,12 +129,14 @@
         }
     }
 
-    public ref struct InstructionEnumerator
+    public struct InstructionEnumerator : IEnumerable<InstructionIterator>, IEnumerator<InstructionIterator>
     {
         private readonly byte[] code;
         private readonly int startAddress, endAddress;
 
         public InstructionIterator Current { get; private set; }
+
+        object IEnumerator.Current => Current;
 
         public InstructionEnumerator(byte[] code) : this(code, startAddress: 0, endAddress: code.Length)
         {
@@ -112,11 +173,18 @@
             Current = default;
         }
 
+        public void Dispose()
+        {
+        }
+
         public InstructionEnumerator GetEnumerator()
         {
             var copy = this;
             copy.Reset();
             return copy;
         }
+
+        IEnumerator<InstructionIterator> IEnumerable<InstructionIterator>.GetEnumerator() => GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

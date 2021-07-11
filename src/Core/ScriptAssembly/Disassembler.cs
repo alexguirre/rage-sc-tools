@@ -619,18 +619,13 @@ namespace ScTools.ScriptAssembly
                         case Opcode.IGE_JZ:
                         case Opcode.ILT_JZ:
                         case Opcode.ILE_JZ:
-                            var jumpOffset = MemoryMarshal.Read<short>(inst.Bytes[1..]);
-                            var jumpAddress = inst.Address + 3 + jumpOffset;
-                            AddLabel(codeLabels, jumpAddress);
+                            AddLabel(codeLabels, inst.GetJumpAddress());
                             break;
                         case Opcode.SWITCH:
-                            var caseCount = inst.Bytes[1];
+                            var caseCount = inst.GetSwitchCaseCount();
                             for (int i = 0; i < caseCount; i++)
                             {
-                                var caseSpan = inst.Bytes.Slice(2 + 6 * i, 6);
-                                var caseValue = MemoryMarshal.Read<uint>(caseSpan);
-                                var caseJumpToOffset = MemoryMarshal.Read<short>(caseSpan[4..]);
-                                var caseJumpToAddress = inst.Address + 2 + 6 * (i + 1) + caseJumpToOffset;
+                                var (_, _, caseJumpToAddress) = inst.GetSwitchCase(i);
                                 AddLabel(codeLabels, caseJumpToAddress);
                             }
                             break;
