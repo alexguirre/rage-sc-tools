@@ -309,6 +309,7 @@ namespace ScTools.ScriptAssembly
                 w.Write(' ');
             }
 
+            // TODO: use helper methods from InstructionIterator instead of accessing Bytes directly
             switch (opcode)
             {
                 case Opcode.PUSH_CONST_U8:
@@ -640,10 +641,12 @@ namespace ScTools.ScriptAssembly
                                 funcAddress = addressAfterLastLeaveInst;
                             }
 
-                            var funcNameLen = inst.Bytes[4];
-                            var funcName = funcNameLen > 0 ?
-                                                System.Text.Encoding.UTF8.GetString(inst.Bytes.Slice(5, funcNameLen - 1)) :
-                                                (funcAddress == 0 ? "main" : null);
+                            var funcName = inst.GetEnterFunctionName();
+                            if (funcName is null && funcAddress == 0)
+                            {
+                                funcName = "main";
+                            }
+
                             AddFuncLabel(codeLabels, funcAddress, funcName);
                             break;
                         case Opcode.LEAVE:

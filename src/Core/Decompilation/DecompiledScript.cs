@@ -40,10 +40,16 @@
                             funcAddress = addressAfterLastLeaveInst;
                         }
 
-                        var funcNameLen = inst.Bytes[4];
-                        var funcName = funcNameLen > 0 ?
-                                            System.Text.Encoding.UTF8.GetString(inst.Bytes.Slice(5, funcNameLen - 1)) :
-                                            (funcAddress == 0 ? Script.Name : $"func_{funcAddress}");
+                        string funcName;
+                        if (funcAddress == 0)
+                        {
+                            funcName = Script.Name;
+                        }
+                        else
+                        {
+                            funcName = inst.GetEnterFunctionName() ?? $"func_{funcAddress}";
+                        }
+
                         if (Functions.Count > 0)
                         {
                             Functions.Last().EndAddress = funcAddress;

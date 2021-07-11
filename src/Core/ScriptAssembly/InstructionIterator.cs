@@ -35,12 +35,77 @@
             return CreateIteratorAt(Code, nextAddress);
         }
 
+        public byte GetU8()
+        {
+            ThrowIfInvalid();
+            ThrowIfIncorrectByteSize(expected: 2);
+
+            return Code[Address + 1];
+        }
+
+        public (byte Value1, byte Value2) GetTwoU8()
+        {
+            ThrowIfInvalid();
+            ThrowIfIncorrectByteSize(expected: 3);
+
+            return (Code[Address + 1], Code[Address + 2]);
+        }
+
+        public (byte Value1, byte Value2, byte Value3) GetThreeU8()
+        {
+            ThrowIfInvalid();
+            ThrowIfIncorrectByteSize(expected: 4);
+
+            return (Code[Address + 1], Code[Address + 2], Code[Address + 3]);
+        }
+
+        public short GetS16()
+        {
+            ThrowIfInvalid();
+            ThrowIfIncorrectByteSize(expected: 3);
+
+            return MemoryMarshal.Read<short>(Bytes[1..]);
+        }
+
+        public ushort GetU16()
+        {
+            ThrowIfInvalid();
+            ThrowIfIncorrectByteSize(expected: 3);
+
+            return MemoryMarshal.Read<ushort>(Bytes[1..]);
+        }
+
+        public uint GetU24()
+        {
+            ThrowIfInvalid();
+            ThrowIfIncorrectByteSize(expected: 4);
+
+            var lo = (uint)Code[Address + 1];
+            var mi = (uint)Code[Address + 2];
+            var hi = (uint)Code[Address + 3];
+
+            return (hi << 16) | (mi << 8) | lo;
+        }
+
+        public uint GetU32()
+        {
+            ThrowIfInvalid();
+            ThrowIfIncorrectByteSize(expected: 5);
+
+            return MemoryMarshal.Read<uint>(Bytes[1..]);
+        }
+
+        public float GetFloat()
+        {
+            ThrowIfInvalid();
+            ThrowIfIncorrectByteSize(expected: 5);
+
+            return MemoryMarshal.Read<float>(Bytes[1..]);
+        }
+
         public int GetJumpOffset()
         {
-            if (!IsValid)
-            {
-                throw new InvalidOperationException("This instruction is invalid");
-            }
+            ThrowIfInvalid();
 
             if (!Opcode.IsJump())
             {
@@ -55,30 +120,16 @@
 
         public int GetSwitchCaseCount()
         {
-            if (!IsValid)
-            {
-                throw new InvalidOperationException("This instruction is invalid");
-            }
-
-            if (Opcode is not Opcode.SWITCH)
-            {
-                throw new InvalidOperationException("This instruction is not a SWITCH instruction");
-            }
+            ThrowIfInvalid();
+            ThrowIfIncorrectOpcode(expected: Opcode.SWITCH);
 
             return Bytes[1];
         }
 
         public (int Value, int JumpOffset, int JumpAddress) GetSwitchCase(int index)
         {
-            if (!IsValid)
-            {
-                throw new InvalidOperationException("This instruction is invalid");
-            }
-
-            if (Opcode is not Opcode.SWITCH)
-            {
-                throw new InvalidOperationException("This instruction is not a SWITCH instruction");
-            }
+            ThrowIfInvalid();
+            ThrowIfIncorrectOpcode(expected: Opcode.SWITCH);
 
             var caseCount = Bytes[1];
             if (index < 0 || index  >= caseCount)
@@ -91,6 +142,75 @@
             var jumpOffset = MemoryMarshal.Read<short>(caseSpan[4..]);
             var jumpAddress = Address + 2 + 6 * (index + 1) + jumpOffset;
             return (value, jumpOffset, jumpAddress);
+        }
+
+        public (int ArgCount, int ReturnCount, int NativeIndex) GetNativeOperands()
+        {
+            ThrowIfInvalid();
+            ThrowIfIncorrectOpcode(expected: Opcode.NATIVE);
+
+            var argReturn = Code[Address + 1];
+            var nativeIndexHi = Code[Address + 2];
+            var nativeIndexLo = Code[Address + 3];
+
+            var argCount = (argReturn >> 2) & 0x3F;
+            var returnCount = argReturn & 0x3;
+            var nativeIndex = (nativeIndexHi << 8) | nativeIndexLo;
+            return (argCount, returnCount, nativeIndex);
+        }
+
+        public (byte ArgCount, ushort FrameSize) GetEnterOperands()
+        {
+            ThrowIfInvalid();
+            ThrowIfIncorrectOpcode(expected: Opcode.ENTER);
+
+            var argCount = Code[Address + 1];
+            var frameSize = MemoryMarshal.Read<ushort>(Bytes[2..]);
+            return (argCount, frameSize);
+        }
+
+        public string? GetEnterFunctionName()
+        {
+            ThrowIfInvalid();
+            ThrowIfIncorrectOpcode(expected: Opcode.ENTER);
+
+            var funcNameLengthIncludingNullChar = Code[Address + 4];
+            var funcName = funcNameLengthIncludingNullChar > 0 ?
+                                System.Text.Encoding.UTF8.GetString(Bytes.Slice(start: 5, length: funcNameLengthIncludingNullChar - 1)) :
+                                null;
+            return funcName;
+        }
+
+        public (byte ArgCount, byte ReturnCount) GetLeaveOperands()
+        {
+            ThrowIfInvalid();
+            ThrowIfIncorrectOpcode(expected: Opcode.LEAVE);
+
+            return GetTwoU8();
+        }
+
+        private void ThrowIfInvalid()
+        {
+            if (!IsValid)
+            {
+                throw new InvalidOperationException("This instruction is invalid");
+            }
+        }
+
+        private void ThrowIfIncorrectOpcode(Opcode expected)
+        {
+            if (Opcode != expected)
+            {
+                throw new InvalidOperationException($"This instruction is not a {expected} instruction");
+            }
+        }
+
+        private void ThrowIfIncorrectByteSize(int expected)
+        {
+            if (ByteSize != expected)
+            {
+                throw new InvalidOperationException($"This instruction size is not {expected} bytes");
+            }
         }
 
         public static implicit operator bool(InstructionIterator it) => it.IsValid;
