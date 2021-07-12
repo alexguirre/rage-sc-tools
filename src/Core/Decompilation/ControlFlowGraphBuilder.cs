@@ -21,6 +21,7 @@
             StartBlocks();
             EndBlocks();
             ConnectBlocks();
+            RemoveUnreachableBlocks();
 
             var cfg = new ControlFlowGraph(function, blocksByStartAddress.Values);
             return cfg;
@@ -136,6 +137,52 @@
                     {
                         block.Successors = new[] { GetBlock(nextInstruction.Address) };
                     }
+                }
+            }
+        }
+
+        private void RemoveUnreachableBlocks()
+        {
+            // Remove blocks that are not successors of any other block, except for the first block
+            // which is the function entrypoint.
+            // These are normally caused by the J after LEAVE that the R* compilers likes to insert
+            // TODO: investigate, are these J after LEAVE part of if-else with returns inside? e.g.:
+            //
+            //  FUNC INT GET_SOMETHING()
+            //      IF TRUE
+            //          RETURN 1
+            //      ELSE
+            //          RETURN 2
+            //      ENDIF
+            //  ENDFUNC
+            //
+
+
+
+            var reachableBlocks = new HashSet<CFGBlock>(capacity: blocksByStartAddress.Count);
+            var blocksToVisit = new Stack<CFGBlock>(capacity: blocksByStartAddress.Count);
+            var firstBlock = blocksByStartAddress.Values.OrderBy(b => b.StartAddress).First();
+
+            blocksToVisit.Push(firstBlock);
+            while (blocksToVisit.Count > 0)
+            {
+                var block = blocksToVisit.Pop();
+                reachableBlocks.Add(block);
+
+                foreach (var succ in block.Successors)
+                {
+                    if (!reachableBlocks.Contains(succ))
+                    {
+                        blocksToVisit.Push(succ);
+                    }
+                }
+            }
+
+            foreach (var (startAddress, block) in blocksByStartAddress.ToArray()) // create a copy to be able to remove blocks from the dictionary inside the foreach
+            {
+                if (!reachableBlocks.Contains(block))
+                {
+                    blocksByStartAddress.Remove(startAddress);
                 }
             }
         }
