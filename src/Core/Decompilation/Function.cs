@@ -1,6 +1,6 @@
 ﻿namespace ScTools.Decompilation
 {
-    using ScTools.ScriptAssembly;
+    using ScTools.Decompilation.Intermediate;
 
     public class Function
     {
@@ -18,6 +18,6 @@
 
         public Function(DecompiledScript script, string name) => (Script, Name) = (script, name);
 
-        public InstructionEnumerator EnumerateInstructions() => new(Script.Code, StartAddress, EndAddress);
+        public InstructionEnumerator EnumerateInstructions() => new(Script.Intermediate.Code, StartAddress, EndAddress);
     }
 }

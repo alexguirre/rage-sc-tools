@@ -118,6 +118,14 @@
         public int GetJumpAddress()
             => Address + 3 + GetJumpOffset();
 
+        public int GetCallAddress()
+        {
+            ThrowIfInvalid();
+            ThrowIfIncorrectOpcode(expected: Opcode.CALL);
+
+            return unchecked((int)GetU24());
+        }
+
         public int GetSwitchCaseCount()
         {
             ThrowIfInvalid();
@@ -187,6 +195,186 @@
             ThrowIfIncorrectOpcode(expected: Opcode.LEAVE);
 
             return GetTwoU8();
+        }
+
+        /// <summary>
+        /// Gets the number of stack slots that this instruction pops and pushes, or <c>-1</c> if it is dynamic.
+        /// </summary>
+        public (int Inputs, int Outputs) GetStackUsage()
+        {
+            ThrowIfInvalid();
+
+            switch (Opcode)
+            {
+                case Opcode.NOP:
+                case Opcode.J:
+                    return (0, 0);
+
+                case Opcode.DROP:
+                    return (1, 0);
+
+                case Opcode.PUSH_CONST_U8:
+                case Opcode.PUSH_CONST_U32:
+                case Opcode.PUSH_CONST_F:
+                case Opcode.PUSH_CONST_S16:
+                case Opcode.PUSH_CONST_U24:
+                case Opcode.PUSH_CONST_M1:
+                case Opcode.PUSH_CONST_0:
+                case Opcode.PUSH_CONST_1:
+                case Opcode.PUSH_CONST_2:
+                case Opcode.PUSH_CONST_3:
+                case Opcode.PUSH_CONST_4:
+                case Opcode.PUSH_CONST_5:
+                case Opcode.PUSH_CONST_6:
+                case Opcode.PUSH_CONST_7:
+                case Opcode.PUSH_CONST_FM1:
+                case Opcode.PUSH_CONST_F0:
+                case Opcode.PUSH_CONST_F1:
+                case Opcode.PUSH_CONST_F2:
+                case Opcode.PUSH_CONST_F3:
+                case Opcode.PUSH_CONST_F4:
+                case Opcode.PUSH_CONST_F5:
+                case Opcode.PUSH_CONST_F6:
+                case Opcode.PUSH_CONST_F7:
+                case Opcode.LOCAL_U8:
+                case Opcode.LOCAL_U8_LOAD:
+                case Opcode.STATIC_U8:
+                case Opcode.STATIC_U8_LOAD:
+                case Opcode.LOCAL_U16:
+                case Opcode.LOCAL_U16_LOAD:
+                case Opcode.STATIC_U16:
+                case Opcode.STATIC_U16_LOAD:
+                case Opcode.GLOBAL_U16:
+                case Opcode.GLOBAL_U16_LOAD:
+                case Opcode.GLOBAL_U24:
+                case Opcode.GLOBAL_U24_LOAD:
+                case Opcode.CATCH:
+                    return (0, 1);
+
+                case Opcode.PUSH_CONST_U8_U8:
+                    return (0, 2);
+
+                case Opcode.PUSH_CONST_U8_U8_U8:
+                    return (0, 3);
+
+                case Opcode.LOCAL_U8_STORE:
+                case Opcode.STATIC_U8_STORE:
+                case Opcode.LOCAL_U16_STORE:
+                case Opcode.STATIC_U16_STORE:
+                case Opcode.GLOBAL_U16_STORE:
+                case Opcode.GLOBAL_U24_STORE:
+                case Opcode.JZ:
+                case Opcode.SWITCH:
+                    return (1, 0);
+
+                case Opcode.INOT:
+                case Opcode.INEG:
+                case Opcode.FNEG:
+                case Opcode.I2F:
+                case Opcode.F2I:
+                case Opcode.LOAD:
+                case Opcode.IADD_U8:
+                case Opcode.IMUL_U8:
+                case Opcode.IADD_S16:
+                case Opcode.IMUL_S16:
+                case Opcode.IOFFSET_U8:
+                case Opcode.IOFFSET_U8_LOAD:
+                case Opcode.IOFFSET_S16:
+                case Opcode.IOFFSET_S16_LOAD:
+                case Opcode.STRING:
+                case Opcode.STRINGHASH:
+                case Opcode.THROW:
+                    return (1, 1);
+
+                case Opcode.DUP:
+                    return (1, 2);
+
+                case Opcode.F2V:
+                    return (1, 3);
+
+                case Opcode.STORE:
+                case Opcode.IOFFSET_U8_STORE:
+                case Opcode.IOFFSET_S16_STORE:
+                case Opcode.IEQ_JZ:
+                case Opcode.INE_JZ:
+                case Opcode.IGT_JZ:
+                case Opcode.IGE_JZ:
+                case Opcode.ILT_JZ:
+                case Opcode.ILE_JZ:
+                case Opcode.TEXT_LABEL_ASSIGN_STRING:
+                case Opcode.TEXT_LABEL_ASSIGN_INT:
+                case Opcode.TEXT_LABEL_APPEND_STRING:
+                case Opcode.TEXT_LABEL_APPEND_INT:
+                    return (2, 0);
+
+                case Opcode.IADD:
+                case Opcode.ISUB:
+                case Opcode.IMUL:
+                case Opcode.IDIV:
+                case Opcode.IMOD:
+                case Opcode.IEQ:
+                case Opcode.INE:
+                case Opcode.IGT:
+                case Opcode.IGE:
+                case Opcode.ILT:
+                case Opcode.ILE:
+                case Opcode.FADD:
+                case Opcode.FSUB:
+                case Opcode.FMUL:
+                case Opcode.FDIV:
+                case Opcode.FMOD:
+                case Opcode.FEQ:
+                case Opcode.FNE:
+                case Opcode.FGT:
+                case Opcode.FGE:
+                case Opcode.FLT:
+                case Opcode.FLE:
+                case Opcode.IAND:
+                case Opcode.IOR:
+                case Opcode.IXOR:
+                case Opcode.STORE_REV:
+                case Opcode.ARRAY_U8:
+                case Opcode.ARRAY_U8_LOAD:
+                case Opcode.IOFFSET:
+                case Opcode.ARRAY_U16:
+                case Opcode.ARRAY_U16_LOAD:
+                    return (2, 1);
+
+
+
+                case Opcode.ARRAY_U8_STORE:
+                case Opcode.ARRAY_U16_STORE:
+                    return (3, 0);
+
+                case Opcode.VNEG:
+                    return (3, 3);
+
+                case Opcode.VADD:
+                case Opcode.VSUB:
+                case Opcode.VMUL:
+                case Opcode.VDIV:
+                    return (6, 3);
+
+                case Opcode.NATIVE:
+                    var native = GetNativeOperands();
+                    return (native.ArgCount, native.ReturnCount);
+                    
+                case Opcode.ENTER: // TODO: calculate stack usage of ENTER, LEAVE and CALL?
+                case Opcode.LEAVE:
+                case Opcode.CALL:
+                case Opcode.CALLINDIRECT:
+                    return (-1, -1);
+
+                case Opcode.LOAD_N:
+                    return (2, -1);
+
+                case Opcode.STORE_N:
+                case Opcode.TEXT_LABEL_COPY:
+                    return (-1, 0);
+
+                default:
+                    throw new InvalidOperationException("Unknown opcode");
+            }
         }
 
         private void ThrowIfInvalid()
