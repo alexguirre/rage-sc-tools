@@ -6,7 +6,7 @@
 
     using ScTools.Decompilation.Intermediate;
 
-    public class CFGBlock
+    public class ControlFlowBlock
     {
         private InstructionIterator? firstInstruction;
         private InstructionIterator? lastInstruction;
@@ -14,18 +14,18 @@
         public Function Function { get; }
 
         /// <summary>
-        /// Gets the address of the first instruction of this function.
+        /// Gets the address of the first instruction of this block.
         /// </summary>
         public int StartAddress { get; set; }
         /// <summary>
-        /// Gets the address after the last instruction of this function.
+        /// Gets the address after the last instruction of this block.
         /// </summary>
         public int EndAddress { get; set; }
 
         public bool IsEmpty => StartAddress == EndAddress;
         public bool IsDelimited => StartAddress >= 0 && EndAddress >= 0;
 
-        public CFGBlock[] Successors { get; set; } = Array.Empty<CFGBlock>();
+        public ControlFlowBlock[] Successors { get; set; } = Array.Empty<ControlFlowBlock>();
 
         public InstructionIterator FirstInstruction
         {
@@ -47,7 +47,7 @@
             }
         }
 
-        public CFGBlock(Function function)
+        public ControlFlowBlock(Function function)
         {
             Function = function;
         }

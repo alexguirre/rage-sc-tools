@@ -9,7 +9,7 @@
     public class ControlFlowGraphBuilder
     {
         private readonly Function function;
-        private readonly Dictionary<int, CFGBlock> blocksByStartAddress = new();
+        private readonly Dictionary<int, ControlFlowBlock> blocksByStartAddress = new();
 
         public ControlFlowGraphBuilder(Function function)
         {
@@ -116,7 +116,7 @@
                 {
                     // a switch has as successors all the cases jump targets and the next instruction (default case)
                     var caseCount = lastInstruction.GetSwitchCaseCount();
-                    block.Successors = new CFGBlock[caseCount + 1];
+                    block.Successors = new ControlFlowBlock[caseCount + 1];
 
                     for (int i = 0; i < caseCount; i++)
                     {
@@ -127,7 +127,7 @@
                 else if (lastInstruction.Opcode is Opcode.LEAVE)
                 {
                     // a LEAVE instruction has no successors
-                    block.Successors = Array.Empty<CFGBlock>();
+                    block.Successors = Array.Empty<ControlFlowBlock>();
                 }
                 else
                 {
@@ -159,8 +159,8 @@
 
 
 
-            var reachableBlocks = new HashSet<CFGBlock>(capacity: blocksByStartAddress.Count);
-            var blocksToVisit = new Stack<CFGBlock>(capacity: blocksByStartAddress.Count);
+            var reachableBlocks = new HashSet<ControlFlowBlock>(capacity: blocksByStartAddress.Count);
+            var blocksToVisit = new Stack<ControlFlowBlock>(capacity: blocksByStartAddress.Count);
             var firstBlock = blocksByStartAddress.Values.OrderBy(b => b.StartAddress).First();
 
             blocksToVisit.Push(firstBlock);
@@ -187,13 +187,13 @@
             }
         }
 
-        private CFGBlock GetBlock(int address) => blocksByStartAddress[address];
+        private ControlFlowBlock GetBlock(int address) => blocksByStartAddress[address];
 
         private void StartBlock(int address)
         {
             if (!blocksByStartAddress.ContainsKey(address))
             {
-                blocksByStartAddress.Add(address, new CFGBlock(function) { StartAddress = address, EndAddress = -1 });
+                blocksByStartAddress.Add(address, new ControlFlowBlock(function) { StartAddress = address, EndAddress = -1 });
             }
         }
     }

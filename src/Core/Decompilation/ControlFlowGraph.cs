@@ -9,9 +9,9 @@
     public class ControlFlowGraph
     {
         public Function Function { get; }
-        public CFGBlock[] Blocks { get; }
+        public ControlFlowBlock[] Blocks { get; }
 
-        public ControlFlowGraph(Function function, IEnumerable<CFGBlock> blocks)
+        public ControlFlowGraph(Function function, IEnumerable<ControlFlowBlock> blocks)
         {
             Function = function;
             Blocks = blocks.OrderBy(b => b.StartAddress).ToArray();
@@ -37,7 +37,7 @@
             w.WriteLine();
 
             // nodes
-            var blocksIds = new Dictionary<CFGBlock, int>();
+            var blocksIds = new Dictionary<ControlFlowBlock, int>();
             foreach (var block in Blocks)
             {
                 var id = blocksIds.Count;
