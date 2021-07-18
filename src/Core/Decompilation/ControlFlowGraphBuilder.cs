@@ -4,7 +4,7 @@
     using System.Collections.Generic;
     using System.Linq;
 
-    using ScTools.ScriptAssembly;
+    using ScTools.Decompilation.Intermediate;
 
     public class ControlFlowGraphBuilder
     {
@@ -38,7 +38,7 @@
                     StartBlock(inst.Address);
                 }
 
-                if (inst.Opcode.IsJump())
+                if (inst.Opcode is Opcode.J or Opcode.JZ)
                 {
                     // start a new block at the target and at the next instruction
                     StartBlock(inst.GetJumpAddress());
@@ -99,7 +99,7 @@
                     // an unconditional jump has a single successor, the jump target
                     block.Successors = new[] { GetBlock(lastInstruction.GetJumpAddress()) };
                 }
-                else if (lastInstruction.Opcode.IsJump())
+                else if (lastInstruction.Opcode is Opcode.JZ)
                 {
                     // a conditional jump has two successors, the jump target and the next instruction
                     var nextInstruction = lastInstruction.Next();

@@ -3,19 +3,17 @@
     using System.Collections.Generic;
     using System.Linq;
 
+    using ScTools.Decompilation.Intermediate;
     using ScTools.GameFiles;
-    using ScTools.ScriptAssembly;
 
     public class DecompiledScript
     {
-        public Script Script { get; }
-        public byte[] Code { get; }
+        public IntermediateScript Intermediate { get; }
         public List<Function> Functions { get; } = new();
 
         public DecompiledScript(Script sc)
         {
-            Script = sc;
-            Code = sc.MergeCodePages();
+            Intermediate = FiveConverter.Convert(sc);
             IdentifyFunctions();
             BuildControlFlowGraphs();
         }
@@ -25,7 +23,7 @@
             Functions.Clear();
 
             var addressAfterLastLeaveInst = 0;
-            foreach (var inst in new InstructionEnumerator(Code))
+            foreach (var inst in Intermediate.EnumerateInstructions())
             {
                 switch (inst.Opcode)
                 {
@@ -43,7 +41,7 @@
                         string funcName;
                         if (funcAddress == 0)
                         {
-                            funcName = Script.Name;
+                            funcName = Intermediate.Name;
                         }
                         else
                         {
@@ -65,7 +63,7 @@
 
             if (Functions.Count > 0)
             {
-                Functions.Last().EndAddress = Code.Length;
+                Functions.Last().EndAddress = Intermediate.Code.Length;
             }
         }
 

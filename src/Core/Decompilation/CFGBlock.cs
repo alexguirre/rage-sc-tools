@@ -4,7 +4,7 @@
     using System.Linq;
     using System.Text;
 
-    using ScTools.ScriptAssembly;
+    using ScTools.Decompilation.Intermediate;
 
     public class CFGBlock
     {
@@ -56,7 +56,7 @@
         {
             ThrowIfNotDelimited();
             ThrowIfEmpty();
-            return new(Function.Script.Code, StartAddress, EndAddress);
+            return new(Function.Script.Intermediate.Code, StartAddress, EndAddress);
         }
 
         private void ThrowIfNotDelimited()
@@ -81,7 +81,7 @@
             sb.AppendFormat("{{ StartAddress: {0}, EndAddress: {1}, Instructions: [", StartAddress, EndAddress);
             if (IsDelimited && !IsEmpty)
             {
-                sb.AppendJoin(", ", EnumerateInstructions().Select(inst => inst.Opcode.Mnemonic()));
+                sb.AppendJoin(", ", EnumerateInstructions().Select(inst => inst.Opcode.ToString()));
             }
             sb.Append("] }}");
             return sb.ToString();
