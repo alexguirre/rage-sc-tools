@@ -164,18 +164,6 @@
             return Bytes[1];
         }
 
-        public int GetLabelAddress()
-        {
-            ThrowIfInvalid();
-            ThrowIfIncorrectOpcode(expected: Opcode.LABEL);
-
-            var lo = (int)Code[Address + 1];
-            var mi = (int)Code[Address + 2];
-            var hi = (int)Code[Address + 3];
-
-            return (hi << 16) | (mi << 8) | lo;
-        }
-
         private void ThrowIfInvalid()
         {
             if (!IsValid)

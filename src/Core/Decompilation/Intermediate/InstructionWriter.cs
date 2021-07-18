@@ -1,6 +1,7 @@
 ﻿namespace ScTools.Decompilation.Intermediate
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Text;
 
@@ -163,23 +164,9 @@
         public void TextLabelAppendInt(byte textLabelLength) => Write(Opcode.TEXT_LABEL_APPEND_INT, textLabelLength);
         public void TextLabelCopy() => Write(Opcode.TEXT_LABEL_COPY);
         public void CallIndirect() => Write(Opcode.CALLINDIRECT);
-        public void Label(int originalAddress)
+
+        public void Finish(Dictionary<int, int> labelsOriginalAddressToIntermediateAddress)
         {
-            var lo = (byte)(originalAddress & 0xFF);
-            var mi = (byte)((originalAddress & 0xFF00) >> 8);
-            var hi = (byte)((originalAddress & 0xFF0000) >> 16);
-
-            Write(Opcode.LABEL);
-            writer.Write(lo);
-            writer.Write(mi);
-            writer.Write(hi);
-        }
-
-        public void Finish()
-        {
-            // TODO: improve how address translation is handled.
-            //       This final conversion is too slow and LABEL instructions consume too much memory (4 bytes per original instruction)
-
             var codeCopy = ToArray();
             foreach (var inst in new InstructionEnumerator(codeCopy))
             {
@@ -188,7 +175,7 @@
                     case Opcode.J:
                     case Opcode.JZ:
                     {
-                        var newAddress = OriginalAddressToIntermediateAddress(codeCopy, inst.GetJumpAddress());
+                        var newAddress = labelsOriginalAddressToIntermediateAddress[inst.GetJumpAddress()];
                         writer.Seek(inst.Address + 1, SeekOrigin.Begin);
                         writer.Write(newAddress);
                         break;
@@ -196,7 +183,7 @@
 
                     case Opcode.CALL:
                     {
-                        var newAddress = OriginalAddressToIntermediateAddress(codeCopy, inst.GetCallAddress());
+                        var newAddress = labelsOriginalAddressToIntermediateAddress[inst.GetCallAddress()];
                         writer.Seek(inst.Address + 1, SeekOrigin.Begin);
                         writer.Write(newAddress);
                         break;
@@ -207,7 +194,7 @@
                         var caseCount = inst.GetSwitchCaseCount();
                         for (int i = 0; i < caseCount; i++)
                         {
-                            var newAddress = OriginalAddressToIntermediateAddress(codeCopy, inst.GetSwitchCase(i).JumpAddress);
+                            var newAddress = labelsOriginalAddressToIntermediateAddress[inst.GetSwitchCase(i).JumpAddress];
                             writer.Seek(inst.Address + 2 + 8 * i + 4, SeekOrigin.Begin);
                             writer.Write(newAddress);
                         }
@@ -215,20 +202,6 @@
                     }
                 }
             }
-        }
-
-        // slow...
-        private static int OriginalAddressToIntermediateAddress(byte[] code, int originalAddress)
-        {
-            foreach (var inst in new InstructionEnumerator(code))
-            {
-                if (inst.Opcode is Opcode.LABEL && inst.GetLabelAddress() == originalAddress)
-                {
-                    return inst.Address;
-                }
-            }
-
-            return -1;
         }
     }
 }

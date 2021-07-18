@@ -9,11 +9,6 @@
         {
             var opcode = inst.Opcode;
 
-            if (opcode is Opcode.LABEL)
-            {
-                return;
-            }
-
             w.Write(opcode.ToString());
             if (opcode.ByteSize() != 1)
             {

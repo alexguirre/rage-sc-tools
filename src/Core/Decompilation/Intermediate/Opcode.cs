@@ -71,11 +71,6 @@
         TEXT_LABEL_APPEND_INT,
         TEXT_LABEL_COPY,
         CALLINDIRECT,
-
-        /// <summary>
-        /// Not a real opcode, used to store the original address of a instruction.
-        /// </summary>
-        LABEL = 0xFF,
     }
 
     public static class OpcodeExtensions
@@ -106,7 +101,6 @@
                 Opcode.TEXT_LABEL_ASSIGN_INT or
                 Opcode.TEXT_LABEL_APPEND_STRING or
                 Opcode.TEXT_LABEL_APPEND_INT        => 2,   // opcode + text label length = 1 + 1 bytes
-                Opcode.LABEL                        => 4,   // opcode + address = 4 bytes
                 _                                   => 1,   // opcode = 1 byte
             };
 #pragma warning restore format

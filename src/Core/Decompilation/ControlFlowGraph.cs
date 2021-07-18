@@ -46,14 +46,9 @@
                 w.Write("    b{0} [label=\"", id);
                 if (block.IsDelimited && !block.IsEmpty)
                 {
-                    w.Write("lbl_{0}:\\l", block.StartAddress);
+                    w.Write("{0:D8}:\\l", block.StartAddress);
                     foreach (var inst in block.EnumerateInstructions())
                     {
-                        if (inst.Opcode is Opcode.LABEL)
-                        {
-                            continue;
-                        }
-
                         w.Write("  ");
                         InstructionFormatter.Format(w, inst);
                         w.Write("\\l");  // \l left-aligns the line

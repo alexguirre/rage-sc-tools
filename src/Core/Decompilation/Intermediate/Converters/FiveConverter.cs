@@ -1,9 +1,13 @@
 ﻿namespace ScTools.Decompilation.Intermediate
 {
     using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Linq;
 
     using ScTools.GameFiles;
 
+    using VInstEnumerator = ScriptAssembly.InstructionEnumerator;
     using VInstIterator = ScriptAssembly.InstructionIterator;
     using VOpcode = ScriptAssembly.Opcode;
 
@@ -26,6 +30,10 @@
 
             using var writer = new InstructionWriter();
             var code = Input.MergeCodePages();
+
+            var labels = Output.LabelsOriginalAddressToIntermediateAddress;
+            labels.Clear();
+            IdentifyCodeLabels(labels, code);
 
             void WritePushConstIOrStringOrIOffset(ref VInstIterator inst, int value)
             {
@@ -62,7 +70,11 @@
 
             for (var vInst = VInstIterator.Begin(code); vInst; vInst = vInst.Next())
             {
-                writer.Label(vInst.Address);
+                if (labels.ContainsKey(vInst.Address))
+                {
+                    labels[vInst.Address] = writer.CodeSize;
+                }
+
                 switch (vInst.Opcode)
                 {
                     case VOpcode.NOP: writer.Nop(); break;
@@ -388,9 +400,64 @@
                         throw new InvalidOperationException("STRING or IOFFSET instructions should have been already converted");
                 }
             }
-            writer.Finish();
+            Debug.Assert(labels.Values.All(v => v != -1)); // make sure all labels where translated to the new address
+            writer.Finish(labels);
 
             Output.Code = writer.ToArray();
+        }
+
+        // TODO: similar to Disassembler.IdentifyCodeLabels, refactor
+        private void IdentifyCodeLabels(Dictionary<int, int> labels, byte[] code)
+        {
+            if (code.Length == 0)
+            {
+                return;
+            }
+
+            var addressAfterLastLeaveInst = 0;
+            foreach (var inst in new VInstEnumerator(code))
+            {
+                switch (inst.Opcode)
+                {
+                    case VOpcode.J:
+                    case VOpcode.JZ:
+                    case VOpcode.IEQ_JZ:
+                    case VOpcode.INE_JZ:
+                    case VOpcode.IGT_JZ:
+                    case VOpcode.IGE_JZ:
+                    case VOpcode.ILT_JZ:
+                    case VOpcode.ILE_JZ:
+                        labels.TryAdd(inst.GetJumpAddress(), -1);
+                        break;
+                    case VOpcode.SWITCH:
+                        var caseCount = inst.GetSwitchCaseCount();
+                        for (int i = 0; i < caseCount; i++)
+                        {
+                            var (_, _, caseJumpToAddress) = inst.GetSwitchCase(i);
+                            labels.TryAdd(caseJumpToAddress, -1);
+                        }
+                        break;
+                    case VOpcode.ENTER:
+                        var funcAddress = inst.Address;
+                        // Functions at page boundaries may not start with an ENTER instruction, they have NOPs and a J before
+                        // the ENTER to skip the page boundary.
+                        // To solve those cases, we check if the ENTER comes after a LEAVE instruction, if it doesn't we use the address
+                        // after the LEAVE as the function address, which should at least be correct for vanilla scripts
+                        if (addressAfterLastLeaveInst != inst.Address)
+                        {
+                            funcAddress = addressAfterLastLeaveInst;
+                        }
+
+                        labels.TryAdd(funcAddress, -1);
+                        break;
+                    case VOpcode.LEAVE:
+                        addressAfterLastLeaveInst = inst.Address + inst.ByteSize;
+                        break;
+                    case VOpcode.CALL:
+                        labels.TryAdd(inst.GetCallAddress(), -1);
+                        break;
+                }
+            }
         }
 
         public static IntermediateScript Convert(Script input)
