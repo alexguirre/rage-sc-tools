@@ -419,23 +419,6 @@
 
                 var ysc = new YscFile();
                 ysc.Load(fileData);
-
-                // intermediate test
-                {
-                    var dir = Path.Combine(Path.GetDirectoryName(scFile.FullName), "intermediate\\");
-                    if (!Directory.Exists(dir))
-                    {
-                        Directory.CreateDirectory(dir);
-                    }
-                    var f = Path.Combine(dir, scFile.Name + ".i");
-
-                    var intermediateScript = FiveConverter.Convert(ysc.Script);
-                    using var w = new StreamWriter(f);
-                    intermediateScript.Dump(w);
-
-                    Print($"Intermediate code written to '{f}'");
-                }
-
                 return ysc.Script;
             }));
             var after = GC.GetTotalMemory(forceFullCollection: true);

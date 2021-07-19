@@ -400,6 +400,12 @@
                         throw new InvalidOperationException("STRING or IOFFSET instructions should have been already converted");
                 }
             }
+
+            if (labels.ContainsKey(code.Length)) // in some scripts there is a jump to the end of the code, translate its label here
+            {
+                labels[code.Length] = writer.CodeSize;
+            }
+
             Debug.Assert(labels.Values.All(v => v != -1)); // make sure all labels where translated to the new address
             writer.Finish(labels);
 

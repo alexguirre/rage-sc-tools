@@ -63,7 +63,7 @@
         {
             if (!IsDelimited)
             {
-                throw new InvalidOperationException($"The control-flow block is not delimited ({nameof(StartAddress)}: {StartAddress}, {nameof(EndAddress)}: {EndAddress})");
+                throw new InvalidOperationException($"The control-flow block is not delimited (Script: {Function.Script.Intermediate.Name}, {nameof(StartAddress)}: {StartAddress}, {nameof(EndAddress)}: {EndAddress})");
             }
         }
 
@@ -71,7 +71,7 @@
         {
             if (IsEmpty)
             {
-                throw new InvalidOperationException($"The control-flow block is empty ({nameof(StartAddress)}: {StartAddress}, {nameof(EndAddress)}: {EndAddress})");
+                throw new InvalidOperationException($"The control-flow block is empty (Script: {Function.Script.Intermediate.Name}, {nameof(StartAddress)}: {StartAddress}, {nameof(EndAddress)}: {EndAddress})");
             }
         }
 
