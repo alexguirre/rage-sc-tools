@@ -1,5 +1,6 @@
 ﻿namespace ScTools.Decompilation
 {
+    using System;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
@@ -65,14 +66,35 @@
             // edges
             foreach (var from in Blocks)
             {
-                foreach (var to in from.Successors)
+                foreach (var edge in from.Successors)
                 {
-                    w.WriteLine("    b{0} -> b{1}", blocksIds[from], blocksIds[to]);
+                    var to = edge.To;
+                    w.WriteLine("    b{0} -> b{1} [color = {2}, xlabel = \"{3}\", fontcolor = {2}]", blocksIds[from], blocksIds[to], EdgeToColor(edge), EdgeToLabel(edge));
                 }
             }
 
             // footer
             w.WriteLine("}");
+
+            static string EdgeToColor(ControlFlowEdge edge)
+                => edge.Kind switch
+                {
+                    ControlFlowEdgeKind.Unconditional => "black",
+                    ControlFlowEdgeKind.IfFalse => "red",
+                    ControlFlowEdgeKind.IfTrue => "green",
+                    ControlFlowEdgeKind.SwitchCase => "blue",
+                    _ => throw new NotSupportedException(),
+                };
+
+            static string EdgeToLabel(ControlFlowEdge edge)
+                => edge.Kind switch
+                {
+                    ControlFlowEdgeKind.Unconditional => "",
+                    ControlFlowEdgeKind.IfFalse => "if false",
+                    ControlFlowEdgeKind.IfTrue => "if true",
+                    ControlFlowEdgeKind.SwitchCase => edge.SwitchCaseValue is null ? "case default" : $"case {edge.SwitchCaseValue.Value}",
+                    _ => throw new NotSupportedException(),
+                };
         }
     }
 }

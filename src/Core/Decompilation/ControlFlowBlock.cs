@@ -25,7 +25,7 @@
         public bool IsEmpty => StartAddress == EndAddress;
         public bool IsDelimited => StartAddress >= 0 && EndAddress >= 0;
 
-        public ControlFlowBlock[] Successors { get; set; } = Array.Empty<ControlFlowBlock>();
+        public ControlFlowEdge[] Successors { get; set; } = Array.Empty<ControlFlowEdge>();
 
         public InstructionIterator FirstInstruction
         {

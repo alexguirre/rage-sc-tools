@@ -97,7 +97,7 @@
                 if (lastInstruction.Opcode is Opcode.J)
                 {
                     // an unconditional jump has a single successor, the jump target
-                    block.Successors = new[] { GetBlock(lastInstruction.GetJumpAddress()) };
+                    block.Successors = new[] { CreateEdge(block, GetBlock(lastInstruction.GetJumpAddress())) };
                 }
                 else if (lastInstruction.Opcode is Opcode.JZ)
                 {
@@ -105,29 +105,30 @@
                     var nextInstruction = lastInstruction.Next();
                     if (nextInstruction && nextInstruction.Address < function.EndAddress)
                     {
-                        block.Successors = new[] { GetBlock(lastInstruction.GetJumpAddress()), GetBlock(nextInstruction.Address) };
+                        block.Successors = new[] { CreateIfFalseEdge(block, GetBlock(lastInstruction.GetJumpAddress())), CreateIfTrueEdge(block, GetBlock(nextInstruction.Address)) };
                     }
                     else
                     {
-                        block.Successors = new[] { GetBlock(lastInstruction.GetJumpAddress()) };
+                        block.Successors = new[] { CreateIfFalseEdge(block, GetBlock(lastInstruction.GetJumpAddress())) };
                     }
                 }
                 else if (lastInstruction.Opcode is Opcode.SWITCH)
                 {
                     // a switch has as successors all the cases jump targets and the next instruction (default case)
                     var caseCount = lastInstruction.GetSwitchCaseCount();
-                    block.Successors = new ControlFlowBlock[caseCount + 1];
+                    block.Successors = new ControlFlowEdge[caseCount + 1];
 
                     for (int i = 0; i < caseCount; i++)
                     {
-                        block.Successors[i] = GetBlock(lastInstruction.GetSwitchCase(i).JumpAddress);
+                        var (caseValue, caseJumpAddress) = lastInstruction.GetSwitchCase(i);
+                        block.Successors[i] = CreateSwitchCaseEdge(block, GetBlock(caseJumpAddress), caseValue);
                     }
-                    block.Successors[caseCount] = GetBlock(lastInstruction.Next().Address);
+                    block.Successors[caseCount] = CreateSwitchCaseEdge(block, GetBlock(lastInstruction.Next().Address), value: null);
                 }
                 else if (lastInstruction.Opcode is Opcode.LEAVE)
                 {
                     // a LEAVE instruction has no successors
-                    block.Successors = Array.Empty<ControlFlowBlock>();
+                    block.Successors = Array.Empty<ControlFlowEdge>();
                 }
                 else
                 {
@@ -135,7 +136,7 @@
                     var nextInstruction = lastInstruction.Next();
                     if (nextInstruction && nextInstruction.Address < function.EndAddress)
                     {
-                        block.Successors = new[] { GetBlock(nextInstruction.Address) };
+                        block.Successors = new[] { CreateEdge(block, GetBlock(nextInstruction.Address)) };
                     }
                 }
             }
@@ -171,9 +172,9 @@
 
                 foreach (var succ in block.Successors)
                 {
-                    if (!reachableBlocks.Contains(succ))
+                    if (!reachableBlocks.Contains(succ.To))
                     {
-                        blocksToVisit.Push(succ);
+                        blocksToVisit.Push(succ.To);
                     }
                 }
             }
@@ -196,5 +197,38 @@
                 blocksByStartAddress.Add(address, new ControlFlowBlock(function) { StartAddress = address, EndAddress = -1 });
             }
         }
+
+        private ControlFlowEdge CreateEdge(ControlFlowBlock from, ControlFlowBlock to)
+            => new()
+            {
+                From = from,
+                To = to,
+                Kind = ControlFlowEdgeKind.Unconditional,
+            };
+
+        private ControlFlowEdge CreateSwitchCaseEdge(ControlFlowBlock from, ControlFlowBlock to, int? value)
+            => new()
+            {
+                From = from,
+                To = to,
+                Kind = ControlFlowEdgeKind.SwitchCase,
+                SwitchCaseValue = value,
+            };
+
+        private ControlFlowEdge CreateIfFalseEdge(ControlFlowBlock from, ControlFlowBlock to)
+            => new()
+            {
+                From = from,
+                To = to,
+                Kind = ControlFlowEdgeKind.IfFalse,
+            };
+
+        private ControlFlowEdge CreateIfTrueEdge(ControlFlowBlock from, ControlFlowBlock to)
+            => new()
+            {
+                From = from,
+                To = to,
+                Kind = ControlFlowEdgeKind.IfTrue,
+            };
     }
 }
