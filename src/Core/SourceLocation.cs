@@ -1,6 +1,7 @@
 ﻿namespace ScTools
 {
     using System;
+    using System.Diagnostics;
 
     using Antlr4.Runtime;
     using Antlr4.Runtime.Misc;
@@ -11,16 +12,19 @@
     public readonly struct SourceLocation : IEquatable<SourceLocation>, IComparable<SourceLocation>
     {
         public static readonly SourceLocation Unknown = default;
+        public static SourceLocation EOF(string filePath) => new(0, 0, filePath);
 
-        public bool IsUnknown => Line == default || Column == default;
+        public bool IsUnknown => Line == 0 && Column == 0 && FilePath == null;
+        public bool IsEOF => Line == 0 && Column == 0 && FilePath != null;
         public int Line { get; }
         public int Column { get; }
+        public string FilePath { get; }
 
-        public SourceLocation(int line, int column) => (Line, Column) = (line, column);
+        public SourceLocation(int line, int column, string filePath) => (Line, Column, FilePath) = (line, column, filePath);
 
-        public override string ToString() => $"{{ {nameof(Line)}: {Line}, {nameof(Column)}: {Column} }}";
+        public override string ToString() => $"{{ {nameof(Line)}: {Line}, {nameof(Column)}: {Column}, {nameof(FilePath)}: '{FilePath}' }}";
 
-        public void Deconstruct(out int line, out int column) => (line, column) = (Line, Column);
+        public void Deconstruct(out int line, out int column, out string filePath) => (line, column, filePath) = (Line, Column, FilePath);
 
         public bool Equals(SourceLocation other) => (Line, Column).Equals((other.Line, other.Column));
 
@@ -39,7 +43,7 @@
         public override int GetHashCode() => (Line, Column).GetHashCode();
         public override bool Equals(object? obj) => obj is SourceLocation l && Equals(l);
 
-        public static implicit operator SourceLocation((int Line, int Column) location) => new SourceLocation(location.Line, location.Column);
+        public static implicit operator SourceLocation((int Line, int Column, string FilePath) location) => new SourceLocation(location.Line, location.Column, location.FilePath);
 
         public static bool operator <(SourceLocation left, SourceLocation right) => left.CompareTo(right) < 0;
         public static bool operator <=(SourceLocation left, SourceLocation right) => left.CompareTo(right) <= 0;
@@ -50,23 +54,31 @@
         public static bool operator !=(SourceLocation left, SourceLocation right) => !left.Equals(right);
     }
 
+    /// <summary>
+    /// Represents a range [start..end] within a source file.
+    /// </summary>
     public readonly struct SourceRange : IEquatable<SourceRange>
     {
         public static readonly SourceRange Unknown = default;
+        public static SourceRange EOF(string filePath) => new((0, 0, filePath), (0, 0, filePath));
 
         public bool IsUnknown => Start.IsUnknown || End.IsUnknown;
-        public string FilePath { get; }
+        public bool IsEOF => Start.IsEOF || End.IsEOF;
+        public string FilePath => Start.FilePath;
         public SourceLocation Start { get; }
-        public SourceLocation End { get; }
+        public SourceLocation End { get; } // inclusive
 
-        public SourceRange(string filePath, SourceLocation start, SourceLocation end)
-            => (FilePath, Start, End) = (filePath, start, end);
+        public SourceRange(SourceLocation start, SourceLocation end)
+        {
+            Debug.Assert(start.FilePath == end.FilePath);
+            (Start, End) = (start, end);
+        }
 
         public override string ToString()
-            => $"{{ {nameof(FilePath)}: '{FilePath}', {nameof(Start)}: {Start}, {nameof(End)}: {End} }}";
+            => $"{{ {nameof(Start)}: {Start}, {nameof(End)}: {End} }}";
 
-        public void Deconstruct(out string filePath, out SourceLocation start, out SourceLocation end)
-            => (filePath, start, end) = (FilePath, Start, End);
+        public void Deconstruct(out SourceLocation start, out SourceLocation end)
+            => (start, end) = (Start, End);
 
         public bool Contains(SourceLocation location) => location >= Start && location <= End;
         public bool Contains(SourceRange range) => FilePath == range.FilePath && Contains(range.Start) && Contains(range.End);
@@ -82,9 +94,8 @@
         public static SourceRange FromTokens(string filePath, IToken start, IToken? stop)
         {
             stop ??= start;
-            return new SourceRange(filePath,
-                                   (start.Line, start.Column + 1),
-                                   (stop.Line, stop.Column + 1 + Interval.Of(stop.StartIndex, stop.StopIndex).Length));
+            return new SourceRange((start.Line, start.Column + 1, filePath),
+                                   (stop.Line, stop.Column + 1 + Interval.Of(stop.StartIndex, stop.StopIndex).Length, filePath));
         }
     }
 }

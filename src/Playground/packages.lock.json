@@ -1,7 +1,7 @@
 {
   "version": 1,
   "dependencies": {
-    ".NETCoreApp,Version=v5.0": {
+    "net6.0": {
       "Antlr4.Runtime.Standard": {
         "type": "Transitive",
         "resolved": "4.8.0",

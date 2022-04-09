@@ -3,7 +3,7 @@
     using System;
     using System.Text;
 
-    internal static class SpanExtensions
+    public static class SpanExtensions
     {
         public static uint ToLowercaseHash(this ReadOnlySpan<char> s)
         {

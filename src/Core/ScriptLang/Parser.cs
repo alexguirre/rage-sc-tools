@@ -80,7 +80,7 @@
 
             if (!scriptFound)
             {
-                diagnostics.AddError("SCRIPT declaration is missing", new(OutputAst.Source.FilePath, OutputAst.Source.End, OutputAst.Source.End));
+                diagnostics.AddError("SCRIPT declaration is missing", new(OutputAst.Source.End, OutputAst.Source.End));
             }
         }
 
@@ -612,9 +612,8 @@
             {
                 var source = offendingSymbol is IToken t ?
                                 SourceRange.FromTokens(parser.CurrentFile, t, null) :
-                                new SourceRange(parser.CurrentFile,
-                                                new SourceLocation(line, charPositionInLine),
-                                                new SourceLocation(line, charPositionInLine));
+                                new SourceRange(new SourceLocation(line, charPositionInLine, parser.CurrentFile),
+                                                new SourceLocation(line, charPositionInLine, parser.CurrentFile));
                 parser.Diagnostics.AddError(msg, source);
             }
         }

@@ -12,15 +12,16 @@
 
     public sealed class Diagnostic
     {
+        public int Code { get; } = -1;
         public DiagnosticTag Tag { get; }
         public string Message { get; }
         public SourceRange Source { get; }
 
-        public Diagnostic(DiagnosticTag tag, string message, SourceRange source)
-            => (Tag, Message, Source) = (tag, message, source);
+        public Diagnostic(int code, DiagnosticTag tag, string message, SourceRange source)
+            => (Code, Tag, Message, Source) = (code, tag, message, source);
 
         public override string ToString()
-            => $"{Source.FilePath}:{Source.Start.Line}:{Source.Start.Column}: {Tag.ToString().ToLowerInvariant()}: {Message}";
+            => $"{Source.FilePath}:{Source.Start.Line}:{Source.Start.Column}: {char.ToUpperInvariant(Tag.ToString().First())}{Code:X4}: {Message}";
     }
 
     public sealed class DiagnosticsReport
@@ -30,13 +31,14 @@
         public bool HasErrors => diagnostics.Any(d => d.Tag is DiagnosticTag.Error);
         public bool HasWarnings => diagnostics.Any(d => d.Tag is DiagnosticTag.Warning);
 
-        public IEnumerable<Diagnostic> AllDiagnostics => diagnostics;
-        public IEnumerable<Diagnostic> Errors => diagnostics.Where(d => d.Tag is DiagnosticTag.Error);
-        public IEnumerable<Diagnostic> Warnings => diagnostics.Where(d => d.Tag is DiagnosticTag.Warning);
+        public Diagnostic[] AllDiagnostics => diagnostics.ToArray();
+        public Diagnostic[] Errors => diagnostics.Where(d => d.Tag is DiagnosticTag.Error).ToArray();
+        public Diagnostic[] Warnings => diagnostics.Where(d => d.Tag is DiagnosticTag.Warning).ToArray();
 
         public void Add(Diagnostic diagnostic) => diagnostics.Add(diagnostic);
-        public void AddError(string message, SourceRange source) => Add(new Diagnostic(DiagnosticTag.Error, message, source));
-        public void AddWarning(string message, SourceRange source) => Add(new Diagnostic(DiagnosticTag.Warning, message, source));
+        public void Add(int code, DiagnosticTag tag, string message, SourceRange source) => Add(new Diagnostic(code, tag, message, source));
+        public void AddError(string message, SourceRange source) => Add(new Diagnostic(-1, DiagnosticTag.Error, message, source));
+        public void AddWarning(string message, SourceRange source) => Add(new Diagnostic(-1, DiagnosticTag.Warning, message, source));
 
         public void Clear() => diagnostics.Clear();
 

@@ -107,9 +107,8 @@ namespace ScTools.ScriptAssembly
             {
                 var source = offendingSymbol is IToken t ?
                                 SourceRange.FromTokens(filePath, t, null) :
-                                new SourceRange(filePath,
-                                                new SourceLocation(line, charPositionInLine),
-                                                new SourceLocation(line, charPositionInLine));
+                                new SourceRange(new SourceLocation(line, charPositionInLine, filePath),
+                                                new SourceLocation(line, charPositionInLine, filePath));
                 diagnostics.AddError(msg, source);
             }
         }

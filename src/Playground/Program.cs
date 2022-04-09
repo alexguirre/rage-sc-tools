@@ -48,7 +48,7 @@
             const string BaseDir = "D:\\sources\\gtav-sc-tools\\examples\\language_sample\\";
 
             Parse(BaseDir + "language_sample_main.sc", nativeDB);
-            Parse(BaseDir + "language_sample_child.sc", nativeDB);
+            //Parse(BaseDir + "language_sample_child.sc", nativeDB);
             //Parse(BaseDir + "language_sample_shared.sch");
 
             ;
@@ -59,44 +59,16 @@
         {
             using var r = new StreamReader(filePath);
             var d = new DiagnosticsReport();
-            var sw = Stopwatch.StartNew();
-            var p = new Parser(r, filePath) { UsingResolver = new FileUsingResolver() };
-            p.Parse(d);
-            sw.Stop();
-            Console.WriteLine(sw.Elapsed);
-            //d.PrintAll(Console.Out);
-
-            var globalSymbols = GlobalSymbolTableBuilder.Build(p.OutputAst, d);
-            IdentificationVisitor.Visit(p.OutputAst, d, globalSymbols, nativeDB);
-            TypeChecker.Check(p.OutputAst, d, globalSymbols);
-            //d.PrintAll(Console.Out);
-            ;
-
-            if (!d.HasErrors)
+            var lexer = new Lexer(filePath, r.ReadToEnd(), d);
+            var tokens = lexer.ToArray();
+            foreach (var token in tokens)
             {
-                Console.WriteLine("CodeGen...");
-                using var sink = new StringWriter();
-                new CodeGenerator(sink, p.OutputAst, globalSymbols, d, nativeDB).Generate();
-                var s = sink.ToString();
-                ;
-                using var reader = new StringReader(s);
-                var assembler = Assembler.Assemble(reader, Path.ChangeExtension(filePath, "scasm"), nativeDB, options: new() { IncludeFunctionNames = true });
-                assembler.Diagnostics.PrintAll(Console.Out);
-                ;
+                Console.WriteLine($"{token.Kind}\t=\t`{token.Contents.Span.Escape()}`");
             }
+            Console.WriteLine();
             d.PrintAll(Console.Out);
+
             ;
-        }
-
-        private sealed class FileUsingResolver : IUsingResolver
-        {
-            public string NormalizeFilePath(string filePath) => Path.GetFullPath(filePath);
-
-            public (Func<TextReader> Open, string FilePath) Resolve(string originPath, string usingPath)
-            {
-                var p = NormalizeFilePath(Path.Combine(Path.GetDirectoryName(originPath), usingPath));
-                return (() => new StreamReader(p), p);
-            }
         }
     }
 }

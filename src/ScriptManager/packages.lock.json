@@ -1,12 +1,12 @@
 {
   "version": 1,
   "dependencies": {
-    ".NETCoreApp,Version=v5.0": {
+    "net6.0": {
       "Microsoft.DotNet.ILCompiler": {
         "type": "Direct",
         "requested": "[6.0.0-*, )",
-        "resolved": "6.0.0-preview.2.21108.1",
-        "contentHash": "RrvjkPlPdI6VdbSRORYxaLs64iHeJYvhhRv8nnamcjKeytH9rpIUBlMoo+Jelkp5pjRDNS9KcZKLr+/CbnHFkQ=="
+        "resolved": "6.0.0-rc.1.21420.1",
+        "contentHash": "CReENmiqLhrlRvhZfPURO1Hxvf6EeutYgpFvOEBMv8ttIkwnakqXSzrjwQBsoMoQwZSzvoKOq0oCBQJiCbaxog=="
       },
       "System.CommandLine": {
         "type": "Direct",
@@ -972,14 +972,14 @@
         }
       }
     },
-    ".NETCoreApp,Version=v5.0/win-x64": {
+    "net6.0/win-x64": {
       "Microsoft.DotNet.ILCompiler": {
         "type": "Direct",
         "requested": "[6.0.0-*, )",
-        "resolved": "6.0.0-preview.2.21108.1",
-        "contentHash": "RrvjkPlPdI6VdbSRORYxaLs64iHeJYvhhRv8nnamcjKeytH9rpIUBlMoo+Jelkp5pjRDNS9KcZKLr+/CbnHFkQ==",
+        "resolved": "6.0.0-rc.1.21420.1",
+        "contentHash": "CReENmiqLhrlRvhZfPURO1Hxvf6EeutYgpFvOEBMv8ttIkwnakqXSzrjwQBsoMoQwZSzvoKOq0oCBQJiCbaxog==",
         "dependencies": {
-          "runtime.win-x64.Microsoft.DotNet.ILCompiler": "6.0.0-preview.2.21108.1"
+          "runtime.win-x64.Microsoft.DotNet.ILCompiler": "6.0.0-rc.1.21420.1"
         }
       },
       "Microsoft.Win32.Primitives": {
@@ -1141,8 +1141,8 @@
       },
       "runtime.win-x64.Microsoft.DotNet.ILCompiler": {
         "type": "Transitive",
-        "resolved": "6.0.0-preview.2.21108.1",
-        "contentHash": "MF9KLeTzJyhKR1MIq32Vbf34GOJjhvKj00/D6+6yUjy14TfU8bsFGNeKN1YkTAixwvC1gKpcr5TmZIzxs4SvOQ=="
+        "resolved": "6.0.0-rc.1.21420.1",
+        "contentHash": "6Rm6/Q9R18IVBkQ1/KuOoASxrTc92oiMoHme5yGgvkfeek084apM+7vnQ+w7u/hirfsEvWaBBo/2yW2bqxzBOA=="
       },
       "runtime.win.Microsoft.Win32.Primitives": {
         "type": "Transitive",

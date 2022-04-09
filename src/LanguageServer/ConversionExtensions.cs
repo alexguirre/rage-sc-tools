@@ -17,7 +17,7 @@
         public static LspPosition ToLspPosition(this SourceLocation l)
             => l.IsUnknown ? new LspPosition() : new LspPosition(l.Line - 1, l.Column - 1);
 
-        public static SourceLocation ToSourceLocation(this LspPosition p)
-            => new SourceLocation(p.Line + 1, p.Character + 1);
+        //public static SourceLocation ToSourceLocation(this LspPosition p)
+        //    => new SourceLocation(p.Line + 1, p.Character + 1);
     }
 }
