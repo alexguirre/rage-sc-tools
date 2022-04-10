@@ -43,11 +43,11 @@
             //    .ContinueWith(t => File.WriteAllText("nativedb.json", t.Result.ToJson()))
             //    .Wait();
 
-            var nativeDB = NativeDB.FromJson(System.IO.File.ReadAllText("nativesdb.json"));
+            //var nativeDB = NativeDB.FromJson(System.IO.File.ReadAllText("nativesdb.json"));
 
             const string BaseDir = "D:\\sources\\gtav-sc-tools\\examples\\language_sample\\";
 
-            Parse(BaseDir + "language_sample_main.sc", nativeDB);
+            Parse(BaseDir + "language_sample_main.sc");
             //Parse(BaseDir + "language_sample_child.sc", nativeDB);
             //Parse(BaseDir + "language_sample_shared.sch");
 
@@ -55,7 +55,7 @@
 
         }
 
-        private static void Parse(string filePath, NativeDB nativeDB)
+        private static void Parse(string filePath)
         {
             using var r = new StreamReader(filePath);
             var d = new DiagnosticsReport();

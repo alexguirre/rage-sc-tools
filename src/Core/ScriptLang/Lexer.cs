@@ -69,15 +69,32 @@
             private void Error(ErrorCode code, string message, SourceRange location)
                 => Lexer.Diagnostics.Add((int)code, DiagnosticTag.Error, message, location);
 
+            private Token BadToken(ErrorCode code, string message)
+            {
+                Error(code, message, TokenLocation);
+                return NewToken(TokenKind.Bad);
+            }
+
+            private Token UnexpectedCharacterBadToken()
+                => BadToken(ErrorCode.LexerUnexpectedCharacter, $"Unexpected character '{TokenContents}'");
+
+            private Token IncompleteStringBadToken()
+                => BadToken(ErrorCode.LexerIncompleteString, "Incomplete string");
+
+            private Token InvalidIntegerLiteralBadToken()
+                => BadToken(ErrorCode.LexerInvalidIntegerLiteral, "Invalid integer literal");
+
+            private Token InvalidFloatLiteralBadToken()
+                => BadToken(ErrorCode.LexerInvalidFloatLiteral, "Invalid float literal");
+
             private Token NextToken()
             {
-                // advance
-                SkipWhiteSpace();
-                Drop();
+                SkipAllWhiteSpaces();
+                Drop(); // start a new token
 
                 var token = Next() switch
                 {
-                    '.' => NewToken(TokenKind.Dot),
+                    '.' => IsDecimalDigit(Peek()) ? LexFloatAfterDot() : NewToken(TokenKind.Dot),
                     ',' => NewToken(TokenKind.Comma),
                     '(' => NewToken(TokenKind.OpenParen),
                     ')' => NewToken(TokenKind.CloseParen),
@@ -100,18 +117,14 @@
                            NextIf('>') ? NewToken(TokenKind.GreaterThanGreaterThan) : // >>
                                          NewToken(TokenKind.GreaterThan),
                     ':' => NewToken(TokenKind.Colon),
-
                     '"' or '\'' => LexString(),
                     '`' => LexHashString(),
-
-                    '\\' => NextIf('\n') ? NextToken() : // statement continuation: \ followed by new line
-                                           NewToken(TokenKind.Bad), // TODO: add error message
-
                     '\n' => NewToken(TokenKind.EOS),
+                    >= '0' and <= '9' => LexNumber(),
+                    char c when IsIdentifierStartChar(c) => LexIdentifierLikeToken(),
 
                     EOF => NewToken(TokenKind.EOF, SourceRange.EOF(Lexer.FilePath)),
-                    char c when IsIdentifierStartChar(c) => LexIdentifierLikeToken(),
-                    _ => NewToken(TokenKind.Bad)  // TODO: add error message
+                    _ => UnexpectedCharacterBadToken()
                 };
 
                 return token;
@@ -145,8 +158,7 @@
                     var curr = Peek();
                     if (curr == EOF || curr == '\n')
                     {
-                        Error(ErrorCode.LexerIncompleteString, "Incomplete string", TokenLocation);
-                        return NewToken(TokenKind.Bad);
+                        return IncompleteStringBadToken();
                     }
 
                     if (curr == '\\') // handle escape sequences
@@ -177,12 +189,82 @@
                 return NewToken(kind);
             }
 
+            private Token LexNumber()
+            {
+                Debug.Assert(Peek(-1) is >= '0' and <= '9');
+
+                var intToken = LexInteger();
+                if (Peek() is '.' && IsDecimalDigit(Peek(1)))
+                {
+                    Next(); // skip '.'
+                    return LexFloatAfterDot();
+                }
+                else
+                {
+                    return TryLexFloatExponent() ?? intToken;
+                }
+            }
+
+            private Token LexInteger()
+            {
+                Debug.Assert(Peek(-1) is >= '0' and <= '9');
+
+                if (Peek(-1) == '0' && Peek(0) == 'x') // hexadecimal prefix
+                {
+                    Next(); // skip 'x'
+                    if (NextIf(IsHexadecimalDigit))
+                    {
+                        NextWhile(IsHexadecimalDigit);
+                    }
+                    else
+                    {
+                        // found only '0x'
+                        return InvalidIntegerLiteralBadToken();
+                    }
+                }
+                else // decimal
+                {
+                    NextWhile(IsDecimalDigit);
+                }
+
+                return NewToken(TokenKind.Integer);
+            }
+
+            private Token? TryLexFloatExponent()
+            {
+                if (!NextIf(c => c is 'e' or 'E')) // no exponent
+                {
+                    return null;
+                }
+
+                NextIf(c => c is '+' or '-'); // optional +/- symbol
+                if (NextIf(IsDecimalDigit)) // exponent value
+                {
+                    NextWhile(IsDecimalDigit);
+                    // found exponent, finish token
+                    return NewToken(TokenKind.Float);
+                }
+                else
+                {
+                    // incomplete exponent, e.g. 1e, 1e+, 1e-
+                    return InvalidFloatLiteralBadToken();
+                }
+            }
+
+            private Token LexFloatAfterDot()
+            {
+                Debug.Assert(Peek(-1) is '.');
+                Debug.Assert(IsDecimalDigit(Peek(0)));
+
+                NextWhile(IsDecimalDigit);
+                return TryLexFloatExponent() ?? NewToken(TokenKind.Float);
+            }
+
             /// <summary>
             /// Lexes tokens that look like identifiers (i.e. identifiers, keywords, bool literals and null literal)
             /// </summary>
             private Token LexIdentifierLikeToken()
             {
-                // TODO: lex integers and floats
                 var ident = LexIdentifier();
                 var identStr = ident.Contents.ToString();
                 if (IsKeyword(identStr) && Enum.TryParse<TokenKind>(identStr, ignoreCase: true, out var keywordKind))
@@ -206,14 +288,106 @@
             private Token LexIdentifier()
             {
                 Debug.Assert(IsIdentifierStartChar(Peek(-1)));
-                while (NextIf(IsIdentifierChar)) { /*empty*/ }
+                NextWhile(IsIdentifierChar);
 
                 return NewToken(TokenKind.Identifier);
             }
 
-            private void SkipWhiteSpace()
+            private void SkipAllWhiteSpaces()
             {
-                while (NextIf(IsWhiteSpaceChar)) { /*empty*/ }
+                Drop();
+                while (SkipWhiteSpace() ||
+                       SkipSingleLineComment() ||
+                       SkipMultiLineComment() ||
+                       SkipStatementContinuation())
+                {
+                    Drop();
+                }
+            }
+
+            private bool SkipWhiteSpace()
+            {
+                if (!IsWhiteSpaceChar(Peek()))
+                {
+                    return false;
+                }
+
+                NextWhile(IsWhiteSpaceChar);
+                return true;
+            }
+
+            private bool SkipSingleLineComment()
+            {
+                if (Peek(0) != '/' || Peek(1) != '/')
+                {
+                    return false;
+                }
+
+                // skip comment prefix
+                Next();
+                Next();
+
+                var prevIsBackslash = false;
+                while (true)
+                {
+                    var c = Peek();
+                    if (c == EOF ||
+                        c == '\n' && !prevIsBackslash) // found new line without statement-continuation, end the comment
+                    {
+                        break;
+                    }
+
+                    prevIsBackslash = c == '\\';
+                    Next();
+                }
+
+                return true;
+            }
+
+            private bool SkipMultiLineComment()
+            {
+                if (Peek(0) != '/' || Peek(1) != '*')
+                {
+                    return false;
+                }
+
+                // skip comment prefix
+                Next();
+                Next();
+
+                var prevIsAsterisk = false;
+                while (true)
+                {
+                    var c = Peek();
+                    if (c == EOF)
+                    {
+                        Error(ErrorCode.LexerOpenComment, "Reached end-of-file without closing the comment, expected '*/'", TokenLocation);
+                        break;
+                    }
+
+                    if (prevIsAsterisk && c == '/') // found comment closing delimiter
+                    {
+                        Next(); // skip '/'
+                        break;
+                    }
+
+                    prevIsAsterisk = c == '*';
+                    Next(dropTokenOnNewLine: false); // don't drop token on new lines to have the correct TokenLocation in the LexerOpenComment error
+                }
+
+                return true;
+            }
+
+            private bool SkipStatementContinuation()
+            {
+                if (Peek(0) != '\\' || Peek(1) != '\n')
+                {
+                    return false;
+                }
+
+                Next();
+                Next();
+                return true;
             }
 
             private Token NewToken(TokenKind kind, SourceRange? loc = null) => new() { Kind = kind, Contents = TokenContents, Location = loc ?? TokenLocation };
@@ -231,7 +405,7 @@
                 return peekPos >= 0 && peekPos < Lexer.Source.Length ? Lexer.Source[peekPos] : EOF;
             }
 
-            private char Next()
+            private char Next(bool dropTokenOnNewLine = true)
             {
                 if (endPos < Lexer.Source.Length)
                 {
@@ -240,7 +414,7 @@
                         // starting new line
                         endLine++;
                         endColumn = 1;
-                        Drop(); // start a new token
+                        if (dropTokenOnNewLine) Drop(); // start a new token
                     }
 
                     // continuing current line
@@ -272,151 +446,12 @@
 
                 return false;
             }
+
+            private void NextWhile(Predicate<char> isExpected)
+            {
+                while (NextIf(isExpected)) { /*empty*/ }
+            }
         }
-
-
-
-
-
-
-        ///// <summary>
-        ///// Reads the next token.
-        ///// </summary>
-        ///// <param name="token">The next token.</param>
-        ///// <returns><c>true</c> if there are tokens remaining; otherwise, <c>false</c>.</returns>
-        //private bool ReadToken(out Token token)
-        //{
-        //    startPos = endPos;
-        //    startLine = endLine;
-        //    startColumn = endColumn;
-
-        //    switch (Peek())
-        //    {
-        //        case EOF:
-        //            token = NewToken(TokenKind.EOF);
-        //            return false;
-
-        //        case >= '0' and <= '9':
-        //            return ReadNumber(out token);
-
-        //        case '\'' or '"':
-        //            return ReadString(out token);
-
-        //        case '\n':
-        //            return ReadNewLine(out token);
-
-        //        case '/':
-        //            return ReadForwardSlash(out token);
-
-        //        case ' ' or '\t' or '\r':
-        //            return ReadWhitespace(out token);
-
-        //        case (>= 'a' and <= 'z') or (>= 'A' and <= 'Z') or '_':
-        //            return ReadIdentifierOrKeyword(out token);
-
-        //        default:
-        //            return ReadSymbol(out token);
-        //    }
-        //}
-
-        //private bool ReadNumber(out Token token)
-        //{
-        //    while (Peek() is >= '0' and <= '9')
-        //           Next();
-        //    token = NewToken(TokenKind.Integer);
-        //    return true;
-        //}
-
-        //private bool ReadString(out Token token)
-        //{
-        //    var quote = Next();
-        //    while (true) // TODO: consider escape sequences
-        //    {
-        //        // TODO: TESTTEST
-        //        var c = Peek();
-        //        if (c == EOF || c == '\n')
-        //        {
-        //            Error(ErrorCode.LexerIncompleteString, TokenLocation);
-        //            break;
-        //        }
-
-        //        Next();
-        //        if (c == quote)
-        //        {
-        //            break;
-        //        }
-        //    }
-
-        //    token = NewToken(TokenKind.String);
-        //    return true;
-        //}
-
-        //private bool ReadIdentifierOrKeyword(out Token token)
-        //{
-        //    while (Peek() is (>= 'a' and <= 'z') or (>= 'A' and <= 'Z') or (>= '0' and <= '9') or '_')
-        //        Next();
-
-        //    token = NewToken(IsKeyword(TokenContents) ? TokenKind.Keyword : TokenKind.Identifier);
-        //    return true;
-        //}
-
-        //private bool ReadNewLine(out Token token)
-        //{
-        //    Next(); // skip newline
-        //    token = NewToken(TokenKind.NewLine);
-        //    endLine++;
-        //    endColumn = 1;
-        //    return true;
-        //}
-
-        //private bool ReadWhitespace(out Token token)
-        //{
-        //    Next(); // skip whitespace
-        //    return ReadToken(out token);
-        //}
-
-        //private bool ReadForwardSlash(out Token token)
-        //{
-        //    if (Peek(1) == '/') // comment
-        //    {
-        //        SkipComment();
-        //    }
-        //    else if (Peek(1) == '*') // multi-line comment
-        //    {
-        //        SkipMultiLineComment();
-        //    }
-        //    else // division operator
-        //    {
-        //        return ReadSymbol(out token);
-        //    }
-        //}
-
-        //private bool ReadSymbol(out Token token)
-        //{
-        //    Next(); // skip symbol
-        //    token = NewToken(TokenKind.Symbol);
-        //    return true;
-        //}
-
-        //private void SkipComment()
-        //{
-        //    Next(); Next(); // skip "//"
-        //    while (Peek() != EOF && Peek() != '\n')
-        //    {
-        //        // skip comment text until newline
-        //        Next();
-        //    }
-        //}
-
-        //private void SkipMultiLineComment()
-        //{
-        //    Next(); Next(); // skip "/*"
-        //    while (Peek() != EOF && Peek(0) != '*' && Peek(1) != '/')
-        //    {
-        //        // skip comment text until "*/"
-        //        Next();
-        //    }
-        //}
 
         private static bool IsKeyword(string str)
             => Keywords.Contains(str);
@@ -425,7 +460,6 @@
         private static bool IsBooleanLiteral(string str)
             => Parser.CaseInsensitiveComparer.Equals(str, "TRUE") ||
                Parser.CaseInsensitiveComparer.Equals(str, "FALSE");
-
 
         private const char EOF = char.MaxValue;
 
@@ -437,7 +471,11 @@
         private static bool IsIdentifierStartChar(char c)
             => c is (>= 'a' and <= 'z') or (>= 'A' and <= 'Z') or '_';
         private static bool IsIdentifierChar(char c)
-            => c is (>= 'a' and <= 'z') or (>= 'A' and <= 'Z') or (>= '0' and <= '9') or '_';
+            => c is (>= 'a' and <= 'z') or (>= 'A' and <= 'Z') or '_' or (>= '0' and <= '9');
+        private static bool IsDecimalDigit(char c)
+            => c is >= '0' and <= '9';
+        private static bool IsHexadecimalDigit(char c)
+            => c is (>= '0' and <= '9') or (>= 'A' and <= 'F') or (>= 'a' and <= 'f');
 
         private static readonly HashSet<string> Keywords =
             new(Enum.GetValues<TokenKind>().Where(t => t.IsKeyword()).Select(t => t.ToString()),

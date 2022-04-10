@@ -219,7 +219,7 @@
         [Fact]
         public void Identifiers()
         {
-            var (tokens, diag) = Lex("my_var  _otherVar123 foo");
+            var (tokens, diag) = Lex("my_var  _otherVar123 f");
 
             False(diag.HasErrors);
             False(diag.HasWarnings);
@@ -228,7 +228,182 @@
 
             TokenEqual(TokenKind.Identifier, "my_var", (1, 1), (1, 6), tokens[0]);
             TokenEqual(TokenKind.Identifier, "_otherVar123", (1, 9), (1, 20), tokens[1]);
-            TokenEqual(TokenKind.Identifier, "foo", (1, 22), (1, 24), tokens[2]);
+            TokenEqual(TokenKind.Identifier, "f", (1, 22), (1, 22), tokens[2]);
+            TokenIsEOF(tokens.Last());
+        }
+
+        [Fact]
+        public void DecimalIntegerLiteral()
+        {
+            var (tokens, diag) = Lex("0 123 000");
+
+            False(diag.HasErrors);
+            False(diag.HasWarnings);
+
+            Equal(4, tokens.Length);
+
+            TokenEqual(TokenKind.Integer, "0", (1, 1), (1, 1), tokens[0]);
+            TokenEqual(TokenKind.Integer, "123", (1, 3), (1, 5), tokens[1]);
+            TokenEqual(TokenKind.Integer, "000", (1, 7), (1, 9), tokens[2]);
+            TokenIsEOF(tokens.Last());
+        }
+
+        [Fact]
+        public void HexadecimalIntegerLiteral()
+        {
+            var (tokens, diag) = Lex("0x0 0x123ABC 0x0000");
+
+            False(diag.HasErrors);
+            False(diag.HasWarnings);
+
+            Equal(4, tokens.Length);
+
+            TokenEqual(TokenKind.Integer, "0x0", (1, 1), (1, 3), tokens[0]);
+            TokenEqual(TokenKind.Integer, "0x123ABC", (1, 5), (1, 12), tokens[1]);
+            TokenEqual(TokenKind.Integer, "0x0000", (1, 14), (1, 19), tokens[2]);
+            TokenIsEOF(tokens.Last());
+        }
+
+        [Fact]
+        public void InvalidHexadecimalIntegerLiteral()
+        {
+            var (tokens, diag) = Lex("0x");
+
+            True(diag.HasErrors);
+            False(diag.HasWarnings);
+            Single(diag.Errors);
+
+            CheckError(ErrorCode.LexerInvalidIntegerLiteral, (1, 1), (1, 2), diag);
+
+            Equal(2, tokens.Length);
+
+            TokenEqual(TokenKind.Bad, "0x", (1, 1), (1, 2), tokens[0]);
+            TokenIsEOF(tokens.Last());
+        }
+
+        [Fact]
+        public void IntegerLiteralWithPlusMinus()
+        {
+            // plus/minus with integers are tokenized independently
+            var (tokens, diag) = Lex("+9 -9 +0x1 -0x1");
+
+            False(diag.HasErrors);
+            False(diag.HasWarnings);
+
+            Equal(9, tokens.Length);
+
+            TokenEqual(TokenKind.Plus, "+", (1, 1), (1, 1), tokens[0]);
+            TokenEqual(TokenKind.Integer, "9", (1, 2), (1, 2), tokens[1]);
+            TokenEqual(TokenKind.Minus, "-", (1, 4), (1, 4), tokens[2]);
+            TokenEqual(TokenKind.Integer, "9", (1, 5), (1, 5), tokens[3]);
+            TokenEqual(TokenKind.Plus, "+", (1, 7), (1, 7), tokens[4]);
+            TokenEqual(TokenKind.Integer, "0x1", (1, 8), (1, 10), tokens[5]);
+            TokenEqual(TokenKind.Minus, "-", (1, 12), (1, 12), tokens[6]);
+            TokenEqual(TokenKind.Integer, "0x1", (1, 13), (1, 15), tokens[7]);
+            TokenIsEOF(tokens.Last());
+        }
+
+        [Fact]
+        public void FloatLiteral()
+        {
+            var (tokens, diag) = Lex("0.0 15.25");
+
+            False(diag.HasErrors);
+            False(diag.HasWarnings);
+
+            Equal(3, tokens.Length);
+
+            TokenEqual(TokenKind.Float, "0.0", (1, 1), (1, 3), tokens[0]);
+            TokenEqual(TokenKind.Float, "15.25", (1, 5), (1, 9), tokens[1]);
+            TokenIsEOF(tokens.Last());
+        }
+
+        [Fact]
+        public void FloatStartingWithDotLiteral()
+        {
+            var (tokens, diag) = Lex(".0 .25");
+
+            False(diag.HasErrors);
+            False(diag.HasWarnings);
+
+            Equal(3, tokens.Length);
+
+            TokenEqual(TokenKind.Float, ".0", (1, 1), (1, 2), tokens[0]);
+            TokenEqual(TokenKind.Float, ".25", (1, 4), (1, 6), tokens[1]);
+            TokenIsEOF(tokens.Last());
+        }
+
+        [Fact]
+        public void FloatWithExponentLiteral()
+        {
+            var (tokens, diag) = Lex("0e0 1e5 1e+5 1e-5");
+
+            False(diag.HasErrors);
+            False(diag.HasWarnings);
+
+            Equal(5, tokens.Length);
+
+            TokenEqual(TokenKind.Float, "0e0", (1, 1), (1, 3), tokens[0]);
+            TokenEqual(TokenKind.Float, "1e5", (1, 5), (1, 7), tokens[1]);
+            TokenEqual(TokenKind.Float, "1e+5", (1, 9), (1, 12), tokens[2]);
+            TokenEqual(TokenKind.Float, "1e-5", (1, 14), (1, 17), tokens[3]);
+            TokenIsEOF(tokens.Last());
+        }
+
+        [Fact]
+        public void FloatWithExponentAndDotsLiteral()
+        {
+            var (tokens, diag) = Lex("12.5e5 1.5e+15 1.5e-15");
+
+            False(diag.HasErrors);
+            False(diag.HasWarnings);
+
+            Equal(4, tokens.Length);
+
+            TokenEqual(TokenKind.Float, "12.5e5", (1, 1), (1, 6), tokens[0]);
+            TokenEqual(TokenKind.Float, "1.5e+15", (1, 8), (1, 14), tokens[1]);
+            TokenEqual(TokenKind.Float, "1.5e-15", (1, 16), (1, 22), tokens[2]);
+            TokenIsEOF(tokens.Last());
+        }
+
+        [Fact]
+        public void FloatStartingWithDotAndWithExponentLiteral()
+        {
+            var (tokens, diag) = Lex(".125e5 .125e+5 .125e-5");
+
+            False(diag.HasErrors);
+            False(diag.HasWarnings);
+
+            Equal(4, tokens.Length);
+
+            TokenEqual(TokenKind.Float, ".125e5", (1, 1), (1, 6), tokens[0]);
+            TokenEqual(TokenKind.Float, ".125e+5", (1, 8), (1, 14), tokens[1]);
+            TokenEqual(TokenKind.Float, ".125e-5", (1, 16), (1, 22), tokens[2]);
+            TokenIsEOF(tokens.Last());
+        }
+
+        [Fact]
+        public void InvalidFloatWithExponentLiteral()
+        {
+            var (tokens, diag) = Lex("1e 1.5e .8e 1e+ 1e-");
+
+            True(diag.HasErrors);
+            False(diag.HasWarnings);
+            Equal(5, diag.Errors.Length);
+
+            CheckError(ErrorCode.LexerInvalidFloatLiteral, (1, 1), (1, 2), diag);
+            CheckError(ErrorCode.LexerInvalidFloatLiteral, (1, 4), (1, 7), diag);
+            CheckError(ErrorCode.LexerInvalidFloatLiteral, (1, 9), (1, 11), diag);
+            CheckError(ErrorCode.LexerInvalidFloatLiteral, (1, 13), (1, 15), diag);
+            CheckError(ErrorCode.LexerInvalidFloatLiteral, (1, 17), (1, 19), diag);
+
+            Equal(6, tokens.Length);
+
+            TokenEqual(TokenKind.Bad, "1e", (1, 1), (1, 2), tokens[0]);
+            TokenEqual(TokenKind.Bad, "1.5e", (1, 4), (1, 7), tokens[1]);
+            TokenEqual(TokenKind.Bad, ".8e", (1, 9), (1, 11), tokens[2]);
+            TokenEqual(TokenKind.Bad, "1e+", (1, 13), (1, 15), tokens[3]);
+            TokenEqual(TokenKind.Bad, "1e-", (1, 17), (1, 19), tokens[4]);
             TokenIsEOF(tokens.Last());
         }
 
@@ -308,6 +483,138 @@
 
             TokenEqual(TokenKind.Identifier, "foo", (1, 1), (1, 3), tokens[0]);
             TokenEqual(TokenKind.Identifier, "bar", (2, 1), (2, 3), tokens[1]);
+            TokenIsEOF(tokens.Last());
+        }
+
+        [Fact]
+        public void UnexpectedCharacter()
+        {
+            var (tokens, diag) = Lex("foo $ bar");
+
+            True(diag.HasErrors);
+            False(diag.HasWarnings);
+            Single(diag.Errors);
+
+            CheckError(ErrorCode.LexerUnexpectedCharacter, (1, 5), (1, 5), diag);
+
+            Equal(4, tokens.Length);
+
+            TokenEqual(TokenKind.Identifier, "foo", (1, 1), (1, 3), tokens[0]);
+            TokenEqual(TokenKind.Bad, "$", (1, 5), (1, 5), tokens[1]);
+            TokenEqual(TokenKind.Identifier, "bar", (1, 7), (1, 9), tokens[2]);
+            TokenIsEOF(tokens.Last());
+        }
+
+        [Fact]
+        public void UnexpectedCharacterOnStatementContinuationWithoutNewLine()
+        {
+            var (tokens, diag) = Lex("foo \\ bar");
+
+            True(diag.HasErrors);
+            False(diag.HasWarnings);
+            Single(diag.Errors);
+
+            CheckError(ErrorCode.LexerUnexpectedCharacter, (1, 5), (1, 5), diag);
+
+            Equal(4, tokens.Length);
+
+            TokenEqual(TokenKind.Identifier, "foo", (1, 1), (1, 3), tokens[0]);
+            TokenEqual(TokenKind.Bad, "\\", (1, 5), (1, 5), tokens[1]);
+            TokenEqual(TokenKind.Identifier, "bar", (1, 7), (1, 9), tokens[2]);
+            TokenIsEOF(tokens.Last());
+        }
+
+        [Fact]
+        public void SingleLineComment()
+        {
+            var (tokens, diag) = Lex("foo//comment\nbar");
+
+            False(diag.HasErrors);
+            False(diag.HasWarnings);
+
+            Equal(4, tokens.Length);
+
+            TokenEqual(TokenKind.Identifier, "foo", (1, 1), (1, 3), tokens[0]);
+            TokenEqual(TokenKind.EOS, "\n", (1, 13), (1, 13), tokens[1]);
+            TokenEqual(TokenKind.Identifier, "bar", (2, 1), (2, 3), tokens[2]);
+            TokenIsEOF(tokens.Last());
+        }
+
+        [Fact]
+        public void SingleLineCommentWithStatementContinuation()
+        {
+            var (tokens, diag) = Lex("foo//comment\\\nbar\nxyz"); // 'bar' should be part of the comment but not 'xyz'
+
+            False(diag.HasErrors);
+            False(diag.HasWarnings);
+
+            Equal(4, tokens.Length);
+
+            TokenEqual(TokenKind.Identifier, "foo", (1, 1), (1, 3), tokens[0]);
+            TokenEqual(TokenKind.EOS, "\n", (2, 4), (2, 4), tokens[1]);
+            TokenEqual(TokenKind.Identifier, "xyz", (3, 1), (3, 3), tokens[2]);
+            TokenIsEOF(tokens.Last());
+        }
+
+        [Fact]
+        public void MultiLineComment()
+        {
+            var (tokens, diag) = Lex("foo/*comment\nbar\nbaz\n*/xyz"); // the new-lines are all inside the comment so no EOS token should be produced
+
+            False(diag.HasErrors);
+            False(diag.HasWarnings);
+
+            Equal(3, tokens.Length);
+
+            TokenEqual(TokenKind.Identifier, "foo", (1, 1), (1, 3), tokens[0]);
+            TokenEqual(TokenKind.Identifier, "xyz", (4, 3), (4, 5), tokens[1]);
+            TokenIsEOF(tokens.Last());
+        }
+
+        [Fact]
+        public void MultiLineCommentInSingleLine()
+        {
+            var (tokens, diag) = Lex("foo/*comment*/xyz");
+
+            False(diag.HasErrors);
+            False(diag.HasWarnings);
+
+            Equal(3, tokens.Length);
+
+            TokenEqual(TokenKind.Identifier, "foo", (1, 1), (1, 3), tokens[0]);
+            TokenEqual(TokenKind.Identifier, "xyz", (1, 15), (1, 17), tokens[1]);
+            TokenIsEOF(tokens.Last());
+        }
+
+        [Fact]
+        public void MultiLineCommentWithStatementContinuation()
+        {
+            var (tokens, diag) = Lex("foo/*comment\\\nbar*/xyz"); // the statement continuation should be ignored in this case. But, as the new line is inside the comment, no EOS token should be produced
+
+            False(diag.HasErrors);
+            False(diag.HasWarnings);
+
+            Equal(3, tokens.Length);
+
+            TokenEqual(TokenKind.Identifier, "foo", (1, 1), (1, 3), tokens[0]);
+            TokenEqual(TokenKind.Identifier, "xyz", (2, 6), (2, 8), tokens[1]);
+            TokenIsEOF(tokens.Last());
+        }
+
+        [Fact]
+        public void UnfinishedMultiLineComment()
+        {
+            var (tokens, diag) = Lex("foo/*comment");
+
+            True(diag.HasErrors);
+            False(diag.HasWarnings);
+            Single(diag.Errors);
+
+            CheckError(ErrorCode.LexerOpenComment, (1, 4), (1, 12), diag);
+
+            Equal(2, tokens.Length);
+
+            TokenEqual(TokenKind.Identifier, "foo", (1, 1), (1, 3), tokens[0]);
             TokenIsEOF(tokens.Last());
         }
 

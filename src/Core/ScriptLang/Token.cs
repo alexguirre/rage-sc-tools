@@ -9,7 +9,7 @@ namespace ScTools.ScriptLang
         /// </summary>
         Bad = 0,
 
-        Identifier,
+        Identifier, // [a-zA-Z_][a-zA-Z_0-9]*
 
         // Symbols
         Dot,                    // .
@@ -48,7 +48,7 @@ namespace ScTools.ScriptLang
         // Literals
         String,     // "...", '...'
         HashString, // `...`
-        Integer,
+        Integer,    // decimal or hexadecimal prefixed by 0x
         Float,
         Boolean,    // TRUE, FALSE
         Null,       // NULL
