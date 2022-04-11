@@ -12,6 +12,7 @@
         public int SizeOf => 0;
         public IType ByValue => this;
 
+        public ErrorType(Diagnostic diagnostic) : base(diagnostic) { }
         public ErrorType(SourceRange source, Diagnostic diagnostic) : base(source, diagnostic) { }
         public ErrorType(SourceRange source, DiagnosticsReport diagnostics, string message) : base(source, diagnostics, message) { }
 

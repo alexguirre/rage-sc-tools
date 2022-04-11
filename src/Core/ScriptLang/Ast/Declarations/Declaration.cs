@@ -26,12 +26,12 @@
         IType Type { get; set; }
     }
 
-    /// <summary>
-    /// Represents a declaration of a label.
-    /// </summary>
-    public interface ILabelDeclaration : IDeclaration
-    {
-    }
+    ///// <summary>
+    ///// Represents a declaration of a label.
+    ///// </summary>
+    //public interface ILabelDeclaration : IDeclaration
+    //{
+    //}
 
     public abstract class BaseTypeDeclaration : BaseNode, ITypeDeclaration
     {

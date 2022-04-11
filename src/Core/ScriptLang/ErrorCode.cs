@@ -11,6 +11,9 @@
         LexerInvalidFloatLiteral = 0x0005,
 
         // Parser errors   0x1000 - 0x1FFF
+        ParserUnexpectedToken = 0x1000,
+        ParserUnknownStatement = 0x1001,
+        ParserUnknownExpression = 0x1002,
 
         // Semantic errors 0x2000 - 0x2FFF
     }

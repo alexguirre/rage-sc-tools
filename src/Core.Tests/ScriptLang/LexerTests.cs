@@ -628,7 +628,7 @@
         {
             var expectedLocation = MakeSourceRange(expectedStart, expectedEnd);
             Equal(expectedKind, token.Kind);
-            Equal(expectedContents, token.Contents.ToString());
+            Equal(expectedContents, token.Lexeme.ToString());
             Equal(expectedLocation, token.Location);
         }
         private static void TokenIsEOF(Token token) => TokenEqual(TokenKind.EOF, "", (0, 0), (0, 0), token);

@@ -36,7 +36,7 @@ public sealed class Lexer : IEnumerable<Token>
 
         private SourceRange TokenLocation
             => new((startLine, startColumn, Lexer.FilePath), (endLine, endColumn - 1, Lexer.FilePath));
-        private ReadOnlyMemory<char> TokenContents
+        private ReadOnlyMemory<char> TokenLexeme
             => Lexer.Source.AsMemory(startPos, endPos - startPos);
 
         public Enumerator(Lexer lexer)
@@ -75,7 +75,7 @@ public sealed class Lexer : IEnumerable<Token>
         }
 
         private Token UnexpectedCharacterBadToken()
-            => BadToken(ErrorCode.LexerUnexpectedCharacter, $"Unexpected character '{TokenContents}'");
+            => BadToken(ErrorCode.LexerUnexpectedCharacter, $"Unexpected character '{TokenLexeme}'");
 
         private Token IncompleteStringBadToken()
             => BadToken(ErrorCode.LexerIncompleteString, "Incomplete string");
@@ -265,7 +265,7 @@ public sealed class Lexer : IEnumerable<Token>
         private Token LexIdentifierLikeToken()
         {
             var ident = LexIdentifier();
-            var identStr = ident.Contents.ToString();
+            var identStr = ident.Lexeme.ToString();
             if (IsKeyword(identStr) && Enum.TryParse<TokenKind>(identStr, ignoreCase: true, out var keywordKind))
             {
                 return NewToken(keywordKind);
@@ -296,9 +296,9 @@ public sealed class Lexer : IEnumerable<Token>
         {
             Drop();
             while (SkipWhiteSpace() ||
-                    SkipSingleLineComment() ||
-                    SkipMultiLineComment() ||
-                    SkipStatementContinuation())
+                   SkipSingleLineComment() ||
+                   SkipMultiLineComment() ||
+                   SkipStatementContinuation())
             {
                 Drop();
             }
@@ -389,7 +389,8 @@ public sealed class Lexer : IEnumerable<Token>
             return true;
         }
 
-        private Token NewToken(TokenKind kind, SourceRange? loc = null) => new() { Kind = kind, Contents = TokenContents, Location = loc ?? TokenLocation };
+        private Token NewToken(TokenKind kind, SourceRange? loc = null)
+            => new() { Kind = kind, Lexeme = TokenLexeme, Location = loc ?? TokenLocation };
 
         private void Drop()
         {

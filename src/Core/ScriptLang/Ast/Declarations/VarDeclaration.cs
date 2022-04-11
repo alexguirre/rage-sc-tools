@@ -35,6 +35,7 @@
 
     public sealed class VarDeclaration : BaseValueDeclaration, IStatement
     {
+        public string? Label { get; set; }
         public VarKind Kind { get; set; }
         /// <summary>
         /// Gets or sets whether this variable is a reference. Only valid with kind <see cref="VarKind.Parameter"/>.

@@ -1,9 +1,11 @@
 ﻿namespace ScTools.ScriptLang.Semantics
 {
+    using System;
     using System.Diagnostics;
 
     using ScTools.ScriptLang.Ast;
     using ScTools.ScriptLang.Ast.Declarations;
+    using ScTools.ScriptLang.Ast.Statements;
     using ScTools.ScriptLang.SymbolTables;
 
     /// <summary>
@@ -15,16 +17,17 @@
         public LabelSymbolTable Labels { get; } = new();
 
         private LabelSymbolTableBuilder(DiagnosticsReport diagnostics)
-            => Diagnostics = diagnostics;
-
-        public override Void Visit(LabelDeclaration node, Void param)
         {
-            if (!Labels.AddLabel(node))
-            {
-                Diagnostics.AddError($"Label '{node.Name}' is already declared", node.Source);
-            }
+            throw new NotImplementedException("LabelSymbolTableBuilder not working with Label property in IStatement");
+            Diagnostics = diagnostics;
+        }
 
-            return DefaultReturn;
+        private void AddLabel(IStatement stmt)
+        {
+            if (stmt.Label is not null && !Labels.AddLabeledStatement(stmt))
+            {
+                Diagnostics.AddError($"Label '{stmt.Label}' is already declared", stmt.Source);
+            }
         }
 
         public static LabelSymbolTable Build(FuncDeclaration func, DiagnosticsReport diagnostics)

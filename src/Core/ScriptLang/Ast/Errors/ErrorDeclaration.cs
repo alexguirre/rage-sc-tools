@@ -3,13 +3,13 @@
     using ScTools.ScriptLang.Ast.Declarations;
     using ScTools.ScriptLang.Ast.Types;
 
-    public sealed class ErrorDeclaration : BaseError, IDeclaration, IValueDeclaration, ITypeDeclaration, ILabelDeclaration
+    public sealed class ErrorDeclaration : BaseError, IDeclaration, IValueDeclaration, ITypeDeclaration
     {
         public string Name { get; set; }
         public IType Type { get; set; }
 
-        public ErrorDeclaration(SourceRange source, Diagnostic diagnostic) : base(source, diagnostic)
-            => (Name, Type) = ("#ERROR#", new ErrorType(source, Diagnostic));
+        public ErrorDeclaration(Diagnostic diagnostic) : base(diagnostic)
+            => (Name, Type) = ("#ERROR#", new ErrorType(Diagnostic));
 
         public ErrorDeclaration(SourceRange source, DiagnosticsReport diagnostics, string message) : base(source, diagnostics, message)
             => (Name, Type) = ("#ERROR#", new ErrorType(source, Diagnostic));

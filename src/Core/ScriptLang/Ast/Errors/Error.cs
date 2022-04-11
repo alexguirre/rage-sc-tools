@@ -9,6 +9,11 @@
     {
         public Diagnostic Diagnostic { get; }
 
+        public BaseError(Diagnostic diagnostic, params Token[] tokens) : base(tokens)
+        {
+            Diagnostic = diagnostic;
+        }
+
         public BaseError(SourceRange source, Diagnostic diagnostic) : base(source)
         {
             Diagnostic = diagnostic;

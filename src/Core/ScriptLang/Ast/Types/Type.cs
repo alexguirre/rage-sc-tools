@@ -90,7 +90,7 @@
             => rhs is ErrorType ? rhs : new ErrorType(source, diagnostics, $"Binary operator '{op.ToToken()}' is not supported with operands of type '{this}' and '{rhs}'");
 
         public virtual IType UnaryOperation(UnaryOperator op, SourceRange source, DiagnosticsReport diagnostics)
-            => new ErrorType(source, diagnostics, $"Unary operator '{op.ToToken()}' is not supported by type '{this}'");
+            => new ErrorType(source, diagnostics, $"Unary operator '{op.ToHumanString()}' is not supported by type '{this}'");
 
         public virtual IType FieldAccess(string fieldName, SourceRange source, DiagnosticsReport diagnostics)
             => new ErrorType(source, diagnostics, $"Field access is not supported by type '{this}'");

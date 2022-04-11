@@ -2,6 +2,7 @@
 {
     public interface IStatement : INode
     {
+        string? Label { get; set; }
     }
 
     public interface IBreakableStatement : IStatement
@@ -26,6 +27,9 @@
 
     public abstract class BaseStatement : BaseNode, IStatement
     {
+        public string? Label { get; set; }
+
+        public BaseStatement(params Token[] tokens) : base(tokens) { }
         public BaseStatement(SourceRange source) : base(source) {}
     }
 }

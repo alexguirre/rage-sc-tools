@@ -9,7 +9,7 @@
         public bool IsLValue { get; set; }
         public bool IsConstant { get; set; }
 
-        public ErrorExpression(SourceRange source, Diagnostic diagnostic) : base(source, diagnostic) { }
+        public ErrorExpression(Diagnostic diagnostic, params Token[] tokens) : base(diagnostic, tokens) { }
         public ErrorExpression(SourceRange source, DiagnosticsReport diagnostics, string message) : base(source, diagnostics, message) { }
 
         public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)

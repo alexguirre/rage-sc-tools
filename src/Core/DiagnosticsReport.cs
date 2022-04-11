@@ -36,7 +36,12 @@
         public Diagnostic[] Warnings => diagnostics.Where(d => d.Tag is DiagnosticTag.Warning).ToArray();
 
         public void Add(Diagnostic diagnostic) => diagnostics.Add(diagnostic);
-        public void Add(int code, DiagnosticTag tag, string message, SourceRange source) => Add(new Diagnostic(code, tag, message, source));
+        public Diagnostic Add(int code, DiagnosticTag tag, string message, SourceRange source)
+        {
+            var d = new Diagnostic(code, tag, message, source);
+            Add(d);
+            return d;
+        }
         public void AddError(string message, SourceRange source) => Add(new Diagnostic(-1, DiagnosticTag.Error, message, source));
         public void AddWarning(string message, SourceRange source) => Add(new Diagnostic(-1, DiagnosticTag.Warning, message, source));
 

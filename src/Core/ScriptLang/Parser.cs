@@ -99,7 +99,7 @@
             parser.AddErrorListener(new SyntaxErrorListener<IToken>(this));
 
             var program = parser.program();
-            OutputAst.Source = Source(program);
+            //OutputAst.Source = Source(program);
             ProcessParseTree(program);
 
             filesStack.Pop();
@@ -310,9 +310,11 @@
 
         private IEnumerable<IStatement> BuildAst(ScLangParser.LabeledStatementContext context)
         {
-            if (context.label() is not null and var label)
+            string? label = null;
+
+            if (context.label() is not null and var labelCtx)
             {
-                yield return new LabelDeclaration(Source(label), label.identifier().GetText());
+                label = labelCtx.identifier().GetText();
             }
 
             switch (context.statement())
@@ -323,20 +325,26 @@
                     var op = c.op.Text is "=" ? (BinaryOperator?)null : BinaryOperatorExtensions.FromToken(c.op.Text[0..1]);
                     if (op is null)
                     {
-                        yield return new AssignmentStatement(Source(c), BuildAst(c.left), BuildAst(c.right));
+                        yield return new AssignmentStatement(Source(c), BuildAst(c.left), BuildAst(c.right)) { Label = label };
                     }
                     else
                     {
                         // represent `lhs op= rhs` as `lhs = lhs op rhs`
                         // functions cannot return lvalues so it is fine to evaluate `lhs` twice
                         var binExpr = new BinaryExpression(Source(c), op.Value, BuildAst(c.left), BuildAst(c.right));
-                        yield return new AssignmentStatement(Source(c), BuildAst(c.left), binExpr);
+                        yield return new AssignmentStatement(Source(c), BuildAst(c.left), binExpr) { Label = label };
                     }
                     break;
 
                 case ScLangParser.VariableDeclarationStatementContext c:
+                    var firstVarDecl = true;
                     foreach (var varDecl in BuildVarDecls(VarKind.Local, c.varDeclaration()))
                     {
+                        if (firstVarDecl)
+                        {
+                            varDecl.Label = label;
+                            firstVarDecl = false;
+                        }
                         yield return varDecl;
                     }
                     break;
@@ -344,7 +352,8 @@
                 case ScLangParser.IfStatementContext c:
                     var ifStmt = new IfStatement(Source(c), BuildAst(c.condition))
                     {
-                        Then = BuildStatementBlock(c.thenBlock)
+                        Then = BuildStatementBlock(c.thenBlock),
+                        Label = label,
                     };
 
                     // convert ELIFs to nested IFs inside ELSE
@@ -370,19 +379,21 @@
                 case ScLangParser.RepeatStatementContext c:
                     yield return new RepeatStatement(Source(c), BuildAst(c.limit), BuildAst(c.counter))
                     {
-                        Body = BuildStatementBlock(c.statementBlock())
+                        Body = BuildStatementBlock(c.statementBlock()),
+                        Label = label,
                     };
                     break;
 
                 case ScLangParser.WhileStatementContext c:
                     yield return new WhileStatement(Source(c), BuildAst(c.condition))
                     {
-                        Body = BuildStatementBlock(c.statementBlock())
+                        Body = BuildStatementBlock(c.statementBlock()),
+                        Label = label,
                     };
                     break;
 
                 case ScLangParser.SwitchStatementContext c:
-                    var switchStmt = new SwitchStatement(Source(c), BuildAst(c.expression()));
+                    var switchStmt = new SwitchStatement(Source(c), BuildAst(c.expression())) { Label = label };
                     foreach (var switchCase in c.switchCase())
                     {
                         SwitchCase switchCaseAst = switchCase switch
@@ -404,23 +415,23 @@
                     break;
 
                 case ScLangParser.BreakStatementContext c:
-                    yield return new BreakStatement(Source(c));
+                    yield return new BreakStatement(Source(c)) { Label = label };
                     break;
 
                 case ScLangParser.ContinueStatementContext c:
-                    yield return new ContinueStatement(Source(c));
+                    yield return new ContinueStatement(Source(c)) { Label = label };
                     break;
 
                 case ScLangParser.GotoStatementContext c:
-                    yield return new GotoStatement(Source(c), c.identifier().GetText());
+                    yield return new GotoStatement(Source(c), c.identifier().GetText()) { Label = label };
                     break;
 
                 case ScLangParser.ReturnStatementContext c:
-                    yield return new ReturnStatement(Source(c), BuildAstOpt(c.expression()));
+                    yield return new ReturnStatement(Source(c), BuildAstOpt(c.expression())) { Label = label };
                     break;
 
                 case ScLangParser.InvocationStatementContext c:
-                    yield return new InvocationExpression(Source(c), BuildAst(c.expression()), c.argumentList().expression().Select(BuildAst));
+                    yield return new InvocationExpression(Source(c), BuildAst(c.expression()), c.argumentList().expression().Select(BuildAst)) { Label = label };
                     break;
 
                 default: throw new NotSupportedException($"Statement '{context.statement().GetType()}' is not supported");

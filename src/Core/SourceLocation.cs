@@ -82,7 +82,13 @@
 
         public bool Contains(SourceLocation location) => location >= Start && location <= End;
         public bool Contains(SourceRange range) => FilePath == range.FilePath && Contains(range.Start) && Contains(range.End);
-
+        public SourceRange Merge(SourceRange other)
+        {
+            Debug.Assert(FilePath == other.FilePath);
+            var start = Start < other.Start ? Start : other.Start;
+            var end = End > other.End ? End : other.End;
+            return new SourceRange(start, end);
+        }
         public bool Equals(SourceRange other) => (Start, End).Equals((other.Start, other.End));
 
         public override int GetHashCode() => (Start, End).GetHashCode();

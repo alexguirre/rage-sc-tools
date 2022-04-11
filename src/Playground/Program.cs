@@ -63,7 +63,7 @@
             var tokens = lexer.ToArray();
             foreach (var token in tokens)
             {
-                Console.WriteLine($"{token.Kind}\t=\t`{token.Contents.Span.Escape()}`");
+                Console.WriteLine($"{token.Kind}\t=\t`{token.Lexeme.Span.Escape()}`");
             }
             Console.WriteLine();
             d.PrintAll(Console.Out);

@@ -214,14 +214,14 @@
         {
             Debug.Assert(node.Label is null);
 
-            var label = currFuncLabels?.FindLabel(node.LabelName);
-            if (label is null)
+            var labeledStmt = currFuncLabels?.FindLabeledStatement(node.TargetLabel);
+            if (labeledStmt is null)
             {
-                node.Label = new ErrorDeclaration(node.Source, Diagnostics, $"Unknown label '{node.LabelName}'");
+                node.Target = new ErrorStatement(node.Source, Diagnostics, $"Unknown label '{node.TargetLabel}'");
             }
             else
             {
-                node.Label = label;
+                node.Target = labeledStmt;
             }
 
             return DefaultReturn;

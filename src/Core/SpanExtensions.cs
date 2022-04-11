@@ -20,7 +20,7 @@
 
             return h;
         }
-
+        public static uint ToLowercaseHash(this ReadOnlyMemory<char> str) => str.Span.ToLowercaseHash();
         public static uint ToLowercaseHash(this string s) => s.AsSpan().ToLowercaseHash();
 
         public static uint ToHash(this ReadOnlySpan<char> s)
@@ -38,10 +38,10 @@
 
             return h;
         }
+        public static uint ToHash(this ReadOnlyMemory<char> str) => str.Span.ToHash();
+        public static uint ToHash(this string str) => str.AsSpan().ToHash();
 
-        public static uint ToHash(this string s) => s.AsSpan().ToHash();
-
-        private static bool NeedsEscaping(char c) => c is '\n' or '\r' or '\t' or '\0' or '\\' or '\"' or '\'';
+        private static bool NeedsEscaping(char c) => c is '\n' or '\r' or '\t' or '\0' or '\\' or '\"' or '\'' or '`';
         private static string EscapeSequence(char c) => c switch
         {
             '\n' => "\\n",
@@ -51,10 +51,11 @@
             '\\' => "\\\\",
             '\"' => "\\\"",
             '\'' => "\\\'",
-            _ => throw new ArgumentException(),
+            '`' => "\\`",
+            _ => throw new ArgumentException($"Char '{c}' does not need escaping", nameof(c)),
         };
 
-        private static bool NeedsUnescaping(ReadOnlySpan<char> s) => s.Length >= 2 && s[0] == '\\' && (s[1] is 'n' or 'r' or 't' or '0' or '\\' or '\"' or '\'');
+        private static bool NeedsUnescaping(ReadOnlySpan<char> s) => s.Length >= 2 && s[0] == '\\' && (s[1] is 'n' or 'r' or 't' or '0' or '\\' or '\"' or '\'' or '`');
         private static char UnescapeSequence(ReadOnlySpan<char> s) => s switch
         {
             _ when s[1] == 'n' => '\n',
@@ -64,7 +65,8 @@
             _ when s[1] == '\\' => '\\',
             _ when s[1] == '\"' => '\"',
             _ when s[1] == '\'' => '\'',
-            _ => throw new ArgumentException(),
+            _ when s[1] == '`' => '`',
+            _ => throw new ArgumentException("Not a valid escape sequence", nameof(s)),
         };
 
         public static string Escape(this ReadOnlySpan<char> str)
@@ -100,8 +102,8 @@
 
             return sb?.ToString() ?? str.ToString();
         }
-
-        public static string Escape(this string s) => s.AsSpan().Escape();
+        public static string Escape(this ReadOnlyMemory<char> str) => str.Span.Escape();
+        public static string Escape(this string str) => str.AsSpan().Escape();
 
         public static string Unescape(this ReadOnlySpan<char> str)
         {
@@ -137,33 +139,38 @@
 
             return sb?.ToString() ?? str.ToString();
         }
-
-        public static string Unescape(this string s) => s.AsSpan().Unescape();
+        public static string Unescape(this ReadOnlyMemory<char> str) => str.Span.Unescape();
+        public static string Unescape(this string str) => str.AsSpan().Unescape();
 
         public static int ParseAsInt(this ReadOnlySpan<char> str)
             => str.StartsWith("0x") ?
                 int.Parse(str[2..], System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture) :
                 int.Parse(str, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture);
-
-        public static int ParseAsInt(this string s) => s.AsSpan().ParseAsInt();
+        public static int ParseAsInt(this ReadOnlyMemory<char> str) => str.Span.ParseAsInt();
+        public static int ParseAsInt(this string str) => str.AsSpan().ParseAsInt();
 
         public static float ParseAsFloat(this ReadOnlySpan<char> str)
             => float.Parse(str, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
-
-        public static float ParseAsFloat(this string s) => s.AsSpan().ParseAsFloat();
+        public static float ParseAsFloat(this ReadOnlyMemory<char> str) => str.Span.ParseAsFloat();
+        public static float ParseAsFloat(this string str) => str.AsSpan().ParseAsFloat();
 
         public static ulong ParseAsUInt64(this ReadOnlySpan<char> str)
             => str.StartsWith("0x") ?
                 ulong.Parse(str[2..], System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture) :
                 ulong.Parse(str, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture);
-
-        public static ulong ParseAsUInt64(this string s) => s.AsSpan().ParseAsUInt64();
+        public static ulong ParseAsUInt64(this ReadOnlyMemory<char> str) => str.Span.ParseAsUInt64();
+        public static ulong ParseAsUInt64(this string str) => str.AsSpan().ParseAsUInt64();
 
         public static long ParseAsInt64(this ReadOnlySpan<char> str)
             => str.StartsWith("0x") ?
                 long.Parse(str[2..], System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture) :
                 long.Parse(str, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture);
+        public static long ParseAsInt64(this ReadOnlyMemory<char> str) => str.Span.ParseAsInt64();
+        public static long ParseAsInt64(this string str) => str.AsSpan().ParseAsInt64();
 
-        public static long ParseAsInt64(this string s) => s.AsSpan().ParseAsInt64();
+        public static bool ParseAsBool(this ReadOnlySpan<char> str)
+            => bool.Parse(str);
+        public static bool ParseAsBool(this ReadOnlyMemory<char> str) => str.Span.ParseAsBool();
+        public static bool ParseAsBool(this string str) => str.AsSpan().ParseAsBool();
     }
 }

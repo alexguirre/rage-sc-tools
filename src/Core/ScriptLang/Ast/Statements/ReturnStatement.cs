@@ -1,15 +1,19 @@
-﻿namespace ScTools.ScriptLang.Ast.Statements
+﻿namespace ScTools.ScriptLang.Ast.Statements;
+
+using ScTools.ScriptLang.Ast.Expressions;
+
+public sealed class ReturnStatement : BaseStatement
 {
-    using ScTools.ScriptLang.Ast.Expressions;
+    public IExpression? Expression { get; set; }
 
-    public sealed class ReturnStatement : BaseStatement
+    public ReturnStatement(Token returnToken, IExpression? expression) : base(returnToken)
     {
-        public IExpression? Expression { get; set; }
-
-        public ReturnStatement(SourceRange source, IExpression? expression) : base(source)
-            => Expression = expression;
-
-        public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-            => visitor.Visit(this, param);
+        System.Diagnostics.Debug.Assert(returnToken.Kind is TokenKind.RETURN);
+        Expression = expression;
     }
+    public ReturnStatement(SourceRange source, IExpression? expression) : base(source)
+        => Expression = expression;
+
+    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
+        => visitor.Visit(this, param);
 }

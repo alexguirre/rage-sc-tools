@@ -17,7 +17,6 @@
         TReturn Visit(FuncDeclaration node, TParam param);
         TReturn Visit(FuncProtoDeclaration node, TParam param);
         TReturn Visit(GlobalBlockDeclaration node, TParam param);
-        TReturn Visit(LabelDeclaration node, TParam param);
         TReturn Visit(StructDeclaration node, TParam param);
         TReturn Visit(StructField node, TParam param);
         TReturn Visit(VarDeclaration node, TParam param);
@@ -116,11 +115,6 @@
         public virtual TReturn Visit(GlobalBlockDeclaration node, TParam param)
         {
             node.Vars.ForEach(v => v.Accept(this, param));
-            return DefaultReturn;
-        }
-
-        public virtual TReturn Visit(LabelDeclaration node, TParam param)
-        {
             return DefaultReturn;
         }
 
@@ -421,7 +415,6 @@
         public virtual TReturn Visit(FuncDeclaration node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(FuncProtoDeclaration node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(GlobalBlockDeclaration node, TParam param) => throw new NotImplementedException();
-        public virtual TReturn Visit(LabelDeclaration node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(StructDeclaration node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(StructField node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(VarDeclaration node, TParam param) => throw new NotImplementedException();
