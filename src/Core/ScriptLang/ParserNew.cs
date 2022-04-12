@@ -38,7 +38,6 @@ public class ParserNew
         Next();
     }
 
-
     #region Rules
     public bool IsPossibleLabel()
         => Peek(0).Kind is TokenKind.Identifier && Peek(1).Kind is TokenKind.Colon;
@@ -68,11 +67,66 @@ public class ParserNew
 
     public IStatement ParseStatement()
     {
+        /*  statement
+            : varDeclaration                                                    #variableDeclarationStatement
+            | left=expression op=('=' | '*=' | '/=' | '%=' | '+=' | '-=' | '&=' | '^=' | '|=') right=expression   #assignmentStatement
+
+            | K_IF condition=expression EOL
+              thenBlock=statementBlock
+              elifBlock*
+              elseBlock?
+              K_ENDIF                                                   #ifStatement
+    
+            | K_WHILE condition=expression EOL
+              statementBlock
+              K_ENDWHILE                                                #whileStatement
+    
+            | K_REPEAT limit=expression counter=expression EOL
+              statementBlock
+              K_ENDREPEAT                                               #repeatStatement
+    
+            | K_SWITCH expression EOL
+              switchCase*
+              K_ENDSWITCH                                               #switchStatement
+
+            | K_BREAK                                                   #breakStatement
+            | K_CONTINUE                                                #continueStatement
+            | K_RETURN expression?                                      #returnStatement
+            | K_GOTO identifier                                         #gotoStatement
+            | expression argumentList                                   #invocationStatement
+            ;
+        */
+
         IStatement stmt;
-        
+
         if (IsPossibleVarDeclaration())
         {
             stmt = ParseVarDeclaration(VarKind.Local, allowMultipleDeclarations: true);
+        }
+        else if (Accept(TokenKind.IF, out var ifToken))
+        {
+            if (Expect(ParseExpression, out var conditionExpr) && ExpectEOS())
+            {
+                // TODO: parse ELIF and ELSE
+                var thenBody = new List<IStatement>();
+                while (!IsAtEOF)
+                {
+                    if (Peek(0).Kind is TokenKind.ENDIF)
+                    {
+                        break;
+                    }
+
+                    thenBody.Add(ParseLabeledStatement());
+                }
+
+                stmt = Expect(TokenKind.ENDIF, out var endifToken) && ExpectEOS() ?
+                        new IfStatement(ifToken, endifToken, conditionExpr, thenBody) :
+                        new ErrorStatement(LastError!, ifToken);
+            }
+            else
+            {
+                stmt = new ErrorStatement(LastError!, ifToken);
+            }
         }
         else if (Accept(TokenKind.BREAK, out var breakToken))
         {
@@ -92,15 +146,36 @@ public class ParserNew
                         new GotoStatement(gotoToken, gotoTargetToken) :
                         new ErrorStatement(LastError!, gotoToken, gotoTargetToken);
         }
+        else if (IsPossibleExpression())
+        {
+            var expr = ParseExpression();
+            stmt = expr is InvocationExpression invocation ?
+                        invocation :
+                        ExpressionAsStatementError(expr);
+        }
         else
         {
             stmt = UnknownStatementError();
+            // skip this line
+            while (!IsAtEOS) { Next(); }
         }
 
         ExpectEOS();
         return stmt;
     }
 
+    public bool IsPossibleExpression()
+        => Peek(0).Kind is TokenKind.OpenParen or
+                           TokenKind.NOT or
+                           TokenKind.Minus or
+                           TokenKind.LessThanLessThan or
+                           TokenKind.Identifier or
+                           TokenKind.Integer or
+                           TokenKind.Float or
+                           TokenKind.String or
+                           TokenKind.Boolean or
+                           TokenKind.SIZE_OF or
+                           TokenKind.Null;
     public IExpression ParseExpression()
     {
         /*  expression
@@ -331,6 +406,8 @@ public class ParserNew
             else
             {
                 expr = UnknownExpressionError();
+                // skip the current token
+                if (!IsAtEOS) { Next(); }
             }
 
             return TryParseExpressionTermSuffix(expr);
@@ -496,13 +573,19 @@ public class ParserNew
     private ErrorStatement UnknownStatementError()
     { 
         Error(ErrorCode.ParserUnknownStatement, $"Expected statement, found '{Current.Lexeme}' ({Current.Kind})", Current.Location);
-        return new ErrorStatement(LastError!, Current);
+        return new(LastError!, Current);
+    }
+
+    private ErrorStatement ExpressionAsStatementError(IExpression parsedExpr)
+    {
+        Error(ErrorCode.ParserExpressionAsStatement, $"Only invocation expressions can be used as a statement, found '{parsedExpr.GetType().Name}'", parsedExpr.Source);
+        return new(LastError!, parsedExpr.Tokens.ToArray());
     }
 
     private ErrorExpression UnknownExpressionError()
     {
         Error(ErrorCode.ParserUnknownExpression, $"Expected expression, found '{Current.Lexeme}' ({Current.Kind})", Current.Location);
-        return new ErrorExpression(LastError!, Current);
+        return new(LastError!, Current);
     }
 
     private void UnknownDeclaratorError()

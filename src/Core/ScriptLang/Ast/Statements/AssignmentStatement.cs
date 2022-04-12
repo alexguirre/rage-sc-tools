@@ -12,4 +12,7 @@ public sealed class AssignmentStatement : BaseStatement
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
+
+    public override string DebuggerDisplay =>
+        $@"{nameof(AssignmentStatement)} {{ {nameof(LHS)} = {LHS.DebuggerDisplay}, {nameof(RHS)} = {RHS.DebuggerDisplay} }}";
 }

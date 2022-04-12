@@ -20,5 +20,5 @@ public sealed class InvocationExpression : BaseExpression, IStatement
         => visitor.Visit(this, param);
 
     public override string DebuggerDisplay =>
-        $@"{nameof(SizeOfExpression)} {{ {nameof(Callee)} = {Callee.DebuggerDisplay}, Arguments: [{string.Join(", ", Arguments.Select(a => a.DebuggerDisplay))}] }}";
+        $@"{nameof(InvocationExpression)} {{ {nameof(Callee)} = {Callee.DebuggerDisplay}, {nameof(Arguments)} = [{string.Join(", ", Arguments.Select(a => a.DebuggerDisplay))}] }}";
 }

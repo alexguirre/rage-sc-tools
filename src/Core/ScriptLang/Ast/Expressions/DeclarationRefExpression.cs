@@ -21,5 +21,5 @@ public sealed class DeclarationRefExpression : BaseExpression
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
     public override string DebuggerDisplay =>
-        $@"{nameof(BoolLiteralExpression)} {{ {nameof(Name)} = {Name} }}";
+        $@"{nameof(DeclarationRefExpression)} {{ {nameof(Name)} = {Name} }}";
 }

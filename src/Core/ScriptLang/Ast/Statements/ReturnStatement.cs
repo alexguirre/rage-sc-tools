@@ -16,4 +16,7 @@ public sealed class ReturnStatement : BaseStatement
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
+
+    public override string DebuggerDisplay =>
+        $@"{nameof(ReturnStatement)} {{ {nameof(Expression)} = {Expression?.DebuggerDisplay} }}";
 }

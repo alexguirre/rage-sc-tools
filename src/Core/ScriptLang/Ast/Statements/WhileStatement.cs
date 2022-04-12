@@ -1,6 +1,7 @@
 ﻿namespace ScTools.ScriptLang.Ast.Statements;
 
 using System.Collections.Generic;
+using System.Linq;
 
 using ScTools.ScriptLang.Ast.Expressions;
 
@@ -20,4 +21,7 @@ public sealed class WhileStatement : BaseStatement, ILoopStatement
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
+
+    public override string DebuggerDisplay =>
+        $@"{nameof(WhileStatement)} {{ {nameof(Condition)} = {Condition.DebuggerDisplay}, {nameof(Body)} = [{string.Join(", ", Body.Select(a => a.DebuggerDisplay))}] }}";
 }

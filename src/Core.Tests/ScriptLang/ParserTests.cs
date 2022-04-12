@@ -52,6 +52,167 @@
         }
 
         [Fact]
+        public void IfStatement()
+        {
+            var p = ParserFor(
+                @"  IF a or \
+                       b
+                        foo()
+                        bar()
+                    ENDIF"
+            );
+
+            AssertIfStmt(p.ParseLabeledStatement(),
+                condition => condition is BinaryExpression
+                {
+                    Operator: BinaryOperator.LogicalOr,
+                    LHS: DeclarationRefExpression { Name: "a" },
+                    RHS: DeclarationRefExpression { Name: "b" },
+                },
+                then => Collection(then,
+                    _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "foo" }, args => Empty(args)),
+                    _1 => AssertInvocation(_1, callee => callee is DeclarationRefExpression { Name: "bar" }, args => Empty(args))),
+                @else => Empty(@else));
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
+        public void IfElseStatement()
+        {
+            var p = ParserFor(
+                @"  IF a
+                        foo()
+                    ELSE
+                        bar()
+                    ENDIF"
+            );
+
+            AssertIfStmt(p.ParseLabeledStatement(),
+                condition => condition is DeclarationRefExpression { Name: "a" },
+                then => Collection(then,
+                    _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "foo" }, args => Empty(args))),
+                @else => Collection(@else,
+                    _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "bar" }, args => Empty(args))));
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
+        public void IfElifStatement()
+        {
+            var p = ParserFor(
+                @"  IF a
+                        foo()
+                    ELIF b
+                        bar()
+                    ENDIF"
+            );
+
+            AssertIfStmt(p.ParseLabeledStatement(),
+                condition => condition is DeclarationRefExpression { Name: "a" },
+                then => Collection(then,
+                    _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "foo" }, args => Empty(args))),
+                @else => Collection(@else,
+                    _0 => AssertIfStmt(_0,
+                        condition => condition is DeclarationRefExpression { Name: "b" },
+                        then => Collection(then,
+                            _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "bar" }, args => Empty(args))),
+                        else2 => Empty(else2))));
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
+        public void IfElifElseStatement()
+        {
+            var p = ParserFor(
+                @"  IF a
+                        foo()
+                    ELIF b
+                        bar()
+                    ELSE
+                        baz()
+                    ENDIF"
+            );
+
+            AssertIfStmt(p.ParseLabeledStatement(),
+                condition => condition is DeclarationRefExpression { Name: "a" },
+                then => Collection(then,
+                    _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "foo" }, args => Empty(args))),
+                @else => Collection(@else,
+                    _0 => AssertIfStmt(_0,
+                        condition => condition is DeclarationRefExpression { Name: "b" },
+                        then => Collection(then,
+                            _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "bar" }, args => Empty(args))),
+                        else2 => Collection(else2,
+                            _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "baz" }, args => Empty(args))))));
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
+        public void NestedIfStatement()
+        {
+            var p = ParserFor(
+                @"  IF a
+                        foo()
+                    ELSE
+                        IF b
+                            bar()
+                        ELSE
+                            baz()
+                        ENDIF
+                    ENDIF"
+            );
+
+            AssertIfStmt(p.ParseLabeledStatement(),
+                condition => condition is DeclarationRefExpression { Name: "a" },
+                then => Collection(then,
+                    _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "foo" }, args => Empty(args))),
+                @else => Collection(@else,
+                    _0 => AssertIfStmt(_0,
+                        condition => condition is DeclarationRefExpression { Name: "b" },
+                        then => Collection(then,
+                            _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "bar" }, args => Empty(args))),
+                        else2 => Collection(else2,
+                            _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "baz" }, args => Empty(args))))));
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
+        public void EmptyIfStatement()
+        {
+            var p = ParserFor(
+                @"  IF a
+                    ENDIF"
+            );
+
+            AssertIfStmt(p.ParseLabeledStatement(),
+                condition => condition is DeclarationRefExpression { Name: "a" },
+                then => Empty(then),
+                @else => Empty(@else));
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
+        public void EmptyIfElifElseStatement()
+        {
+            var p = ParserFor(
+                @"  IF a
+                    ELIF b
+                    ELSE
+                    ENDIF"
+            );
+
+            AssertIfStmt(p.ParseLabeledStatement(),
+                condition => condition is DeclarationRefExpression { Name: "a" },
+                then => Empty(then),
+                @else => Collection(@else,
+                    _0 => AssertIfStmt(_0,
+                        condition => condition is DeclarationRefExpression { Name: "b" },
+                        then => Empty(then),
+                        else2 => Empty(else2))));
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
         public void VarDeclarationStatement()
         {
             var p = ParserFor(
@@ -173,13 +334,13 @@
                   NULL"
             );
 
-            Assert(p.ParseExpression(), n => n is DeclarationRefExpression { Name: "hello" });
-            Assert(p.ParseExpression(), n => n is IntLiteralExpression { Value: 123 });
-            Assert(p.ParseExpression(), n => n is FloatLiteralExpression { Value: 12.5e2f });
-            Assert(p.ParseExpression(), n => n is StringLiteralExpression { Value: "hello\nworld" });
-            Assert(p.ParseExpression(), n => n is BoolLiteralExpression { Value: true });
-            Assert(p.ParseExpression(), n => n is BoolLiteralExpression { Value: false });
-            Assert(p.ParseExpression(), n => n is NullExpression);
+            AssertParseExpression(p, n => n is DeclarationRefExpression { Name: "hello" });
+            AssertParseExpression(p, n => n is IntLiteralExpression { Value: 123 });
+            AssertParseExpression(p, n => n is FloatLiteralExpression { Value: 12.5e2f });
+            AssertParseExpression(p, n => n is StringLiteralExpression { Value: "hello\nworld" });
+            AssertParseExpression(p, n => n is BoolLiteralExpression { Value: true });
+            AssertParseExpression(p, n => n is BoolLiteralExpression { Value: false });
+            AssertParseExpression(p, n => n is NullExpression);
             True(p.IsAtEOF);
         }
 
@@ -189,7 +350,7 @@
             var p = ParserFor(
                 @"NOT hello"
             );
-            Assert(p.ParseExpression(), n => n is UnaryExpression
+            AssertParseExpression(p, n => n is UnaryExpression
             {
                 Operator: UnaryOperator.LogicalNot,
                 SubExpression: DeclarationRefExpression{ Name: "hello" }
@@ -199,7 +360,7 @@
             p = ParserFor(
                 @"-world"
             );
-            Assert(p.ParseExpression(), n => n is UnaryExpression
+            AssertParseExpression(p, n => n is UnaryExpression
             {
                 Operator: UnaryOperator.Negate,
                 SubExpression: DeclarationRefExpression { Name: "world" }
@@ -214,7 +375,7 @@
                 @"<<1,2.5,<<3,4,5>>>>"
             );
 
-            Assert(p.ParseExpression(), n => n is VectorExpression
+            AssertParseExpression(p, n => n is VectorExpression
             {
                 X: IntLiteralExpression { Value: 1 },
                 Y: FloatLiteralExpression { Value: 2.5f },
@@ -235,6 +396,7 @@
                 @"<<,2.5,3>>"
             );
 
+            True(p.IsPossibleExpression());
             AssertError(p.ParseExpression(), n => n is ErrorExpression);
             CheckError(ErrorCode.ParserUnknownExpression, (1, 3), (1, 3), p.Diagnostics);
         }
@@ -246,6 +408,7 @@
                 @"<<1,,3>>"
             );
 
+            True(p.IsPossibleExpression());
             AssertError(p.ParseExpression(), n => n is ErrorExpression);
             CheckError(ErrorCode.ParserUnknownExpression, (1, 5), (1, 5), p.Diagnostics);
         }
@@ -256,7 +419,8 @@
             var p = ParserFor(
                 @"<<1,2.5,>>"
             );
-            
+
+            True(p.IsPossibleExpression());
             AssertError(p.ParseExpression(), n => n is ErrorExpression);
             CheckError(ErrorCode.ParserUnknownExpression, (1, 9), (1, 10), p.Diagnostics);
         }
@@ -268,6 +432,7 @@
                 @"<<1,2,3"
             );
 
+            True(p.IsPossibleExpression());
             AssertError(p.ParseExpression(), n => n is ErrorExpression);
             // TODO: this SourceRange should probably be the last correct token location
             CheckError(ErrorCode.ParserUnexpectedToken, (0, 0), (0, 0), p.Diagnostics);
@@ -280,7 +445,7 @@
                 @"((25))"
             );
 
-            Assert(p.ParseExpression(), n => n is IntLiteralExpression { Value: 25 });
+            AssertParseExpression(p, n => n is IntLiteralExpression { Value: 25 });
             True(p.IsAtEOF);
         }
 
@@ -291,7 +456,7 @@
                 @"foo.bar.baz"
             );
 
-            Assert(p.ParseExpression(), n => n is FieldAccessExpression
+            AssertParseExpression(p, n => n is FieldAccessExpression
             {
                 FieldName: "baz",
                 SubExpression: FieldAccessExpression
@@ -311,7 +476,7 @@
                   a + b[1]"
             );
 
-            Assert(p.ParseExpression(), n => n is IndexingExpression
+            AssertParseExpression(p, n => n is IndexingExpression
             {
                 Array: DeclarationRefExpression { Name: "foo" },
                 Index: BinaryExpression
@@ -321,7 +486,7 @@
                     RHS: IntLiteralExpression { Value: 2 },
                 }
             });
-            Assert(p.ParseExpression(), n => n is BinaryExpression
+            AssertParseExpression(p, n => n is BinaryExpression
             {
                 Operator: BinaryOperator.Add,
                 LHS: DeclarationRefExpression { Name: "a" },
@@ -336,7 +501,7 @@
             p = ParserFor(
                 @"(a + b)[1]"
             );
-            Assert(p.ParseExpression(), n => n is IndexingExpression
+            AssertParseExpression(p, n => n is IndexingExpression
             {
                 Array: BinaryExpression
                 {
@@ -358,6 +523,7 @@
                   baz(0)"
             );
 
+            True(p.IsPossibleExpression());
             AssertInvocation(p.ParseExpression(),
                 callee => callee is DeclarationRefExpression { Name: "foo" },
                 args => Collection(args,
@@ -370,10 +536,12 @@
                     _1 => True(_1 is DeclarationRefExpression { Name: "a" })
                     )
                 );
+            True(p.IsPossibleExpression());
             AssertInvocation(p.ParseExpression(),
                 callee => callee is DeclarationRefExpression { Name: "bar" },
                 args => Empty(args)
                 );
+            True(p.IsPossibleExpression());
             AssertInvocation(p.ParseExpression(),
                 callee => callee is DeclarationRefExpression { Name: "baz" },
                 args => Collection(args,
@@ -384,13 +552,62 @@
         }
 
         [Fact]
+        public void InvocationStatement()
+        {
+            var p = ParserFor(
+                @"foo(1+2, a)
+                  bar()
+                  baz(0)"
+            );
+
+            AssertInvocation(p.ParseLabeledStatement(),
+                callee => callee is DeclarationRefExpression { Name: "foo" },
+                args => Collection(args,
+                    _0 => True(_0 is BinaryExpression
+                    {
+                        Operator: BinaryOperator.Add,
+                        LHS: IntLiteralExpression { Value: 1 },
+                        RHS: IntLiteralExpression { Value: 2 },
+                    }),
+                    _1 => True(_1 is DeclarationRefExpression { Name: "a" })
+                    )
+                );
+            AssertInvocation(p.ParseLabeledStatement(),
+                callee => callee is DeclarationRefExpression { Name: "bar" },
+                args => Empty(args)
+                );
+            True(p.IsPossibleExpression());
+            AssertInvocation(p.ParseLabeledStatement(),
+                callee => callee is DeclarationRefExpression { Name: "baz" },
+                args => Collection(args,
+                    _0 => True(_0 is IntLiteralExpression { Value: 0 })
+                    )
+                );
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
+        public void ExpressionAsStatementError()
+        {
+            var p = ParserFor(
+                @"1 + 2"
+            );
+
+            AssertError(p.ParseLabeledStatement(), n => n is ErrorStatement);
+            // TODO: consider children nodes for INode.Source property
+            // Here only the + token is considered for BinaryExpression.Source, it would be better if it included the whole expression 1 + 2.
+            CheckError(ErrorCode.ParserExpressionAsStatement, /*(1, 1), (1, 5)*/(1, 3), (1, 3), p.Diagnostics);
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
         public void ArithmeticExpressionPrecedence()
         {
             var p = ParserFor(
                 @"2 * -3 + 4"
             );
 
-            Assert(p.ParseExpression(), n => n is BinaryExpression
+            AssertParseExpression(p, n => n is BinaryExpression
             {
                 Operator: BinaryOperator.Add,
                 LHS: BinaryExpression
@@ -415,7 +632,7 @@
                 @"2 + -3 * 4"
             );
 
-            Assert(p.ParseExpression(), n => n is BinaryExpression
+            AssertParseExpression(p, n => n is BinaryExpression
             {
                 Operator: BinaryOperator.Add,
                 LHS: IntLiteralExpression { Value: 2 },
@@ -440,7 +657,7 @@
                 @"2 * (-3 + 4)"
             );
 
-            Assert(p.ParseExpression(), n => n is BinaryExpression
+            AssertParseExpression(p, n => n is BinaryExpression
             {
                 Operator: BinaryOperator.Multiply,
                 LHS: IntLiteralExpression { Value: 2 },
@@ -466,7 +683,7 @@
             );
 
             // (((NOT a) AND b) OR c) OR (d == e)
-            Assert(p.ParseExpression(), n => n is BinaryExpression
+            AssertParseExpression(p, n => n is BinaryExpression
             {
                 Operator: BinaryOperator.LogicalOr,
                 LHS: BinaryExpression
@@ -502,7 +719,7 @@
             );
 
             // (NOT (a AND b)) OR ((c OR d) == e)
-            Assert(p.ParseExpression(), n => n is BinaryExpression
+            AssertParseExpression(p, n => n is BinaryExpression
             {
                 Operator: BinaryOperator.LogicalOr,
                 LHS: UnaryExpression
@@ -538,7 +755,7 @@
             );
 
             // (2 & -3) | 4
-            Assert(p.ParseExpression(), n => n is BinaryExpression
+            AssertParseExpression(p, n => n is BinaryExpression
             {
                 Operator: BinaryOperator.Or,
                 LHS: BinaryExpression
@@ -563,7 +780,7 @@
                 @"2 & (-3 | 4)"
             );
 
-            Assert(p.ParseExpression(), n => n is BinaryExpression
+            AssertParseExpression(p, n => n is BinaryExpression
             {
                 Operator: BinaryOperator.And,
                 LHS: IntLiteralExpression { Value: 2 },
@@ -589,7 +806,7 @@
             );
 
             // (a <= b) <> (-c > d)
-            Assert(p.ParseExpression(), n => n is BinaryExpression
+            AssertParseExpression(p, n => n is BinaryExpression
             {
                 Operator: BinaryOperator.NotEquals,
                 LHS: BinaryExpression
@@ -620,7 +837,7 @@
             );
 
             // a OR (b AND (c | (d ^ (e & (f == (g > (h + (i * j))))))))
-            Assert(p.ParseExpression(), n => n is BinaryExpression
+            AssertParseExpression(p, n => n is BinaryExpression
             {
                 Operator: BinaryOperator.LogicalOr,
                 LHS: DeclarationRefExpression { Name: "a" },
@@ -674,6 +891,22 @@
             False(node is IError);
             True(predicate(node));
         }
+        private static void AssertParseExpression(ParserNew p, Predicate<IExpression> predicate)
+        {
+            True(p.IsPossibleExpression());
+            var expr = p.ParseExpression();
+            False(expr is IError);
+            True(predicate(expr));
+        }
+        private static void AssertInvocation(IStatement stmt, Predicate<IExpression> calleePredicate, Action<List<IExpression>> argumentsChecker)
+        {
+            True(stmt is InvocationExpression);
+            if (stmt is InvocationExpression invocationExpr)
+            {
+                True(calleePredicate(invocationExpr.Callee));
+                argumentsChecker(invocationExpr.Arguments);
+            }
+        }
         private static void AssertInvocation(IExpression expr, Predicate<IExpression> calleePredicate, Action<List<IExpression>> argumentsChecker)
         {
             True(expr is InvocationExpression);
@@ -681,6 +914,16 @@
             {
                 True(calleePredicate(invocationExpr.Callee));
                 argumentsChecker(invocationExpr.Arguments);
+            }
+        }
+        private static void AssertIfStmt(IStatement stmt, Predicate<IExpression> conditionPredicate, Action<List<IStatement>> thenBodyChecker, Action<List<IStatement>> elseBodyChecker)
+        {
+            True(stmt is IfStatement);
+            if (stmt is IfStatement ifStmt)
+            {
+                True(conditionPredicate(ifStmt.Condition));
+                thenBodyChecker(ifStmt.Then);
+                elseBodyChecker(ifStmt.Else);
             }
         }
         private static void AssertError(INode node, Predicate<INode> predicate)

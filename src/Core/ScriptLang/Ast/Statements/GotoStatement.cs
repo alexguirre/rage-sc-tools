@@ -16,4 +16,7 @@ public sealed class GotoStatement : BaseStatement
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
+
+    public override string DebuggerDisplay =>
+        $@"{nameof(GotoStatement)} {{ {nameof(TargetLabel)} = {TargetLabel} }}";
 }

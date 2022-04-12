@@ -1,6 +1,7 @@
 ﻿namespace ScTools.ScriptLang.Ast.Statements;
 
 using System.Collections.Generic;
+using System.Linq;
 
 using ScTools.ScriptLang.Ast.Expressions;
 
@@ -18,4 +19,7 @@ public sealed class RepeatStatement : BaseStatement, ILoopStatement
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
+
+    public override string DebuggerDisplay =>
+        $@"{nameof(RepeatStatement)} {{ {nameof(Limit)} = {Limit.DebuggerDisplay}, {nameof(Counter)} = {Counter.DebuggerDisplay}, {nameof(Body)} = [{string.Join(", ", Body.Select(a => a.DebuggerDisplay))}] }}";
 }
