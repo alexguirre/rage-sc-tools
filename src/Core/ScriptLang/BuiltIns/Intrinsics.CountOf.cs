@@ -77,7 +77,7 @@
                 {
                     if (typeName.TypeDeclaration is not EnumDeclaration)
                     {
-                        diagnostics.AddError($"Argument 1: cannot pass non-enum type '{typeName.TypeDeclaration.Name}' to COUNT_OF parameter", arg.Source);
+                        diagnostics.AddError($"Argument 1: cannot pass non-enum type '{typeName.TypeDeclaration.Name}' to COUNT_OF parameter", arg.Location);
                     }
                     else
                     {
@@ -86,7 +86,7 @@
                 }
                 else if (arg.Type is not ErrorType)
                 {
-                    diagnostics.AddError($"Argument 1: cannot pass '{arg.Type}' to COUNT_OF parameter, expected array reference or enum type name", arg.Source);
+                    diagnostics.AddError($"Argument 1: cannot pass '{arg.Type}' to COUNT_OF parameter, expected array reference or enum type name", arg.Location);
                 }
 
                 return (returnType, isConstant);

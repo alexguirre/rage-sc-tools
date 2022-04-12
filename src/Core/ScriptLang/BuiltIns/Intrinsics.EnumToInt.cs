@@ -61,7 +61,7 @@
                 var arg = args[0];
                 if (arg.Type is not (EnumType or ErrorType))
                 {
-                    diagnostics.AddError($"Argument 1: cannot pass '{arg.Type}' to ENUM_TO_INT parameter, expected enum value", arg.Source);
+                    diagnostics.AddError($"Argument 1: cannot pass '{arg.Type}' to ENUM_TO_INT parameter, expected enum value", arg.Location);
                 }
 
                 return (returnType, arg.IsConstant);

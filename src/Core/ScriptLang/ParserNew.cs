@@ -577,7 +577,7 @@ public class ParserNew
 
     private ErrorStatement ExpressionAsStatementError(IExpression parsedExpr)
     {
-        Error(ErrorCode.ParserExpressionAsStatement, $"Only invocation expressions can be used as a statement, found '{parsedExpr.GetType().Name}'", parsedExpr.Source);
+        Error(ErrorCode.ParserExpressionAsStatement, $"Only invocation expressions can be used as a statement, found '{parsedExpr.GetType().Name}'", parsedExpr.Location);
         return new(LastError!, parsedExpr.Tokens.ToArray());
     }
 

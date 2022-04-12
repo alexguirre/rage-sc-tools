@@ -30,7 +30,7 @@
 
             node.IsLValue = false;
             node.IsConstant = node.LHS.IsConstant && node.RHS.IsConstant;
-            node.Type = node.LHS.Type!.BinaryOperation(node.Operator, node.RHS.Type!, node.Source, Diagnostics);
+            node.Type = node.LHS.Type!.BinaryOperation(node.Operator, node.RHS.Type!, node.Location, Diagnostics);
             return default;
         }
 
@@ -38,7 +38,7 @@
         {
             node.IsLValue = false;
             node.IsConstant = true;
-            node.Type = BuiltInTypes.Bool.CreateType(node.Source);
+            node.Type = BuiltInTypes.Bool.CreateType(node.Location);
             return default;
         }
 
@@ -48,7 +48,7 @@
 
             node.IsConstant = false;
             node.IsLValue = node.SubExpression.IsLValue;
-            node.Type = node.SubExpression.Type!.FieldAccess(node.FieldName, node.Source, Diagnostics);
+            node.Type = node.SubExpression.Type!.FieldAccess(node.FieldName, node.Location, Diagnostics);
             return default;
         }
 
@@ -56,7 +56,7 @@
         {
             node.IsLValue = false;
             node.IsConstant = true;
-            node.Type = BuiltInTypes.Float.CreateType(node.Source);
+            node.Type = BuiltInTypes.Float.CreateType(node.Location);
             return default;
         }
 
@@ -67,7 +67,7 @@
 
             node.IsLValue = true;
             node.IsConstant = false;
-            node.Type = node.Array.Type!.Indexing(node.Index.Type!, node.Source, Diagnostics);
+            node.Type = node.Array.Type!.Indexing(node.Index.Type!, node.Location, Diagnostics);
             return default;
         }
 
@@ -75,7 +75,7 @@
         {
             node.IsLValue = false;
             node.IsConstant = true;
-            node.Type = BuiltInTypes.Int.CreateType(node.Source);
+            node.Type = BuiltInTypes.Int.CreateType(node.Location);
             return default;
         }
 
@@ -85,7 +85,7 @@
             node.Arguments.ForEach(arg => arg.Accept(this, param));
 
             node.IsLValue = false;
-            (node.Type, node.IsConstant) = node.Callee.Type!.Invocation(node.Arguments.ToArray(), node.Source, Diagnostics);
+            (node.Type, node.IsConstant) = node.Callee.Type!.Invocation(node.Arguments.ToArray(), node.Location, Diagnostics);
             return default;
         }
 
@@ -93,7 +93,7 @@
         {
             node.IsLValue = false;
             node.IsConstant = true;
-            node.Type = new NullType(node.Source);
+            node.Type = new NullType(node.Location);
             return default;
         }
 
@@ -103,7 +103,7 @@
 
             node.IsLValue = false;
             node.IsConstant = node.SubExpression.IsConstant;
-            node.Type = BuiltInTypes.Int.CreateType(node.Source);
+            node.Type = BuiltInTypes.Int.CreateType(node.Location);
             return default;
         }
 
@@ -111,7 +111,7 @@
         {
             node.IsLValue = false;
             node.IsConstant = true;
-            node.Type = BuiltInTypes.String.CreateType(node.Source);
+            node.Type = BuiltInTypes.String.CreateType(node.Location);
             return default;
         }
 
@@ -121,7 +121,7 @@
 
             node.IsLValue = false;
             node.IsConstant = node.SubExpression.IsConstant;
-            node.Type = node.SubExpression.Type!.UnaryOperation(node.Operator, node.Source, Diagnostics);
+            node.Type = node.SubExpression.Type!.UnaryOperation(node.Operator, node.Location, Diagnostics);
             return default;
         }
 
@@ -137,13 +137,13 @@
             {
                 node.IsLValue = false;
                 node.IsConstant = true;
-                node.Type = new TypeNameType(node.Source, typeDecl);
+                node.Type = new TypeNameType(node.Location, typeDecl);
             }
             else if (node.Declaration is IError error)
             {
                 node.IsLValue = false;
                 node.IsConstant = false;
-                node.Type = new ErrorType(error.Source, error.Diagnostic);
+                node.Type = new ErrorType(error.Location, error.Diagnostic);
             }
             else
             {
@@ -158,19 +158,19 @@
             node.Y.Accept(this, param);
             node.Z.Accept(this, param);
 
-            var vectorTy = BuiltInTypes.Vector.CreateType(node.Source);
+            var vectorTy = BuiltInTypes.Vector.CreateType(node.Location);
             node.IsLValue = false;
             node.IsConstant = node.X.IsConstant && node.Y.IsConstant && node.Z.IsConstant;
             node.Type = vectorTy;
 
-            var floatTy = BuiltInTypes.Float.CreateType(node.Source);
+            var floatTy = BuiltInTypes.Float.CreateType(node.Location);
             for (int i = 0; i < 3; i++)
             {
                 var src = i switch { 0 => node.X, 1 => node.Y, 2 => node.Z, _ => throw new System.NotImplementedException() };
                 if (!floatTy.CanAssign(src.Type!, src.IsLValue))
                 {
                     var comp = i switch { 0 => "X", 1 => "Y", 2 => "Z", _ => throw new System.NotImplementedException() };
-                    Diagnostics.AddError($"Vector component {comp} requires type '{floatTy}', found '{src.Type}'", src.Source);
+                    Diagnostics.AddError($"Vector component {comp} requires type '{floatTy}', found '{src.Type}'", src.Location);
                 }
             }
 
@@ -181,7 +181,7 @@
         {
             node.IsLValue = false;
             node.IsConstant = false;
-            node.Type = new ErrorType(node.Source, node.Diagnostic);
+            node.Type = new ErrorType(node.Location, node.Diagnostic);
             return default;
         }
     }

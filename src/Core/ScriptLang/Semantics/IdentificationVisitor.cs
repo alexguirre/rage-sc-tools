@@ -39,7 +39,7 @@
         {
             if (node.Prototype.Kind is FuncKind.Native && NativeDB.FindOriginalHash(node.Name) == null)
             {
-                Diagnostics.AddError($"Unknown native '{node.Name}'", node.Source);
+                Diagnostics.AddError($"Unknown native '{node.Name}'", node.Location);
             }
 
             currFuncLabels = LabelSymbolTableBuilder.Build(node, Diagnostics);
@@ -77,7 +77,7 @@
             {
                 if (!fieldNames.Add(field.Name))
                 {
-                    Diagnostics.AddError($"Struct field '{field.Name}' is already declared", field.Source);
+                    Diagnostics.AddError($"Struct field '{field.Name}' is already declared", field.Location);
                 }
 
                 field.Accept(this, param);
@@ -95,7 +95,7 @@
             {
                 if (!Symbols.AddValue(node))
                 {
-                    Diagnostics.AddError($"Symbol '{node.Name}' is already declared", node.Source);
+                    Diagnostics.AddError($"Symbol '{node.Name}' is already declared", node.Location);
                 }
             }
 
@@ -109,7 +109,7 @@
             var decl = Symbols.FindValue(node.Name) ?? Symbols.GlobalSymbols.FindType(node.Name) as IDeclaration;
             if (decl is null)
             {
-                node.Declaration = new ErrorDeclaration(node.Source, Diagnostics, $"Unknown symbol '{node.Name}'");
+                node.Declaration = new ErrorDeclaration(node.Location, Diagnostics, $"Unknown symbol '{node.Name}'");
             }
             else
             {
@@ -184,7 +184,7 @@
 
             if (breakableStatements.Count == 0)
             {
-                node.EnclosingStatement = new ErrorStatement(node.Source, Diagnostics, "BREAK statement not in loop or switch");
+                node.EnclosingStatement = new ErrorStatement(node.Location, Diagnostics, "BREAK statement not in loop or switch");
             }
             else
             {
@@ -200,7 +200,7 @@
 
             if (loopStatements.Count == 0)
             {
-                node.EnclosingLoop = new ErrorStatement(node.Source, Diagnostics, "CONTINUE statement not in loop");
+                node.EnclosingLoop = new ErrorStatement(node.Location, Diagnostics, "CONTINUE statement not in loop");
             }
             else
             {
@@ -217,7 +217,7 @@
             var labeledStmt = currFuncLabels?.FindLabeledStatement(node.TargetLabel);
             if (labeledStmt is null)
             {
-                node.Target = new ErrorStatement(node.Source, Diagnostics, $"Unknown label '{node.TargetLabel}'");
+                node.Target = new ErrorStatement(node.Location, Diagnostics, $"Unknown label '{node.TargetLabel}'");
             }
             else
             {
@@ -234,11 +234,11 @@
             var typeDecl = Symbols.GlobalSymbols.FindType(node.Name);
             if (typeDecl is null)
             {
-                node.ResolvedType = new ErrorType(node.Source, Diagnostics, $"Unknown type '{node.Name}'");
+                node.ResolvedType = new ErrorType(node.Location, Diagnostics, $"Unknown type '{node.Name}'");
             }
             else
             {
-                node.ResolvedType = typeDecl.CreateType(node.Source);
+                node.ResolvedType = typeDecl.CreateType(node.Location);
             }
 
             return DefaultReturn;

@@ -58,7 +58,7 @@
         {
             if (!Symbols.AddType(node))
             {
-                Diagnostics.AddError($"Type symbol '{node.Name}' is already declared", node.Source);
+                Diagnostics.AddError($"Type symbol '{node.Name}' is already declared", node.Location);
             }
         }
 
@@ -66,7 +66,7 @@
         {
             if (!Symbols.AddValue(node))
             {
-                Diagnostics.AddError($"Symbol '{node.Name}' is already declared", node.Source);
+                Diagnostics.AddError($"Symbol '{node.Name}' is already declared", node.Location);
             }
         }
 

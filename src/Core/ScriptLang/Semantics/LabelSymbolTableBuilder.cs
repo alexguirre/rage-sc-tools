@@ -26,7 +26,7 @@
         {
             if (stmt.Label is not null && !Labels.AddLabeledStatement(stmt))
             {
-                Diagnostics.AddError($"Label '{stmt.Label}' is already declared", stmt.Source);
+                Diagnostics.AddError($"Label '{stmt.Label}' is already declared", stmt.Location);
             }
         }
 

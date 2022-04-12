@@ -110,11 +110,11 @@
                     {
                         if (!arg.IsLValue)
                         {
-                            diagnostics.AddError($"Argument {i + 1}: cannot bind parameter '{TypePrinter.ToString(param.Type, param.Name, param.IsReference)}' to non-lvalue", arg.Source);
+                            diagnostics.AddError($"Argument {i + 1}: cannot bind parameter '{TypePrinter.ToString(param.Type, param.Name, param.IsReference)}' to non-lvalue", arg.Location);
                         }
                         else if (!param.Type.CanBindRefTo(arg.Type!))
                         {
-                            diagnostics.AddError($"Argument {i + 1}: cannot bind parameter '{TypePrinter.ToString(param.Type, param.Name, param.IsReference)}' to reference of type '{arg.Type}'", arg.Source);
+                            diagnostics.AddError($"Argument {i + 1}: cannot bind parameter '{TypePrinter.ToString(param.Type, param.Name, param.IsReference)}' to reference of type '{arg.Type}'", arg.Location);
                         }
                     }
                     else
@@ -122,7 +122,7 @@
                         if ((param.Type is TextLabelType && !param.Type.Equivalent(arg.Type!)) ||
                             !param.Type.CanAssign(arg.Type!, arg.IsLValue))
                         {
-                            diagnostics.AddError($"Argument {i + 1}: cannot pass '{arg.Type}' as parameter '{TypePrinter.ToString(param.Type, param.Name, param.IsReference)}'", arg.Source);
+                            diagnostics.AddError($"Argument {i + 1}: cannot pass '{arg.Type}' as parameter '{TypePrinter.ToString(param.Type, param.Name, param.IsReference)}'", arg.Location);
                         }
                     }
                 }

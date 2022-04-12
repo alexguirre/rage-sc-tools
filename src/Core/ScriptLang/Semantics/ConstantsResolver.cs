@@ -56,7 +56,7 @@
                 if (origUnsolvedCount == unsolved.Count)
                 {
                     // no constants were resolved in this iteration, so there must be some dependency cycle in their initializers
-                    unsolved.ForEach(c => Diagnostics.AddError($"The evaluation of the initializer for '{c.Name}' involves a circular dependency", c.Source));
+                    unsolved.ForEach(c => Diagnostics.AddError($"The evaluation of the initializer for '{c.Name}' involves a circular dependency", c.Location));
                     break;
                 }
             }
@@ -85,7 +85,7 @@
                 init.Accept(exprTypeChecker, default);
                 if (!init.IsConstant)
                 {
-                    enumMember.Initializer = new ErrorExpression(init.Source, Diagnostics, $"The expression assigned to '{enumMember.Name}' must be constant");
+                    enumMember.Initializer = new ErrorExpression(init.Location, Diagnostics, $"The expression assigned to '{enumMember.Name}' must be constant");
                     return;
                 }
 
@@ -97,9 +97,9 @@
                 }
 
                 if (!enumMember.Type.CanAssign(init.Type!, init.IsLValue) &&
-                    !BuiltInTypes.Int.CreateType(init.Source).CanAssign(init.Type!, init.IsLValue))
+                    !BuiltInTypes.Int.CreateType(init.Location).CanAssign(init.Type!, init.IsLValue))
                 {
-                    enumMember.Type = new ErrorType(init.Source, Diagnostics, $"Cannot assign type '{init.Type}' to '{enumMember.Type}'");
+                    enumMember.Type = new ErrorType(init.Location, Diagnostics, $"Cannot assign type '{init.Type}' to '{enumMember.Type}'");
                     return;
                 }
 
@@ -107,27 +107,27 @@
             }
 
             // simplify the initializer expression
-            enumMember.Initializer = new IntLiteralExpression(Token.Integer(enumMember.Value, enumMember.Initializer?.Source ?? enumMember.Source));
+            enumMember.Initializer = new IntLiteralExpression(Token.Integer(enumMember.Value, enumMember.Initializer?.Location ?? enumMember.Location));
         }
 
         private void SolveConstant(VarDeclaration constant)
         {
             if (constant.Type is not (IntType or FloatType or BoolType or StringType))
             {
-                constant.Type = new ErrorType(constant.Type.Source, Diagnostics, $"The type of CONST variables must be 'INT', 'FLOAT', 'BOOL' or 'STRING', found '{constant.Type}'");
+                constant.Type = new ErrorType(constant.Type.Location, Diagnostics, $"The type of CONST variables must be 'INT', 'FLOAT', 'BOOL' or 'STRING', found '{constant.Type}'");
                 return;
             }
 
             constant.Initializer!.Accept(exprTypeChecker, default);
             if (!constant.Initializer!.IsConstant)
             {
-                constant.Initializer = new ErrorExpression(constant.Initializer!.Source, Diagnostics, $"The expression assigned to '{constant.Name}' must be constant");
+                constant.Initializer = new ErrorExpression(constant.Initializer!.Location, Diagnostics, $"The expression assigned to '{constant.Name}' must be constant");
                 return;
             }
 
             if (!constant.Type.CanAssign(constant.Initializer.Type!, constant.Initializer.IsLValue))
             {
-                constant.Type = new ErrorType(constant.Source, Diagnostics, $"Cannot assign type '{constant.Initializer.Type}' to '{constant.Type}'");
+                constant.Type = new ErrorType(constant.Location, Diagnostics, $"Cannot assign type '{constant.Initializer.Type}' to '{constant.Type}'");
                 return;
             }
 
@@ -143,28 +143,28 @@
                     var intValue = constant.Initializer.Type is IError ? 0 : ExpressionEvaluator.EvalInt(constant.Initializer, Symbols);
 
                     // simplify the initializer expression
-                    constant.Initializer = new IntLiteralExpression(Token.Integer(intValue, constant.Initializer?.Source ?? constant.Source));
+                    constant.Initializer = new IntLiteralExpression(Token.Integer(intValue, constant.Initializer?.Location ?? constant.Location));
                     break;
 
                 case FloatType:
                     var floatValue = constant.Initializer.Type is IError ? 0.0f : ExpressionEvaluator.EvalFloat(constant.Initializer, Symbols);
 
                     // simplify the initializer expression
-                    constant.Initializer = new FloatLiteralExpression(Token.Float(floatValue, constant.Initializer?.Source ?? constant.Source));
+                    constant.Initializer = new FloatLiteralExpression(Token.Float(floatValue, constant.Initializer?.Location ?? constant.Location));
                     break;
 
                 case BoolType:
                     var boolValue = constant.Initializer.Type is IError ? false : ExpressionEvaluator.EvalBool(constant.Initializer, Symbols);
 
                     // simplify the initializer expression
-                    constant.Initializer = new BoolLiteralExpression(Token.Bool(boolValue, constant.Initializer?.Source ?? constant.Source));
+                    constant.Initializer = new BoolLiteralExpression(Token.Bool(boolValue, constant.Initializer?.Location ?? constant.Location));
                     break;
 
                 case StringType:
                     var strValue = constant.Initializer.Type is IError ? null : ExpressionEvaluator.EvalString(constant.Initializer, Symbols);
 
                     // simplify the initializer expression
-                    constant.Initializer = new StringLiteralExpression((strValue is null ? Token.Null() : Token.String(strValue)) with { Location = constant.Initializer?.Source ?? constant.Source });
+                    constant.Initializer = new StringLiteralExpression((strValue is null ? Token.Null() : Token.String(strValue)) with { Location = constant.Initializer?.Location ?? constant.Location });
                     break;
 
                 default: throw new System.NotImplementedException();

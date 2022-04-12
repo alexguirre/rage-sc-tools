@@ -10,7 +10,7 @@ public interface INode
 {
     ImmutableArray<Token> Tokens { get; }
     ImmutableArray<INode> Children { get; }
-    SourceRange Source { get; }
+    SourceRange Location { get; }
     [DebuggerBrowsable(DebuggerBrowsableState.Never), EditorBrowsable(EditorBrowsableState.Never)]
     string DebuggerDisplay { get; }
 
@@ -20,11 +20,11 @@ public interface INode
 [DebuggerDisplay("{DebuggerDisplay,nq}")]
 public abstract class BaseNode : INode
 {
-    private SourceRange? source;
+    private SourceRange? location;
 
     public ImmutableArray<Token> Tokens { get; }
     public ImmutableArray<INode> Children { get; }
-    public SourceRange Source => source ??= MergeSourceLocations(Tokens, Children);
+    public SourceRange Location => location ??= MergeSourceLocations(Tokens, Children);
 
     public BaseNode(ImmutableArray<Token> tokens, ImmutableArray<INode> children)
     {
@@ -45,7 +45,7 @@ public abstract class BaseNode : INode
     private static SourceRange MergeSourceLocations(ImmutableArray<Token> tokens, ImmutableArray<INode> nodes)
     {
         var s = tokens.Length > 0 ? tokens[0].Location :
-                nodes.Length > 0 ? nodes[0].Source :
+                nodes.Length > 0 ? nodes[0].Location :
                 SourceRange.Unknown;
 
         if (s.IsUnknown)
@@ -54,7 +54,7 @@ public abstract class BaseNode : INode
         }
 
         foreach (var t in tokens) { s = s.Merge(t.Location); }
-        foreach (var n in nodes) { s = s.Merge(n.Source); }
+        foreach (var n in nodes) { s = s.Merge(n.Location); }
 
         return s;
     }

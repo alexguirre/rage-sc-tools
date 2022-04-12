@@ -29,8 +29,8 @@
             }
             else if (node.Initializer is not null)
             {
-                var dest = new DeclarationRefExpression(Token.Identifier(node.Name, node.Source)) { Declaration = node, Type = node.Type!, IsLValue = true, IsConstant = false };
-                new AssignmentStatement(node.Source, lhs: dest, rhs: node.Initializer)
+                var dest = new DeclarationRefExpression(Token.Identifier(node.Name, node.Location)) { Declaration = node, Type = node.Type!, IsLValue = true, IsConstant = false };
+                new AssignmentStatement(node.Location, lhs: dest, rhs: node.Initializer)
                     .Accept(this, func);
             }
 
@@ -189,12 +189,12 @@
 
         public override Void Visit(RepeatStatement node, FuncDeclaration func)
         {
-            var intTy = BuiltInTypes.Int.CreateType(node.Source);
-            var constantZero = new IntLiteralExpression(Token.Integer(0, node.Source)) { Type = intTy, IsConstant = true, IsLValue = false };
-            var constantOne = new IntLiteralExpression(Token.Integer(1, node.Source)) { Type = intTy, IsConstant = true, IsLValue = false };
+            var intTy = BuiltInTypes.Int.CreateType(node.Location);
+            var constantZero = new IntLiteralExpression(Token.Integer(0, node.Location)) { Type = intTy, IsConstant = true, IsLValue = false };
+            var constantOne = new IntLiteralExpression(Token.Integer(1, node.Location)) { Type = intTy, IsConstant = true, IsLValue = false };
 
             // set counter to 0
-            new AssignmentStatement(node.Source, lhs: node.Counter, rhs: constantZero)
+            new AssignmentStatement(node.Location, lhs: node.Counter, rhs: constantZero)
                 .Accept(this, func);
 
             CG.EmitLabel(node.BeginLabel!);
@@ -210,8 +210,8 @@
             CG.EmitLabel(node.ContinueLabel!);
 
             // increment counter
-            var counterPlusOne = new BinaryExpression(Token.Plus(node.Source), node.Counter, constantOne) { Type = intTy, IsConstant = false, IsLValue = false };
-            new AssignmentStatement(node.Source, lhs: node.Counter, rhs: counterPlusOne)
+            var counterPlusOne = new BinaryExpression(Token.Plus(node.Location), node.Counter, constantOne) { Type = intTy, IsConstant = false, IsLValue = false };
+            new AssignmentStatement(node.Location, lhs: node.Counter, rhs: counterPlusOne)
                 .Accept(this, func);
 
             // jump back to condition check

@@ -82,11 +82,11 @@
             if (!node.RankExpression.IsConstant)
             {
                 // TODO: is this RankExpression set needed?
-                /*node.RankExpression =*/ new ErrorExpression(node.RankExpression.Source, Diagnostics, $"Array size must be a constant expression");
+                /*node.RankExpression =*/ new ErrorExpression(node.RankExpression.Location, Diagnostics, $"Array size must be a constant expression");
             }
-            else if (!BuiltInTypes.Int.CreateType(node.RankExpression.Source).CanAssign(node.RankExpression.Type!, node.RankExpression.IsLValue))
+            else if (!BuiltInTypes.Int.CreateType(node.RankExpression.Location).CanAssign(node.RankExpression.Type!, node.RankExpression.IsLValue))
             {
-                Diagnostics.AddError($"Array size requires type '{BuiltInTypes.Int.Name}', found '{node.RankExpression.Type}'", node.RankExpression.Source);
+                Diagnostics.AddError($"Array size requires type '{BuiltInTypes.Int.Name}', found '{node.RankExpression.Type}'", node.RankExpression.Location);
             }
             else
             {
@@ -130,7 +130,7 @@
 
             if (TypeHelper.IsOrContainsStruct(node.Type, param.Struct))
             {
-                Diagnostics.AddError($"Struct field '{node.Name}' causes a cycle in the layout of '{param.Struct.Name}'", node.Source);
+                Diagnostics.AddError($"Struct field '{node.Name}' causes a cycle in the layout of '{param.Struct.Name}'", node.Location);
             }
 
             if (node.Initializer is not null)
@@ -139,11 +139,11 @@
 
                 if (!node.Initializer.IsConstant)
                 {
-                    node.Initializer = new ErrorExpression(node.Initializer.Source, Diagnostics, $"Default initializer of the struct field '{node.Name}' must be a constant expression");
+                    node.Initializer = new ErrorExpression(node.Initializer.Location, Diagnostics, $"Default initializer of the struct field '{node.Name}' must be a constant expression");
                 }
                 else
                 {
-                    node.Type.Assign(node.Initializer.Type!, node.Initializer.IsLValue, node.Initializer.Source, Diagnostics);
+                    node.Type.Assign(node.Initializer.Type!, node.Initializer.IsLValue, node.Initializer.Location, Diagnostics);
                 }
             }
 
@@ -162,7 +162,7 @@
 
             if (node.Kind is VarKind.Global or VarKind.ScriptParameter && !TypeHelper.IsCrossScriptThreadSafe(node.Type))
             {
-                Diagnostics.AddError($"Type '{node.Type}' of {KindToString(node.Kind)} '{node.Name}' cannot be shared between script threads safely", node.Source);
+                Diagnostics.AddError($"Type '{node.Type}' of {KindToString(node.Kind)} '{node.Name}' cannot be shared between script threads safely", node.Location);
             }
 
             if (node.Initializer is not null)
@@ -171,11 +171,11 @@
 
                 if (node.Kind is VarKind.Global or VarKind.Static && !node.Initializer.IsConstant)
                 {
-                    node.Initializer = new ErrorExpression(node.Initializer.Source, Diagnostics, $"Initializer of {KindToString(node.Kind)} variable '{node.Name}' must be a constant expression");
+                    node.Initializer = new ErrorExpression(node.Initializer.Location, Diagnostics, $"Initializer of {KindToString(node.Kind)} variable '{node.Name}' must be a constant expression");
                 }
                 else
                 {
-                    node.Type.Assign(node.Initializer.Type!, node.Initializer.IsLValue, node.Initializer.Source, Diagnostics);
+                    node.Type.Assign(node.Initializer.Type!, node.Initializer.IsLValue, node.Initializer.Location, Diagnostics);
                 }
             }
 
@@ -194,11 +194,11 @@
 
             if (!node.LHS.IsLValue)
             {
-                Diagnostics.AddError("The left-hand side of an assignment must be an lvalue", node.Source);
+                Diagnostics.AddError("The left-hand side of an assignment must be an lvalue", node.Location);
             }
             else
             {
-                node.LHS.Type!.Assign(node.RHS.Type!, node.RHS.IsLValue, node.Source, Diagnostics);
+                node.LHS.Type!.Assign(node.RHS.Type!, node.RHS.IsLValue, node.Location, Diagnostics);
             }
 
             return DefaultReturn;
@@ -208,9 +208,9 @@
         {
             node.Condition.Accept(this, param);
 
-            if (!BuiltInTypes.Bool.CreateType(node.Condition.Source).CanAssign(node.Condition.Type!, node.Condition.IsLValue))
+            if (!BuiltInTypes.Bool.CreateType(node.Condition.Location).CanAssign(node.Condition.Type!, node.Condition.IsLValue))
             {
-                Diagnostics.AddError($"IF condition requires type '{BuiltInTypes.Bool.Name}', found '{node.Condition.Type}'", node.Condition.Source);
+                Diagnostics.AddError($"IF condition requires type '{BuiltInTypes.Bool.Name}', found '{node.Condition.Type}'", node.Condition.Location);
             }
 
             node.Then.ForEach(stmt => stmt.Accept(this, param));
@@ -223,19 +223,19 @@
             node.Limit.Accept(this, param);
             node.Counter.Accept(this, param);
 
-            var intTy = BuiltInTypes.Int.CreateType(node.Limit.Source);
+            var intTy = BuiltInTypes.Int.CreateType(node.Limit.Location);
             if (!intTy.CanAssign(node.Limit.Type!, node.Limit.IsLValue))
             {
-                Diagnostics.AddError($"REPEAT limit requires type '{intTy}', found '{node.Limit.Type}'", node.Limit.Source);
+                Diagnostics.AddError($"REPEAT limit requires type '{intTy}', found '{node.Limit.Type}'", node.Limit.Location);
             }
 
             if (!node.Counter.IsLValue)
             {
-                Diagnostics.AddError($"REPEAT counter requires an lvalue reference of type '{intTy}', found non-lvalue '{node.Counter.Type}'", node.Counter.Source);
+                Diagnostics.AddError($"REPEAT counter requires an lvalue reference of type '{intTy}', found non-lvalue '{node.Counter.Type}'", node.Counter.Location);
             }
             else if (!intTy.CanAssign(node.Counter.Type!, node.Counter.IsLValue))
             {
-                Diagnostics.AddError($"REPEAT counter requires type '{intTy}', found '{node.Counter.Type}'", node.Counter.Source);
+                Diagnostics.AddError($"REPEAT counter requires type '{intTy}', found '{node.Counter.Type}'", node.Counter.Location);
             }
 
             node.Body.ForEach(stmt => stmt.Accept(this, param));
@@ -252,7 +252,7 @@
             {
                 if (node.Expression is not null)
                 {
-                    Diagnostics.AddError($"No expression expected in RETURN statement inside procedure", node.Source);
+                    Diagnostics.AddError($"No expression expected in RETURN statement inside procedure", node.Location);
                 }
             }
             else
@@ -262,12 +262,12 @@
                 {
                     if (!returnTy.CanAssign(node.Expression.Type!, node.Expression.IsLValue))
                     {
-                        Diagnostics.AddError($"Function returns '{returnTy}', found '{node.Expression.Type}' in RETURN statement", node.Expression.Source);
+                        Diagnostics.AddError($"Function returns '{returnTy}', found '{node.Expression.Type}' in RETURN statement", node.Expression.Location);
                     }
                 }
                 else
                 {
-                    Diagnostics.AddError($"Expected expression in RETURN statement inside function returning '{returnTy}'", node.Source);
+                    Diagnostics.AddError($"Expected expression in RETURN statement inside function returning '{returnTy}'", node.Location);
                 }
             }
 
@@ -278,10 +278,10 @@
         {
             node.Expression.Accept(this, param);
 
-            if (!BuiltInTypes.Int.CreateType(node.Expression.Source).CanAssign(node.Expression.Type!, node.Expression.IsLValue) &&
+            if (!BuiltInTypes.Int.CreateType(node.Expression.Location).CanAssign(node.Expression.Type!, node.Expression.IsLValue) &&
                 node.Expression.Type is not EnumType)
             {
-                Diagnostics.AddError($"SWITCH expression requires type '{BuiltInTypes.Int.Name}' or ENUM, found '{node.Expression.Type}'", node.Expression.Source);
+                Diagnostics.AddError($"SWITCH expression requires type '{BuiltInTypes.Int.Name}' or ENUM, found '{node.Expression.Type}'", node.Expression.Location);
             }
 
             param = param.Enter(node);
@@ -295,18 +295,18 @@
 
             if (!node.Value.IsConstant)
             {
-                node.Value = new ErrorExpression(node.Value.Source, Diagnostics, $"CASE value must be a constant expression");
+                node.Value = new ErrorExpression(node.Value.Location, Diagnostics, $"CASE value must be a constant expression");
             }
             else if (!node.Switch.Expression.Type!.CanAssign(node.Value.Type!, node.Value.IsLValue))
             {
-                Diagnostics.AddError($"CASE value requires type '{node.Switch.Expression.Type!}', found '{node.Value.Type}'", node.Value.Source);
+                Diagnostics.AddError($"CASE value requires type '{node.Switch.Expression.Type!}', found '{node.Value.Type}'", node.Value.Location);
             }
             else
             {
                 var caseValue = ExpressionEvaluator.EvalInt(node.Value, Symbols);
                 if (!param.SwitchHandledCases.Add(caseValue))
                 {
-                    Diagnostics.AddError($"CASE value '{caseValue}' is already handled", node.Value.Source);
+                    Diagnostics.AddError($"CASE value '{caseValue}' is already handled", node.Value.Location);
                 }
             }
 
@@ -318,7 +318,7 @@
         {
             if (!param.SwitchHandledCases.Add(null))
             {
-                Diagnostics.AddError($"More than one DEFAULT case", node.Source);
+                Diagnostics.AddError($"More than one DEFAULT case", node.Location);
             }
 
             node.Body.ForEach(stmt => stmt.Accept(this, param));
@@ -329,9 +329,9 @@
         {
             node.Condition.Accept(this, param);
 
-            if (!BuiltInTypes.Bool.CreateType(node.Condition.Source).CanAssign(node.Condition.Type!, node.Condition.IsLValue))
+            if (!BuiltInTypes.Bool.CreateType(node.Condition.Location).CanAssign(node.Condition.Type!, node.Condition.IsLValue))
             {
-                Diagnostics.AddError($"WHILE condition requires type '{BuiltInTypes.Bool.Name}', found '{node.Condition.Type}'", node.Condition.Source);
+                Diagnostics.AddError($"WHILE condition requires type '{BuiltInTypes.Bool.Name}', found '{node.Condition.Type}'", node.Condition.Location);
             }
 
             node.Body.ForEach(stmt => stmt.Accept(this, param));

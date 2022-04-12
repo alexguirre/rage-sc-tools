@@ -65,7 +65,7 @@
                     }
                     else
                     {
-                        returnType = new ErrorType(arg1.Source, diagnostics, $"Argument 1: cannot pass non-enum type '{typeName.TypeDeclaration.Name}' to INT_TO_ENUM first parameter");
+                        returnType = new ErrorType(arg1.Location, diagnostics, $"Argument 1: cannot pass non-enum type '{typeName.TypeDeclaration.Name}' to INT_TO_ENUM first parameter");
                     }
                 }
                 else if (arg1.Type is ErrorType)
@@ -74,7 +74,7 @@
                 }
                 else
                 {
-                    returnType = new ErrorType(arg1.Source, diagnostics, $"Argument 1: cannot pass '{arg1.Type}' to INT_TO_ENUM first parameter, expected enum type name");
+                    returnType = new ErrorType(arg1.Location, diagnostics, $"Argument 1: cannot pass '{arg1.Type}' to INT_TO_ENUM first parameter, expected enum type name");
                 }
 
                 var isConstant = false;
@@ -82,10 +82,10 @@
                 {
                     var arg2 = args[1];
                     isConstant = arg2.IsConstant;
-                    var param2Ty = new IntType(arg2.Source);
+                    var param2Ty = new IntType(arg2.Location);
                     if (!param2Ty.CanAssign(arg2.Type!, arg2.IsLValue))
                     {
-                        diagnostics.AddError($"Argument  2: cannot pass '{arg2.Type}' as second parameter '{TypePrinter.ToString(param2Ty, "value", false)}'", arg2.Source);
+                        diagnostics.AddError($"Argument  2: cannot pass '{arg2.Type}' as second parameter '{TypePrinter.ToString(param2Ty, "value", false)}'", arg2.Location);
                     }
                 }
 

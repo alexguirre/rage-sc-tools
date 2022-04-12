@@ -113,7 +113,7 @@
                         ctx.GlobalBlock.Size += node.Type.SizeOf;
                         if (ctx.GlobalBlock.Size > GlobalBlockDeclaration.MaxSize)
                         {
-                            Diagnostics.AddError($"Global block size '{ctx.GlobalBlock.Size}' exceeds maximum size '{GlobalBlockDeclaration.MaxSize}'", node.Source);
+                            Diagnostics.AddError($"Global block size '{ctx.GlobalBlock.Size}' exceeds maximum size '{GlobalBlockDeclaration.MaxSize}'", node.Location);
                         }
                         break;
 
