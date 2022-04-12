@@ -16,4 +16,7 @@ public sealed class BoolLiteralExpression : BaseExpression, ILiteralExpression<b
         => visitor.Visit(this, param);
 
     object? ILiteralExpression.Value => Value;
+
+    public override string DebuggerDisplay =>
+        $@"{nameof(BoolLiteralExpression)} {{ {nameof(Value)} = {(Value ? "TRUE" : "FALSE")} }}";
 }

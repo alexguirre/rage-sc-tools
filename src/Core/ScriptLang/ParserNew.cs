@@ -28,7 +28,7 @@ public class ParserNew
     public bool IsAtEOS => Current.Kind is TokenKind.EOS or TokenKind.EOF;
 
     private Token Current { get; set; }
-    private Diagnostic LastError { get; set; }
+    private Diagnostic? LastError { get; set; }
 
     public ParserNew(Lexer lexer, DiagnosticsReport diagnostics)
     {
@@ -90,7 +90,7 @@ public class ParserNew
         {
             stmt = Expect(TokenKind.Identifier, out var gotoTargetToken) ?
                         new GotoStatement(gotoToken, gotoTargetToken) :
-                        new ErrorStatement(LastError, gotoToken, gotoTargetToken);
+                        new ErrorStatement(LastError!, gotoToken, gotoTargetToken);
         }
         else
         {
@@ -111,11 +111,11 @@ public class ParserNew
             | op=(K_NOT | '-') expression                                   #unaryExpression
             | left=expression op=('*' | '/' | '%') right=expression         #binaryExpression
             | left=expression op=('+' | '-') right=expression               #binaryExpression
+            | left=expression op=('<' | '>' | '<=' | '>=') right=expression #binaryExpression
+            | left=expression op=('==' | '<>') right=expression             #binaryExpression
             | left=expression op='&' right=expression                       #binaryExpression
             | left=expression op='^' right=expression                       #binaryExpression
             | left=expression op='|' right=expression                       #binaryExpression
-            | left=expression op=('<' | '>' | '<=' | '>=') right=expression #binaryExpression
-            | left=expression op=('==' | '<>') right=expression             #binaryExpression
             | left=expression op=K_AND right=expression                     #binaryExpression
             | left=expression op=K_OR right=expression                      #binaryExpression
             | '<<' x=expression ',' y=expression ',' z=expression '>>'      #vectorExpression
@@ -128,11 +128,13 @@ public class ParserNew
             | K_NULL                                                        #nullExpression
             ;
                     |
-                    |   remove left-recursion and apply precedence/associativity through rules
+                    |   remove left-recursion and apply precedence/associativity through extra rules
                     V
-            expression
+            expression: binaryOp1 ;
+
+            expressionTerm
             : ( '(' expression ')'
-                | op=(K_NOT | '-') expression
+                | op=(K_NOT | '-') expressionTerm
                 | '<<' x=expression ',' y=expression ',' z=expression '>>'
                 | identifier
                 | integer
@@ -141,103 +143,237 @@ public class ParserNew
                 | bool
                 | K_SIZE_OF '(' expression ')'
                 | K_NULL
-              ) expressionAlt?
+              ) expressionTermSuffix?
             ;
 
-            expressionAlt
+            expressionTermSuffix
             : ( '.' identifier
-                | argumentList
-                | arrayIndexer
-              ) expressionAlt?
+                | '(' (expression (',' expression)*)? ')'
+                | '[' expression ']'
+              ) expressionTermSuffix?
             ;
+
+            binaryOp1: binaryOp2 (K_OR binaryOp2)* ;
+
+            binaryOp2: binaryOp3 (K_AND binaryOp3)* ;
+
+            binaryOp3: binaryOp4 ('|' binaryOp4)* ;
+
+            binaryOp4: binaryOp5 ('^' binaryOp5)* ;
+
+            binaryOp5: binaryOp6 ('&' binaryOp6)* ;
+
+            binaryOp6: binaryOp7 (('==' | '<>') binaryOp7)* ;
+
+            binaryOp7: binaryOp8 (('<' | '>' | '<=' | '>=') binaryOp8)* ;
+
+            binaryOp8: binaryOp9 (('+' | '-') binaryOp9)* ;
+
+            binaryOp9: expressionTerm (('*' | '/' | '%') expressionTerm)* ;
         */
 
-        /* TODO: precedence and associativiy
-            | left=expression op=('*' | '/' | '%') right=expression        
-            | left=expression op=('+' | '-') right=expression              
-            | left=expression op='&' right=expression                      
-            | left=expression op='^' right=expression                      
-            | left=expression op='|' right=expression                      
-            | left=expression op=('<' | '>' | '<=' | '>=') right=expression
-            | left=expression op=('==' | '<>') right=expression            
-            | left=expression op=K_AND right=expression                    
-            | left=expression op=K_OR right=expression    
-         */
+        return ParseBinaryOp1();
 
-        // TODO: handle expression rule with left-recursion
-        IExpression expr;
-        if (Accept(TokenKind.OpenParen, out var openParenToken))
+        IExpression ParseBinaryOp1()
         {
-            expr = Expect(ParseExpression, out var innerExpr) &&
-                   Expect(TokenKind.CloseParen, out var closeParentToken) ?
-                        innerExpr :
-                        new ErrorExpression(LastError, openParenToken);
-        }
-        else if (Accept(TokenKind.NOT, out var unaryOpToken) || Accept(TokenKind.Minus, out unaryOpToken))
-        {
-            expr = new UnaryExpression(unaryOpToken, ParseExpression());
-        }
-        else if (Accept(TokenKind.LessThanLessThan, out var vectorOpenToken))
-        {
-            expr = Expect(ParseExpression, out var x) &&
-                   Expect(TokenKind.Comma, out var comma1) &&
-                   Expect(ParseExpression, out var y) &&
-                   Expect(TokenKind.Comma, out var comma2) &&
-                   Expect(ParseExpression, out var z) &&
-                   Expect(TokenKind.GreaterThanGreaterThan, out var vectorCloseToken) ?
-                        new VectorExpression(vectorOpenToken, comma1, comma2, vectorCloseToken, x, y, z) :
-                        new ErrorExpression(LastError, vectorOpenToken);
-        }
-        else if (Accept(TokenKind.Identifier, out var identToken))
-        {
-            expr = new DeclarationRefExpression(identToken);
-        }
-        else if (Accept(TokenKind.Integer, out var intToken))
-        {
-            expr = new IntLiteralExpression(intToken);
-        }
-        else if (Accept(TokenKind.Float, out var floatToken))
-        {
-            expr = new FloatLiteralExpression(floatToken);
-        }
-        else if (Accept(TokenKind.String, out var stringToken))
-        {
-            expr = new StringLiteralExpression(stringToken);
-        }
-        else if (Accept(TokenKind.Boolean, out var boolToken))
-        {
-            expr = new BoolLiteralExpression(boolToken);
-        }
-        else if (Accept(TokenKind.SIZE_OF, out var sizeOfToken))
-        {
-            expr = Expect(TokenKind.OpenParen, out var sizeOfOpenToken) &&
-                   Expect(ParseExpression, out var sizeOfExpr) &&
-                   Expect(TokenKind.CloseParen, out var sizeOfCloseToken) ?
-                        new SizeOfExpression(sizeOfToken, sizeOfOpenToken, sizeOfCloseToken, sizeOfExpr) :
-                        new ErrorExpression(LastError, sizeOfToken);
-        }
-        else if (Accept(TokenKind.Null, out var nullToken))
-        {
-            expr = new NullExpression(nullToken);
-        }
-        else
-        {
-            expr = UnknownExpressionError();
-        }
-
-        return TryParseAlt(expr);
-
-        IExpression TryParseAlt(IExpression expr)
-        {
-            IExpression? alt = null;
-            if (Accept(TokenKind.Dot, out var dotToken))
+            IExpression expr = ParseBinaryOp2();
+            while (Accept(TokenKind.OR, out var orToken))
             {
-                alt = Expect(TokenKind.Identifier, out var ident) ?
-                        new FieldAccessExpression(dotToken, ident, expr) :
-                        new ErrorExpression(LastError, dotToken);
+                expr = new BinaryExpression(orToken, expr, ParseBinaryOp2());
+            }
+            return expr;
+        }
+
+        IExpression ParseBinaryOp2()
+        {
+            IExpression expr = ParseBinaryOp3();
+            while (Accept(TokenKind.AND, out var andToken))
+            {
+                expr = new BinaryExpression(andToken, expr, ParseBinaryOp3());
+            }
+            return expr;
+        }
+
+        IExpression ParseBinaryOp3()
+        {
+            IExpression expr = ParseBinaryOp4();
+            while (Accept(TokenKind.Bar, out var barToken))
+            {
+                expr = new BinaryExpression(barToken, expr, ParseBinaryOp4());
+            }
+            return expr;
+        }
+
+        IExpression ParseBinaryOp4()
+        {
+            IExpression expr = ParseBinaryOp5();
+            while (Accept(TokenKind.Caret, out var caretToken))
+            {
+                expr = new BinaryExpression(caretToken, expr, ParseBinaryOp5());
+            }
+            return expr;
+        }
+
+        IExpression ParseBinaryOp5()
+        {
+            IExpression expr = ParseBinaryOp6();
+            while (Accept(TokenKind.Ampersand, out var ampersandToken))
+            {
+                expr = new BinaryExpression(ampersandToken, expr, ParseBinaryOp6());
+            }
+            return expr;
+        }
+
+        IExpression ParseBinaryOp6()
+        {
+            IExpression expr = ParseBinaryOp7();
+            while (Accept(TokenKind.EqualsEquals, out var opToken) ||
+                   Accept(TokenKind.LessThanGreaterThan, out opToken))
+            {
+                expr = new BinaryExpression(opToken, expr, ParseBinaryOp7());
+            }
+            return expr;
+        }
+
+        IExpression ParseBinaryOp7()
+        {
+            IExpression expr = ParseBinaryOp8();
+            while (Accept(TokenKind.LessThan, out var opToken) ||
+                   Accept(TokenKind.LessThanEquals, out opToken) ||
+                   Accept(TokenKind.GreaterThan, out opToken) ||
+                   Accept(TokenKind.GreaterThanEquals, out opToken))
+            {
+                expr = new BinaryExpression(opToken, expr, ParseBinaryOp8());
+            }
+            return expr;
+        }
+
+        IExpression ParseBinaryOp8()
+        {
+            IExpression expr = ParseBinaryOp9();
+            while (Accept(TokenKind.Plus, out var opToken) ||
+                   Accept(TokenKind.Minus, out opToken))
+            {
+                expr = new BinaryExpression(opToken, expr, ParseBinaryOp9());
+            }
+            return expr;
+        }
+
+        IExpression ParseBinaryOp9()
+        {
+            IExpression expr = ParseExpressionTerm();
+            while (Accept(TokenKind.Asterisk, out var opToken) ||
+                   Accept(TokenKind.Slash, out opToken) ||
+                   Accept(TokenKind.Percent, out opToken))
+            {
+                expr = new BinaryExpression(opToken, expr, ParseExpressionTerm());
+            }
+            return expr;
+        }
+
+        IExpression ParseExpressionTerm()
+        {
+            IExpression expr;
+            if (Accept(TokenKind.OpenParen, out var openParenToken))
+            {
+                expr = Expect(ParseExpression, out var innerExpr) &&
+                       Expect(TokenKind.CloseParen, out var closeParentToken) ?
+                            innerExpr :
+                            new ErrorExpression(LastError!, openParenToken);
+            }
+            else if (Accept(TokenKind.NOT, out var unaryOpToken) || Accept(TokenKind.Minus, out unaryOpToken))
+            {
+                expr = new UnaryExpression(unaryOpToken, ParseExpressionTerm());
+            }
+            else if (Accept(TokenKind.LessThanLessThan, out var vectorOpenToken))
+            {
+                expr = Expect(ParseExpression, out var x) &&
+                       Expect(TokenKind.Comma, out var comma1) &&
+                       Expect(ParseExpression, out var y) &&
+                       Expect(TokenKind.Comma, out var comma2) &&
+                       Expect(ParseExpression, out var z) &&
+                       Expect(TokenKind.GreaterThanGreaterThan, out var vectorCloseToken) ?
+                            new VectorExpression(vectorOpenToken, comma1, comma2, vectorCloseToken, x, y, z) :
+                            new ErrorExpression(LastError!, vectorOpenToken);
+            }
+            else if (Accept(TokenKind.Identifier, out var identToken))
+            {
+                expr = new DeclarationRefExpression(identToken);
+            }
+            else if (Accept(TokenKind.Integer, out var intToken))
+            {
+                expr = new IntLiteralExpression(intToken);
+            }
+            else if (Accept(TokenKind.Float, out var floatToken))
+            {
+                expr = new FloatLiteralExpression(floatToken);
+            }
+            else if (Accept(TokenKind.String, out var stringToken))
+            {
+                expr = new StringLiteralExpression(stringToken);
+            }
+            else if (Accept(TokenKind.Boolean, out var boolToken))
+            {
+                expr = new BoolLiteralExpression(boolToken);
+            }
+            else if (Accept(TokenKind.SIZE_OF, out var sizeOfToken))
+            {
+                expr = Expect(TokenKind.OpenParen, out var sizeOfOpenToken) &&
+                       Expect(ParseExpression, out var sizeOfExpr) &&
+                       Expect(TokenKind.CloseParen, out var sizeOfCloseToken) ?
+                            new SizeOfExpression(sizeOfToken, sizeOfOpenToken, sizeOfCloseToken, sizeOfExpr) :
+                            new ErrorExpression(LastError!, sizeOfToken);
+            }
+            else if (Accept(TokenKind.Null, out var nullToken))
+            {
+                expr = new NullExpression(nullToken);
+            }
+            else
+            {
+                expr = UnknownExpressionError();
             }
 
-            return alt is null ? expr : TryParseAlt(alt);
+            return TryParseExpressionTermSuffix(expr);
+        }
+
+        IExpression TryParseExpressionTermSuffix(IExpression expr)
+        {
+            IExpression? newExpr = null;
+            if (Accept(TokenKind.Dot, out var dotToken))
+            {
+                newExpr = Expect(TokenKind.Identifier, out var ident) ?
+                            new FieldAccessExpression(dotToken, ident, expr) :
+                            new ErrorExpression(LastError!, dotToken);
+            }
+            else if (Accept(TokenKind.OpenBracket, out var openBracket))
+            {
+                newExpr = Expect(ParseExpression, out var indexExpr) &&
+                          Expect(TokenKind.CloseBracket, out var closeBracket) ?
+                            new IndexingExpression(openBracket, closeBracket, expr, indexExpr) :
+                            new ErrorExpression(LastError!, openBracket);
+            }
+            else if (Accept(TokenKind.OpenParen, out var openParen))
+            {
+                Token closeParen;
+                var args = new List<IExpression>();
+                if (!Accept(TokenKind.CloseParen, out closeParen))
+                {
+                    while (!IsAtEOS)
+                    {
+                        args.Add(ParseExpression());
+
+                        if (Accept(TokenKind.CloseParen, out closeParen) ||
+                            !Expect(TokenKind.Comma, out var comma))
+                        {
+                            break;
+                        }
+                    }
+                }
+
+                newExpr = new InvocationExpression(openParen, closeParen, expr, args);
+            }
+
+            return newExpr is null ? expr : TryParseExpressionTermSuffix(newExpr);
         }
     }
 
@@ -360,13 +496,13 @@ public class ParserNew
     private ErrorStatement UnknownStatementError()
     { 
         Error(ErrorCode.ParserUnknownStatement, $"Expected statement, found '{Current.Lexeme}' ({Current.Kind})", Current.Location);
-        return new ErrorStatement(LastError, Current);
+        return new ErrorStatement(LastError!, Current);
     }
 
     private ErrorExpression UnknownExpressionError()
     {
         Error(ErrorCode.ParserUnknownExpression, $"Expected expression, found '{Current.Lexeme}' ({Current.Kind})", Current.Location);
-        return new ErrorExpression(LastError, Current);
+        return new ErrorExpression(LastError!, Current);
     }
 
     private void UnknownDeclaratorError()

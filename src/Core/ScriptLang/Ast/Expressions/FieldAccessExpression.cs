@@ -12,4 +12,7 @@ public sealed class FieldAccessExpression : BaseExpression
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
+
+    public override string DebuggerDisplay =>
+        $@"{nameof(FieldAccessExpression)} {{ {nameof(SubExpression)} = {SubExpression.DebuggerDisplay}, {nameof(FieldName)} = {FieldName} }}";
 }

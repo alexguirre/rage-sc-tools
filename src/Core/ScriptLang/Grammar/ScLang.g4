@@ -103,11 +103,11 @@ expression
     | op=(K_NOT | '-') expression                                   #unaryExpression
     | left=expression op=('*' | '/' | '%') right=expression         #binaryExpression
     | left=expression op=('+' | '-') right=expression               #binaryExpression
+    | left=expression op=('<' | '>' | '<=' | '>=') right=expression #binaryExpression
+    | left=expression op=('==' | '<>') right=expression             #binaryExpression
     | left=expression op='&' right=expression                       #binaryExpression
     | left=expression op='^' right=expression                       #binaryExpression
     | left=expression op='|' right=expression                       #binaryExpression
-    | left=expression op=('<' | '>' | '<=' | '>=') right=expression #binaryExpression
-    | left=expression op=('==' | '<>') right=expression             #binaryExpression
     | left=expression op=K_AND right=expression                     #binaryExpression
     | left=expression op=K_OR right=expression                      #binaryExpression
     | '<<' x=expression ',' y=expression ',' z=expression '>>'            #vectorExpression

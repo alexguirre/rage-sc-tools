@@ -1,7 +1,7 @@
 ﻿namespace ScTools.Tests.ScriptLang
 {
     using System;
-    using System.IO;
+    using System.Collections.Generic;
     using System.Linq;
 
     using ScTools.ScriptLang;
@@ -187,15 +187,18 @@
         public void UnaryExpressions()
         {
             var p = ParserFor(
-                @"NOT hello \
-                  -world"
+                @"NOT hello"
             );
-
             Assert(p.ParseExpression(), n => n is UnaryExpression
             {
                 Operator: UnaryOperator.LogicalNot,
                 SubExpression: DeclarationRefExpression{ Name: "hello" }
             });
+            True(p.IsAtEOF);
+
+            p = ParserFor(
+                @"-world"
+            );
             Assert(p.ParseExpression(), n => n is UnaryExpression
             {
                 Operator: UnaryOperator.Negate,
@@ -301,6 +304,86 @@
         }
 
         [Fact]
+        public void Indexing()
+        {
+            var p = ParserFor(
+                @"foo[1+2] \
+                  a + b[1]"
+            );
+
+            Assert(p.ParseExpression(), n => n is IndexingExpression
+            {
+                Array: DeclarationRefExpression { Name: "foo" },
+                Index: BinaryExpression
+                {
+                    Operator: BinaryOperator.Add,
+                    LHS: IntLiteralExpression { Value: 1 },
+                    RHS: IntLiteralExpression { Value: 2 },
+                }
+            });
+            Assert(p.ParseExpression(), n => n is BinaryExpression
+            {
+                Operator: BinaryOperator.Add,
+                LHS: DeclarationRefExpression { Name: "a" },
+                RHS: IndexingExpression
+                {
+                    Array: DeclarationRefExpression { Name: "b" },
+                    Index: IntLiteralExpression { Value: 1 },
+                }
+            });
+            True(p.IsAtEOF);
+
+            p = ParserFor(
+                @"(a + b)[1]"
+            );
+            Assert(p.ParseExpression(), n => n is IndexingExpression
+            {
+                Array: BinaryExpression
+                {
+                    Operator: BinaryOperator.Add,
+                    LHS: DeclarationRefExpression { Name: "a" },
+                    RHS: DeclarationRefExpression { Name: "b" },
+                },
+                Index: IntLiteralExpression { Value: 1 },
+            });
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
+        public void Invocation()
+        {
+            var p = ParserFor(
+                @"foo(1+2, a) \
+                  bar() \
+                  baz(0)"
+            );
+
+            AssertInvocation(p.ParseExpression(),
+                callee => callee is DeclarationRefExpression { Name: "foo" },
+                args => Collection(args,
+                    _0 => True(_0 is BinaryExpression
+                    {
+                        Operator: BinaryOperator.Add,
+                        LHS: IntLiteralExpression { Value: 1 },
+                        RHS: IntLiteralExpression { Value: 2 },
+                    }),
+                    _1 => True(_1 is DeclarationRefExpression { Name: "a" })
+                    )
+                );
+            AssertInvocation(p.ParseExpression(),
+                callee => callee is DeclarationRefExpression { Name: "bar" },
+                args => Empty(args)
+                );
+            AssertInvocation(p.ParseExpression(),
+                callee => callee is DeclarationRefExpression { Name: "baz" },
+                args => Collection(args,
+                    _0 => True(_0 is IntLiteralExpression { Value: 0 })
+                    )
+                );
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
         public void ArithmeticExpressionPrecedence()
         {
             var p = ParserFor(
@@ -321,6 +404,31 @@
                     },
                 },
                 RHS: IntLiteralExpression { Value: 4 },
+            });
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
+        public void ArithmeticExpressionPrecedence2()
+        {
+            var p = ParserFor(
+                @"2 + -3 * 4"
+            );
+
+            Assert(p.ParseExpression(), n => n is BinaryExpression
+            {
+                Operator: BinaryOperator.Add,
+                LHS: IntLiteralExpression { Value: 2 },
+                RHS: BinaryExpression
+                {
+                    Operator: BinaryOperator.Multiply,
+                    LHS: UnaryExpression
+                    {
+                        Operator: UnaryOperator.Negate,
+                        SubExpression: IntLiteralExpression { Value: 3 }
+                    },
+                    RHS: IntLiteralExpression { Value: 4 },
+                },
             });
             True(p.IsAtEOF);
         }
@@ -473,13 +581,107 @@
             True(p.IsAtEOF);
         }
 
-        // TODO: precedence of comparison operators
-        // TODO: precedence of arithmetic, bitwise, comparison, logical operators combined
+        [Fact]
+        public void ComparisonExpressionPrecedence()
+        {
+            var p = ParserFor(
+                @"a <= b <> -c > d"
+            );
+
+            // (a <= b) <> (-c > d)
+            Assert(p.ParseExpression(), n => n is BinaryExpression
+            {
+                Operator: BinaryOperator.NotEquals,
+                LHS: BinaryExpression
+                {
+                    Operator: BinaryOperator.LessThanOrEqual,
+                    LHS: DeclarationRefExpression { Name: "a" },
+                    RHS: DeclarationRefExpression { Name: "b" },
+                },
+                RHS: BinaryExpression
+                {
+                    Operator: BinaryOperator.GreaterThan,
+                    LHS: UnaryExpression
+                    {
+                        Operator: UnaryOperator.Negate,
+                        SubExpression: DeclarationRefExpression { Name: "c" },
+                    },
+                    RHS: DeclarationRefExpression { Name: "d" },
+                },
+            });
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
+        public void CombinedOperatorsExpressionPrecedence()
+        {
+            var p = ParserFor(
+                @"a OR b AND c | d ^ e & f == g > h + i * j"
+            );
+
+            // a OR (b AND (c | (d ^ (e & (f == (g > (h + (i * j))))))))
+            Assert(p.ParseExpression(), n => n is BinaryExpression
+            {
+                Operator: BinaryOperator.LogicalOr,
+                LHS: DeclarationRefExpression { Name: "a" },
+                RHS: BinaryExpression
+                {
+                    Operator: BinaryOperator.LogicalAnd,
+                    LHS: DeclarationRefExpression { Name: "b" },
+                    RHS: BinaryExpression
+                    {
+                        Operator: BinaryOperator.Or,
+                        LHS: DeclarationRefExpression { Name: "c" },
+                        RHS: BinaryExpression
+                        {
+                            Operator: BinaryOperator.Xor,
+                            LHS: DeclarationRefExpression { Name: "d" },
+                            RHS: BinaryExpression
+                            {
+                                Operator: BinaryOperator.And,
+                                LHS: DeclarationRefExpression { Name: "e" },
+                                RHS: BinaryExpression
+                                {
+                                    Operator: BinaryOperator.Equals,
+                                    LHS: DeclarationRefExpression { Name: "f" },
+                                    RHS: BinaryExpression
+                                    {
+                                        Operator: BinaryOperator.GreaterThan,
+                                        LHS: DeclarationRefExpression { Name: "g" },
+                                        RHS: BinaryExpression
+                                        {
+                                            Operator: BinaryOperator.Add,
+                                            LHS: DeclarationRefExpression { Name: "h" },
+                                            RHS: BinaryExpression
+                                            {
+                                                Operator: BinaryOperator.Multiply,
+                                                LHS: DeclarationRefExpression { Name: "i" },
+                                                RHS: DeclarationRefExpression { Name: "j" },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            });
+            True(p.IsAtEOF);
+        }
 
         private static void Assert(INode node, Predicate<INode> predicate)
         {
             False(node is IError);
             True(predicate(node));
+        }
+        private static void AssertInvocation(IExpression expr, Predicate<IExpression> calleePredicate, Action<List<IExpression>> argumentsChecker)
+        {
+            True(expr is InvocationExpression);
+            if (expr is InvocationExpression invocationExpr)
+            {
+                True(calleePredicate(invocationExpr.Callee));
+                argumentsChecker(invocationExpr.Arguments);
+            }
         }
         private static void AssertError(INode node, Predicate<INode> predicate)
         {

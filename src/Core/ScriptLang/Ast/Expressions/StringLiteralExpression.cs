@@ -1,5 +1,7 @@
 ﻿namespace ScTools.ScriptLang.Ast.Expressions;
 
+using System.Diagnostics;
+
 /// <remarks>
 /// The string is nullable for representing the value of <code>STRING s = NULL</code> as a literal.
 /// </remarks> 
@@ -9,7 +11,7 @@ public sealed class StringLiteralExpression : BaseExpression, ILiteralExpression
 
     public StringLiteralExpression(Token stringToken) : base(stringToken)
     {
-        System.Diagnostics.Debug.Assert(stringToken.Kind is TokenKind.String);
+        Debug.Assert(stringToken.Kind is TokenKind.String);
         Value = stringToken.GetStringLiteral();
     }
     public StringLiteralExpression(SourceRange source, string? value) : base(source)
@@ -19,4 +21,7 @@ public sealed class StringLiteralExpression : BaseExpression, ILiteralExpression
         => visitor.Visit(this, param);
 
     object? ILiteralExpression.Value => Value;
+
+    public override string DebuggerDisplay =>
+        $@"{nameof(StringLiteralExpression)} {{ {nameof(Value)} = {(Value is null ? "NULL" : $"'{Value.Escape()}'")} }}";
 }

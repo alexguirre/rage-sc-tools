@@ -16,4 +16,7 @@ public sealed class FloatLiteralExpression : BaseExpression, ILiteralExpression<
         => visitor.Visit(this, param);
 
     object? ILiteralExpression.Value => Value;
+
+    public override string DebuggerDisplay =>
+        $@"{nameof(FloatLiteralExpression)} {{ {nameof(Value)} = {Value} }}";
 }
