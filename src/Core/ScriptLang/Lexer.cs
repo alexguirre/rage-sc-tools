@@ -389,8 +389,7 @@ public sealed class Lexer : IEnumerable<Token>
             return true;
         }
 
-        private Token NewToken(TokenKind kind, SourceRange? loc = null)
-            => new() { Kind = kind, Lexeme = TokenLexeme, Location = loc ?? TokenLocation };
+        private Token NewToken(TokenKind kind, SourceRange? loc = null) => new(kind, TokenLexeme, loc ?? TokenLocation);
 
         private void Drop()
         {

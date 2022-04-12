@@ -116,6 +116,17 @@ public readonly record struct Token
     public ReadOnlyMemory<char> Lexeme { get; init; }
     public SourceRange Location { get; init; }
 
+    public Token(TokenKind kind, ReadOnlyMemory<char> lexeme, SourceRange location = default)
+    {
+        Kind = kind;
+        Lexeme = lexeme;
+        Location = location;
+    }
+
+    public Token(TokenKind kind, string lexeme, SourceRange location = default)
+        : this(kind, lexeme.AsMemory(), location)
+    { }
+
     public override string ToString()
         => $"{{ {nameof(Kind)}: {Kind}, {nameof(Lexeme)}: {Lexeme}, {nameof(Location)}: {Location} }}";
 
@@ -143,12 +154,11 @@ public readonly record struct Token
         return Lexeme.ParseAsBool();
     }
 
-
-    public static Token Identifier(string name, SourceRange location = default) => new() { Kind = TokenKind.Identifier, Lexeme = name.AsMemory(), Location = location };
-    public static Token Integer(int value, SourceRange location = default) => new() { Kind = TokenKind.Integer, Lexeme = value.ToString().AsMemory(), Location = location };
-    public static Token Float(float value, SourceRange location = default) => new() { Kind = TokenKind.Float, Lexeme = value.ToString("G9").AsMemory(), Location = location };
-    public static Token Bool(bool value, SourceRange location = default) => new() { Kind = TokenKind.Boolean, Lexeme = (value ? "TRUE" : "FALSE").AsMemory(), Location = location };
-    public static Token String(string value, SourceRange location = default) => new() { Kind = TokenKind.String, Lexeme = $"'{value.Escape()}'".AsMemory(), Location = location };
-    public static Token Null(SourceRange location = default) => new() { Kind = TokenKind.Null, Lexeme = "NULL".AsMemory(), Location = location };
-    public static Token Plus(SourceRange location = default) => new() { Kind = TokenKind.Plus, Lexeme = "+".AsMemory(), Location = location };
+    public static Token Identifier(string name, SourceRange location = default) => new(TokenKind.Identifier, name, location);
+    public static Token Integer(int value, SourceRange location = default) => new(TokenKind.Integer, value.ToString(), location);
+    public static Token Float(float value, SourceRange location = default) => new(TokenKind.Float, value.ToString("G9"), location);
+    public static Token Bool(bool value, SourceRange location = default) => new(TokenKind.Boolean, value ? "TRUE" : "FALSE", location);
+    public static Token String(string value, SourceRange location = default) => new(TokenKind.String, $"'{value.Escape()}'", location);
+    public static Token Null(SourceRange location = default) => new(TokenKind.Null, "NULL", location);
+    public static Token Plus(SourceRange location = default) => new(TokenKind.Plus, "+", location);
 }
