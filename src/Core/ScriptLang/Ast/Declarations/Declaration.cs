@@ -48,6 +48,8 @@
         public string Name { get; set; }
         public IType Type { get; set; }
 
+        public BaseValueDeclaration(string name, IType type, params Token[] tokens) : base(tokens)
+            => (Name, Type) = (name, type);
         public BaseValueDeclaration(SourceRange source, string name, IType type) : base(source)
             => (Name, Type) = (name, type);
     }

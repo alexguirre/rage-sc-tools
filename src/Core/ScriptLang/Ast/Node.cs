@@ -15,10 +15,13 @@ public interface INode
 public abstract class BaseNode : INode
 {
     public ImmutableArray<Token> Tokens { get; }
-    public SourceRange Source => Tokens.Length == 0 ? SourceRange.Unknown : Tokens.Skip(1).Aggregate(Tokens.First().Location, (acc, t) => acc.Merge(t.Location));
+    public SourceRange Source { get; }
 
-
-    public BaseNode(params Token[] tokens) => Tokens = tokens.ToImmutableArray();
+    public BaseNode(params Token[] tokens)
+    {
+        Tokens = tokens.ToImmutableArray();
+        Source = Tokens.Length == 0 ? SourceRange.Unknown : Tokens.Skip(1).Aggregate(Tokens.First().Location, (acc, t) => acc.Merge(t.Location));
+    }
 
     [Obsolete("Nodes now require tokens", false)]
     public BaseNode(SourceRange source) => throw new NotImplementedException("Deprecated constructor");

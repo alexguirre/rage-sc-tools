@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 using ScTools.ScriptLang.Ast;
@@ -10,11 +11,16 @@ using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.Ast.Errors;
 using ScTools.ScriptLang.Ast.Expressions;
 using ScTools.ScriptLang.Ast.Statements;
+using ScTools.ScriptLang.Ast.Types;
 
 public class ParserNew
 {
+    public static StringComparer CaseInsensitiveComparer => ScriptAssembly.Assembler.CaseInsensitiveComparer;
+
     private readonly Lexer.Enumerator lexerEnumerator;
     private readonly Queue<Token> lookAheadTokens = new();
+    private bool isInsideCommaSeparatedVarDeclaration = false;
+    private Token commaSeparatedVarDeclarationTypeIdentifier = default; // set when isInsideVarDeclaration is true
 
     public Lexer Lexer { get; }
     public DiagnosticsReport Diagnostics { get; }
@@ -54,7 +60,7 @@ public class ParserNew
 
     public IStatement ParseLabeledStatement()
     {
-        var label = IsPossibleLabel() ? ParseLabel() : null;
+        var label = !isInsideCommaSeparatedVarDeclaration && IsPossibleLabel() ? ParseLabel() : null;
         var stmt = ParseStatement();
         stmt.Label = label;
         return stmt;
@@ -63,7 +69,12 @@ public class ParserNew
     public IStatement ParseStatement()
     {
         IStatement stmt;
-        if (Accept(TokenKind.BREAK, out var breakToken))
+        
+        if (IsPossibleVarDeclaration())
+        {
+            stmt = ParseVarDeclaration(VarKind.Local, allowMultipleDeclarations: true);
+        }
+        else if (Accept(TokenKind.BREAK, out var breakToken))
         {
             stmt = new BreakStatement(breakToken);
         }
@@ -92,6 +103,67 @@ public class ParserNew
 
     public IExpression ParseExpression()
     {
+        /*  expression
+            : '(' expression ')'                                            #parenthesizedExpression
+            | expression '.' identifier                                     #fieldAccessExpression
+            | expression argumentList                                       #invocationExpression
+            | expression arrayIndexer                                       #indexingExpression
+            | op=(K_NOT | '-') expression                                   #unaryExpression
+            | left=expression op=('*' | '/' | '%') right=expression         #binaryExpression
+            | left=expression op=('+' | '-') right=expression               #binaryExpression
+            | left=expression op='&' right=expression                       #binaryExpression
+            | left=expression op='^' right=expression                       #binaryExpression
+            | left=expression op='|' right=expression                       #binaryExpression
+            | left=expression op=('<' | '>' | '<=' | '>=') right=expression #binaryExpression
+            | left=expression op=('==' | '<>') right=expression             #binaryExpression
+            | left=expression op=K_AND right=expression                     #binaryExpression
+            | left=expression op=K_OR right=expression                      #binaryExpression
+            | '<<' x=expression ',' y=expression ',' z=expression '>>'      #vectorExpression
+            | identifier                                                    #identifierExpression
+            | integer                                                       #intLiteralExpression
+            | float                                                         #floatLiteralExpression
+            | string                                                        #stringLiteralExpression
+            | bool                                                          #boolLiteralExpression
+            | K_SIZE_OF '(' expression ')'                                  #sizeOfExpression
+            | K_NULL                                                        #nullExpression
+            ;
+                    |
+                    |   remove left-recursion and apply precedence/associativity through rules
+                    V
+            expression
+            : ( '(' expression ')'
+                | op=(K_NOT | '-') expression
+                | '<<' x=expression ',' y=expression ',' z=expression '>>'
+                | identifier
+                | integer
+                | float
+                | string
+                | bool
+                | K_SIZE_OF '(' expression ')'
+                | K_NULL
+              ) expressionAlt?
+            ;
+
+            expressionAlt
+            : ( '.' identifier
+                | argumentList
+                | arrayIndexer
+              ) expressionAlt?
+            ;
+        */
+
+        /* TODO: precedence and associativiy
+            | left=expression op=('*' | '/' | '%') right=expression        
+            | left=expression op=('+' | '-') right=expression              
+            | left=expression op='&' right=expression                      
+            | left=expression op='^' right=expression                      
+            | left=expression op='|' right=expression                      
+            | left=expression op=('<' | '>' | '<=' | '>=') right=expression
+            | left=expression op=('==' | '<>') right=expression            
+            | left=expression op=K_AND right=expression                    
+            | left=expression op=K_OR right=expression    
+         */
+
         // TODO: handle expression rule with left-recursion
         IExpression expr;
         if (Accept(TokenKind.OpenParen, out var openParenToken))
@@ -153,8 +225,125 @@ public class ParserNew
             expr = UnknownExpressionError();
         }
 
-        return expr;
+        return TryParseAlt(expr);
+
+        IExpression TryParseAlt(IExpression expr)
+        {
+            IExpression? alt = null;
+            if (Accept(TokenKind.Dot, out var dotToken))
+            {
+                alt = Expect(TokenKind.Identifier, out var ident) ?
+                        new FieldAccessExpression(dotToken, ident, expr) :
+                        new ErrorExpression(LastError, dotToken);
+            }
+
+            return alt is null ? expr : TryParseAlt(alt);
+        }
     }
+
+    private bool IsPossibleVarDeclaration()
+        => isInsideCommaSeparatedVarDeclaration ||
+           Peek(0).Kind is TokenKind.Identifier && Peek(1).Kind is TokenKind.Identifier or TokenKind.Ampersand;
+    private VarDeclaration ParseVarDeclaration(VarKind varKind, bool allowMultipleDeclarations)
+    {
+        Token typeIdent;
+        Declarator decl;
+        if (isInsideCommaSeparatedVarDeclaration)
+        {
+            // continue comma-separated var declarations
+            typeIdent = commaSeparatedVarDeclarationTypeIdentifier;
+            decl = ParseDeclarator();
+        }
+        else
+        {
+            Expect(TokenKind.Identifier, out typeIdent);
+            decl = ParseDeclarator();
+        }
+
+        if (allowMultipleDeclarations && Accept(TokenKind.Comma, out _))
+        {
+            isInsideCommaSeparatedVarDeclaration = true;
+            commaSeparatedVarDeclarationTypeIdentifier = typeIdent;
+        }
+        else
+        {
+            isInsideCommaSeparatedVarDeclaration = false;
+            commaSeparatedVarDeclarationTypeIdentifier = default;
+        }
+
+        return new VarDeclaration(
+            decl.Identifier,
+            TypeFromDeclarator(decl, new NamedType(typeIdent)),
+            varKind,
+            isReference: decl is RefDeclarator);
+    }
+
+    #region Declarators
+    private record struct DeclaratorArrayRank(Token OpenBracket, Token CloseBracket, IExpression? LengthExpression);
+    private abstract record Declarator(Token Identifier);
+    private record RefDeclarator(Token Ampersand, Token Identifier) : Declarator(Identifier);
+    /// <param name="ArrayRanks">List of rank specifiers from left to right.</param>
+    private record SimpleDeclarator(Token Identifier, List<DeclaratorArrayRank>? ArrayRanks) : Declarator(Identifier);
+
+    private Declarator ParseDeclarator()
+    {
+        /*  declarator
+            : identifier arrayRank?       #simpleDeclarator
+            | '&' identifier              #refDeclarator
+            ;
+
+            arrayRank
+            : '[' expression? ']' arrayRank?
+            ;
+
+            NOTE: arrays are passed by reference so no need to support stuff like 'INT (&arr)[10]' in the grammar, 'INT arr[10]' is equivalent
+        */
+
+        List<DeclaratorArrayRank>? arrayRanks = null;
+        if (Accept(TokenKind.Identifier, out var identifier))
+        {
+            TryParseArrayRank(ref arrayRanks);
+            return new SimpleDeclarator(identifier, arrayRanks);
+        }
+        else if (Accept(TokenKind.Ampersand, out var ampersandToken) &&
+                 Expect(TokenKind.Identifier, out identifier))
+        {
+            return new RefDeclarator(ampersandToken, identifier);
+        }
+
+        UnknownDeclaratorError();
+        return new SimpleDeclarator(new() { Kind = TokenKind.Identifier, Lexeme = "<unknown>".AsMemory(), Location = Current.Location }, arrayRanks);
+
+
+        void TryParseArrayRank(ref List<DeclaratorArrayRank>? ranks)
+        {
+            if (Accept(TokenKind.OpenBracket, out var openBracket))
+            {
+                IExpression? lengthExpr = null;
+                _ = Accept(TokenKind.CloseBracket, out var closeBracket) ||
+                    Expect<IExpression>(ParseExpression, out lengthExpr) && Expect(TokenKind.CloseBracket, out closeBracket);
+
+                ranks ??= new();
+                ranks.Add(new(openBracket, closeBracket, lengthExpr));
+                TryParseArrayRank(ref ranks);
+            }
+        }
+    }
+
+    private IType TypeFromDeclarator(Declarator declarator, IType baseType)
+        => declarator switch
+        {
+            SimpleDeclarator { ArrayRanks: not null } s =>
+                 s.ArrayRanks.Reverse<DeclaratorArrayRank>()
+                             .Aggregate(baseType, (IType ty, DeclaratorArrayRank rank)
+                                => rank.LengthExpression == null ?
+                                    new IncompleteArrayType(rank.OpenBracket, rank.CloseBracket, ty) :
+                                    new ArrayType_New(rank.OpenBracket, rank.CloseBracket, ty, rank.LengthExpression)),
+            _ => baseType,
+        };
+
+
+    #endregion Declarators
 
     #endregion Rules
 
@@ -179,6 +368,9 @@ public class ParserNew
         Error(ErrorCode.ParserUnknownExpression, $"Expected expression, found '{Current.Lexeme}' ({Current.Kind})", Current.Location);
         return new ErrorExpression(LastError, Current);
     }
+
+    private void UnknownDeclaratorError()
+        => Error(ErrorCode.ParserUnknownDeclarator, $"Expected declarator, found '{Current.Lexeme}' ({Current.Kind})", Current.Location);
 
     private Token Peek(int offset)
     {

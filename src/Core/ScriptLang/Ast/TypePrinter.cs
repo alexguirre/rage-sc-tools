@@ -42,6 +42,7 @@
                 var length = arrayTy switch
                 {
                     ArrayType a => a.Length.ToString(),
+                    ArrayType_New a => a.Rank.ToString(),
                     _ => "",
                 };
                 lengths += $"[{length}]";

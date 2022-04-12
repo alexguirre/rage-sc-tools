@@ -40,7 +40,7 @@
 
         public static ImmutableArray<IIntrinsicDeclaration> AllIntrinsics { get; } = ImmutableArray.Create(F2V, F2I, I2F, Append, CountOf, EnumToInt, IntToEnum);
 
-        public static IIntrinsicDeclaration? FindIntrinsic(string name) => AllIntrinsics.FirstOrDefault(i => Parser.CaseInsensitiveComparer.Equals(name, i.Name));
+        public static IIntrinsicDeclaration? FindIntrinsic(string name) => AllIntrinsics.FirstOrDefault(i => ParserNew.CaseInsensitiveComparer.Equals(name, i.Name));
 
 
         private sealed class BasicIntrinsic : BaseValueDeclaration, IIntrinsicDeclaration

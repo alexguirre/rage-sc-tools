@@ -22,9 +22,9 @@
 
         public override IType FieldAccess(string fieldName, SourceRange source, DiagnosticsReport diagnostics)
         {
-            if (Parser.CaseInsensitiveComparer.Equals(fieldName, "x") ||
-                Parser.CaseInsensitiveComparer.Equals(fieldName, "y") ||
-                Parser.CaseInsensitiveComparer.Equals(fieldName, "z"))
+            if (ParserNew.CaseInsensitiveComparer.Equals(fieldName, "x") ||
+                ParserNew.CaseInsensitiveComparer.Equals(fieldName, "y") ||
+                ParserNew.CaseInsensitiveComparer.Equals(fieldName, "z"))
             {
                 return new FloatType(source);
             }
@@ -94,15 +94,15 @@
 
         private static int OffsetOfField(string fieldName)
         {
-            if (Parser.CaseInsensitiveComparer.Equals(fieldName, "x"))
+            if (ParserNew.CaseInsensitiveComparer.Equals(fieldName, "x"))
             {
                 return 0;
             }
-            else if (Parser.CaseInsensitiveComparer.Equals(fieldName, "y"))
+            else if (ParserNew.CaseInsensitiveComparer.Equals(fieldName, "y"))
             {
                 return 1;
             }
-            else if (Parser.CaseInsensitiveComparer.Equals(fieldName, "z"))
+            else if (ParserNew.CaseInsensitiveComparer.Equals(fieldName, "z"))
             {
                 return 2;
             }

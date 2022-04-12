@@ -5,6 +5,8 @@ public sealed class FieldAccessExpression : BaseExpression
     public IExpression SubExpression { get; set; }
     public string FieldName { get; set; }
 
+    public FieldAccessExpression(Token dotToken, Token fieldNameIdentifierToken, IExpression lhs) : base(dotToken, fieldNameIdentifierToken)
+        => (SubExpression, FieldName) = (lhs, fieldNameIdentifierToken.Lexeme.ToString());
     public FieldAccessExpression(SourceRange source, IExpression subExpression, string fieldName) : base(source)
         => (SubExpression, FieldName) = (subExpression, fieldName);
 

@@ -3706,17 +3706,17 @@
 
             using var sourceReader = new StringReader(source);
             var d = new DiagnosticsReport();
-            var p = new Parser(sourceReader, "test.sc");
-            p.Parse(d);
-
-            var globalSymbols = GlobalSymbolTableBuilder.Build(p.OutputAst, d);
-            IdentificationVisitor.Visit(p.OutputAst, d, globalSymbols, nativeDB);
-            TypeChecker.Check(p.OutputAst, d, globalSymbols);
+            //var p = new Parser(sourceReader, "test.sc");
+            //p.Parse(d);
+            var ast = new ScTools.ScriptLang.Ast.Program(SourceRange.Unknown);
+            var globalSymbols = GlobalSymbolTableBuilder.Build(ast, d);
+            IdentificationVisitor.Visit(ast, d, globalSymbols, nativeDB);
+            TypeChecker.Check(ast, d, globalSymbols);
 
             Assert.False(d.HasErrors);
 
             using var sink = new StringWriter();
-            new CodeGenerator(sink, p.OutputAst, globalSymbols, d, nativeDB).Generate();
+            new CodeGenerator(sink, ast, globalSymbols, d, nativeDB).Generate();
             var s = sink.ToString();
 
             Assert.False(d.HasErrors);

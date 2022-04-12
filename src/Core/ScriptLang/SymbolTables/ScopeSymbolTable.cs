@@ -20,7 +20,7 @@
         public ScopeSymbolTable(GlobalSymbolTable globalSymbols)
             => GlobalSymbols = globalSymbols;
 
-        public void PushScope() => scopes.Push(new(Parser.CaseInsensitiveComparer));
+        public void PushScope() => scopes.Push(new(ParserNew.CaseInsensitiveComparer));
         public void PopScope() => scopes.Pop();
 
         public bool AddValue(IValueDeclaration valueDeclaration) => CurrentScope.TryAdd(valueDeclaration.Name, valueDeclaration);

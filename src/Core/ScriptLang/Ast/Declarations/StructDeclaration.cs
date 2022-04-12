@@ -17,7 +17,7 @@
         public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
             => visitor.Visit(this, param);
 
-        public StructField? FindField(string name) => Fields.SingleOrDefault(f => Parser.CaseInsensitiveComparer.Equals(f.Name, name));
+        public StructField? FindField(string name) => Fields.SingleOrDefault(f => ParserNew.CaseInsensitiveComparer.Equals(f.Name, name));
     }
 
     public sealed class StructField : BaseNode

@@ -56,7 +56,7 @@
             public override Void Visit(GlobalBlockDeclaration node, AllocatorContext ctx)
             {
                 Debug.Assert(ctx.Program is not null);
-                if (Parser.CaseInsensitiveComparer.Equals(ctx.Program.Script!.Name, node.Name))
+                if (ParserNew.CaseInsensitiveComparer.Equals(ctx.Program.Script!.Name, node.Name))
                 {
                     ctx.Program.GlobalBlock = node;
                 }

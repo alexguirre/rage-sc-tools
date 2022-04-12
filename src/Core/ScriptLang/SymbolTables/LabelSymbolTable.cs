@@ -11,7 +11,7 @@
     /// </summary>
     public sealed class LabelSymbolTable
     {
-        private readonly Dictionary<string, IStatement> labels = new(Parser.CaseInsensitiveComparer);
+        private readonly Dictionary<string, IStatement> labels = new(ParserNew.CaseInsensitiveComparer);
 
         public LabelSymbolTable()
         {

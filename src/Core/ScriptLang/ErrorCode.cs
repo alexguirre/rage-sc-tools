@@ -14,6 +14,7 @@
         ParserUnexpectedToken = 0x1000,
         ParserUnknownStatement = 0x1001,
         ParserUnknownExpression = 0x1002,
+        ParserUnknownDeclarator = 0x1003,
 
         // Semantic errors 0x2000 - 0x2FFF
     }

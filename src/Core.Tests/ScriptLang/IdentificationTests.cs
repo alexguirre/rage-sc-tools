@@ -79,11 +79,12 @@
             using var sourceReader = new StringReader($@"
                 {source}");
             var d = new DiagnosticsReport();
-            var p = new Parser(sourceReader, "test.sc");
-            p.Parse(d);
+            //var p = new Parser(sourceReader, "test.sc");
+            //p.Parse(d);
 
-            var globalSymbols = GlobalSymbolTableBuilder.Build(p.OutputAst, d);
-            IdentificationVisitor.Visit(p.OutputAst, d, globalSymbols, nativeDB ?? NativeDB.Empty);
+            var ast = new ScTools.ScriptLang.Ast.Program(SourceRange.Unknown);
+            var globalSymbols = GlobalSymbolTableBuilder.Build(ast, d);
+            IdentificationVisitor.Visit(ast, d, globalSymbols, nativeDB ?? NativeDB.Empty);
             return d;
         }
     }

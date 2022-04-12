@@ -278,81 +278,81 @@
             {
                 var outputFile = new FileInfo(Path.Combine(options.Output.FullName, Path.ChangeExtension(inputFile.Name, "ysc")));
 
-                try
-                {
-                    Print($"Compiling '{inputFile}'...");
-                    using var sourceReader = new StreamReader(inputFile.OpenRead());
-                    var d = new DiagnosticsReport();
-                    var p = new Parser(sourceReader, inputFile.FullName) { UsingResolver = new FileUsingResolver() };
-                    p.Parse(d);
+                //try
+                //{
+                //    Print($"Compiling '{inputFile}'...");
+                //    using var sourceReader = new StreamReader(inputFile.OpenRead());
+                //    var d = new DiagnosticsReport();
+                //    var p = new Parser(sourceReader, inputFile.FullName) { UsingResolver = new FileUsingResolver() };
+                //    p.Parse(d);
 
-                    // TODO: refactor this
-                    var globalSymbols = GlobalSymbolTableBuilder.Build(p.OutputAst, d);
-                    IdentificationVisitor.Visit(p.OutputAst, d, globalSymbols, nativeDB);
-                    TypeChecker.Check(p.OutputAst, d, globalSymbols);
+                //    // TODO: refactor this
+                //    var globalSymbols = GlobalSymbolTableBuilder.Build(p.OutputAst, d);
+                //    IdentificationVisitor.Visit(p.OutputAst, d, globalSymbols, nativeDB);
+                //    TypeChecker.Check(p.OutputAst, d, globalSymbols);
 
-                    var sourceAssembly = "";
-                    if (!d.HasErrors)
-                    {
-                        using var sink = new StringWriter();
-                        new CodeGenerator(sink, p.OutputAst, globalSymbols, d, nativeDB).Generate();
-                        sourceAssembly = sink.ToString();
-                    }
+                //    var sourceAssembly = "";
+                //    if (!d.HasErrors)
+                //    {
+                //        using var sink = new StringWriter();
+                //        new CodeGenerator(sink, p.OutputAst, globalSymbols, d, nativeDB).Generate();
+                //        sourceAssembly = sink.ToString();
+                //    }
 
 
-                    if (!d.HasErrors)
-                    {
-                        using var sourceAssemblyReader = new StringReader(sourceAssembly);
-                        var sourceAssembler = Assembler.Assemble(sourceAssemblyReader, Path.ChangeExtension(inputFile.FullName, "scasm"), nativeDB, options: new() { IncludeFunctionNames = true });
+                //    if (!d.HasErrors)
+                //    {
+                //        using var sourceAssemblyReader = new StringReader(sourceAssembly);
+                //        var sourceAssembler = Assembler.Assemble(sourceAssemblyReader, Path.ChangeExtension(inputFile.FullName, "scasm"), nativeDB, options: new() { IncludeFunctionNames = true });
 
-                        if (sourceAssembler.Diagnostics.HasErrors)
-                        {
-                            lock (Console.Error)
-                            {
-                                Console.ForegroundColor = ConsoleColor.Red;
-                                Console.Error.WriteLine($"Assembly of '{inputFile}' failed:");
-                                sourceAssembler.Diagnostics.PrintAll(Console.Error);
-                                Console.Error.WriteLine();
-                                Console.ForegroundColor = ConsoleColor.White;
-                            }
-                        }
-                        else
-                        {
-                            var outputFileName = outputFile.FullName;
-                            Print($"Successful compilation, writing '{Path.GetRelativePath(Directory.GetCurrentDirectory(), outputFileName)}'...");
-                            var ysc = new YscFile { Script = sourceAssembler.OutputScript };
-                            var data = ysc.Save(Path.GetFileName(outputFileName));
-                            File.WriteAllBytes(outputFileName, data);
+                //        if (sourceAssembler.Diagnostics.HasErrors)
+                //        {
+                //            lock (Console.Error)
+                //            {
+                //                Console.ForegroundColor = ConsoleColor.Red;
+                //                Console.Error.WriteLine($"Assembly of '{inputFile}' failed:");
+                //                sourceAssembler.Diagnostics.PrintAll(Console.Error);
+                //                Console.Error.WriteLine();
+                //                Console.ForegroundColor = ConsoleColor.White;
+                //            }
+                //        }
+                //        else
+                //        {
+                //            var outputFileName = outputFile.FullName;
+                //            Print($"Successful compilation, writing '{Path.GetRelativePath(Directory.GetCurrentDirectory(), outputFileName)}'...");
+                //            var ysc = new YscFile { Script = sourceAssembler.OutputScript };
+                //            var data = ysc.Save(Path.GetFileName(outputFileName));
+                //            File.WriteAllBytes(outputFileName, data);
 
-                            if (options.Unencrypted)
-                            {
-                                data = ysc.Save();
-                                File.WriteAllBytes(Path.ChangeExtension(outputFileName, "unencrypted.ysc"), data);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        lock (Console.Error)
-                        {
-                            Console.ForegroundColor = ConsoleColor.Red;
-                            Console.Error.WriteLine($"Compilation of '{inputFile}' failed:");
-                            d.PrintAll(Console.Error);
-                            Console.Error.WriteLine();
-                            Console.ForegroundColor = ConsoleColor.White;
-                        }
-                    }
-                }
-                catch (Exception e)
-                {
-                    lock (Console.Error)
-                    {
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        Console.Error.Write(e.ToString());
-                        Console.ForegroundColor = ConsoleColor.White;
-                    }
-                    return;
-                }
+                //            if (options.Unencrypted)
+                //            {
+                //                data = ysc.Save();
+                //                File.WriteAllBytes(Path.ChangeExtension(outputFileName, "unencrypted.ysc"), data);
+                //            }
+                //        }
+                //    }
+                //    else
+                //    {
+                //        lock (Console.Error)
+                //        {
+                //            Console.ForegroundColor = ConsoleColor.Red;
+                //            Console.Error.WriteLine($"Compilation of '{inputFile}' failed:");
+                //            d.PrintAll(Console.Error);
+                //            Console.Error.WriteLine();
+                //            Console.ForegroundColor = ConsoleColor.White;
+                //        }
+                //    }
+                //}
+                //catch (Exception e)
+                //{
+                //    lock (Console.Error)
+                //    {
+                //        Console.ForegroundColor = ConsoleColor.Red;
+                //        Console.Error.Write(e.ToString());
+                //        Console.ForegroundColor = ConsoleColor.White;
+                //    }
+                //    return;
+                //}
             });
 
             totalTime.Stop();
@@ -360,16 +360,16 @@
         }
 
 
-        private sealed class FileUsingResolver : IUsingResolver
-        {
-            public string NormalizeFilePath(string filePath) => Path.GetFullPath(filePath);
+        //private sealed class FileUsingResolver : IUsingResolver
+        //{
+        //    public string NormalizeFilePath(string filePath) => Path.GetFullPath(filePath);
 
-            public (Func<TextReader> Open, string FilePath) Resolve(string originPath, string usingPath)
-            {
-                var p = NormalizeFilePath(Path.Combine(Path.GetDirectoryName(originPath), usingPath));
-                return (() => new StreamReader(p), p);
-            }
-        }
+        //    public (Func<TextReader> Open, string FilePath) Resolve(string originPath, string usingPath)
+        //    {
+        //        var p = NormalizeFilePath(Path.Combine(Path.GetDirectoryName(originPath), usingPath));
+        //        return (() => new StreamReader(p), p);
+        //    }
+        //}
 
         private static void GenNatives(FileInfo nativeDB)
         {

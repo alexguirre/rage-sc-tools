@@ -10,8 +10,8 @@
     /// </summary>
     public sealed class GlobalSymbolTable
     {
-        private readonly Dictionary<string, ITypeDeclaration> typeDeclarations = new(Parser.CaseInsensitiveComparer);
-        private readonly Dictionary<string, IValueDeclaration> valueDeclarations = new(Parser.CaseInsensitiveComparer);
+        private readonly Dictionary<string, ITypeDeclaration> typeDeclarations = new(ParserNew.CaseInsensitiveComparer);
+        private readonly Dictionary<string, IValueDeclaration> valueDeclarations = new(ParserNew.CaseInsensitiveComparer);
 
         public IEnumerable<ITypeDeclaration> Types => typeDeclarations.Values;
         public IEnumerable<IValueDeclaration> Values => valueDeclarations.Values;
