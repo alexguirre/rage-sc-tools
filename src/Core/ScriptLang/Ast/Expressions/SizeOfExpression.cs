@@ -1,18 +1,18 @@
 ﻿namespace ScTools.ScriptLang.Ast.Expressions;
 
+using System.Diagnostics;
+
 public sealed class SizeOfExpression : BaseExpression
 {
-    public IExpression SubExpression { get; set; }
+    public IExpression SubExpression => (IExpression)Children[0];
 
-    public SizeOfExpression(Token sizeOfToken, Token openToken, Token closeToken, IExpression subExpression) : base(sizeOfToken, openToken, closeToken)
+    public SizeOfExpression(Token sizeOfToken, Token openParen, Token closeParen, IExpression subExpression)
+        : base(OfTokens(sizeOfToken, openParen, closeParen), OfChildren(subExpression))
     { 
-        System.Diagnostics.Debug.Assert(sizeOfToken.Kind is TokenKind.SIZE_OF);
-        System.Diagnostics.Debug.Assert(openToken.Kind is TokenKind.OpenParen);
-        System.Diagnostics.Debug.Assert(closeToken.Kind is TokenKind.CloseParen);
-        SubExpression = subExpression;
+        Debug.Assert(sizeOfToken.Kind is TokenKind.SIZE_OF);
+        Debug.Assert(openParen.Kind is TokenKind.OpenParen);
+        Debug.Assert(closeParen.Kind is TokenKind.CloseParen);
     }
-    public SizeOfExpression(SourceRange source, IExpression subExpression) : base(source)
-        => SubExpression = subExpression;
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);

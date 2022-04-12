@@ -425,11 +425,11 @@
                     break;
 
                 case ArrayType arrayTy:
-                    dest[0].AsInt32 = arrayTy.Length;
+                    dest[0].AsInt32 = arrayTy.Rank;
 
                     var itemType = arrayTy.ItemType;
                     var itemSize = itemType.SizeOf;
-                    for (int i = 0; i < arrayTy.Length; i++)
+                    for (int i = 0; i < arrayTy.Rank; i++)
                     {
                         var itemDest = dest.Slice(1 + itemSize * i, itemSize);
                         InitializeStaticVar(itemDest, itemType, initializer: null);

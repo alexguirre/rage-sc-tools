@@ -431,9 +431,8 @@ public class ParserNew
             }
             else if (Accept(TokenKind.OpenParen, out var openParen))
             {
-                Token closeParen;
                 var args = new List<IExpression>();
-                if (!Accept(TokenKind.CloseParen, out closeParen))
+                if (!Accept(TokenKind.CloseParen, out var closeParen))
                 {
                     while (!IsAtEOS)
                     {
@@ -551,7 +550,7 @@ public class ParserNew
                              .Aggregate(baseType, (IType ty, DeclaratorArrayRank rank)
                                 => rank.LengthExpression == null ?
                                     new IncompleteArrayType(rank.OpenBracket, rank.CloseBracket, ty) :
-                                    new ArrayType_New(rank.OpenBracket, rank.CloseBracket, ty, rank.LengthExpression)),
+                                    new ArrayType(rank.OpenBracket, rank.CloseBracket, ty, rank.LengthExpression)),
             _ => baseType,
         };
 

@@ -1,5 +1,7 @@
 ﻿namespace ScTools.ScriptLang.Ast.Statements;
 
+using System.Collections.Immutable;
+
 public interface IStatement : INode
 {
     string? Label { get; set; }
@@ -29,6 +31,6 @@ public abstract class BaseStatement : BaseNode, IStatement
 {
     public string? Label { get; set; }
 
-    public BaseStatement(params Token[] tokens) : base(tokens) { }
+    public BaseStatement(ImmutableArray<Token> tokens, ImmutableArray<INode> children) : base(tokens, children) { }
     public BaseStatement(SourceRange source) : base(source) {}
 }

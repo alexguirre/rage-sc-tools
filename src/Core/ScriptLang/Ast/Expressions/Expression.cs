@@ -2,6 +2,8 @@
 
 using ScTools.ScriptLang.Ast.Types;
 
+using System.Collections.Immutable;
+
 public interface IExpression : INode
 {
     IType? Type { get; set; }
@@ -25,6 +27,6 @@ public abstract class BaseExpression : BaseNode, IExpression
     public bool IsLValue { get; set; }
     public bool IsConstant { get; set; }
 
-    public BaseExpression(params Token[] tokens) : base(tokens) { }
+    public BaseExpression(ImmutableArray<Token> tokens, ImmutableArray<INode> children) : base(tokens, children) { }
     public BaseExpression(SourceRange source) : base(source) {}
 }

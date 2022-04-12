@@ -107,7 +107,7 @@
             }
 
             // simplify the initializer expression
-            enumMember.Initializer = new IntLiteralExpression(enumMember.Initializer?.Source ?? enumMember.Source, enumMember.Value);
+            enumMember.Initializer = new IntLiteralExpression(Token.Integer(enumMember.Value, enumMember.Initializer?.Source ?? enumMember.Source));
         }
 
         private void SolveConstant(VarDeclaration constant)
@@ -143,28 +143,28 @@
                     var intValue = constant.Initializer.Type is IError ? 0 : ExpressionEvaluator.EvalInt(constant.Initializer, Symbols);
 
                     // simplify the initializer expression
-                    constant.Initializer = new IntLiteralExpression(constant.Initializer?.Source ?? constant.Source, intValue);
+                    constant.Initializer = new IntLiteralExpression(Token.Integer(intValue, constant.Initializer?.Source ?? constant.Source));
                     break;
 
                 case FloatType:
                     var floatValue = constant.Initializer.Type is IError ? 0.0f : ExpressionEvaluator.EvalFloat(constant.Initializer, Symbols);
 
                     // simplify the initializer expression
-                    constant.Initializer = new FloatLiteralExpression(constant.Initializer?.Source ?? constant.Source, floatValue);
+                    constant.Initializer = new FloatLiteralExpression(Token.Float(floatValue, constant.Initializer?.Source ?? constant.Source));
                     break;
 
                 case BoolType:
                     var boolValue = constant.Initializer.Type is IError ? false : ExpressionEvaluator.EvalBool(constant.Initializer, Symbols);
 
                     // simplify the initializer expression
-                    constant.Initializer = new BoolLiteralExpression(constant.Initializer?.Source ?? constant.Source, boolValue);
+                    constant.Initializer = new BoolLiteralExpression(Token.Bool(boolValue, constant.Initializer?.Source ?? constant.Source));
                     break;
 
                 case StringType:
                     var strValue = constant.Initializer.Type is IError ? null : ExpressionEvaluator.EvalString(constant.Initializer, Symbols);
 
                     // simplify the initializer expression
-                    constant.Initializer = new StringLiteralExpression(constant.Initializer?.Source ?? constant.Source, strValue);
+                    constant.Initializer = new StringLiteralExpression((strValue is null ? Token.Null() : Token.String(strValue)) with { Location = constant.Initializer?.Source ?? constant.Source });
                     break;
 
                 default: throw new System.NotImplementedException();

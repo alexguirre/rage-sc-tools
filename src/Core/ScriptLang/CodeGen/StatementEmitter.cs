@@ -29,7 +29,7 @@
             }
             else if (node.Initializer is not null)
             {
-                var dest = new DeclarationRefExpression(node.Source, node.Name) { Declaration = node, Type = node.Type!, IsLValue = true, IsConstant = false };
+                var dest = new DeclarationRefExpression(Token.Identifier(node.Name, node.Source)) { Declaration = node, Type = node.Type!, IsLValue = true, IsConstant = false };
                 new AssignmentStatement(node.Source, lhs: dest, rhs: node.Initializer)
                     .Accept(this, func);
             }
@@ -123,7 +123,7 @@
         private void EmitDefaultInitArray(ArrayType arrayTy)
         {
             // write array size
-            CG.EmitPushConstInt(arrayTy.Length);
+            CG.EmitPushConstInt(arrayTy.Rank);
             CG.Emit(Opcode.STORE_REV);
 
             if (TypeHelper.IsDefaultInitialized(arrayTy.ItemType))
@@ -131,7 +131,7 @@
                 CG.Emit(Opcode.DUP); // duplicate array address
                 CG.EmitOffset(1); // advance duplicated address to the first item (skip array size)
                 var itemSize = arrayTy.ItemType.SizeOf;
-                for (int i = 0; i < arrayTy.Length; i++)
+                for (int i = 0; i < arrayTy.Rank; i++)
                 {
                     EmitDefaultInitNoPushAddress(arrayTy.ItemType); // initialize item
                     CG.EmitOffset(itemSize); // advance to the next item
@@ -190,8 +190,8 @@
         public override Void Visit(RepeatStatement node, FuncDeclaration func)
         {
             var intTy = BuiltInTypes.Int.CreateType(node.Source);
-            var constantZero = new IntLiteralExpression(node.Source, 0) { Type = intTy, IsConstant = true, IsLValue = false };
-            var constantOne = new IntLiteralExpression(node.Source, 1) { Type = intTy, IsConstant = true, IsLValue = false };
+            var constantZero = new IntLiteralExpression(Token.Integer(0, node.Source)) { Type = intTy, IsConstant = true, IsLValue = false };
+            var constantOne = new IntLiteralExpression(Token.Integer(1, node.Source)) { Type = intTy, IsConstant = true, IsLValue = false };
 
             // set counter to 0
             new AssignmentStatement(node.Source, lhs: node.Counter, rhs: constantZero)
@@ -210,7 +210,7 @@
             CG.EmitLabel(node.ContinueLabel!);
 
             // increment counter
-            var counterPlusOne = new BinaryExpression(node.Source, BinaryOperator.Add, node.Counter, constantOne) { Type = intTy, IsConstant = false, IsLValue = false };
+            var counterPlusOne = new BinaryExpression(Token.Plus(node.Source), node.Counter, constantOne) { Type = intTy, IsConstant = false, IsLValue = false };
             new AssignmentStatement(node.Source, lhs: node.Counter, rhs: counterPlusOne)
                 .Accept(this, func);
 

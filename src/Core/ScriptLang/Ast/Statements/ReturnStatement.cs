@@ -1,18 +1,17 @@
 ﻿namespace ScTools.ScriptLang.Ast.Statements;
 
+using System.Diagnostics;
 using ScTools.ScriptLang.Ast.Expressions;
 
 public sealed class ReturnStatement : BaseStatement
 {
-    public IExpression? Expression { get; set; }
+    public IExpression? Expression => Children.Length > 0 ? (IExpression)Children[0] : null;
 
-    public ReturnStatement(Token returnToken, IExpression? expression) : base(returnToken)
+    public ReturnStatement(Token returnToken, IExpression? expression)
+        : base(OfTokens(returnToken), expression is null ? OfChildren() : OfChildren(expression))
     {
-        System.Diagnostics.Debug.Assert(returnToken.Kind is TokenKind.RETURN);
-        Expression = expression;
+        Debug.Assert(returnToken.Kind is TokenKind.RETURN);
     }
-    public ReturnStatement(SourceRange source, IExpression? expression) : base(source)
-        => Expression = expression;
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);

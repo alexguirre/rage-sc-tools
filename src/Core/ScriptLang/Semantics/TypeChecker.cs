@@ -77,19 +77,20 @@
         public override Void Visit(ArrayType node, TypeCheckerContext param)
         {
             node.ItemType.Accept(this, param);
-            node.LengthExpression.Accept(this, param);
+            node.RankExpression.Accept(this, param);
 
-            if (!node.LengthExpression.IsConstant)
+            if (!node.RankExpression.IsConstant)
             {
-                node.LengthExpression = new ErrorExpression(node.LengthExpression.Source, Diagnostics, $"Array size must be a constant expression");
+                // TODO: is this RankExpression set needed?
+                /*node.RankExpression =*/ new ErrorExpression(node.RankExpression.Source, Diagnostics, $"Array size must be a constant expression");
             }
-            else if (!BuiltInTypes.Int.CreateType(node.LengthExpression.Source).CanAssign(node.LengthExpression.Type!, node.LengthExpression.IsLValue))
+            else if (!BuiltInTypes.Int.CreateType(node.RankExpression.Source).CanAssign(node.RankExpression.Type!, node.RankExpression.IsLValue))
             {
-                Diagnostics.AddError($"Array size requires type '{BuiltInTypes.Int.Name}', found '{node.LengthExpression.Type}'", node.LengthExpression.Source);
+                Diagnostics.AddError($"Array size requires type '{BuiltInTypes.Int.Name}', found '{node.RankExpression.Type}'", node.RankExpression.Source);
             }
             else
             {
-                node.Length = ExpressionEvaluator.EvalInt(node.LengthExpression, Symbols);
+                node.Rank = ExpressionEvaluator.EvalInt(node.RankExpression, Symbols);
             }
 
             return DefaultReturn;

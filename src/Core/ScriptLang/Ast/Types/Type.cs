@@ -78,7 +78,7 @@ public abstract class BaseType: BaseNode, IType
 {
     public abstract int SizeOf { get; }
 
-    public BaseType(params Token[] tokens) : base(tokens) { }
+    public BaseType(params Token[] tokens) : base(OfTokens(tokens), OfChildren()) { }
     public BaseType(SourceRange source) : base(source) {}
 
     public override string ToString() => TypePrinter.ToString(this, null, false);
@@ -88,7 +88,7 @@ public abstract class BaseType: BaseNode, IType
     public virtual bool CanAssign(IType rhs, bool rhsIsLValue) => false;
 
     public virtual IType BinaryOperation(BinaryOperator op, IType rhs, SourceRange source, DiagnosticsReport diagnostics)
-        => rhs is ErrorType ? rhs : new ErrorType(source, diagnostics, $"Binary operator '{op.ToToken()}' is not supported with operands of type '{this}' and '{rhs}'");
+        => rhs is ErrorType ? rhs : new ErrorType(source, diagnostics, $"Binary operator '{op.ToHumanString()}' is not supported with operands of type '{this}' and '{rhs}'");
 
     public virtual IType UnaryOperation(UnaryOperator op, SourceRange source, DiagnosticsReport diagnostics)
         => new ErrorType(source, diagnostics, $"Unary operator '{op.ToHumanString()}' is not supported by type '{this}'");

@@ -25,15 +25,16 @@ public enum BinaryOperator
 
 public sealed class BinaryExpression : BaseExpression
 {
-    public BinaryOperator Operator { get; set; }
-    public IExpression LHS { get; set; }
-    public IExpression RHS { get; set; }
+    public BinaryOperator Operator { get; }
+    public IExpression LHS => (IExpression)Children[0];
+    public IExpression RHS => (IExpression)Children[1];
     /// <summary>
     /// Gets or sets the label used to implement the short-circuiting logic of <see cref="BinaryOperator.LogicalAnd"/> and <see cref="BinaryOperator.LogicalOr"/>.
     /// </summary>
     public string? ShortCircuitLabel { get; set; }
 
-    public BinaryExpression(Token operatorToken, IExpression lhs, IExpression rhs) : base(operatorToken)
+    public BinaryExpression(Token operatorToken, IExpression lhs, IExpression rhs)
+        : base(OfTokens(operatorToken), OfChildren(lhs, rhs))
     {
         Debug.Assert(operatorToken.Kind is
             TokenKind.Plus or TokenKind.Minus or TokenKind.Asterisk or TokenKind.Slash or
@@ -42,11 +43,7 @@ public sealed class BinaryExpression : BaseExpression
             TokenKind.LessThanEquals or TokenKind.GreaterThan or TokenKind.GreaterThanEquals or
             TokenKind.AND or TokenKind.OR);
         Operator = BinaryOperatorExtensions.FromToken(operatorToken.Kind);
-        LHS = lhs;
-        RHS = rhs;
     }
-    public BinaryExpression(SourceRange source, BinaryOperator op, IExpression lhs, IExpression rhs) : base(source)
-        => (Operator, LHS, RHS) = (op, lhs, rhs);
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
@@ -57,7 +54,7 @@ public sealed class BinaryExpression : BaseExpression
 
 public static class BinaryOperatorExtensions
 {
-    public static string ToToken(this BinaryOperator op)
+    public static string ToHumanString(this BinaryOperator op)
         => op switch
         {
             BinaryOperator.Add => "+",

@@ -9,13 +9,12 @@ public sealed class StringLiteralExpression : BaseExpression, ILiteralExpression
 {
     public string? Value { get; set; }
 
-    public StringLiteralExpression(Token stringToken) : base(stringToken)
+    public StringLiteralExpression(Token stringOrNullToken)
+        : base(OfTokens(stringOrNullToken), OfChildren())
     {
-        Debug.Assert(stringToken.Kind is TokenKind.String);
-        Value = stringToken.GetStringLiteral();
+        Debug.Assert(stringOrNullToken.Kind is TokenKind.String or TokenKind.Null);
+        Value = stringOrNullToken.Kind is TokenKind.String ? stringOrNullToken.GetStringLiteral() : null;
     }
-    public StringLiteralExpression(SourceRange source, string? value) : base(source)
-        => Value = value;
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);

@@ -4,18 +4,15 @@ using System.Diagnostics;
 
 public sealed class IndexingExpression : BaseExpression
 {
-    public IExpression Array { get; set; }
-    public IExpression Index { get; set; }
+    public IExpression Array => (IExpression)Children[0];
+    public IExpression Index => (IExpression)Children[1];
 
-    public IndexingExpression(Token openBracket, Token closeBracket, IExpression array, IExpression index) : base(openBracket, closeBracket)
+    public IndexingExpression(Token openBracket, Token closeBracket, IExpression array, IExpression index)
+        : base(OfTokens(openBracket, closeBracket), OfChildren(array, index))
     {
         Debug.Assert(openBracket.Kind is TokenKind.OpenBracket);
         Debug.Assert(closeBracket.Kind is TokenKind.CloseBracket);
-        Array = array;
-        Index = index;
     }
-    public IndexingExpression(SourceRange source, IExpression array, IExpression index) : base(source)
-        => (Array, Index) = (array, index);
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);

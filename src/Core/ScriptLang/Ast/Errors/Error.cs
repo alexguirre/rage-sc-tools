@@ -9,7 +9,7 @@ public abstract class BaseError : BaseNode, IError
 {
     public Diagnostic Diagnostic { get; }
 
-    public BaseError(Diagnostic diagnostic, params Token[] tokens) : base(tokens)
+    public BaseError(Diagnostic diagnostic, params Token[] tokens) : base(OfTokens(tokens), OfChildren())
     {
         Diagnostic = diagnostic;
     }

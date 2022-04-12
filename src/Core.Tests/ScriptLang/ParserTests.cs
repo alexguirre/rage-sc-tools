@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Linq;
 
     using ScTools.ScriptLang;
@@ -246,12 +247,12 @@
             Assert(p.ParseLabeledStatement(), n => n is VarDeclaration
             {
                 Label: null, Name: "hello", IsReference: false,
-                Type: ArrayType_New { ItemType: NamedType { Name: "INT" }, RankExpression: IntLiteralExpression { Value: 5 } }
+                Type: ArrayType { ItemType: NamedType { Name: "INT" }, RankExpression: IntLiteralExpression { Value: 5 } }
             });
             Assert(p.ParseLabeledStatement(), n => n is VarDeclaration
             {
                 Label: "label", Name: "foo", IsReference: false,
-                Type: ArrayType_New { ItemType: NamedType { Name: "FLOAT" }, RankExpression: IntLiteralExpression { Value: 2 } }
+                Type: ArrayType { ItemType: NamedType { Name: "FLOAT" }, RankExpression: IntLiteralExpression { Value: 2 } }
             });
             Assert(p.ParseLabeledStatement(), n => n is VarDeclaration
             {
@@ -272,10 +273,10 @@
             Assert(p.ParseLabeledStatement(), n => n is VarDeclaration
             {
                 Label: null, Name: "hello", IsReference: false,
-                Type: ArrayType_New
+                Type: ArrayType
                 {
                     RankExpression: IntLiteralExpression { Value: 1 },
-                    ItemType: ArrayType_New
+                    ItemType: ArrayType
                     {
                         RankExpression: IntLiteralExpression { Value: 2 },
                         ItemType: NamedType { Name: "INT" },
@@ -285,13 +286,13 @@
             Assert(p.ParseLabeledStatement(), n => n is VarDeclaration
             {
                 Label: null, Name: "foo", IsReference: false,
-                Type: ArrayType_New
+                Type: ArrayType
                 {
                     RankExpression: IntLiteralExpression { Value: 2 },
-                    ItemType: ArrayType_New
+                    ItemType: ArrayType
                     {
                         RankExpression: IntLiteralExpression { Value: 3 },
-                        ItemType: ArrayType_New
+                        ItemType: ArrayType
                         {
                             RankExpression: IntLiteralExpression { Value: 5 },
                             ItemType: NamedType { Name: "FLOAT" },
@@ -594,9 +595,7 @@
             );
 
             AssertError(p.ParseLabeledStatement(), n => n is ErrorStatement);
-            // TODO: consider children nodes for INode.Source property
-            // Here only the + token is considered for BinaryExpression.Source, it would be better if it included the whole expression 1 + 2.
-            CheckError(ErrorCode.ParserExpressionAsStatement, /*(1, 1), (1, 5)*/(1, 3), (1, 3), p.Diagnostics);
+            CheckError(ErrorCode.ParserExpressionAsStatement, (1, 1), (1, 5), p.Diagnostics);
             True(p.IsAtEOF);
         }
 
@@ -898,7 +897,7 @@
             False(expr is IError);
             True(predicate(expr));
         }
-        private static void AssertInvocation(IStatement stmt, Predicate<IExpression> calleePredicate, Action<List<IExpression>> argumentsChecker)
+        private static void AssertInvocation(IStatement stmt, Predicate<IExpression> calleePredicate, Action<ImmutableArray<IExpression>> argumentsChecker)
         {
             True(stmt is InvocationExpression);
             if (stmt is InvocationExpression invocationExpr)
@@ -907,7 +906,7 @@
                 argumentsChecker(invocationExpr.Arguments);
             }
         }
-        private static void AssertInvocation(IExpression expr, Predicate<IExpression> calleePredicate, Action<List<IExpression>> argumentsChecker)
+        private static void AssertInvocation(IExpression expr, Predicate<IExpression> calleePredicate, Action<ImmutableArray<IExpression>> argumentsChecker)
         {
             True(expr is InvocationExpression);
             if (expr is InvocationExpression invocationExpr)
@@ -916,7 +915,7 @@
                 argumentsChecker(invocationExpr.Arguments);
             }
         }
-        private static void AssertIfStmt(IStatement stmt, Predicate<IExpression> conditionPredicate, Action<List<IStatement>> thenBodyChecker, Action<List<IStatement>> elseBodyChecker)
+        private static void AssertIfStmt(IStatement stmt, Predicate<IExpression> conditionPredicate, Action<ImmutableArray<IStatement>> thenBodyChecker, Action<ImmutableArray<IStatement>> elseBodyChecker)
         {
             True(stmt is IfStatement);
             if (stmt is IfStatement ifStmt)

@@ -110,7 +110,7 @@ public static class TokenKindExtensions
         => kind >= TokenKind.SCRIPT && kind <= TokenKind.SIZE_OF;
 }
 
-public readonly struct Token
+public readonly record struct Token
 {
     public TokenKind Kind { get; init; }
     public ReadOnlyMemory<char> Lexeme { get; init; }
@@ -122,7 +122,7 @@ public readonly struct Token
     public string GetStringLiteral()
     {
         Debug.Assert(Kind is TokenKind.String);
-        return Lexeme.Slice(1, Lexeme.Length - 2).Unescape();
+        return Lexeme[1..^1].Unescape();
     }
 
     public int GetIntLiteral()
@@ -142,4 +142,13 @@ public readonly struct Token
         Debug.Assert(Kind is TokenKind.Boolean);
         return Lexeme.ParseAsBool();
     }
+
+
+    public static Token Identifier(string name, SourceRange location = default) => new() { Kind = TokenKind.Identifier, Lexeme = name.AsMemory(), Location = location };
+    public static Token Integer(int value, SourceRange location = default) => new() { Kind = TokenKind.Integer, Lexeme = value.ToString().AsMemory(), Location = location };
+    public static Token Float(float value, SourceRange location = default) => new() { Kind = TokenKind.Float, Lexeme = value.ToString("G9").AsMemory(), Location = location };
+    public static Token Bool(bool value, SourceRange location = default) => new() { Kind = TokenKind.Boolean, Lexeme = (value ? "TRUE" : "FALSE").AsMemory(), Location = location };
+    public static Token String(string value, SourceRange location = default) => new() { Kind = TokenKind.String, Lexeme = $"'{value.Escape()}'".AsMemory(), Location = location };
+    public static Token Null(SourceRange location = default) => new() { Kind = TokenKind.Null, Lexeme = "NULL".AsMemory(), Location = location };
+    public static Token Plus(SourceRange location = default) => new() { Kind = TokenKind.Plus, Lexeme = "+".AsMemory(), Location = location };
 }

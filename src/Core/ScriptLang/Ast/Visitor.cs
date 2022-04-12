@@ -49,7 +49,6 @@
 
         TReturn Visit(AnyType node, TParam param);
         TReturn Visit(ArrayType node, TParam param);
-        TReturn Visit(ArrayType_New node, TParam param);
         TReturn Visit(BoolType node, TParam param);
         TReturn Visit(EnumType node, TParam param);
         TReturn Visit(FloatType node, TParam param);
@@ -295,13 +294,6 @@
         public virtual TReturn Visit(ArrayType node, TParam param)
         {
             node.ItemType.Accept(this, param);
-            node.LengthExpression.Accept(this, param);
-            return DefaultReturn;
-        }
-
-        public virtual TReturn Visit(ArrayType_New node, TParam param)
-        {
-            node.ItemType.Accept(this, param);
             node.RankExpression.Accept(this, param);
             return DefaultReturn;
         }
@@ -452,7 +444,6 @@
         public virtual TReturn Visit(WhileStatement node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(AnyType node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(ArrayType node, TParam param) => throw new NotImplementedException();
-        public virtual TReturn Visit(ArrayType_New node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(BoolType node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(EnumType node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(FloatType node, TParam param) => throw new NotImplementedException();

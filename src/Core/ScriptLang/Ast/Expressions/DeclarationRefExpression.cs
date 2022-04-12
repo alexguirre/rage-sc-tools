@@ -2,21 +2,21 @@
 
 using ScTools.ScriptLang.Ast.Declarations;
 
+using System.Diagnostics;
+
 /// <summary>
 /// Represents a reference to a <see cref="IDeclaration"/>.
 /// </summary>
 public sealed class DeclarationRefExpression : BaseExpression
 {
-    public string Name { get; set; }
+    public string Name => Tokens[0].Lexeme.ToString();
     public IDeclaration? Declaration { get; set; }
 
-    public DeclarationRefExpression(Token identifierToken) : base(identifierToken)
+    public DeclarationRefExpression(Token identifierToken)
+        : base(OfTokens(identifierToken), OfChildren())
     {
-        System.Diagnostics.Debug.Assert(identifierToken.Kind is TokenKind.Identifier);
-        Name = identifierToken.Lexeme.ToString();
+        Debug.Assert(identifierToken.Kind is TokenKind.Identifier);
     }
-    public DeclarationRefExpression(SourceRange source, string name) : base(source)
-        => Name = name;
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);

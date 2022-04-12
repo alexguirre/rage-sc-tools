@@ -11,17 +11,15 @@ public enum UnaryOperator
 
 public sealed class UnaryExpression : BaseExpression
 {
-    public UnaryOperator Operator { get; set; }
-    public IExpression SubExpression { get; set; }
+    public UnaryOperator Operator { get; }
+    public IExpression SubExpression => (IExpression)Children[0];
 
-    public UnaryExpression(Token operatorToken, IExpression subExpression) : base(operatorToken)
+    public UnaryExpression(Token operatorToken, IExpression subExpression)
+        : base(OfTokens(operatorToken), OfChildren(subExpression))
     {
         Debug.Assert(operatorToken.Kind is TokenKind.NOT or TokenKind.Minus);
         Operator = UnaryOperatorExtensions.FromToken(operatorToken.Kind);
-        SubExpression = subExpression;
     }
-    public UnaryExpression(SourceRange source, UnaryOperator op, IExpression subExpression) : base(source)
-        => (Operator, SubExpression) = (op, subExpression);
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
