@@ -123,6 +123,20 @@ public class ParserNew
         {
             stmt = ifStmt;
         }
+        else if (Accept(TokenKind.WHILE, out var whileToken))
+        {
+            if (Expect(ParseExpression, out var conditionExpr) && ExpectEOS())
+            {
+                var body = ParseBodyUntilAny(TokenKind.ENDWHILE);
+                stmt = Expect(TokenKind.ENDWHILE, out var endwhileToken) && ExpectEOS() ?
+                        new WhileStatement(whileToken, endwhileToken, conditionExpr, body) :
+                        new ErrorStatement(LastError!, whileToken);
+            }
+            else
+            {
+                stmt = new ErrorStatement(LastError!, whileToken);
+            }
+        }
         else if (Accept(TokenKind.BREAK, out var breakToken))
         {
             stmt = new BreakStatement(breakToken);

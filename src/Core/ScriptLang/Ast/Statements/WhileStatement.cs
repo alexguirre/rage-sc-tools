@@ -1,14 +1,16 @@
 ﻿namespace ScTools.ScriptLang.Ast.Statements;
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 
 using ScTools.ScriptLang.Ast.Expressions;
 
 public sealed class WhileStatement : BaseStatement, ILoopStatement
 {
-    public IExpression Condition { get; set; }
-    public List<IStatement> Body { get; set; } = new();
+    public IExpression Condition => (IExpression)Children[0];
+    public ImmutableArray<IStatement> Body { get; }
     public LoopStatementSemantics Semantics { get; set; }
     BreakableStatementSemantics ISemanticNode<BreakableStatementSemantics>.Semantics
     {
@@ -16,8 +18,13 @@ public sealed class WhileStatement : BaseStatement, ILoopStatement
         set => Semantics = Semantics with { ExitLabel = value.ExitLabel };
     }
 
-    public WhileStatement(SourceRange source, IExpression condition) : base(source)
-        => Condition = condition;
+    public WhileStatement(Token whileKeyword, Token endwhileKeyword, IExpression condition, IEnumerable<IStatement> body)
+        : base(OfTokens(whileKeyword, endwhileKeyword), OfChildren(condition).AddRange(body))
+    {
+        Debug.Assert(whileKeyword.Kind is TokenKind.WHILE);
+        Debug.Assert(endwhileKeyword.Kind is TokenKind.ENDWHILE);
+        Body = body.ToImmutableArray();
+    }
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);

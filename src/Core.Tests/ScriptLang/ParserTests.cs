@@ -321,6 +321,67 @@
         }
 
         [Fact]
+        public void WhileStatement()
+        {
+            var p = ParserFor(
+                @"  WHILE a AND \
+                       b
+                        foo()
+                        bar()
+                    ENDWHILE"
+            );
+
+            AssertWhileStmt(p.ParseStatement(),
+                condition => condition is BinaryExpression
+                {
+                    Operator: BinaryOperator.LogicalAnd,
+                    LHS: DeclarationRefExpression { Name: "a" },
+                    RHS: DeclarationRefExpression { Name: "b" },
+                },
+                body => Collection(body,
+                    _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "foo" }, args => Empty(args)),
+                    _1 => AssertInvocation(_1, callee => callee is DeclarationRefExpression { Name: "bar" }, args => Empty(args))));
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
+        public void NestedWhileStatement()
+        {
+            var p = ParserFor(
+                @"  WHILE a
+                        foo()
+                        WHILE b
+                            bar()
+                        ENDWHILE
+                    ENDWHILE"
+            );
+
+            AssertWhileStmt(p.ParseStatement(),
+                condition => condition is DeclarationRefExpression { Name: "a" },
+                body => Collection(body,
+                    _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "foo" }, args => Empty(args)),
+                    _1 => AssertWhileStmt(_1,
+                        condition => condition is DeclarationRefExpression { Name: "b" },
+                        body => Collection(body,
+                            _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "bar" }, args => Empty(args))))));
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
+        public void EmptyWhileStatement()
+        {
+            var p = ParserFor(
+                @"  WHILE a
+                    ENDWHILE"
+            );
+
+            AssertWhileStmt(p.ParseStatement(),
+                condition => condition is DeclarationRefExpression { Name: "a" },
+                body => Empty(body));
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
         public void VarDeclarationStatement()
         {
             var p = ParserFor(
@@ -1030,6 +1091,15 @@
                 True(conditionPredicate(ifStmt.Condition));
                 thenBodyChecker(ifStmt.Then);
                 elseBodyChecker(ifStmt.Else);
+            }
+        }
+        private static void AssertWhileStmt(IStatement stmt, Predicate<IExpression> conditionPredicate, Action<ImmutableArray<IStatement>> bodyChecker)
+        {
+            True(stmt is WhileStatement);
+            if (stmt is WhileStatement whileStmt)
+            {
+                True(conditionPredicate(whileStmt.Condition));
+                bodyChecker(whileStmt.Body);
             }
         }
         private static void AssertError(INode node, Predicate<INode> predicate)
