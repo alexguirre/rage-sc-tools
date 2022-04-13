@@ -8,7 +8,7 @@ public sealed class BreakStatement : BaseStatement, ISemanticNode<BreakStatement
 {
     public BreakStatementSemantics Semantics { get; set; }
 
-    public BreakStatement(Token breakToken) : base(OfTokens(breakToken), OfChildren())
+    public BreakStatement(Token breakToken, Label? label) : base(OfTokens(breakToken), OfChildren(), label)
         => Debug.Assert(breakToken.Kind is TokenKind.BREAK);
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)

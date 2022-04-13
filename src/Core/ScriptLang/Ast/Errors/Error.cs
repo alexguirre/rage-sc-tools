@@ -1,4 +1,6 @@
-﻿namespace ScTools.ScriptLang.Ast.Errors;
+﻿using System.Collections.Generic;
+
+namespace ScTools.ScriptLang.Ast.Errors;
 
 public interface IError : INode
 {
@@ -9,7 +11,7 @@ public abstract class BaseError : BaseNode, IError
 {
     public Diagnostic Diagnostic { get; }
 
-    public BaseError(Diagnostic diagnostic, params Token[] tokens) : base(OfTokens(tokens), OfChildren())
+    public BaseError(Diagnostic diagnostic, IEnumerable<Token> tokens, IEnumerable<INode> children) : base(tokens, children)
     {
         Diagnostic = diagnostic;
     }

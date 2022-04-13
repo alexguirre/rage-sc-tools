@@ -13,8 +13,8 @@ public sealed class SwitchStatement : BaseStatement, IBreakableStatement
     public ImmutableArray<SwitchCase> Cases { get; }
     public BreakableStatementSemantics Semantics { get; set; }
 
-    public SwitchStatement(Token switchKeyword, Token endswitchKeyword, IExpression expression, IEnumerable<SwitchCase> cases)
-        : base(OfTokens(switchKeyword, endswitchKeyword), OfChildren(expression).AddRange(cases))
+    public SwitchStatement(Token switchKeyword, Token endswitchKeyword, IExpression expression, IEnumerable<SwitchCase> cases, Label? label)
+        : base(OfTokens(switchKeyword, endswitchKeyword), OfChildren(expression).Concat(cases), label)
     {
         Debug.Assert(switchKeyword.Kind is TokenKind.SWITCH);
         Debug.Assert(endswitchKeyword.Kind is TokenKind.ENDSWITCH);
@@ -35,7 +35,8 @@ public abstract class SwitchCase : BaseNode, ISemanticNode<SwitchCaseSemantics>
     public ImmutableArray<IStatement> Body { get; }
     public SwitchCaseSemantics Semantics { get; set; }
 
-    public SwitchCase(IEnumerable<IStatement> body, ImmutableArray<Token> tokens, ImmutableArray<INode> children) : base(tokens, children)
+    public SwitchCase(IEnumerable<IStatement> body, IEnumerable<Token> tokens, IEnumerable<INode> children)
+        : base(tokens, children.Concat(body))
     {
         Body = body.ToImmutableArray();
     }
@@ -46,7 +47,7 @@ public sealed class ValueSwitchCase : SwitchCase
     public IExpression Value => (IExpression)Children[0];
 
     public ValueSwitchCase(Token caseKeyword, IExpression value, IEnumerable<IStatement> body)
-        : base(body, OfTokens(caseKeyword), OfChildren(value).AddRange(body))
+        : base(body, OfTokens(caseKeyword), OfChildren(value))
     {
         Debug.Assert(caseKeyword.Kind is TokenKind.CASE);
     }
@@ -61,7 +62,7 @@ public sealed class ValueSwitchCase : SwitchCase
 public sealed class DefaultSwitchCase : SwitchCase
 {
     public DefaultSwitchCase(Token defaultKeyword, IEnumerable<IStatement> body)
-        : base(body, OfTokens(defaultKeyword), OfChildren(body))
+        : base(body, OfTokens(defaultKeyword), OfChildren())
     {
         Debug.Assert(defaultKeyword.Kind is TokenKind.DEFAULT);
     }

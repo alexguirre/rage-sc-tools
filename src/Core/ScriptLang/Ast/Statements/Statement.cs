@@ -1,13 +1,16 @@
 ﻿namespace ScTools.ScriptLang.Ast.Statements;
 
+using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
+using System.Linq;
 
 public interface IStatement : INode
 {
     /// <summary>
     /// Gets the label associated to this statement.
     /// </summary>
-    string? Label { get; set; }
+    Label? Label { get; }
 }
 
 /// <param name="ExitLabel">Name of the label used to indicate the end of this statement. This is where a BREAK statement jumps to.</param>
@@ -28,8 +31,35 @@ public interface ILoopStatement : IBreakableStatement, ISemanticNode<LoopStateme
 
 public abstract class BaseStatement : BaseNode, IStatement
 {
-    public string? Label { get; set; } // TODO: make IStatement.Label read-only
-                                       // TODO: make IStatement.Label a node?
+    public Label? Label { get; }
 
-    public BaseStatement(ImmutableArray<Token> tokens, ImmutableArray<INode> children) : base(tokens, children) { }
+    public BaseStatement(IEnumerable<Token> tokens, IEnumerable<INode> children, Label? label)
+        : base(tokens, label is null ? children : children.Append(label))
+    {
+        if (label is not null)
+        {
+            // we are appending the label as the last children, verify that it wasn't already included in the childrens by accident
+            Debug.Assert(!children.Contains(label));
+        }
+
+        Label = label;
+    }
+}
+
+public sealed class Label : BaseNode
+{
+    public string Name => Tokens[0].Lexeme.ToString();
+
+    public Label(Token identifierToken, Token colon)
+        : base(OfTokens(identifierToken, colon), OfChildren())
+    {
+        Debug.Assert(identifierToken.Kind is TokenKind.Identifier);
+        Debug.Assert(colon.Kind is TokenKind.Colon);
+    }
+
+    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
+        => visitor.Visit(this, param);
+
+    public override string DebuggerDisplay =>
+        $@"{nameof(Label)} {{ {nameof(Name)} = {Name} }}";
 }

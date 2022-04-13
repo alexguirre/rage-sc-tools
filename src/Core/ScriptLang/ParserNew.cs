@@ -41,14 +41,14 @@ public class ParserNew
     #region Rules
     public bool IsPossibleLabel()
         => Peek(0).Kind is TokenKind.Identifier && Peek(1).Kind is TokenKind.Colon;
-    public string? ParseLabel()
+    public Label? ParseLabel()
     {
         // label : identifier ':' ;
 
         if (Expect(TokenKind.Identifier, out var ident) &&
             Expect(TokenKind.Colon, out var colon))
         {
-            return ident.Lexeme.ToString();
+            return new Label(ident, colon);
         }
         else
         {
@@ -104,7 +104,7 @@ public class ParserNew
 
         if (IsPossibleVarDeclaration())
         {
-            stmt = ParseVarDeclaration(VarKind.Local, allowMultipleDeclarations: true);
+            stmt = ParseVarDeclaration(VarKind.Local, allowMultipleDeclarations: true).WithLabel(label);
         }
         else if (IsPossibleExpression() &&
                  !IsPossibleLabel()) // in case of sequential labels, avoid parsing the second label identifier as an expression
@@ -113,20 +113,20 @@ public class ParserNew
             if (IsAtEOS)
             {
                 stmt = lhs is InvocationExpression invocation ?
-                            invocation :
-                            ExpressionAsStatementError(lhs);
+                            invocation.WithLabel(label) :
+                            ExpressionAsStatementError(lhs, label);
             }
             else if (Accept(AssignmentStatement.IsAssignmentOperator, out var assignmentOp))
             {
-                stmt = new AssignmentStatement(assignmentOp, lhs, rhs: ParseExpression());
+                stmt = new AssignmentStatement(assignmentOp, lhs, rhs: ParseExpression(), label);
             }
             else
             {
                 UnexpectedTokenExpectedAssignmentError();
-                stmt = new ErrorStatement(LastError!, Current);
+                stmt = new ErrorStatement(LastError!, label, Current);
             }
         }
-        else if (TryParseIfStatement(TokenKind.IF, out _, out var ifStmt))
+        else if (TryParseIfStatement(TokenKind.IF, out _, out var ifStmt, label))
         {
             stmt = ifStmt;
         }
@@ -136,12 +136,12 @@ public class ParserNew
             {
                 var body = ParseBodyUntilAny(TokenKind.ENDWHILE);
                 stmt = Expect(TokenKind.ENDWHILE, out var endwhileToken) && ExpectEOS() ?
-                        new WhileStatement(whileToken, endwhileToken, conditionExpr, body) :
-                        new ErrorStatement(LastError!, whileToken);
+                        new WhileStatement(whileToken, endwhileToken, conditionExpr, body, label) :
+                        new ErrorStatement(LastError!, label, whileToken);
             }
             else
             {
-                stmt = new ErrorStatement(LastError!, whileToken);
+                stmt = new ErrorStatement(LastError!, label, whileToken);
             }
         }
         else if (Accept(TokenKind.REPEAT, out var repeatToken))
@@ -150,12 +150,12 @@ public class ParserNew
             {
                 var body = ParseBodyUntilAny(TokenKind.ENDREPEAT);
                 stmt = Expect(TokenKind.ENDREPEAT, out var endrepeatToken) && ExpectEOS() ?
-                        new RepeatStatement(repeatToken, endrepeatToken, limitExpr, counterExpr, body) :
-                        new ErrorStatement(LastError!, repeatToken);
+                        new RepeatStatement(repeatToken, endrepeatToken, limitExpr, counterExpr, body, label) :
+                        new ErrorStatement(LastError!, label, repeatToken);
             }
             else
             {
-                stmt = new ErrorStatement(LastError!, repeatToken);
+                stmt = new ErrorStatement(LastError!, label, repeatToken);
             }
         }
         else if (Accept(TokenKind.SWITCH, out var switchToken))
@@ -164,40 +164,40 @@ public class ParserNew
             {
                 var cases = ParseSwitchCases();
                 stmt = Expect(TokenKind.ENDSWITCH, out var endswitchToken) && ExpectEOS() ?
-                        new SwitchStatement(switchToken, endswitchToken, expr, cases) :
-                        new ErrorStatement(LastError!, switchToken);
+                        new SwitchStatement(switchToken, endswitchToken, expr, cases, label) :
+                        new ErrorStatement(LastError!, label, switchToken);
             }
             else
             {
-                stmt = new ErrorStatement(LastError!, switchToken);
+                stmt = new ErrorStatement(LastError!, label, switchToken);
             }
         }
         else if (Accept(TokenKind.BREAK, out var breakToken))
         {
-            stmt = new BreakStatement(breakToken);
+            stmt = new BreakStatement(breakToken, label);
         }
         else if (Accept(TokenKind.CONTINUE, out var continueToken))
         {
-            stmt = new ContinueStatement(continueToken);
+            stmt = new ContinueStatement(continueToken, label);
         }
         else if (Accept(TokenKind.RETURN, out var returnToken))
         {
-            stmt = new ReturnStatement(returnToken, IsAtEOS ? null : ParseExpression());
+            stmt = new ReturnStatement(returnToken, IsAtEOS ? null : ParseExpression(), label);
         }
         else if (Accept(TokenKind.GOTO, out var gotoToken))
         {
             stmt = Expect(TokenKind.Identifier, out var gotoTargetToken) ?
-                        new GotoStatement(gotoToken, gotoTargetToken) :
-                        new ErrorStatement(LastError!, gotoToken, gotoTargetToken);
+                        new GotoStatement(gotoToken, gotoTargetToken, label) :
+                        new ErrorStatement(LastError!, label, gotoToken, gotoTargetToken);
         }
         else if (allowEmptyStatement)
         {
             // found a label followed by EOS but no statement afterwards so create an empty statement
-            stmt = new EmptyStatement();
+            stmt = new EmptyStatement(label);
         }
         else
         {
-            stmt = UnknownStatementError();
+            stmt = UnknownStatementError(label);
         }
 
         if (stmt is IError)
@@ -210,11 +210,11 @@ public class ParserNew
         {
             ExpectEOS();
         }
-        stmt.Label = label;
+
         return stmt;
 
 
-        bool TryParseIfStatement(TokenKind ifOrElif, out Token ifOrElifToken, [NotNullWhen(true)] out IStatement? stmt)
+        bool TryParseIfStatement(TokenKind ifOrElif, out Token ifOrElifToken, [NotNullWhen(true)] out IStatement? stmt, Label? label = null)
         {
             if (Accept(ifOrElif, out ifOrElifToken))
             {
@@ -224,26 +224,26 @@ public class ParserNew
                     if (TryParseIfStatement(TokenKind.ELIF, out var elifToken, out var elifStmt))
                     {
                         var elseBody = new[] { elifStmt };
-                        stmt = new IfStatement(ifOrElifToken, elifToken, endifKeyword: elifStmt.Tokens.Last(), conditionExpr, thenBody, elseBody);
+                        stmt = new IfStatement(ifOrElifToken, elifToken, endifKeyword: elifStmt.Tokens.Last(), conditionExpr, thenBody, elseBody, label);
                     }
                     else if (Accept(TokenKind.ELSE, out var elseToken))
                     {
                         ExpectEOS();
                         var elseBody = ParseBodyUntilAny(TokenKind.ENDIF);
                         stmt = Expect(TokenKind.ENDIF, out var endifToken) && ExpectEOS() ?
-                                new IfStatement(ifOrElifToken, elseToken, endifToken, conditionExpr, thenBody, elseBody) :
-                                new ErrorStatement(LastError!, ifOrElifToken, elseToken);
+                                new IfStatement(ifOrElifToken, elseToken, endifToken, conditionExpr, thenBody, elseBody, label) :
+                                new ErrorStatement(LastError!, label, ifOrElifToken, elseToken);
                     }
                     else
                     {
                         stmt = Expect(TokenKind.ENDIF, out var endifToken) && ExpectEOS() ?
-                                new IfStatement(ifOrElifToken, endifToken, conditionExpr, thenBody) :
-                                new ErrorStatement(LastError!, ifOrElifToken);
+                                new IfStatement(ifOrElifToken, endifToken, conditionExpr, thenBody, label) :
+                                new ErrorStatement(LastError!, label, ifOrElifToken);
                     }
                 }
                 else
                 {
-                    stmt = new ErrorStatement(LastError!, ifOrElifToken);
+                    stmt = new ErrorStatement(LastError!, label, ifOrElifToken);
                 }
 
                 return true;
@@ -715,16 +715,16 @@ public class ParserNew
     private void UnexpectedTokenExpectedAssignmentError()
         => Error(ErrorCode.ParserUnexpectedToken, $"Unexpected token '{Current.Kind}', expected assignment operator", Current.Location);
 
-    private ErrorStatement UnknownStatementError()
+    private ErrorStatement UnknownStatementError(Label? label)
     { 
         Error(ErrorCode.ParserUnknownStatement, $"Expected statement, found '{Current.Lexeme}' ({Current.Kind})", Current.Location);
-        return new(LastError!, Current);
+        return new(LastError!, label, Current);
     }
 
-    private ErrorStatement ExpressionAsStatementError(IExpression parsedExpr)
+    private ErrorStatement ExpressionAsStatementError(IExpression parsedExpr, Label? label)
     {
         Error(ErrorCode.ParserExpressionAsStatement, $"Only invocation expressions can be used as a statement, found '{parsedExpr.GetType().Name}'", parsedExpr.Location);
-        return new(LastError!, parsedExpr.Tokens.ToArray());
+        return new(LastError!, label, parsedExpr.Tokens.ToArray());
     }
 
     private ErrorExpression UnknownExpressionError()

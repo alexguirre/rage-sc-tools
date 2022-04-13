@@ -35,6 +35,7 @@
         TReturn Visit(NameExpression node, TParam param);
         TReturn Visit(VectorExpression node, TParam param);
 
+        TReturn Visit(Label node, TParam param);
         TReturn Visit(AssignmentStatement node, TParam param);
         TReturn Visit(BreakStatement node, TParam param);
         TReturn Visit(ContinueStatement node, TParam param);
@@ -134,6 +135,7 @@
 
         public virtual TReturn Visit(VarDeclaration node, TParam param)
         {
+            node.Label?.Accept(this, param);
             node.Type.Accept(this, param);
             node.Initializer?.Accept(this, param);
             return DefaultReturn;
@@ -176,6 +178,7 @@
 
         public virtual TReturn Visit(InvocationExpression node, TParam param)
         {
+            node.Label?.Accept(this, param);
             node.Callee.Accept(this, param);
             node.Arguments.ForEach(arg => arg.Accept(this, param));
             return DefaultReturn;
@@ -216,8 +219,14 @@
             return DefaultReturn;
         }
 
+        public virtual TReturn Visit(Label node, TParam param)
+        {
+            return DefaultReturn;
+        }
+
         public virtual TReturn Visit(AssignmentStatement node, TParam param)
         {
+            node.Label?.Accept(this, param);
             node.LHS.Accept(this, param);
             node.RHS.Accept(this, param);
             return DefaultReturn;
@@ -225,26 +234,31 @@
 
         public virtual TReturn Visit(BreakStatement node, TParam param)
         {
+            node.Label?.Accept(this, param);
             return DefaultReturn;
         }
 
         public virtual TReturn Visit(ContinueStatement node, TParam param)
         {
+            node.Label?.Accept(this, param);
             return DefaultReturn;
         }
 
         public virtual TReturn Visit(EmptyStatement node, TParam param)
         {
+            node.Label?.Accept(this, param);
             return DefaultReturn;
         }
 
         public virtual TReturn Visit(GotoStatement node, TParam param)
         {
+            node.Label?.Accept(this, param);
             return DefaultReturn;
         }
 
         public virtual TReturn Visit(IfStatement node, TParam param)
         {
+            node.Label?.Accept(this, param);
             node.Condition.Accept(this, param);
             node.Then.ForEach(stmt => stmt.Accept(this, param));
             node.Else.ForEach(stmt => stmt.Accept(this, param));
@@ -253,6 +267,7 @@
 
         public virtual TReturn Visit(RepeatStatement node, TParam param)
         {
+            node.Label?.Accept(this, param);
             node.Limit.Accept(this, param);
             node.Counter.Accept(this, param);
             node.Body.ForEach(stmt => stmt.Accept(this, param));
@@ -261,12 +276,14 @@
 
         public virtual TReturn Visit(ReturnStatement node, TParam param)
         {
+            node.Label?.Accept(this, param);
             node.Expression?.Accept(this, param);
             return DefaultReturn;
         }
 
         public virtual TReturn Visit(SwitchStatement node, TParam param)
         {
+            node.Label?.Accept(this, param);
             node.Expression.Accept(this, param);
             node.Cases.ForEach(c => c.Accept(this, param));
             return DefaultReturn;
@@ -287,6 +304,7 @@
 
         public virtual TReturn Visit(WhileStatement node, TParam param)
         {
+            node.Label?.Accept(this, param);
             node.Condition.Accept(this, param);
             node.Body.ForEach(stmt => stmt.Accept(this, param));
             return DefaultReturn;
@@ -437,6 +455,7 @@
         public virtual TReturn Visit(UnaryExpression node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(NameExpression node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(VectorExpression node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(Label node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(AssignmentStatement node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(BreakStatement node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(ContinueStatement node, TParam param) => throw new NotImplementedException();

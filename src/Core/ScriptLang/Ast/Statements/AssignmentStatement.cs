@@ -12,8 +12,8 @@ public sealed class AssignmentStatement : BaseStatement
     public IExpression LHS => (IExpression)Children[0];
     public IExpression RHS => (IExpression)Children[1];
 
-    public AssignmentStatement(Token operatorToken, IExpression lhs, IExpression rhs)
-        : base(OfTokens(operatorToken), OfChildren(lhs, rhs))
+    public AssignmentStatement(Token operatorToken, IExpression lhs, IExpression rhs, Label? label)
+        : base(OfTokens(operatorToken), OfChildren(lhs, rhs), label)
     {
         Debug.Assert(IsAssignmentOperator(operatorToken.Kind));
 

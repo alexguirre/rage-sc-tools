@@ -35,7 +35,7 @@ public enum VarKind
 
 public sealed class VarDeclaration : BaseValueDeclaration, IStatement
 {
-    public string? Label { get; set; }
+    public Label? Label { get; }
     public VarKind Kind { get; set; }
     /// <summary>
     /// Gets or sets whether this variable is a reference. Only valid with kind <see cref="VarKind.Parameter"/>.
@@ -44,11 +44,14 @@ public sealed class VarDeclaration : BaseValueDeclaration, IStatement
     public IExpression? Initializer { get; set; }
     public int Address { get; set; }
 
-    public VarDeclaration(Token nameIdentifier, IType type, VarKind kind, bool isReference) : base(nameIdentifier.Lexeme.ToString(), type, nameIdentifier)
-        => (Kind, IsReference) = (kind, isReference);
+    public VarDeclaration(Token nameIdentifier, IType type, VarKind kind, bool isReference, Label? label = null) : base(nameIdentifier.Lexeme.ToString(), type, nameIdentifier) // TODO: pass children to BaseValueDeclaration
+        => (Kind, IsReference, Label) = (kind, isReference, label);
     public VarDeclaration(SourceRange source, string name, IType type, VarKind kind, bool isReference) : base(source, name, type)
         => (Kind, IsReference) = (kind, isReference);
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
+
+    internal VarDeclaration WithLabel(Label? label)
+        => new(Tokens[0], Type, Kind, IsReference, label);
 }

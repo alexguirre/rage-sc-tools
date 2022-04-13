@@ -20,7 +20,7 @@
         public bool AddLabeledStatement(IStatement stmt)
         {
             Debug.Assert(stmt.Label is not null);
-            return labels.TryAdd(stmt.Label, stmt);
+            return labels.TryAdd(stmt.Label.Name, stmt);
         }
 
         public IStatement? FindLabeledStatement(string name) => labels.TryGetValue(name, out var decl) ? decl : null;

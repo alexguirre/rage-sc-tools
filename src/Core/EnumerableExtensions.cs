@@ -13,5 +13,8 @@
                 action(item);
             }
         }
+
+        public static IEnumerable<TSource> AppendIfNotNull<TSource>(this IEnumerable<TSource> source, TSource? element)
+            => element is null ? source : source.Append(element);
     }
 }

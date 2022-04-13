@@ -26,7 +26,7 @@
             var label = p.ParseLabel();
             True(p.IsAtEOF);
 
-            Equal("my_label", label);
+            True(label is Label { Name: "my_label" });
         }
 
         private static void Assert(INode node, Predicate<INode> predicate)

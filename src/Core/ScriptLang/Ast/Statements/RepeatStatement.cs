@@ -19,8 +19,8 @@ public sealed class RepeatStatement : BaseStatement, ILoopStatement
         set => Semantics = Semantics with { ExitLabel = value.ExitLabel };
     }
 
-    public RepeatStatement(Token repeatKeyword, Token endrepeatKeyword, IExpression limit, IExpression counter, IEnumerable<IStatement> body)
-        : base(OfTokens(repeatKeyword, endrepeatKeyword), OfChildren(limit, counter).AddRange(body))
+    public RepeatStatement(Token repeatKeyword, Token endrepeatKeyword, IExpression limit, IExpression counter, IEnumerable<IStatement> body, Label? label)
+        : base(OfTokens(repeatKeyword, endrepeatKeyword), OfChildren(limit, counter).Concat(body), label)
     {
         Debug.Assert(repeatKeyword.Kind is TokenKind.REPEAT);
         Debug.Assert(endrepeatKeyword.Kind is TokenKind.ENDREPEAT);

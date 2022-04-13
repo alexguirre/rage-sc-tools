@@ -8,7 +8,7 @@ public sealed class ErrorDeclaration : BaseError, IDeclaration, IValueDeclaratio
     public string Name { get; set; }
     public IType Type { get; set; }
 
-    public ErrorDeclaration(Diagnostic diagnostic) : base(diagnostic)
+    public ErrorDeclaration(Diagnostic diagnostic) : base(diagnostic, OfTokens(), OfChildren())
         => (Name, Type) = ("#ERROR#", new ErrorType(Diagnostic));
 
     public ErrorDeclaration(SourceRange source, DiagnosticsReport diagnostics, string message) : base(source, diagnostics, message)

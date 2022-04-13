@@ -30,7 +30,7 @@
             else if (node.Initializer is not null)
             {
                 var dest = new NameExpression(Token.Identifier(node.Name, node.Location)) { Semantics = new(node.Type!, IsLValue: true, IsConstant: false, Declaration: node) };
-                new AssignmentStatement(Token.Equals(node.Location), lhs: dest, rhs: node.Initializer)
+                new AssignmentStatement(Token.Equals(node.Location), lhs: dest, rhs: node.Initializer, label: null)
                     .Accept(this, func);
             }
 
@@ -161,7 +161,7 @@
 
         public override Void Visit(GotoStatement node, FuncDeclaration func)
         {
-            CG.EmitJump(node.Semantics.Target!.Label!);
+            CG.EmitJump(node.Semantics.Target!.Label!.Name);
             return default;
         }
 
@@ -196,7 +196,7 @@
             var constantOne = new IntLiteralExpression(Token.Integer(1, node.Location)) { Semantics = new(intTy, IsConstant: true, IsLValue: false) };
 
             // set counter to 0
-            new AssignmentStatement(Token.Equals(node.Location), lhs: node.Counter, rhs: constantZero)
+            new AssignmentStatement(Token.Equals(node.Location), lhs: node.Counter, rhs: constantZero, label: null)
                 .Accept(this, func);
 
             var sem = node.Semantics;
@@ -214,7 +214,7 @@
 
             // increment counter
             var counterPlusOne = new BinaryExpression(Token.Plus(node.Location), node.Counter, constantOne) { Semantics = new(intTy, IsConstant: false, IsLValue: false) };
-            new AssignmentStatement(Token.Equals(node.Location), lhs: node.Counter, rhs: counterPlusOne)
+            new AssignmentStatement(Token.Equals(node.Location), lhs: node.Counter, rhs: counterPlusOne, label: null)
                 .Accept(this, func);
 
             // jump back to condition check

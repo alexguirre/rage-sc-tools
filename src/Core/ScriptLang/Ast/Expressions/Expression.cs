@@ -2,7 +2,7 @@
 
 using ScTools.ScriptLang.Ast.Types;
 
-using System.Collections.Immutable;
+using System.Collections.Generic;
 
 public record struct ExpressionSemantics(IType? Type, bool IsLValue, bool IsConstant);
 
@@ -34,6 +34,5 @@ public abstract class BaseExpression : BaseNode, IExpression
 {
     public ExpressionSemantics Semantics { get; set; }
 
-    public BaseExpression(ImmutableArray<Token> tokens, ImmutableArray<INode> children) : base(tokens, children) { }
-    public BaseExpression(SourceRange source) : base(source) {}
+    public BaseExpression(IEnumerable<Token> tokens, IEnumerable<INode> children) : base(tokens, children) { }
 }

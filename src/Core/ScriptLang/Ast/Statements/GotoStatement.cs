@@ -10,8 +10,8 @@ public sealed class GotoStatement : BaseStatement, ISemanticNode<GotoStatementSe
     public string TargetLabel => Tokens[1].Lexeme.ToString();
     public GotoStatementSemantics Semantics { get; set; }
 
-    public GotoStatement(Token gotoToken, Token targetLabelIdentifierToken)
-        : base(OfTokens(gotoToken, targetLabelIdentifierToken), OfChildren())
+    public GotoStatement(Token gotoToken, Token targetLabelIdentifierToken, Label? label)
+        : base(OfTokens(gotoToken, targetLabelIdentifierToken), OfChildren(), label)
     {
         Debug.Assert(gotoToken.Kind is TokenKind.GOTO);
         Debug.Assert(targetLabelIdentifierToken.Kind is TokenKind.Identifier);

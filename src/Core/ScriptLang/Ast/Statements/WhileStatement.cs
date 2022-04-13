@@ -18,8 +18,8 @@ public sealed class WhileStatement : BaseStatement, ILoopStatement
         set => Semantics = Semantics with { ExitLabel = value.ExitLabel };
     }
 
-    public WhileStatement(Token whileKeyword, Token endwhileKeyword, IExpression condition, IEnumerable<IStatement> body)
-        : base(OfTokens(whileKeyword, endwhileKeyword), OfChildren(condition).AddRange(body))
+    public WhileStatement(Token whileKeyword, Token endwhileKeyword, IExpression condition, IEnumerable<IStatement> body, Label? label)
+        : base(OfTokens(whileKeyword, endwhileKeyword), OfChildren(condition).Concat(body), label)
     {
         Debug.Assert(whileKeyword.Kind is TokenKind.WHILE);
         Debug.Assert(endwhileKeyword.Kind is TokenKind.ENDWHILE);

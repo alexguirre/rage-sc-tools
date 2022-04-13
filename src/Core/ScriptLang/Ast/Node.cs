@@ -38,10 +38,10 @@ public abstract class BaseNode : INode
     public ImmutableArray<INode> Children { get; }
     public SourceRange Location => location ??= MergeSourceLocations(Tokens, Children);
 
-    public BaseNode(ImmutableArray<Token> tokens, ImmutableArray<INode> children)
+    public BaseNode(IEnumerable<Token> tokens, IEnumerable<INode> children)
     {
-        Tokens = tokens;
-        Children = children;
+        Tokens = tokens.ToImmutableArray();
+        Children = children.ToImmutableArray();
     }
 
     [Obsolete("Nodes now require tokens and children nodes", false)]
@@ -52,10 +52,9 @@ public abstract class BaseNode : INode
     [DebuggerBrowsable(DebuggerBrowsableState.Never), EditorBrowsable(EditorBrowsableState.Never)]
     public virtual string DebuggerDisplay => GetType().Name;
 
-    protected static ImmutableArray<Token> OfTokens(params Token[] tokens) => tokens.ToImmutableArray();
-    protected static ImmutableArray<Token> OfTokens(IEnumerable<Token> tokens) => tokens.ToImmutableArray();
-    protected static ImmutableArray<INode> OfChildren(params INode[] nodes) => nodes.ToImmutableArray();
-    protected static ImmutableArray<INode> OfChildren(IEnumerable<INode> nodes) => nodes.ToImmutableArray();
+    // Helpers to pass the BaseNode constructor parameters, making the code clearer with names and without new[] { ... }
+    protected static IEnumerable<Token> OfTokens(params Token[] tokens) => tokens;
+    protected static IEnumerable<INode> OfChildren(params INode[] nodes) => nodes;
 
     private static SourceRange MergeSourceLocations(ImmutableArray<Token> tokens, ImmutableArray<INode> nodes)
     {

@@ -16,16 +16,16 @@ public sealed class IfStatement : BaseStatement, ISemanticNode<IfStatementSemant
     public ImmutableArray<IStatement> Else { get; }
     public IfStatementSemantics Semantics { get; set; }
 
-    public IfStatement(Token ifKeyword, Token endifKeyword, IExpression condition, IEnumerable<IStatement> thenBody)
-        : base(OfTokens(ifKeyword, endifKeyword), OfChildren(condition).AddRange(thenBody))
+    public IfStatement(Token ifKeyword, Token endifKeyword, IExpression condition, IEnumerable<IStatement> thenBody, Label? label)
+        : base(OfTokens(ifKeyword, endifKeyword), OfChildren(condition).Concat(thenBody), label)
     {
         Debug.Assert(ifKeyword.Kind is TokenKind.IF or TokenKind.ELIF);
         Debug.Assert(endifKeyword.Kind is TokenKind.ENDIF);
         Then = thenBody.ToImmutableArray();
         Else = ImmutableArray<IStatement>.Empty;
     }
-    public IfStatement(Token ifKeyword, Token elseKeyword, Token endifKeyword, IExpression condition, IEnumerable<IStatement> thenBody, IEnumerable<IStatement> elseBody)
-        : base(OfTokens(ifKeyword, elseKeyword, endifKeyword), OfChildren(condition).AddRange(thenBody).AddRange(elseBody))
+    public IfStatement(Token ifKeyword, Token elseKeyword, Token endifKeyword, IExpression condition, IEnumerable<IStatement> thenBody, IEnumerable<IStatement> elseBody, Label? label)
+        : base(OfTokens(ifKeyword, elseKeyword, endifKeyword), OfChildren(condition).Concat(thenBody).Concat(elseBody), label)
     {
         Debug.Assert(ifKeyword.Kind is TokenKind.IF or TokenKind.ELIF);
         Debug.Assert(elseKeyword.Kind is TokenKind.ELSE or TokenKind.ELIF);

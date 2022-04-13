@@ -27,8 +27,8 @@
             Assert(p.ParseStatement(), n => n is BreakStatement { Label: null });
             Assert(p.ParseStatement(), n => n is ReturnStatement { Label: null });
             Assert(p.ParseStatement(), n => n is GotoStatement { Label: null, TargetLabel: "hello" });
-            Assert(p.ParseStatement(), n => n is ContinueStatement { Label: "hello" });
-            Assert(p.ParseStatement(), n => n is BreakStatement { Label: "world" });
+            Assert(p.ParseStatement(), n => n is ContinueStatement { Label: Label { Name: "hello" } });
+            Assert(p.ParseStatement(), n => n is BreakStatement { Label: Label { Name: "world" } });
             True(p.IsAtEOF);
         }
 
@@ -49,7 +49,7 @@
             });
             Assert(p.ParseStatement(), n => n is AssignmentStatement
             {
-                Label: "label",
+                Label: Label { Name: "label" },
                 CompoundOperator: null,
                 LHS: BinaryExpression
                 {
@@ -82,7 +82,7 @@
             });
             Assert(p.ParseStatement(), n => n is AssignmentStatement
             {
-                Label: "label",
+                Label: Label { Name: "label" },
                 CompoundOperator: BinaryOperator.Multiply,
                 LHS: BinaryExpression
                 {
@@ -547,7 +547,7 @@
             });
             Assert(p.ParseStatement(), n => n is VarDeclaration
             {
-                Label: "label", Name: "foo", IsReference: false, Type: NamedType { Name: "FLOAT" }
+                Label: Label { Name: "label" }, Name: "foo", IsReference: false, Type: NamedType { Name: "FLOAT" }
             });
             Assert(p.ParseStatement(), n => n is VarDeclaration
             {
@@ -571,7 +571,7 @@
             });
             Assert(p.ParseStatement(), n => n is VarDeclaration
             {
-                Label: "label", Name: "foo", IsReference: false,
+                Label: Label { Name: "label" }, Name: "foo", IsReference: false,
                 Type: ArrayType { ItemType: NamedType { Name: "FLOAT" }, RankExpression: IntLiteralExpression { Value: 2 } }
             });
             Assert(p.ParseStatement(), n => n is VarDeclaration
@@ -697,7 +697,7 @@
                  "
             );
 
-            Assert(p.ParseStatement(), n => n is EmptyStatement { Label: "my_label" });
+            Assert(p.ParseStatement(), n => n is EmptyStatement { Label: Label { Name: "my_label" } });
             True(p.IsAtEOF);
         }
 
@@ -713,7 +713,7 @@
             AssertWhileStmt(p.ParseStatement(),
                 condition => condition is NameExpression { Name: "a" },
                 body => Collection(body,
-                    _0 => Assert(_0, n => n is EmptyStatement { Label: "my_label" })));
+                    _0 => Assert(_0, n => n is EmptyStatement { Label: Label { Name: "my_label" } })));
             True(p.IsAtEOF);
         }
 
@@ -734,8 +734,8 @@
             AssertWhileStmt(p.ParseStatement(),
                 condition => condition is NameExpression { Name: "a" },
                 body => Collection(body,
-                    _0 => Assert(_0, n => n is EmptyStatement { Label: "my_label" }),
-                    _1 => Assert(_1, n => n is InvocationExpression { Label: "other_label", Callee: NameExpression { Name: "bar" } })));
+                    _0 => Assert(_0, n => n is EmptyStatement { Label: Label { Name: "my_label" } }),
+                    _1 => Assert(_1, n => n is InvocationExpression { Label: Label { Name: "other_label" }, Callee: NameExpression { Name: "bar" } })));
             True(p.IsAtEOF);
         }
     }
