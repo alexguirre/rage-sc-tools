@@ -129,7 +129,7 @@ public sealed class Lexer : IEnumerable<Token>
             return token;
         }
 
-        // NOTE: Lex* methods assume that the token first character was already consumed (i.e. Next() was already called for the first char)
+        // NOTE: Lex* methods assume that the first character of the token was already consumed (i.e. Next() was already called for the first char)
 
         /// <summary>
         /// Lexes single-quote or double-quote strings.

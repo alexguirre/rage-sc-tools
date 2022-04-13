@@ -117,7 +117,7 @@
                         condition => condition is DeclarationRefExpression { Name: "b" },
                         then => Collection(then,
                             _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "bar" }, args => Empty(args))),
-                        else2 => Empty(else2))));
+                        @else => Empty(@else))));
             True(p.IsAtEOF);
         }
 
@@ -143,8 +143,49 @@
                         condition => condition is DeclarationRefExpression { Name: "b" },
                         then => Collection(then,
                             _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "bar" }, args => Empty(args))),
-                        else2 => Collection(else2,
+                        @else => Collection(@else,
                             _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "baz" }, args => Empty(args))))));
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
+        public void IfWithMultipleElifStatement()
+        {
+            var p = ParserFor(
+                @"  IF a
+                        foo()
+                    ELIF b
+                        bar()
+                    ELIF c
+                        baz()
+                    ELIF d
+                        hello()
+                    ELSE
+                        world()
+                    ENDIF"
+            );
+
+            AssertIfStmt(p.ParseStatement(),
+                condition => condition is DeclarationRefExpression { Name: "a" },
+                then => Collection(then,
+                    _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "foo" }, args => Empty(args))),
+                @else => Collection(@else,
+                    _0 => AssertIfStmt(_0,
+                        condition => condition is DeclarationRefExpression { Name: "b" },
+                        then => Collection(then,
+                            _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "bar" }, args => Empty(args))),
+                        @else => Collection(@else,
+                            _0 => AssertIfStmt(_0,
+                                condition => condition is DeclarationRefExpression { Name: "c" },
+                                then => Collection(then,
+                                    _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "baz" }, args => Empty(args))),
+                                @else => Collection(@else,
+                                    _0 => AssertIfStmt(_0,
+                                        condition => condition is DeclarationRefExpression { Name: "d" },
+                                        then => Collection(then,
+                                            _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "hello" }, args => Empty(args))),
+                                        @else => Collection(@else,
+                                            _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "world" }, args => Empty(args))))))))));
             True(p.IsAtEOF);
         }
 
@@ -172,7 +213,7 @@
                         condition => condition is DeclarationRefExpression { Name: "b" },
                         then => Collection(then,
                             _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "bar" }, args => Empty(args))),
-                        else2 => Collection(else2,
+                        @else => Collection(@else,
                             _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "baz" }, args => Empty(args))))));
             True(p.IsAtEOF);
         }
@@ -209,7 +250,7 @@
                     _0 => AssertIfStmt(_0,
                         condition => condition is DeclarationRefExpression { Name: "b" },
                         then => Empty(then),
-                        else2 => Empty(else2))));
+                        @else => Empty(@else))));
             True(p.IsAtEOF);
         }
 

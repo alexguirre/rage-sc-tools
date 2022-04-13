@@ -100,30 +100,9 @@ public class ParserNew
         {
             stmt = ParseVarDeclaration(VarKind.Local, allowMultipleDeclarations: true);
         }
-        else if (Accept(TokenKind.IF, out var ifToken))
+        else if (TryParseIfStatement(TokenKind.IF, out _, out var ifStmt))
         {
-            if (Expect(ParseExpression, out var conditionExpr) && ExpectEOS())
-            {
-                // TODO: parse ELIF and ELSE
-                var thenBody = new List<IStatement>();
-                while (!IsAtEOF)
-                {
-                    if (Peek(0).Kind is TokenKind.ENDIF)
-                    {
-                        break;
-                    }
-
-                    thenBody.Add(ParseStatement());
-                }
-
-                stmt = Expect(TokenKind.ENDIF, out var endifToken) && ExpectEOS() ?
-                        new IfStatement(ifToken, endifToken, conditionExpr, thenBody) :
-                        new ErrorStatement(LastError!, ifToken);
-            }
-            else
-            {
-                stmt = new ErrorStatement(LastError!, ifToken);
-            }
+            stmt = ifStmt;
         }
         else if (Accept(TokenKind.BREAK, out var breakToken))
         {
@@ -160,6 +139,61 @@ public class ParserNew
         ExpectEOS();
         stmt.Label = label;
         return stmt;
+
+
+        bool TryParseIfStatement(TokenKind ifOrElif, out Token ifOrElifToken, [NotNullWhen(true)] out IStatement? stmt)
+        {
+            if (Accept(ifOrElif, out ifOrElifToken))
+            {
+                if (Expect(ParseExpression, out var conditionExpr) && ExpectEOS())
+                {
+                    var thenBody = ParseBodyUntilAny(TokenKind.ELIF, TokenKind.ELSE, TokenKind.ENDIF);
+                    if (TryParseIfStatement(TokenKind.ELIF, out var elifToken, out var elifStmt))
+                    {
+                        var elseBody = new[] { elifStmt };
+                        stmt = new IfStatement(ifOrElifToken, elifToken, endifKeyword: elifStmt.Tokens.Last(), conditionExpr, thenBody, elseBody);
+                    }
+                    else if (Accept(TokenKind.ELSE, out var elseToken))
+                    {
+                        ExpectEOS();
+                        var elseBody = ParseBodyUntilAny(TokenKind.ENDIF);
+                        stmt = Expect(TokenKind.ENDIF, out var endifToken) && ExpectEOS() ?
+                                new IfStatement(ifOrElifToken, elseToken, endifToken, conditionExpr, thenBody, elseBody) :
+                                new ErrorStatement(LastError!, ifOrElifToken, elseToken);
+                    }
+                    else
+                    {
+                        stmt = Expect(TokenKind.ENDIF, out var endifToken) && ExpectEOS() ?
+                                new IfStatement(ifOrElifToken, endifToken, conditionExpr, thenBody) :
+                                new ErrorStatement(LastError!, ifOrElifToken);
+                    }
+                }
+                else
+                {
+                    stmt = new ErrorStatement(LastError!, ifOrElifToken);
+                }
+
+                return true;
+            }
+
+            stmt = null;
+            return false;
+        }
+
+        List<IStatement> ParseBodyUntilAny(params TokenKind[] stopTokens)
+        {
+            var body = new List<IStatement>();
+            while (!IsAtEOF)
+            {
+                if (stopTokens.Contains(Peek(0).Kind))
+                {
+                    break;
+                }
+
+                body.Add(ParseStatement());
+            }
+            return body;
+        }
     }
 
     public bool IsPossibleExpression()

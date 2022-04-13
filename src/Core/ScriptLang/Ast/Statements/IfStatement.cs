@@ -19,10 +19,19 @@ public sealed class IfStatement : BaseStatement, ISemanticNode<IfStatementSemant
     public IfStatement(Token ifKeyword, Token endifKeyword, IExpression condition, IEnumerable<IStatement> thenBody)
         : base(OfTokens(ifKeyword, endifKeyword), OfChildren(condition).AddRange(thenBody))
     {
-        Debug.Assert(ifKeyword.Kind is TokenKind.IF);
+        Debug.Assert(ifKeyword.Kind is TokenKind.IF or TokenKind.ELIF);
         Debug.Assert(endifKeyword.Kind is TokenKind.ENDIF);
         Then = thenBody.ToImmutableArray();
         Else = ImmutableArray<IStatement>.Empty;
+    }
+    public IfStatement(Token ifKeyword, Token elseKeyword, Token endifKeyword, IExpression condition, IEnumerable<IStatement> thenBody, IEnumerable<IStatement> elseBody)
+        : base(OfTokens(ifKeyword, elseKeyword, endifKeyword), OfChildren(condition).AddRange(thenBody).AddRange(elseBody))
+    {
+        Debug.Assert(ifKeyword.Kind is TokenKind.IF or TokenKind.ELIF);
+        Debug.Assert(elseKeyword.Kind is TokenKind.ELSE or TokenKind.ELIF);
+        Debug.Assert(endifKeyword.Kind is TokenKind.ENDIF);
+        Then = thenBody.ToImmutableArray();
+        Else = elseBody.ToImmutableArray();
     }
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
