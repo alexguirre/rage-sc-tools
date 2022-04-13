@@ -30,7 +30,7 @@
 
         public override Void Visit(DeclarationRefExpression node, Void param)
         {
-            var varDecl = (VarDeclaration)node.Declaration!; // VarDeclaration are the only declarations that can be lvalues
+            var varDecl = (VarDeclaration)node.Semantics.Declaration!; // VarDeclaration are the only declarations that can be lvalues
 
             switch (varDecl.Kind)
             {

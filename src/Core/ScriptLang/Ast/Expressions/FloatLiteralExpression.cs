@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 public sealed class FloatLiteralExpression : BaseExpression, ILiteralExpression<float>
 {
-    public float Value { get; set; }
+    public float Value { get; }
 
     public FloatLiteralExpression(Token floatToken)
         : base(OfTokens(floatToken), OfChildren())

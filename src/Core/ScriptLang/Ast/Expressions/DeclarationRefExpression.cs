@@ -1,16 +1,29 @@
 ﻿namespace ScTools.ScriptLang.Ast.Expressions;
 
 using ScTools.ScriptLang.Ast.Declarations;
+using ScTools.ScriptLang.Ast.Types;
 
 using System.Diagnostics;
+
+public record struct DeclarationRefExpressionSemantics(IType? Type, bool IsLValue, bool IsConstant, IDeclaration? Declaration);
 
 /// <summary>
 /// Represents a reference to a <see cref="IDeclaration"/>.
 /// </summary>
-public sealed class DeclarationRefExpression : BaseExpression
+public sealed class DeclarationRefExpression : BaseExpression, ISemanticNode<DeclarationRefExpressionSemantics>
 {
+    private IDeclaration? semanticsDeclaration;
+
     public string Name => Tokens[0].Lexeme.ToString();
-    public IDeclaration? Declaration { get; set; }
+    public new DeclarationRefExpressionSemantics Semantics
+    {
+        get => new(base.Semantics.Type, base.Semantics.IsLValue, base.Semantics.IsConstant, semanticsDeclaration);
+        set
+        {
+            base.Semantics = new(value.Type, value.IsLValue, value.IsConstant);
+            semanticsDeclaration = value.Declaration;
+        }
+    }
 
     public DeclarationRefExpression(Token identifierToken)
         : base(OfTokens(identifierToken), OfChildren())
@@ -22,4 +35,5 @@ public sealed class DeclarationRefExpression : BaseExpression
         => visitor.Visit(this, param);
     public override string DebuggerDisplay =>
         $@"{nameof(DeclarationRefExpression)} {{ {nameof(Name)} = {Name} }}";
+
 }

@@ -5,9 +5,7 @@ using ScTools.ScriptLang.Ast.Types;
 
 public sealed class ErrorExpression : BaseError, IExpression
 {
-    public IType? Type { get; set; }
-    public bool IsLValue { get; set; }
-    public bool IsConstant { get; set; }
+    public ExpressionSemantics Semantics { get; set; }
 
     public ErrorExpression(Diagnostic diagnostic, params Token[] tokens) : base(diagnostic, tokens) { }
     public ErrorExpression(SourceRange source, DiagnosticsReport diagnostics, string message) : base(source, diagnostics, message) { }

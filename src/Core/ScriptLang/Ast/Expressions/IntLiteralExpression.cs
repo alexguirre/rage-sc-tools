@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 public sealed class IntLiteralExpression : BaseExpression, ILiteralExpression<int>
 {
-    public int Value { get; set; }
+    public int Value { get; }
 
     public IntLiteralExpression(Token intToken)
         : base(OfTokens(intToken), OfChildren())

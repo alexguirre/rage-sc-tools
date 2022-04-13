@@ -250,7 +250,7 @@
                 => node.SubExpression.Accept(this, param);
 
             public override IEnumerable<IValueDeclaration> Visit(DeclarationRefExpression node, Void param)
-                => node.Declaration is IValueDeclaration valueDecl ? new[] { valueDecl } : None;
+                => node.Semantics.Declaration is IValueDeclaration valueDecl ? new[] { valueDecl } : None;
 
             public override IEnumerable<IValueDeclaration> Visit(VectorExpression node, Void param)
                 => node.X.Accept(this, param).Concat(node.Y.Accept(this, param)).Concat(node.Z.Accept(this, param));

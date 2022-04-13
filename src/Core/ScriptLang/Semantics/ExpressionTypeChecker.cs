@@ -28,17 +28,17 @@
             node.LHS.Accept(this, param);
             node.RHS.Accept(this, param);
 
-            node.IsLValue = false;
-            node.IsConstant = node.LHS.IsConstant && node.RHS.IsConstant;
-            node.Type = node.LHS.Type!.BinaryOperation(node.Operator, node.RHS.Type!, node.Location, Diagnostics);
+            node.Semantics = new(Type: node.LHS.Type!.BinaryOperation(node.Operator, node.RHS.Type!, node.Location, Diagnostics),
+                                 IsLValue: false,
+                                 IsConstant: node.LHS.IsConstant && node.RHS.IsConstant);
             return default;
         }
 
         public override Void Visit(BoolLiteralExpression node, Void param)
         {
-            node.IsLValue = false;
-            node.IsConstant = true;
-            node.Type = BuiltInTypes.Bool.CreateType(node.Location);
+            node.Semantics = new(Type: BuiltInTypes.Bool.CreateType(node.Location),
+                                 IsLValue: false,
+                                 IsConstant: true);
             return default;
         }
 
@@ -46,17 +46,17 @@
         {
             node.SubExpression.Accept(this, param);
 
-            node.IsConstant = false;
-            node.IsLValue = node.SubExpression.IsLValue;
-            node.Type = node.SubExpression.Type!.FieldAccess(node.FieldName, node.Location, Diagnostics);
+            node.Semantics = new(Type: node.SubExpression.Type!.FieldAccess(node.FieldName, node.Location, Diagnostics),
+                                 IsLValue: node.SubExpression.IsLValue,
+                                 IsConstant: false);
             return default;
         }
 
         public override Void Visit(FloatLiteralExpression node, Void param)
         {
-            node.IsLValue = false;
-            node.IsConstant = true;
-            node.Type = BuiltInTypes.Float.CreateType(node.Location);
+            node.Semantics = new(Type: BuiltInTypes.Float.CreateType(node.Location),
+                                 IsLValue: false,
+                                 IsConstant: true);
             return default;
         }
 
@@ -65,17 +65,17 @@
             node.Array.Accept(this, param);
             node.Index.Accept(this, param);
 
-            node.IsLValue = true;
-            node.IsConstant = false;
-            node.Type = node.Array.Type!.Indexing(node.Index.Type!, node.Location, Diagnostics);
+            node.Semantics = new(Type: node.Array.Type!.Indexing(node.Index.Type!, node.Location, Diagnostics),
+                                 IsLValue: true,
+                                 IsConstant: false);
             return default;
         }
 
         public override Void Visit(IntLiteralExpression node, Void param)
         {
-            node.IsLValue = false;
-            node.IsConstant = true;
-            node.Type = BuiltInTypes.Int.CreateType(node.Location);
+            node.Semantics = new(Type: BuiltInTypes.Int.CreateType(node.Location),
+                                 IsLValue: false,
+                                 IsConstant: true);
             return default;
         }
 
@@ -84,16 +84,18 @@
             node.Callee.Accept(this, param);
             node.Arguments.ForEach(arg => arg.Accept(this, param));
 
-            node.IsLValue = false;
-            (node.Type, node.IsConstant) = node.Callee.Type!.Invocation(node.Arguments.ToArray(), node.Location, Diagnostics);
+            var (ty, isConstant) = node.Callee.Type!.Invocation(node.Arguments.ToArray(), node.Location, Diagnostics);
+            node.Semantics = new(Type: ty,
+                                 IsLValue: false,
+                                 IsConstant: isConstant);
             return default;
         }
 
         public override Void Visit(NullExpression node, Void param)
         {
-            node.IsLValue = false;
-            node.IsConstant = true;
-            node.Type = new NullType(node.Location);
+            node.Semantics = new(Type: new NullType(node.Location),
+                                 IsLValue: false,
+                                 IsConstant: true);
             return default;
         }
 
@@ -101,17 +103,17 @@
         {
             node.SubExpression.Accept(this, param);
 
-            node.IsLValue = false;
-            node.IsConstant = node.SubExpression.IsConstant;
-            node.Type = BuiltInTypes.Int.CreateType(node.Location);
+            node.Semantics = new(Type: BuiltInTypes.Int.CreateType(node.Location),
+                                 IsLValue: false,
+                                 IsConstant: node.SubExpression.IsConstant);
             return default;
         }
 
         public override Void Visit(StringLiteralExpression node, Void param)
         {
-            node.IsLValue = false;
-            node.IsConstant = true;
-            node.Type = BuiltInTypes.String.CreateType(node.Location);
+            node.Semantics = new(Type: BuiltInTypes.String.CreateType(node.Location),
+                                 IsLValue: false,
+                                 IsConstant: true);
             return default;
         }
 
@@ -119,31 +121,42 @@
         {
             node.SubExpression.Accept(this, param);
 
-            node.IsLValue = false;
-            node.IsConstant = node.SubExpression.IsConstant;
-            node.Type = node.SubExpression.Type!.UnaryOperation(node.Operator, node.Location, Diagnostics);
+            node.Semantics = new(Type: node.SubExpression.Type!.UnaryOperation(node.Operator, node.Location, Diagnostics),
+                                 IsLValue: false,
+                                 IsConstant: node.SubExpression.IsConstant);
             return default;
         }
 
         public override Void Visit(DeclarationRefExpression node, Void param)
         {
-            if (node.Declaration is IValueDeclaration valueDecl)
+            var sem = node.Semantics;
+            var decl = sem.Declaration;
+            if (decl is IValueDeclaration valueDecl)
             {
-                node.IsLValue = valueDecl is VarDeclaration { Kind: not VarKind.Constant };
-                node.IsConstant = valueDecl is EnumMemberDeclaration or VarDeclaration { Kind: VarKind.Constant };
-                node.Type = valueDecl.Type;
+                node.Semantics = sem with
+                {
+                    Type = valueDecl.Type,
+                    IsLValue = valueDecl is VarDeclaration { Kind: not VarKind.Constant },
+                    IsConstant = valueDecl is EnumMemberDeclaration or VarDeclaration { Kind: VarKind.Constant }
+                };
             }
-            else if (node.Declaration is ITypeDeclaration typeDecl)
+            else if (decl is ITypeDeclaration typeDecl)
             {
-                node.IsLValue = false;
-                node.IsConstant = true;
-                node.Type = new TypeNameType(node.Location, typeDecl);
+                node.Semantics = sem with
+                {
+                    Type = new TypeNameType(node.Location, typeDecl),
+                    IsLValue = false,
+                    IsConstant = true
+                };
             }
-            else if (node.Declaration is IError error)
+            else if (decl is IError error)
             {
-                node.IsLValue = false;
-                node.IsConstant = false;
-                node.Type = new ErrorType(error.Location, error.Diagnostic);
+                node.Semantics = sem with
+                {
+                    Type = new ErrorType(error.Location, error.Diagnostic),
+                    IsLValue = false,
+                    IsConstant = false
+                };
             }
             else
             {
@@ -159,9 +172,9 @@
             node.Z.Accept(this, param);
 
             var vectorTy = BuiltInTypes.Vector.CreateType(node.Location);
-            node.IsLValue = false;
-            node.IsConstant = node.X.IsConstant && node.Y.IsConstant && node.Z.IsConstant;
-            node.Type = vectorTy;
+            node.Semantics = new(Type: vectorTy,
+                                 IsLValue: false,
+                                 IsConstant: node.X.IsConstant && node.Y.IsConstant && node.Z.IsConstant);
 
             var floatTy = BuiltInTypes.Float.CreateType(node.Location);
             for (int i = 0; i < 3; i++)
@@ -179,9 +192,7 @@
 
         public override Void Visit(ErrorExpression node, Void param)
         {
-            node.IsLValue = false;
-            node.IsConstant = false;
-            node.Type = new ErrorType(node.Location, node.Diagnostic);
+            node.Semantics = new(Type: new ErrorType(node.Location, node.Diagnostic), IsLValue: false, IsConstant: false);
             return default;
         }
     }

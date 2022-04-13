@@ -10,9 +10,12 @@ public sealed class RepeatStatement : BaseStatement, ILoopStatement
     public IExpression Limit { get; set; }
     public IExpression Counter { get; set; }
     public List<IStatement> Body { get; set; } = new();
-    public string? ExitLabel { get; set; }
-    public string? BeginLabel { get; set; }
-    public string? ContinueLabel { get; set; }
+    public LoopStatementSemantics Semantics { get; set; }
+    BreakableStatementSemantics ISemanticNode<BreakableStatementSemantics>.Semantics
+    {
+        get => new(Semantics.ExitLabel);
+        set => Semantics = Semantics with { ExitLabel = value.ExitLabel };
+    }
 
     public RepeatStatement(SourceRange source, IExpression limit, IExpression counter) : base(source)
         => (Limit, Counter) = (limit, counter);

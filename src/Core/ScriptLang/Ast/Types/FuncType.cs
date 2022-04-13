@@ -15,20 +15,20 @@
     public sealed class FuncType : BaseType
     {
         public override int SizeOf => 1;
-        public FuncProtoDeclaration Declaration { get; set; }
+        public FuncProtoDeclaration Prototype { get; set; }
 
         public FuncType(SourceRange source, FuncProtoDeclaration declaration) : base(source)
-            => Declaration = declaration;
+            => Prototype = declaration;
 
         public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
             => visitor.Visit(this, param);
 
         public override bool Equivalent(IType other)
             => other is FuncType otherFunc &&
-               Declaration.Kind == otherFunc.Declaration.Kind &&
-               Declaration.Parameters.Count == otherFunc.Declaration.Parameters.Count &&
-               Declaration.ReturnType.Equivalent(otherFunc.Declaration.ReturnType) &&
-               Declaration.Parameters.Zip(otherFunc.Declaration.Parameters).All(p => p.First.Type.Equivalent(p.Second.Type));
+               Prototype.Kind == otherFunc.Prototype.Kind &&
+               Prototype.Parameters.Count == otherFunc.Prototype.Parameters.Count &&
+               Prototype.ReturnType.Equivalent(otherFunc.Prototype.ReturnType) &&
+               Prototype.Parameters.Zip(otherFunc.Prototype.Parameters).All(p => p.First.Type.Equivalent(p.Second.Type));
 
         public override bool CanAssign(IType rhs, bool rhsIsLValue) => rhs is NullType or ErrorType || Equivalent(rhs);
 
@@ -47,12 +47,12 @@
 
         public override (IType ReturnType, bool IsConstant) Invocation(IExpression[] args, SourceRange source, DiagnosticsReport diagnostics)
         {
-            if (Declaration.Kind is FuncKind.Script)
+            if (Prototype.Kind is FuncKind.Script)
             {
                 return (new ErrorType(source, diagnostics, "Cannot invoke SCRIPT"), false);
             }
 
-            var parameters = Declaration.Parameters;
+            var parameters = Prototype.Parameters;
             if (args.Length != parameters.Count)
             {
                 diagnostics.AddError($"Expected {parameters.Count} arguments, found {args.Length}", source);
@@ -69,7 +69,7 @@
                     {
                         diagnostics.AddError($"Argument {i + 1}: cannot bind parameter '{TypePrinter.ToString(param.Type, param.Name, param.IsReference)}' to non-lvalue", arg.Location);
                     }
-                    else if (!param.Type.CanBindRefTo(arg.Type))
+                    else if (!param.Type.CanBindRefTo(arg.Type!))
                     {
                         diagnostics.AddError($"Argument {i + 1}: cannot bind parameter '{TypePrinter.ToString(param.Type, param.Name, param.IsReference)}' to reference of type '{arg.Type}'", arg.Location);
                     }
@@ -90,7 +90,7 @@
                 }
             }
 
-            return (Declaration.ReturnType, false);
+            return (Prototype.ReturnType, false);
         }
 
         public override void CGBinaryOperation(CodeGenerator cg, BinaryExpression expr)
@@ -108,9 +108,9 @@
 
         public override void CGInvocation(CodeGenerator cg, InvocationExpression expr)
         {
-            if (expr.Callee is DeclarationRefExpression { Declaration: FuncDeclaration func })
+            if (expr.Callee is DeclarationRefExpression { Semantics.Declaration: FuncDeclaration func })
             {
-                switch (Declaration.Kind)
+                switch (Prototype.Kind)
                 {
                     case FuncKind.UserDefined:
                         EmitArgs(cg, func.Prototype.Parameters, expr.Arguments);
@@ -119,7 +119,7 @@
 
                     case FuncKind.Native:
                         EmitArgs(cg, func.Prototype.Parameters, expr.Arguments);
-                        cg.EmitNativeCall(Declaration.ParametersSize, Declaration.ReturnType.SizeOf, func.Name);
+                        cg.EmitNativeCall(Prototype.ParametersSize, Prototype.ReturnType.SizeOf, func.Name);
                         break;
 
                     case FuncKind.Script: throw new InvalidOperationException("Cannot invoke SCRIPT");
@@ -129,7 +129,7 @@
             }
             else
             {
-                var parameters = ((FuncType)expr.Callee.Type!).Declaration.Parameters;
+                var parameters = ((FuncType)expr.Callee.Type!).Prototype.Parameters;
                 EmitArgs(cg, parameters, expr.Arguments);
                 cg.EmitValue(expr.Callee);
                 cg.Emit(Opcode.CALLINDIRECT);

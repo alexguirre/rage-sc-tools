@@ -2,10 +2,13 @@
 
 using System.Diagnostics;
 
-public sealed class GotoStatement : BaseStatement
+/// <param name="Target">The statement corresponding to <see cref="GotoStatement.TargetLabel"/>.</param>
+public record struct GotoStatementSemantics(IStatement? Target);
+
+public sealed class GotoStatement : BaseStatement, ISemanticNode<GotoStatementSemantics>
 {
     public string TargetLabel => Tokens[1].Lexeme.ToString();
-    public IStatement? Target { get; set; }
+    public GotoStatementSemantics Semantics { get; set; }
 
     public GotoStatement(Token gotoToken, Token targetLabelIdentifierToken)
         : base(OfTokens(gotoToken, targetLabelIdentifierToken), OfChildren())

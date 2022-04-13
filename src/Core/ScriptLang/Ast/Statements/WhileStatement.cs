@@ -9,12 +9,12 @@ public sealed class WhileStatement : BaseStatement, ILoopStatement
 {
     public IExpression Condition { get; set; }
     public List<IStatement> Body { get; set; } = new();
-    public string? ExitLabel { get; set; }
-    public string? BeginLabel { get; set; }
-    /// <summary>
-    /// Same as <see cref="BeginLabel"/>.
-    /// </summary>
-    public string? ContinueLabel { get => BeginLabel; set => BeginLabel = value; }
+    public LoopStatementSemantics Semantics { get; set; }
+    BreakableStatementSemantics ISemanticNode<BreakableStatementSemantics>.Semantics
+    {
+        get => new(Semantics.ExitLabel);
+        set => Semantics = Semantics with { ExitLabel = value.ExitLabel };
+    }
 
     public WhileStatement(SourceRange source, IExpression condition) : base(source)
         => Condition = condition;
@@ -24,4 +24,5 @@ public sealed class WhileStatement : BaseStatement, ILoopStatement
 
     public override string DebuggerDisplay =>
         $@"{nameof(WhileStatement)} {{ {nameof(Condition)} = {Condition.DebuggerDisplay}, {nameof(Body)} = [{string.Join(", ", Body.Select(a => a.DebuggerDisplay))}] }}";
+
 }

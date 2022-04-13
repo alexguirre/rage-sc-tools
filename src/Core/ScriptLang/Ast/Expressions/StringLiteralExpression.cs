@@ -7,7 +7,7 @@ using System.Diagnostics;
 /// </remarks> 
 public sealed class StringLiteralExpression : BaseExpression, ILiteralExpression<string?>
 {
-    public string? Value { get; set; }
+    public string? Value { get; }
 
     public StringLiteralExpression(Token stringOrNullToken)
         : base(OfTokens(stringOrNullToken), OfChildren())

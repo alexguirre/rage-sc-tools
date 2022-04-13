@@ -142,41 +142,46 @@
 
             public override Void Visit(IfStatement node, AllocatorContext ctx)
             {
-                node.ElseLabel = ctx.NextLabel();
-                node.EndLabel = ctx.NextLabel();
+                node.Semantics = new(
+                    ElseLabel: ctx.NextLabel(),
+                    EndLabel: ctx.NextLabel());
                 return base.Visit(node, ctx);
             }
 
             public override Void Visit(RepeatStatement node, AllocatorContext ctx)
             {
-                node.BeginLabel = ctx.NextLabel();
-                node.ContinueLabel = ctx.NextLabel();
-                node.ExitLabel = ctx.NextLabel();
+                node.Semantics = new(
+                    BeginLabel: ctx.NextLabel(),
+                    ContinueLabel: ctx.NextLabel(),
+                    ExitLabel: ctx.NextLabel());
                 return base.Visit(node, ctx);
             }
 
             public override Void Visit(WhileStatement node, AllocatorContext ctx)
             {
-                node.BeginLabel = ctx.NextLabel();
-                node.ExitLabel = ctx.NextLabel();
+                var beginLabel = ctx.NextLabel();
+                node.Semantics = new(
+                    BeginLabel: beginLabel,
+                    ContinueLabel: beginLabel,
+                    ExitLabel: ctx.NextLabel());
                 return base.Visit(node, ctx);
             }
 
             public override Void Visit(SwitchStatement node, AllocatorContext ctx)
             {
-                node.ExitLabel = ctx.NextLabel();
+                node.Semantics = new(ExitLabel: ctx.NextLabel());
                 return base.Visit(node, ctx);
             }
 
             public override Void Visit(ValueSwitchCase node, AllocatorContext ctx)
             {
-                node.Label = ctx.NextLabel();
+                node.Semantics = new(Label: ctx.NextLabel());
                 return base.Visit(node, ctx);
             }
 
             public override Void Visit(DefaultSwitchCase node, AllocatorContext ctx)
             {
-                node.Label = ctx.NextLabel();
+                node.Semantics = new(Label: ctx.NextLabel());
                 return base.Visit(node, ctx);
             }
 

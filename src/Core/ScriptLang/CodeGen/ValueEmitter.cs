@@ -92,13 +92,13 @@
 
         public override Void Visit(DeclarationRefExpression node, Void param)
         {
-            if (node.IsLValue)
+            if (node.Semantics.IsLValue)
             {
                 CG.EmitLoadFrom(node);
             }
             else
             {
-                switch (node.Declaration)
+                switch (node.Semantics.Declaration)
                 {
                     case FuncDeclaration { Prototype: { Kind: FuncKind.UserDefined } } func:
                         CG.Emit(Opcode.PUSH_CONST_U24, func.Name);

@@ -2,9 +2,11 @@
 
 using System.Diagnostics;
 
-public sealed class BreakStatement : BaseStatement
+public record struct BreakStatementSemantics(IBreakableStatement? EnclosingStatement);
+
+public sealed class BreakStatement : BaseStatement, ISemanticNode<BreakStatementSemantics>
 {
-    public IBreakableStatement? EnclosingStatement { get; set; }
+    public BreakStatementSemantics Semantics { get; set; }
 
     public BreakStatement(Token breakToken) : base(OfTokens(breakToken), OfChildren())
         => Debug.Assert(breakToken.Kind is TokenKind.BREAK);

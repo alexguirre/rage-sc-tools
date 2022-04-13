@@ -9,7 +9,7 @@ public sealed class SwitchStatement : BaseStatement, IBreakableStatement
 {
     public IExpression Expression { get; set; }
     public List<SwitchCase> Cases { get; set; } = new();
-    public string? ExitLabel { get; set; }
+    public BreakableStatementSemantics Semantics { get; set; }
 
     public SwitchStatement(SourceRange source, IExpression expression) : base(source)
         => Expression = expression;
@@ -21,11 +21,13 @@ public sealed class SwitchStatement : BaseStatement, IBreakableStatement
         $@"{nameof(SwitchStatement)} {{ {nameof(Expression)} = {Expression.DebuggerDisplay}, {nameof(Cases)} = [{string.Join(", ", Cases.Select(a => a.DebuggerDisplay))}] }}";
 }
 
-public abstract class SwitchCase : BaseNode
+public record struct SwitchCaseSemantics(string? Label);
+
+public abstract class SwitchCase : BaseNode, ISemanticNode<SwitchCaseSemantics>
 {
     public SwitchStatement Switch { get; set; }
     public List<IStatement> Body { get; set; } = new();
-    public string? Label { get; set; }
+    public SwitchCaseSemantics Semantics { get; set; }
 
     public SwitchCase(SourceRange source, SwitchStatement @switch) : base(source)
         => Switch = @switch;

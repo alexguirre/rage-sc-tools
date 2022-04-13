@@ -104,17 +104,13 @@
 
         public override Void Visit(DeclarationRefExpression node, Void param)
         {
-            Debug.Assert(node.Declaration is null); // verify we are not visiting the same node multiple times
+            Debug.Assert(node.Semantics.Declaration is null); // verify we are not visiting the same node multiple times
 
             var decl = Symbols.FindValue(node.Name) ?? Symbols.GlobalSymbols.FindType(node.Name) as IDeclaration;
-            if (decl is null)
+            node.Semantics = node.Semantics with
             {
-                node.Declaration = new ErrorDeclaration(node.Location, Diagnostics, $"Unknown symbol '{node.Name}'");
-            }
-            else
-            {
-                node.Declaration = decl;
-            }
+                Declaration = decl ?? new ErrorDeclaration(node.Location, Diagnostics, $"Unknown symbol '{node.Name}'")
+            };
 
             return DefaultReturn;
         }
@@ -180,32 +176,18 @@
 
         public override Void Visit(BreakStatement node, Void param)
         {
-            Debug.Assert(node.EnclosingStatement is null);
+            Debug.Assert(node.Semantics.EnclosingStatement is null);
 
-            if (breakableStatements.Count == 0)
-            {
-                node.EnclosingStatement = new ErrorStatement(node.Location, Diagnostics, "BREAK statement not in loop or switch");
-            }
-            else
-            {
-                node.EnclosingStatement = breakableStatements.Peek();
-            }
+            node.Semantics = new(EnclosingStatement: breakableStatements.Count != 0 ? breakableStatements.Peek() : new ErrorStatement(node.Location, Diagnostics, "BREAK statement not in loop or switch"));
 
             return DefaultReturn;
         }
 
         public override Void Visit(ContinueStatement node, Void param)
         {
-            Debug.Assert(node.EnclosingLoop is null);
+            Debug.Assert(node.Semantics.EnclosingLoop is null);
 
-            if (loopStatements.Count == 0)
-            {
-                node.EnclosingLoop = new ErrorStatement(node.Location, Diagnostics, "CONTINUE statement not in loop");
-            }
-            else
-            {
-                node.EnclosingLoop = loopStatements.Peek();
-            }
+            node.Semantics = new(EnclosingLoop: loopStatements.Count != 0 ? loopStatements.Peek() : new ErrorStatement(node.Location, Diagnostics, "CONTINUE statement not in loop"));
 
             return DefaultReturn;
         }
@@ -215,14 +197,7 @@
             Debug.Assert(node.Label is null);
 
             var labeledStmt = currFuncLabels?.FindLabeledStatement(node.TargetLabel);
-            if (labeledStmt is null)
-            {
-                node.Target = new ErrorStatement(node.Location, Diagnostics, $"Unknown label '{node.TargetLabel}'");
-            }
-            else
-            {
-                node.Target = labeledStmt;
-            }
+            node.Semantics = new(Target: labeledStmt ?? new ErrorStatement(node.Location, Diagnostics, $"Unknown label '{node.TargetLabel}'"));
 
             return DefaultReturn;
         }

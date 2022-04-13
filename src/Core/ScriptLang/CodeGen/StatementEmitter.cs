@@ -29,7 +29,7 @@
             }
             else if (node.Initializer is not null)
             {
-                var dest = new DeclarationRefExpression(Token.Identifier(node.Name, node.Location)) { Declaration = node, Type = node.Type!, IsLValue = true, IsConstant = false };
+                var dest = new DeclarationRefExpression(Token.Identifier(node.Name, node.Location)) { Semantics = new(node.Type!, IsLValue: true, IsConstant: false, Declaration: node) };
                 new AssignmentStatement(node.Location, lhs: dest, rhs: node.Initializer)
                     .Accept(this, func);
             }
@@ -148,41 +148,42 @@
 
         public override Void Visit(BreakStatement node, FuncDeclaration func)
         {
-            CG.EmitJump(node.EnclosingStatement!.ExitLabel!);
+            CG.EmitJump(node.Semantics.EnclosingStatement!.Semantics.ExitLabel!);
             return default;
         }
 
         public override Void Visit(ContinueStatement node, FuncDeclaration func)
         {
-            CG.EmitJump(node.EnclosingLoop!.ContinueLabel!);
+            CG.EmitJump(((ISemanticNode<LoopStatementSemantics>)node.Semantics.EnclosingLoop!).Semantics.ContinueLabel!);
             return default;
         }
 
         public override Void Visit(GotoStatement node, FuncDeclaration func)
         {
-            CG.EmitJump(node.Target!.Label!);
+            CG.EmitJump(node.Semantics.Target!.Label!);
             return default;
         }
 
         public override Void Visit(IfStatement node, FuncDeclaration func)
         {
+            var sem = node.Semantics;
             // check condition
             CG.EmitValue(node.Condition);
-            CG.EmitJumpIfZero(node.ElseLabel!);
+            CG.EmitJumpIfZero(sem.ElseLabel!);
 
             // then body
             node.Then.ForEach(stmt => stmt.Accept(this, func));
             if (node.Else.Any())
             {
                 // jump over the else body
-                CG.EmitJump(node.EndLabel!);
+                CG.EmitJump(sem.EndLabel!);
             }
 
             // else body
-            CG.EmitLabel(node.ElseLabel!);
+            CG.EmitLabel(sem.ElseLabel!);
             node.Else.ForEach(stmt => stmt.Accept(this, func));
 
-            CG.EmitLabel(node.EndLabel!);
+            CG.EmitLabel(sem.EndLabel!);
 
             return default;
         }
@@ -190,34 +191,35 @@
         public override Void Visit(RepeatStatement node, FuncDeclaration func)
         {
             var intTy = BuiltInTypes.Int.CreateType(node.Location);
-            var constantZero = new IntLiteralExpression(Token.Integer(0, node.Location)) { Type = intTy, IsConstant = true, IsLValue = false };
-            var constantOne = new IntLiteralExpression(Token.Integer(1, node.Location)) { Type = intTy, IsConstant = true, IsLValue = false };
+            var constantZero = new IntLiteralExpression(Token.Integer(0, node.Location)) { Semantics = new(intTy, IsConstant: true, IsLValue: false) };
+            var constantOne = new IntLiteralExpression(Token.Integer(1, node.Location)) { Semantics = new(intTy, IsConstant: true, IsLValue: false) };
 
             // set counter to 0
             new AssignmentStatement(node.Location, lhs: node.Counter, rhs: constantZero)
                 .Accept(this, func);
 
-            CG.EmitLabel(node.BeginLabel!);
+            var sem = node.Semantics;
+            CG.EmitLabel(sem.BeginLabel!);
 
             // check counter < limit
             CG.EmitValue(node.Counter);
             CG.EmitValue(node.Limit);
-            CG.Emit(Opcode.ILT_JZ, node.ExitLabel!);
+            CG.Emit(Opcode.ILT_JZ, sem.ExitLabel!);
 
             // body
             node.Body.ForEach(stmt => stmt.Accept(this, func));
 
-            CG.EmitLabel(node.ContinueLabel!);
+            CG.EmitLabel(sem.ContinueLabel!);
 
             // increment counter
-            var counterPlusOne = new BinaryExpression(Token.Plus(node.Location), node.Counter, constantOne) { Type = intTy, IsConstant = false, IsLValue = false };
+            var counterPlusOne = new BinaryExpression(Token.Plus(node.Location), node.Counter, constantOne) { Semantics = new(intTy, IsConstant: false, IsLValue: false) };
             new AssignmentStatement(node.Location, lhs: node.Counter, rhs: counterPlusOne)
                 .Accept(this, func);
 
             // jump back to condition check
-            CG.EmitJump(node.BeginLabel!);
+            CG.EmitJump(sem.BeginLabel!);
 
-            CG.EmitLabel(node.ExitLabel!);
+            CG.EmitLabel(sem.ExitLabel!);
 
             return default;
         }
@@ -239,42 +241,43 @@
             CG.EmitSwitch(node.Cases.OfType<ValueSwitchCase>());
 
             var defaultCase = node.Cases.OfType<DefaultSwitchCase>().SingleOrDefault();
-            CG.EmitJump(defaultCase?.Label ?? node.ExitLabel!);
+            CG.EmitJump(defaultCase?.Semantics.Label ?? node.Semantics.ExitLabel!);
 
             node.Cases.ForEach(c => c.Accept(this, func));
-            CG.EmitLabel(node.ExitLabel!);
+            CG.EmitLabel(node.Semantics.ExitLabel!);
             return default;
         }
 
         public override Void Visit(ValueSwitchCase node, FuncDeclaration func)
         {
-            CG.EmitLabel(node.Label!);
+            CG.EmitLabel(node.Semantics.Label!);
             node.Body.ForEach(stmt => stmt.Accept(this, func));
             return default;
         }
 
         public override Void Visit(DefaultSwitchCase node, FuncDeclaration func)
         {
-            CG.EmitLabel(node.Label!);
+            CG.EmitLabel(node.Semantics.Label!);
             node.Body.ForEach(stmt => stmt.Accept(this, func));
             return default;
         }
 
         public override Void Visit(WhileStatement node, FuncDeclaration func)
         {
-            CG.EmitLabel(node.BeginLabel!);
+            var sem = node.Semantics;
+            CG.EmitLabel(sem.BeginLabel!);
 
             // check condition
             CG.EmitValue(node.Condition);
-            CG.EmitJumpIfZero(node.ExitLabel!);
+            CG.EmitJumpIfZero(sem.ExitLabel!);
 
             // body
             node.Body.ForEach(stmt => stmt.Accept(this, func));
 
             // jump back to condition check
-            CG.EmitJump(node.BeginLabel!);
+            CG.EmitJump(sem.BeginLabel!);
 
-            CG.EmitLabel(node.ExitLabel!);
+            CG.EmitLabel(sem.ExitLabel!);
 
             return default;
         }
@@ -282,7 +285,7 @@
         public override Void Visit(InvocationExpression node, FuncDeclaration func)
         {
             CG.EmitValue(node);
-            var returnValueSize = node.Type!.SizeOf;
+            var returnValueSize = node.Semantics.Type!.SizeOf;
             for (int i = 0; i < returnValueSize; i++)
             {
                 CG.Emit(Opcode.DROP);

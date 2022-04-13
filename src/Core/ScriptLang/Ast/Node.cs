@@ -17,6 +17,18 @@ public interface INode
     TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param);
 }
 
+/// <summary>
+/// Represents a node with additional semantic information that is filled during the semantic analysis phase.
+/// </summary>
+/// <typeparam name="T"></typeparam>
+public interface ISemanticNode<T> : INode where T : notnull
+{
+    /// <summary>
+    /// Gets or sets the semantic information of this node.
+    /// </summary>
+    public T Semantics { get; set; }
+}
+
 [DebuggerDisplay("{DebuggerDisplay,nq}")]
 public abstract class BaseNode : INode
 {

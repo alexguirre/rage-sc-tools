@@ -7,13 +7,14 @@ using System.Linq;
 
 using ScTools.ScriptLang.Ast.Expressions;
 
-public sealed class IfStatement : BaseStatement
+public record struct IfStatementSemantics(string? ElseLabel, string? EndLabel);
+
+public sealed class IfStatement : BaseStatement, ISemanticNode<IfStatementSemantics>
 {
     public IExpression Condition => (IExpression)Children[0];
     public ImmutableArray<IStatement> Then { get; }
     public ImmutableArray<IStatement> Else { get; }
-    public string? ElseLabel { get; set; }
-    public string? EndLabel { get; set; }
+    public IfStatementSemantics Semantics { get; set; }
 
     public IfStatement(Token ifKeyword, Token endifKeyword, IExpression condition, IEnumerable<IStatement> thenBody)
         : base(OfTokens(ifKeyword, endifKeyword), OfChildren(condition).AddRange(thenBody))

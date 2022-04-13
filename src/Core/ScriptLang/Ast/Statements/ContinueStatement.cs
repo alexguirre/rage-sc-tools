@@ -2,9 +2,11 @@
 
 using System.Diagnostics;
 
+public record struct ContinueStatementSemantics(ILoopStatement? EnclosingLoop);
+
 public sealed class ContinueStatement : BaseStatement
 {
-    public ILoopStatement? EnclosingLoop { get; set; }
+    public ContinueStatementSemantics Semantics { get; set; }
 
     public ContinueStatement(Token continueToken) : base(OfTokens(continueToken), OfChildren())
         => Debug.Assert(continueToken.Kind is TokenKind.CONTINUE);

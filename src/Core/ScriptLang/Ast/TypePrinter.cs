@@ -63,15 +63,15 @@
 
         private static string Func(FuncType funcTy, string? name)
         {
-            var prefixStr = funcTy.Declaration.Kind switch
+            var prefixStr = funcTy.Prototype.Kind switch
             {
                 FuncKind.Native => "NATIVE ",
                 _ => "",
             };
-            var argsStr = $"({string.Join(", ", funcTy.Declaration.Parameters.Select(p => ToString(p.Type, p.Name, p.IsReference)))})";
-            var returnStr = funcTy.Declaration.IsProc ?
-                                (funcTy.Declaration.Kind is FuncKind.Script ? "SCRIPT" : "PROC") :
-                                $"FUNC {ToString(funcTy.Declaration.ReturnType, string.Empty, false)}";
+            var argsStr = $"({string.Join(", ", funcTy.Prototype.Parameters.Select(p => ToString(p.Type, p.Name, p.IsReference)))})";
+            var returnStr = funcTy.Prototype.IsProc ?
+                                (funcTy.Prototype.Kind is FuncKind.Script ? "SCRIPT" : "PROC") :
+                                $"FUNC {ToString(funcTy.Prototype.ReturnType, string.Empty, false)}";
             var nameStr = string.IsNullOrEmpty(name) ?
                                 "" :
                                 $" {name}";

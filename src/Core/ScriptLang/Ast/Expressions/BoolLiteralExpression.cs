@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 public sealed class BoolLiteralExpression : BaseExpression, ILiteralExpression<bool>
 {
-    public bool Value { get; set; }
+    public bool Value { get; }
 
     public BoolLiteralExpression(Token boolToken)
         : base(OfTokens(boolToken), OfChildren())

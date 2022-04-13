@@ -4,11 +4,14 @@ using ScTools.ScriptLang.Ast.Types;
 
 using System.Collections.Immutable;
 
-public interface IExpression : INode
+public record struct ExpressionSemantics(IType? Type, bool IsLValue, bool IsConstant);
+
+public interface IExpression : ISemanticNode<ExpressionSemantics>
 {
-    IType? Type { get; set; }
-    bool IsLValue { get; set; }
-    bool IsConstant { get; set; }
+    // Helpers for accessing semantic information
+    public sealed IType? Type => Semantics.Type;
+    public sealed bool IsLValue => Semantics.IsLValue;
+    public sealed bool IsConstant => Semantics.IsConstant;
 }
 
 public interface ILiteralExpression : IExpression
@@ -18,14 +21,12 @@ public interface ILiteralExpression : IExpression
 
 public interface ILiteralExpression<T> : ILiteralExpression
 {
-    new T Value { get; set; }
+    new T Value { get; }
 }
 
 public abstract class BaseExpression : BaseNode, IExpression
 {
-    public IType? Type { get; set; }
-    public bool IsLValue { get; set; }
-    public bool IsConstant { get; set; }
+    public ExpressionSemantics Semantics { get; set; }
 
     public BaseExpression(ImmutableArray<Token> tokens, ImmutableArray<INode> children) : base(tokens, children) { }
     public BaseExpression(SourceRange source) : base(source) {}

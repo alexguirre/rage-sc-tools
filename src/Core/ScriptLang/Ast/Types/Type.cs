@@ -151,7 +151,7 @@ public abstract class BaseArrayType : BaseType, IArrayType
         cg.EmitValue(expr.Index);
         cg.EmitAddress(expr.Array);
 
-        var itemSize = expr.Type!.SizeOf;
+        var itemSize = expr.Semantics.Type!.SizeOf;
         switch (itemSize)
         {
             case >= byte.MinValue and <= byte.MaxValue:

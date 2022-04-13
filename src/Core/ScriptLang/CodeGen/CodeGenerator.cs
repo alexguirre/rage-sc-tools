@@ -225,7 +225,7 @@
         public void EmitJumpIfZero(string label) => Emit(Opcode.JZ, label);
 
         public void EmitSwitch(IEnumerable<ValueSwitchCase> cases)
-            => Emit(Opcode.SWITCH, cases.Select(c => $"{unchecked((uint)ExpressionEvaluator.EvalInt(c.Value, Symbols))}:{c.Label}"));
+            => Emit(Opcode.SWITCH, cases.Select(c => $"{unchecked((uint)ExpressionEvaluator.EvalInt(c.Value, Symbols))}:{c.Semantics.Label}"));
 
         public void EmitLoadFrom(IExpression lvalueExpr)
         {
