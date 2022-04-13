@@ -44,8 +44,8 @@
             {
                 Label: null,
                 CompoundOperator: null,
-                LHS: DeclarationRefExpression { Name: "a" },
-                RHS: DeclarationRefExpression { Name: "b" },
+                LHS: NameExpression { Name: "a" },
+                RHS: NameExpression { Name: "b" },
             });
             Assert(p.ParseStatement(), n => n is AssignmentStatement
             {
@@ -53,13 +53,13 @@
                 CompoundOperator: null,
                 LHS: BinaryExpression
                 {
-                    LHS: DeclarationRefExpression { Name: "c" },
-                    RHS: DeclarationRefExpression { Name: "d" },
+                    LHS: NameExpression { Name: "c" },
+                    RHS: NameExpression { Name: "d" },
                 },
                 RHS: BinaryExpression
                 {
-                    LHS: DeclarationRefExpression { Name: "e" },
-                    RHS: DeclarationRefExpression { Name: "f" },
+                    LHS: NameExpression { Name: "e" },
+                    RHS: NameExpression { Name: "f" },
                 },
             });
             True(p.IsAtEOF);
@@ -77,8 +77,8 @@
             {
                 Label: null,
                 CompoundOperator: BinaryOperator.Add,
-                LHS: DeclarationRefExpression { Name: "a" },
-                RHS: DeclarationRefExpression { Name: "b" },
+                LHS: NameExpression { Name: "a" },
+                RHS: NameExpression { Name: "b" },
             });
             Assert(p.ParseStatement(), n => n is AssignmentStatement
             {
@@ -86,13 +86,13 @@
                 CompoundOperator: BinaryOperator.Multiply,
                 LHS: BinaryExpression
                 {
-                    LHS: DeclarationRefExpression { Name: "c" },
-                    RHS: DeclarationRefExpression { Name: "d" },
+                    LHS: NameExpression { Name: "c" },
+                    RHS: NameExpression { Name: "d" },
                 },
                 RHS: BinaryExpression
                 {
-                    LHS: DeclarationRefExpression { Name: "e" },
-                    RHS: DeclarationRefExpression { Name: "f" },
+                    LHS: NameExpression { Name: "e" },
+                    RHS: NameExpression { Name: "f" },
                 },
             });
             True(p.IsAtEOF);
@@ -113,12 +113,12 @@
                 condition => condition is BinaryExpression
                 {
                     Operator: BinaryOperator.LogicalOr,
-                    LHS: DeclarationRefExpression { Name: "a" },
-                    RHS: DeclarationRefExpression { Name: "b" },
+                    LHS: NameExpression { Name: "a" },
+                    RHS: NameExpression { Name: "b" },
                 },
                 then => Collection(then,
-                    _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "foo" }, args => Empty(args)),
-                    _1 => AssertInvocation(_1, callee => callee is DeclarationRefExpression { Name: "bar" }, args => Empty(args))),
+                    _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args)),
+                    _1 => AssertInvocation(_1, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))),
                 @else => Empty(@else));
             True(p.IsAtEOF);
         }
@@ -135,11 +135,11 @@
             );
 
             AssertIfStmt(p.ParseStatement(),
-                condition => condition is DeclarationRefExpression { Name: "a" },
+                condition => condition is NameExpression { Name: "a" },
                 then => Collection(then,
-                    _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "foo" }, args => Empty(args))),
+                    _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args))),
                 @else => Collection(@else,
-                    _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "bar" }, args => Empty(args))));
+                    _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))));
             True(p.IsAtEOF);
         }
 
@@ -155,14 +155,14 @@
             );
 
             AssertIfStmt(p.ParseStatement(),
-                condition => condition is DeclarationRefExpression { Name: "a" },
+                condition => condition is NameExpression { Name: "a" },
                 then => Collection(then,
-                    _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "foo" }, args => Empty(args))),
+                    _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args))),
                 @else => Collection(@else,
                     _0 => AssertIfStmt(_0,
-                        condition => condition is DeclarationRefExpression { Name: "b" },
+                        condition => condition is NameExpression { Name: "b" },
                         then => Collection(then,
-                            _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "bar" }, args => Empty(args))),
+                            _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))),
                         @else => Empty(@else))));
             True(p.IsAtEOF);
         }
@@ -181,16 +181,16 @@
             );
 
             AssertIfStmt(p.ParseStatement(),
-                condition => condition is DeclarationRefExpression { Name: "a" },
+                condition => condition is NameExpression { Name: "a" },
                 then => Collection(then,
-                    _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "foo" }, args => Empty(args))),
+                    _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args))),
                 @else => Collection(@else,
                     _0 => AssertIfStmt(_0,
-                        condition => condition is DeclarationRefExpression { Name: "b" },
+                        condition => condition is NameExpression { Name: "b" },
                         then => Collection(then,
-                            _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "bar" }, args => Empty(args))),
+                            _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))),
                         @else => Collection(@else,
-                            _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "baz" }, args => Empty(args))))));
+                            _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "baz" }, args => Empty(args))))));
             True(p.IsAtEOF);
         }
 
@@ -212,26 +212,26 @@
             );
 
             AssertIfStmt(p.ParseStatement(),
-                condition => condition is DeclarationRefExpression { Name: "a" },
+                condition => condition is NameExpression { Name: "a" },
                 then => Collection(then,
-                    _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "foo" }, args => Empty(args))),
+                    _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args))),
                 @else => Collection(@else,
                     _0 => AssertIfStmt(_0,
-                        condition => condition is DeclarationRefExpression { Name: "b" },
+                        condition => condition is NameExpression { Name: "b" },
                         then => Collection(then,
-                            _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "bar" }, args => Empty(args))),
+                            _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))),
                         @else => Collection(@else,
                             _0 => AssertIfStmt(_0,
-                                condition => condition is DeclarationRefExpression { Name: "c" },
+                                condition => condition is NameExpression { Name: "c" },
                                 then => Collection(then,
-                                    _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "baz" }, args => Empty(args))),
+                                    _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "baz" }, args => Empty(args))),
                                 @else => Collection(@else,
                                     _0 => AssertIfStmt(_0,
-                                        condition => condition is DeclarationRefExpression { Name: "d" },
+                                        condition => condition is NameExpression { Name: "d" },
                                         then => Collection(then,
-                                            _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "hello" }, args => Empty(args))),
+                                            _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "hello" }, args => Empty(args))),
                                         @else => Collection(@else,
-                                            _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "world" }, args => Empty(args))))))))));
+                                            _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "world" }, args => Empty(args))))))))));
             True(p.IsAtEOF);
         }
 
@@ -251,16 +251,16 @@
             );
 
             AssertIfStmt(p.ParseStatement(),
-                condition => condition is DeclarationRefExpression { Name: "a" },
+                condition => condition is NameExpression { Name: "a" },
                 then => Collection(then,
-                    _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "foo" }, args => Empty(args))),
+                    _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args))),
                 @else => Collection(@else,
                     _0 => AssertIfStmt(_0,
-                        condition => condition is DeclarationRefExpression { Name: "b" },
+                        condition => condition is NameExpression { Name: "b" },
                         then => Collection(then,
-                            _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "bar" }, args => Empty(args))),
+                            _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))),
                         @else => Collection(@else,
-                            _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "baz" }, args => Empty(args))))));
+                            _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "baz" }, args => Empty(args))))));
             True(p.IsAtEOF);
         }
 
@@ -273,7 +273,7 @@
             );
 
             AssertIfStmt(p.ParseStatement(),
-                condition => condition is DeclarationRefExpression { Name: "a" },
+                condition => condition is NameExpression { Name: "a" },
                 then => Empty(then),
                 @else => Empty(@else));
             True(p.IsAtEOF);
@@ -290,11 +290,11 @@
             );
 
             AssertIfStmt(p.ParseStatement(),
-                condition => condition is DeclarationRefExpression { Name: "a" },
+                condition => condition is NameExpression { Name: "a" },
                 then => Empty(then),
                 @else => Collection(@else,
                     _0 => AssertIfStmt(_0,
-                        condition => condition is DeclarationRefExpression { Name: "b" },
+                        condition => condition is NameExpression { Name: "b" },
                         then => Empty(then),
                         @else => Empty(@else))));
             True(p.IsAtEOF);
@@ -315,12 +315,12 @@
                 condition => condition is BinaryExpression
                 {
                     Operator: BinaryOperator.LogicalAnd,
-                    LHS: DeclarationRefExpression { Name: "a" },
-                    RHS: DeclarationRefExpression { Name: "b" },
+                    LHS: NameExpression { Name: "a" },
+                    RHS: NameExpression { Name: "b" },
                 },
                 body => Collection(body,
-                    _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "foo" }, args => Empty(args)),
-                    _1 => AssertInvocation(_1, callee => callee is DeclarationRefExpression { Name: "bar" }, args => Empty(args))));
+                    _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args)),
+                    _1 => AssertInvocation(_1, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))));
             True(p.IsAtEOF);
         }
 
@@ -337,13 +337,13 @@
             );
 
             AssertWhileStmt(p.ParseStatement(),
-                condition => condition is DeclarationRefExpression { Name: "a" },
+                condition => condition is NameExpression { Name: "a" },
                 body => Collection(body,
-                    _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "foo" }, args => Empty(args)),
+                    _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args)),
                     _1 => AssertWhileStmt(_1,
-                        condition => condition is DeclarationRefExpression { Name: "b" },
+                        condition => condition is NameExpression { Name: "b" },
                         body => Collection(body,
-                            _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "bar" }, args => Empty(args))))));
+                            _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))))));
             True(p.IsAtEOF);
         }
 
@@ -356,7 +356,7 @@
             );
 
             AssertWhileStmt(p.ParseStatement(),
-                condition => condition is DeclarationRefExpression { Name: "a" },
+                condition => condition is NameExpression { Name: "a" },
                 body => Empty(body));
             True(p.IsAtEOF);
         }
@@ -372,9 +372,9 @@
 
             AssertRepeatStmt(p.ParseStatement(),
                 limit => limit is IntLiteralExpression { Value: 10 },
-                counter => counter is DeclarationRefExpression { Name: "i" },
+                counter => counter is NameExpression { Name: "i" },
                 body => Collection(body,
-                    _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "foo" }, args => Empty(args))));
+                    _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args))));
             True(p.IsAtEOF);
         }
 
@@ -391,15 +391,15 @@
             );
 
             AssertRepeatStmt(p.ParseStatement(),
-                limit => limit is DeclarationRefExpression { Name: "a" },
-                counter => counter is DeclarationRefExpression { Name: "i" },
+                limit => limit is NameExpression { Name: "a" },
+                counter => counter is NameExpression { Name: "i" },
                 body => Collection(body,
-                    _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "foo" }, args => Empty(args)),
+                    _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args)),
                     _1 => AssertRepeatStmt(_1,
-                        limit => limit is DeclarationRefExpression { Name: "b" },
-                        counter => counter is DeclarationRefExpression { Name: "k" },
+                        limit => limit is NameExpression { Name: "b" },
+                        counter => counter is NameExpression { Name: "k" },
                         body => Collection(body,
-                            _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "bar" }, args => Empty(args))))));
+                            _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))))));
             True(p.IsAtEOF);
         }
 
@@ -412,8 +412,8 @@
             );
 
             AssertRepeatStmt(p.ParseStatement(),
-                limit => limit is DeclarationRefExpression { Name: "a" },
-                counter => counter is DeclarationRefExpression { Name: "i" },
+                limit => limit is NameExpression { Name: "a" },
+                counter => counter is NameExpression { Name: "i" },
                 body => Empty(body));
             True(p.IsAtEOF);
         }
@@ -537,7 +537,7 @@
             );
 
             AssertInvocation(p.ParseStatement(),
-                callee => callee is DeclarationRefExpression { Name: "foo" },
+                callee => callee is NameExpression { Name: "foo" },
                 args => Collection(args,
                     _0 => True(_0 is BinaryExpression
                     {
@@ -545,16 +545,16 @@
                         LHS: IntLiteralExpression { Value: 1 },
                         RHS: IntLiteralExpression { Value: 2 },
                     }),
-                    _1 => True(_1 is DeclarationRefExpression { Name: "a" })
+                    _1 => True(_1 is NameExpression { Name: "a" })
                     )
                 );
             AssertInvocation(p.ParseStatement(),
-                callee => callee is DeclarationRefExpression { Name: "bar" },
+                callee => callee is NameExpression { Name: "bar" },
                 args => Empty(args)
                 );
             True(p.IsPossibleExpression());
             AssertInvocation(p.ParseStatement(),
-                callee => callee is DeclarationRefExpression { Name: "baz" },
+                callee => callee is NameExpression { Name: "baz" },
                 args => Collection(args,
                     _0 => True(_0 is IntLiteralExpression { Value: 0 })
                     )

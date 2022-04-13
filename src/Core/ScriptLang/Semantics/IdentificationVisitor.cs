@@ -102,7 +102,7 @@
             return DefaultReturn;
         }
 
-        public override Void Visit(DeclarationRefExpression node, Void param)
+        public override Void Visit(NameExpression node, Void param)
         {
             Debug.Assert(node.Semantics.Declaration is null); // verify we are not visiting the same node multiple times
 

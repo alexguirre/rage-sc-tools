@@ -29,7 +29,7 @@
             }
             else if (node.Initializer is not null)
             {
-                var dest = new DeclarationRefExpression(Token.Identifier(node.Name, node.Location)) { Semantics = new(node.Type!, IsLValue: true, IsConstant: false, Declaration: node) };
+                var dest = new NameExpression(Token.Identifier(node.Name, node.Location)) { Semantics = new(node.Type!, IsLValue: true, IsConstant: false, Declaration: node) };
                 new AssignmentStatement(Token.Equals(node.Location), lhs: dest, rhs: node.Initializer)
                     .Accept(this, func);
             }

@@ -10,7 +10,7 @@
     /// <summary>
     /// Used to pass type names to intrinsic functions.
     /// For example: <code>COUNT_OF(MY_ENUM)</code><code>INT_TO_ENUM(MY_ENUM, 0)</code>
-    /// In these cases, <c>MY_ENUM</c> is a <see cref="Expressions.DeclarationRefExpression"/> with type <see cref="TypeNameType"/>.
+    /// In these cases, <c>MY_ENUM</c> is a <see cref="Expressions.NameExpression"/> with type <see cref="TypeNameType"/>.
     /// </summary>
     public sealed class TypeNameType : BaseType
     {

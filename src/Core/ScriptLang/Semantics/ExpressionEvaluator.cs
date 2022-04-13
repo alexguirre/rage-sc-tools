@@ -65,7 +65,7 @@
 
             public override int Visit(InvocationExpression node, Void param)
             {
-                if (node.Callee is DeclarationRefExpression { Semantics.Declaration: IIntrinsicDeclaration intrin })
+                if (node.Callee is NameExpression { Semantics.Declaration: IIntrinsicDeclaration intrin })
                 {
                     return intrin.EvalInt(node, Symbols);
                 }
@@ -73,7 +73,7 @@
                 throw new System.NotImplementedException();
             }
 
-            public override int Visit(DeclarationRefExpression node, Void param)
+            public override int Visit(NameExpression node, Void param)
             {
                 var decl = node.Semantics.Declaration;
                 if (decl is VarDeclaration { Kind: VarKind.Constant } varDecl)
@@ -128,7 +128,7 @@
 
             public override float Visit(InvocationExpression node, Void param)
             {
-                if (node.Callee is DeclarationRefExpression { Semantics.Declaration: IIntrinsicDeclaration intrin })
+                if (node.Callee is NameExpression { Semantics.Declaration: IIntrinsicDeclaration intrin })
                 {
                     return intrin.EvalFloat(node, Symbols);
                 }
@@ -136,7 +136,7 @@
                 throw new System.NotImplementedException();
             }
 
-            public override float Visit(DeclarationRefExpression node, Void param)
+            public override float Visit(NameExpression node, Void param)
             {
                 if (node.Semantics.Declaration is VarDeclaration { Kind: VarKind.Constant } varDecl)
                 {
@@ -183,7 +183,7 @@
 
             public override bool Visit(InvocationExpression node, Void param)
             {
-                if (node.Callee is DeclarationRefExpression { Semantics.Declaration: IIntrinsicDeclaration intrin })
+                if (node.Callee is NameExpression { Semantics.Declaration: IIntrinsicDeclaration intrin })
                 {
                     return intrin.EvalBool(node, Symbols);
                 }
@@ -191,7 +191,7 @@
                 throw new System.NotImplementedException();
             }
 
-            public override bool Visit(DeclarationRefExpression node, Void param)
+            public override bool Visit(NameExpression node, Void param)
             {
                 if (node.Semantics.Declaration is VarDeclaration { Kind: VarKind.Constant } varDecl)
                 {
@@ -216,7 +216,7 @@
 
             public override string Visit(InvocationExpression node, Void param)
             {
-                if (node.Callee is DeclarationRefExpression { Semantics.Declaration: IIntrinsicDeclaration intrin })
+                if (node.Callee is NameExpression { Semantics.Declaration: IIntrinsicDeclaration intrin })
                 {
                     return intrin.EvalString(node, Symbols);
                 }
@@ -224,7 +224,7 @@
                 throw new System.NotImplementedException();
             }
 
-            public override string? Visit(DeclarationRefExpression node, Void param)
+            public override string? Visit(NameExpression node, Void param)
             {
                 if (node.Semantics.Declaration is VarDeclaration { Kind: VarKind.Constant } varDecl)
                 {
@@ -272,7 +272,7 @@
 
             public override (float X, float Y, float Z) Visit(InvocationExpression node, Void param)
             {
-                if (node.Callee is DeclarationRefExpression { Semantics.Declaration: IIntrinsicDeclaration intrin })
+                if (node.Callee is NameExpression { Semantics.Declaration: IIntrinsicDeclaration intrin })
                 {
                     return intrin.EvalVector(node, Symbols);
                 }
@@ -280,7 +280,7 @@
                 throw new System.NotImplementedException();
             }
 
-            public override (float X, float Y, float Z) Visit(DeclarationRefExpression node, Void param)
+            public override (float X, float Y, float Z) Visit(NameExpression node, Void param)
             {
                 if (node.Semantics.Declaration is VarDeclaration { Kind: VarKind.Constant } varDecl)
                 {

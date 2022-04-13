@@ -90,7 +90,7 @@
             return default;
         }
 
-        public override Void Visit(DeclarationRefExpression node, Void param)
+        public override Void Visit(NameExpression node, Void param)
         {
             if (node.Semantics.IsLValue)
             {

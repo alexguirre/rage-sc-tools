@@ -249,7 +249,7 @@
             public override IEnumerable<IValueDeclaration> Visit(UnaryExpression node, Void param)
                 => node.SubExpression.Accept(this, param);
 
-            public override IEnumerable<IValueDeclaration> Visit(DeclarationRefExpression node, Void param)
+            public override IEnumerable<IValueDeclaration> Visit(NameExpression node, Void param)
                 => node.Semantics.Declaration is IValueDeclaration valueDecl ? new[] { valueDecl } : None;
 
             public override IEnumerable<IValueDeclaration> Visit(VectorExpression node, Void param)

@@ -5,17 +5,17 @@ using ScTools.ScriptLang.Ast.Types;
 
 using System.Diagnostics;
 
-public record struct DeclarationRefExpressionSemantics(IType? Type, bool IsLValue, bool IsConstant, IDeclaration? Declaration);
+public record struct NameExpressionSemantics(IType? Type, bool IsLValue, bool IsConstant, IDeclaration? Declaration);
 
 /// <summary>
 /// Represents a reference to a <see cref="IDeclaration"/>.
 /// </summary>
-public sealed class DeclarationRefExpression : BaseExpression, ISemanticNode<DeclarationRefExpressionSemantics>
+public sealed class NameExpression : BaseExpression, ISemanticNode<NameExpressionSemantics>
 {
     private IDeclaration? semanticsDeclaration;
 
     public string Name => Tokens[0].Lexeme.ToString();
-    public new DeclarationRefExpressionSemantics Semantics
+    public new NameExpressionSemantics Semantics
     {
         get => new(base.Semantics.Type, base.Semantics.IsLValue, base.Semantics.IsConstant, semanticsDeclaration);
         set
@@ -25,7 +25,7 @@ public sealed class DeclarationRefExpression : BaseExpression, ISemanticNode<Dec
         }
     }
 
-    public DeclarationRefExpression(Token identifierToken)
+    public NameExpression(Token identifierToken)
         : base(OfTokens(identifierToken), OfChildren())
     {
         Debug.Assert(identifierToken.Kind is TokenKind.Identifier);
@@ -34,6 +34,6 @@ public sealed class DeclarationRefExpression : BaseExpression, ISemanticNode<Dec
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
     public override string DebuggerDisplay =>
-        $@"{nameof(DeclarationRefExpression)} {{ {nameof(Name)} = {Name} }}";
+        $@"{nameof(NameExpression)} {{ {nameof(Name)} = {Name} }}";
 
 }

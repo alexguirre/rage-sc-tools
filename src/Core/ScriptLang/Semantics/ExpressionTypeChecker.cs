@@ -127,7 +127,7 @@
             return default;
         }
 
-        public override Void Visit(DeclarationRefExpression node, Void param)
+        public override Void Visit(NameExpression node, Void param)
         {
             var sem = node.Semantics;
             var decl = sem.Declaration;

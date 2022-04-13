@@ -22,7 +22,7 @@
                   NULL"
             );
 
-            AssertParseExpression(p, n => n is DeclarationRefExpression { Name: "hello" });
+            AssertParseExpression(p, n => n is NameExpression { Name: "hello" });
             AssertParseExpression(p, n => n is IntLiteralExpression { Value: 123 });
             AssertParseExpression(p, n => n is FloatLiteralExpression { Value: 12.5e2f });
             AssertParseExpression(p, n => n is StringLiteralExpression { Value: "hello\nworld" });
@@ -41,7 +41,7 @@
             AssertParseExpression(p, n => n is UnaryExpression
             {
                 Operator: UnaryOperator.LogicalNot,
-                SubExpression: DeclarationRefExpression{ Name: "hello" }
+                SubExpression: NameExpression{ Name: "hello" }
             });
             True(p.IsAtEOF);
 
@@ -51,7 +51,7 @@
             AssertParseExpression(p, n => n is UnaryExpression
             {
                 Operator: UnaryOperator.Negate,
-                SubExpression: DeclarationRefExpression { Name: "world" }
+                SubExpression: NameExpression { Name: "world" }
             });
             True(p.IsAtEOF);
         }
@@ -150,7 +150,7 @@
                 SubExpression: FieldAccessExpression
                 {
                     FieldName: "bar",
-                    SubExpression: DeclarationRefExpression { Name: "foo" }
+                    SubExpression: NameExpression { Name: "foo" }
                 }
             });
             True(p.IsAtEOF);
@@ -166,7 +166,7 @@
 
             AssertParseExpression(p, n => n is IndexingExpression
             {
-                Array: DeclarationRefExpression { Name: "foo" },
+                Array: NameExpression { Name: "foo" },
                 Index: BinaryExpression
                 {
                     Operator: BinaryOperator.Add,
@@ -177,10 +177,10 @@
             AssertParseExpression(p, n => n is BinaryExpression
             {
                 Operator: BinaryOperator.Add,
-                LHS: DeclarationRefExpression { Name: "a" },
+                LHS: NameExpression { Name: "a" },
                 RHS: IndexingExpression
                 {
-                    Array: DeclarationRefExpression { Name: "b" },
+                    Array: NameExpression { Name: "b" },
                     Index: IntLiteralExpression { Value: 1 },
                 }
             });
@@ -194,8 +194,8 @@
                 Array: BinaryExpression
                 {
                     Operator: BinaryOperator.Add,
-                    LHS: DeclarationRefExpression { Name: "a" },
-                    RHS: DeclarationRefExpression { Name: "b" },
+                    LHS: NameExpression { Name: "a" },
+                    RHS: NameExpression { Name: "b" },
                 },
                 Index: IntLiteralExpression { Value: 1 },
             });
@@ -213,7 +213,7 @@
 
             True(p.IsPossibleExpression());
             AssertInvocation(p.ParseExpression(),
-                callee => callee is DeclarationRefExpression { Name: "foo" },
+                callee => callee is NameExpression { Name: "foo" },
                 args => Collection(args,
                     _0 => True(_0 is BinaryExpression
                     {
@@ -221,17 +221,17 @@
                         LHS: IntLiteralExpression { Value: 1 },
                         RHS: IntLiteralExpression { Value: 2 },
                     }),
-                    _1 => True(_1 is DeclarationRefExpression { Name: "a" })
+                    _1 => True(_1 is NameExpression { Name: "a" })
                     )
                 );
             True(p.IsPossibleExpression());
             AssertInvocation(p.ParseExpression(),
-                callee => callee is DeclarationRefExpression { Name: "bar" },
+                callee => callee is NameExpression { Name: "bar" },
                 args => Empty(args)
                 );
             True(p.IsPossibleExpression());
             AssertInvocation(p.ParseExpression(),
-                callee => callee is DeclarationRefExpression { Name: "baz" },
+                callee => callee is NameExpression { Name: "baz" },
                 args => Collection(args,
                     _0 => True(_0 is IntLiteralExpression { Value: 0 })
                     )
@@ -334,17 +334,17 @@
                         LHS: UnaryExpression
                         {
                             Operator: UnaryOperator.LogicalNot,
-                            SubExpression: DeclarationRefExpression { Name: "a" }
+                            SubExpression: NameExpression { Name: "a" }
                         },
-                        RHS: DeclarationRefExpression { Name: "b" },
+                        RHS: NameExpression { Name: "b" },
                     },
-                    RHS: DeclarationRefExpression { Name: "c" },
+                    RHS: NameExpression { Name: "c" },
                 },
                 RHS: BinaryExpression
                 {
                     Operator: BinaryOperator.Equals,
-                    LHS: DeclarationRefExpression { Name: "d" },
-                    RHS: DeclarationRefExpression { Name: "e" },
+                    LHS: NameExpression { Name: "d" },
+                    RHS: NameExpression { Name: "e" },
                 },
             });
             True(p.IsAtEOF);
@@ -367,8 +367,8 @@
                     SubExpression: BinaryExpression
                     {
                         Operator: BinaryOperator.LogicalAnd,
-                        LHS: DeclarationRefExpression { Name: "a" },
-                        RHS: DeclarationRefExpression { Name: "b" },
+                        LHS: NameExpression { Name: "a" },
+                        RHS: NameExpression { Name: "b" },
                     }
                 },
                 RHS: BinaryExpression
@@ -377,10 +377,10 @@
                     LHS: BinaryExpression
                     {
                         Operator: BinaryOperator.LogicalOr,
-                        LHS: DeclarationRefExpression { Name: "c" },
-                        RHS: DeclarationRefExpression { Name: "d" },
+                        LHS: NameExpression { Name: "c" },
+                        RHS: NameExpression { Name: "d" },
                     },
-                    RHS: DeclarationRefExpression { Name: "e" },
+                    RHS: NameExpression { Name: "e" },
                 },
             });
             True(p.IsAtEOF);
@@ -451,8 +451,8 @@
                 LHS: BinaryExpression
                 {
                     Operator: BinaryOperator.LessThanOrEqual,
-                    LHS: DeclarationRefExpression { Name: "a" },
-                    RHS: DeclarationRefExpression { Name: "b" },
+                    LHS: NameExpression { Name: "a" },
+                    RHS: NameExpression { Name: "b" },
                 },
                 RHS: BinaryExpression
                 {
@@ -460,9 +460,9 @@
                     LHS: UnaryExpression
                     {
                         Operator: UnaryOperator.Negate,
-                        SubExpression: DeclarationRefExpression { Name: "c" },
+                        SubExpression: NameExpression { Name: "c" },
                     },
-                    RHS: DeclarationRefExpression { Name: "d" },
+                    RHS: NameExpression { Name: "d" },
                 },
             });
             True(p.IsAtEOF);
@@ -479,40 +479,40 @@
             AssertParseExpression(p, n => n is BinaryExpression
             {
                 Operator: BinaryOperator.LogicalOr,
-                LHS: DeclarationRefExpression { Name: "a" },
+                LHS: NameExpression { Name: "a" },
                 RHS: BinaryExpression
                 {
                     Operator: BinaryOperator.LogicalAnd,
-                    LHS: DeclarationRefExpression { Name: "b" },
+                    LHS: NameExpression { Name: "b" },
                     RHS: BinaryExpression
                     {
                         Operator: BinaryOperator.Or,
-                        LHS: DeclarationRefExpression { Name: "c" },
+                        LHS: NameExpression { Name: "c" },
                         RHS: BinaryExpression
                         {
                             Operator: BinaryOperator.Xor,
-                            LHS: DeclarationRefExpression { Name: "d" },
+                            LHS: NameExpression { Name: "d" },
                             RHS: BinaryExpression
                             {
                                 Operator: BinaryOperator.And,
-                                LHS: DeclarationRefExpression { Name: "e" },
+                                LHS: NameExpression { Name: "e" },
                                 RHS: BinaryExpression
                                 {
                                     Operator: BinaryOperator.Equals,
-                                    LHS: DeclarationRefExpression { Name: "f" },
+                                    LHS: NameExpression { Name: "f" },
                                     RHS: BinaryExpression
                                     {
                                         Operator: BinaryOperator.GreaterThan,
-                                        LHS: DeclarationRefExpression { Name: "g" },
+                                        LHS: NameExpression { Name: "g" },
                                         RHS: BinaryExpression
                                         {
                                             Operator: BinaryOperator.Add,
-                                            LHS: DeclarationRefExpression { Name: "h" },
+                                            LHS: NameExpression { Name: "h" },
                                             RHS: BinaryExpression
                                             {
                                                 Operator: BinaryOperator.Multiply,
-                                                LHS: DeclarationRefExpression { Name: "i" },
-                                                RHS: DeclarationRefExpression { Name: "j" },
+                                                LHS: NameExpression { Name: "i" },
+                                                RHS: NameExpression { Name: "j" },
                                             },
                                         },
                                     },

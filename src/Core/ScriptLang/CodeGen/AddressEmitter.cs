@@ -28,7 +28,7 @@
             return default;
         }
 
-        public override Void Visit(DeclarationRefExpression node, Void param)
+        public override Void Visit(NameExpression node, Void param)
         {
             var varDecl = (VarDeclaration)node.Semantics.Declaration!; // VarDeclaration are the only declarations that can be lvalues
 

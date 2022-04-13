@@ -449,7 +449,7 @@ public class ParserNew
             }
             else if (Accept(TokenKind.Identifier, out var identToken))
             {
-                expr = new DeclarationRefExpression(identToken);
+                expr = new NameExpression(identToken);
             }
             else if (Accept(TokenKind.Integer, out var intToken))
             {

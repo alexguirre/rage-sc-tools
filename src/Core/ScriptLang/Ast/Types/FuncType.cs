@@ -108,7 +108,7 @@
 
         public override void CGInvocation(CodeGenerator cg, InvocationExpression expr)
         {
-            if (expr.Callee is DeclarationRefExpression { Semantics.Declaration: FuncDeclaration func })
+            if (expr.Callee is NameExpression { Semantics.Declaration: FuncDeclaration func })
             {
                 switch (Prototype.Kind)
                 {

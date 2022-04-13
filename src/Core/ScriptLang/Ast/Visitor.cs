@@ -32,7 +32,7 @@
         TReturn Visit(SizeOfExpression node, TParam param);
         TReturn Visit(StringLiteralExpression node, TParam param);
         TReturn Visit(UnaryExpression node, TParam param);
-        TReturn Visit(DeclarationRefExpression node, TParam param);
+        TReturn Visit(NameExpression node, TParam param);
         TReturn Visit(VectorExpression node, TParam param);
 
         TReturn Visit(AssignmentStatement node, TParam param);
@@ -202,7 +202,7 @@
             return DefaultReturn;
         }
 
-        public virtual TReturn Visit(DeclarationRefExpression node, TParam param)
+        public virtual TReturn Visit(NameExpression node, TParam param)
         {
             return DefaultReturn;
         }
@@ -429,7 +429,7 @@
         public virtual TReturn Visit(SizeOfExpression node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(StringLiteralExpression node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(UnaryExpression node, TParam param) => throw new NotImplementedException();
-        public virtual TReturn Visit(DeclarationRefExpression node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(NameExpression node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(VectorExpression node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(AssignmentStatement node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(BreakStatement node, TParam param) => throw new NotImplementedException();

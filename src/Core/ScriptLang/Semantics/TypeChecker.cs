@@ -69,7 +69,7 @@
         public override Void Visit(SizeOfExpression node, TypeCheckerContext param) => node.Accept(exprTypeChecker, default);
         public override Void Visit(StringLiteralExpression node, TypeCheckerContext param) => node.Accept(exprTypeChecker, default);
         public override Void Visit(UnaryExpression node, TypeCheckerContext param) => node.Accept(exprTypeChecker, default);
-        public override Void Visit(DeclarationRefExpression node, TypeCheckerContext param) => node.Accept(exprTypeChecker, default);
+        public override Void Visit(NameExpression node, TypeCheckerContext param) => node.Accept(exprTypeChecker, default);
         public override Void Visit(VectorExpression node, TypeCheckerContext param) => node.Accept(exprTypeChecker, default);
         #endregion Expressions
 
