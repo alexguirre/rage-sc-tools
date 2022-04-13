@@ -419,6 +419,121 @@
         }
 
         [Fact]
+        public void SwitchStatement()
+        {
+            var p = ParserFor(
+                @"  SWITCH a
+                    CASE 1
+                        foo()
+                    CASE 2
+                        bar()
+                        BREAK
+                    DEFAULT
+                        baz()
+                        BREAK
+                    ENDSWITCH"
+            );
+
+            AssertSwitchStmt(p.ParseStatement(),
+                expr => expr is NameExpression { Name: "a" },
+                cases => Collection(cases,
+                    _0 => AssertSwitchCase(_0,
+                        @case => @case is ValueSwitchCase { Value: IntLiteralExpression { Value: 1 } },
+                        body => Collection(body,
+                            _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args)))),
+                    _1 => AssertSwitchCase(_1,
+                        @case => @case is ValueSwitchCase { Value: IntLiteralExpression { Value: 2 } },
+                        body => Collection(body,
+                            _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args)),
+                            _1 => True(_1 is BreakStatement))),
+                    _2 => AssertSwitchCase(_2,
+                        @case => @case is DefaultSwitchCase,
+                        body => Collection(body,
+                            _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "baz" }, args => Empty(args)),
+                            _1 => True(_1 is BreakStatement)))));
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
+        public void NestedSwitchStatement()
+        {
+            var p = ParserFor(
+                @"  SWITCH a
+                    CASE 1
+                        foo()
+                    CASE 2
+                        SWITCH b
+                        CASE 3
+                            bar()
+                        ENDSWITCH
+                    ENDSWITCH"
+            );
+
+            AssertSwitchStmt(p.ParseStatement(),
+                expr => expr is NameExpression { Name: "a" },
+                cases => Collection(cases,
+                    _0 => AssertSwitchCase(_0,
+                        @case => @case is ValueSwitchCase { Value: IntLiteralExpression { Value: 1 } },
+                        body => Collection(body,
+                            _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args)))),
+                    _1 => AssertSwitchCase(_1,
+                        @case => @case is ValueSwitchCase { Value: IntLiteralExpression { Value: 2 } },
+                        body => Collection(body,
+                            _0 => AssertSwitchStmt(_0,
+                                expr => expr is NameExpression { Name: "b" },
+                                cases => Collection(cases,
+                                    _0 => AssertSwitchCase(_0,
+                                        @case => @case is ValueSwitchCase { Value: IntLiteralExpression { Value: 3 } },
+                                        body => Collection(body,
+                                            _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))))))))));
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
+        public void EmptyCasesSwitchStatement()
+        {
+            var p = ParserFor(
+                @"  SWITCH a
+                    CASE 1
+                    CASE 2
+                    DEFAULT
+                    CASE 3
+                    ENDSWITCH"
+            );
+
+            AssertSwitchStmt(p.ParseStatement(),
+                expr => expr is NameExpression { Name: "a" },
+                cases => Collection(cases,
+                    _0 => AssertSwitchCase(_0,
+                        @case => @case is ValueSwitchCase { Value: IntLiteralExpression { Value: 1 } },
+                        body => Empty(body)),
+                    _1 => AssertSwitchCase(_1,
+                        @case => @case is ValueSwitchCase { Value: IntLiteralExpression { Value: 2 } },
+                        body => Empty(body)),
+                    _2 => AssertSwitchCase(_2,
+                        @case => @case is DefaultSwitchCase,
+                        body => Empty(body)),
+                    _3 => AssertSwitchCase(_3,
+                        @case => @case is ValueSwitchCase { Value: IntLiteralExpression { Value: 3 } },
+                        body => Empty(body))));
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
+        public void EmptySwitchStatement()
+        {
+            var p = ParserFor(
+                @"  SWITCH a
+                    ENDSWITCH"
+            );
+
+            AssertSwitchStmt(p.ParseStatement(),
+                expr => expr is NameExpression { Name: "a" },
+                cases => Empty(cases));
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
         public void VarDeclarationStatement()
         {
             var p = ParserFor(

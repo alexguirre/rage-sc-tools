@@ -1,18 +1,25 @@
 ﻿namespace ScTools.ScriptLang.Ast.Statements;
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 
 using ScTools.ScriptLang.Ast.Expressions;
 
 public sealed class SwitchStatement : BaseStatement, IBreakableStatement
 {
-    public IExpression Expression { get; set; }
-    public List<SwitchCase> Cases { get; set; } = new();
+    public IExpression Expression => (IExpression)Children[0];
+    public ImmutableArray<SwitchCase> Cases { get; }
     public BreakableStatementSemantics Semantics { get; set; }
 
-    public SwitchStatement(SourceRange source, IExpression expression) : base(source)
-        => Expression = expression;
+    public SwitchStatement(Token switchKeyword, Token endswitchKeyword, IExpression expression, IEnumerable<SwitchCase> cases)
+        : base(OfTokens(switchKeyword, endswitchKeyword), OfChildren(expression).AddRange(cases))
+    {
+        Debug.Assert(switchKeyword.Kind is TokenKind.SWITCH);
+        Debug.Assert(endswitchKeyword.Kind is TokenKind.ENDSWITCH);
+        Cases = cases.ToImmutableArray();
+    }
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
@@ -25,20 +32,24 @@ public record struct SwitchCaseSemantics(string? Label);
 
 public abstract class SwitchCase : BaseNode, ISemanticNode<SwitchCaseSemantics>
 {
-    public SwitchStatement Switch { get; set; }
-    public List<IStatement> Body { get; set; } = new();
+    public ImmutableArray<IStatement> Body { get; }
     public SwitchCaseSemantics Semantics { get; set; }
 
-    public SwitchCase(SourceRange source, SwitchStatement @switch) : base(source)
-        => Switch = @switch;
+    public SwitchCase(IEnumerable<IStatement> body, ImmutableArray<Token> tokens, ImmutableArray<INode> children) : base(tokens, children)
+    {
+        Body = body.ToImmutableArray();
+    }
 }
 
 public sealed class ValueSwitchCase : SwitchCase
 {
-    public IExpression Value { get; set; }
+    public IExpression Value => (IExpression)Children[0];
 
-    public ValueSwitchCase(SourceRange source, SwitchStatement @switch, IExpression value) : base(source, @switch)
-        => Value = value;
+    public ValueSwitchCase(Token caseKeyword, IExpression value, IEnumerable<IStatement> body)
+        : base(body, OfTokens(caseKeyword), OfChildren(value).AddRange(body))
+    {
+        Debug.Assert(caseKeyword.Kind is TokenKind.CASE);
+    }
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
@@ -49,7 +60,11 @@ public sealed class ValueSwitchCase : SwitchCase
 
 public sealed class DefaultSwitchCase : SwitchCase
 {
-    public DefaultSwitchCase(SourceRange source, SwitchStatement @switch) : base(source, @switch) { }
+    public DefaultSwitchCase(Token defaultKeyword, IEnumerable<IStatement> body)
+        : base(body, OfTokens(defaultKeyword), OfChildren(body))
+    {
+        Debug.Assert(defaultKeyword.Kind is TokenKind.DEFAULT);
+    }
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);

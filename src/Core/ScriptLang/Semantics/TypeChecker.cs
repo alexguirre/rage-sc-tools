@@ -18,19 +18,20 @@
         public bool SecondPass { get; init; }
         public StructDeclaration? Struct { get; init; }
         public FuncDeclaration? Function { get; init; }
+        public SwitchStatement? Switch { get; init; }
         public HashSet<int?> SwitchHandledCases { get; init; }
 
         public TypeCheckerContext BeginSecondPass()
-            => new() { SecondPass = true, Struct = Struct, Function = Function, SwitchHandledCases = SwitchHandledCases };
+            => this with { SecondPass = true };
 
         public TypeCheckerContext Enter(StructDeclaration structDecl)
-            => new() { SecondPass = SecondPass, Struct = structDecl, Function = Function, SwitchHandledCases = SwitchHandledCases };
+            => this with { Struct = structDecl };
 
         public TypeCheckerContext Enter(FuncDeclaration funcDecl)
-            => new() { SecondPass = SecondPass, Struct = Struct, Function = funcDecl, SwitchHandledCases = SwitchHandledCases };
+            => this with { Function = funcDecl };
 
         public TypeCheckerContext Enter(SwitchStatement switchStmt)
-            => new() { SecondPass = SecondPass, Struct = Struct, Function = Function, SwitchHandledCases = new(switchStmt.Cases.Count) };
+            => this with { Switch = switchStmt, SwitchHandledCases = new(switchStmt.Cases.Length) };
     }
 
     public sealed class TypeChecker : DFSVisitor<Void, TypeCheckerContext>
@@ -295,11 +296,11 @@
 
             if (!node.Value.IsConstant)
             {
-                node.Value = new ErrorExpression(node.Value.Location, Diagnostics, $"CASE value must be a constant expression");
+                /*node.Value =*/ new ErrorExpression(node.Value.Location, Diagnostics, $"CASE value must be a constant expression");
             }
-            else if (!node.Switch.Expression.Type!.CanAssign(node.Value.Type!, node.Value.IsLValue))
+            else if (!param.Switch!.Expression.Type!.CanAssign(node.Value.Type!, node.Value.IsLValue))
             {
-                Diagnostics.AddError($"CASE value requires type '{node.Switch.Expression.Type!}', found '{node.Value.Type}'", node.Value.Location);
+                Diagnostics.AddError($"CASE value requires type '{param.Switch!.Expression.Type!}', found '{node.Value.Type}'", node.Value.Location);
             }
             else
             {

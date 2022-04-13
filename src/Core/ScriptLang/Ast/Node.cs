@@ -1,10 +1,10 @@
 ﻿namespace ScTools.ScriptLang.Ast;
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Linq;
 
 public interface INode
 {
@@ -53,7 +53,9 @@ public abstract class BaseNode : INode
     public virtual string DebuggerDisplay => GetType().Name;
 
     protected static ImmutableArray<Token> OfTokens(params Token[] tokens) => tokens.ToImmutableArray();
+    protected static ImmutableArray<Token> OfTokens(IEnumerable<Token> tokens) => tokens.ToImmutableArray();
     protected static ImmutableArray<INode> OfChildren(params INode[] nodes) => nodes.ToImmutableArray();
+    protected static ImmutableArray<INode> OfChildren(IEnumerable<INode> nodes) => nodes.ToImmutableArray();
 
     private static SourceRange MergeSourceLocations(ImmutableArray<Token> tokens, ImmutableArray<INode> nodes)
     {

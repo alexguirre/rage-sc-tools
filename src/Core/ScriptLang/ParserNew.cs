@@ -151,6 +151,20 @@ public class ParserNew
                 stmt = new ErrorStatement(LastError!, repeatToken);
             }
         }
+        else if (Accept(TokenKind.SWITCH, out var switchToken))
+        {
+            if (Expect(ParseExpression, out var expr) && ExpectEOS())
+            {
+                var cases = ParseSwitchCases();
+                stmt = Expect(TokenKind.ENDSWITCH, out var endswitchToken) && ExpectEOS() ?
+                        new SwitchStatement(switchToken, endswitchToken, expr, cases) :
+                        new ErrorStatement(LastError!, switchToken);
+            }
+            else
+            {
+                stmt = new ErrorStatement(LastError!, switchToken);
+            }
+        }
         else if (Accept(TokenKind.BREAK, out var breakToken))
         {
             stmt = new BreakStatement(breakToken);
@@ -222,6 +236,44 @@ public class ParserNew
 
             stmt = null;
             return false;
+        }
+
+        List<SwitchCase> ParseSwitchCases()
+        {
+            var cases = new List<SwitchCase>();
+            while (!IsAtEOF)
+            {
+                if (Peek(0).Kind is TokenKind.ENDSWITCH)
+                {
+                    break;
+                }
+                else if (Accept(TokenKind.CASE, out var caseToken))
+                {
+                    if (Expect(ParseExpression, out var valueExpr) && ExpectEOS())
+                    {
+                        var body = ParseBodyUntilAny(TokenKind.CASE, TokenKind.DEFAULT, TokenKind.ENDSWITCH);
+                        cases.Add(new ValueSwitchCase(caseToken, valueExpr, body));
+                        continue;
+                    }
+                }
+                else if (Accept(TokenKind.DEFAULT, out var defaultToken))
+                {
+                    if (ExpectEOS())
+                    {
+                        var body = ParseBodyUntilAny(TokenKind.CASE, TokenKind.DEFAULT, TokenKind.ENDSWITCH);
+                        cases.Add(new DefaultSwitchCase(defaultToken, body));
+                        continue;
+                    }
+                }
+                else
+                {
+                    UnexpectedTokenError(TokenKind.CASE, TokenKind.DEFAULT);
+                }
+
+                // if we reached here, there was an error so skip this line
+                while (!IsAtEOS) { Next(); }
+            }
+            return cases;
         }
 
         List<IStatement> ParseBodyUntilAny(params TokenKind[] stopTokens)

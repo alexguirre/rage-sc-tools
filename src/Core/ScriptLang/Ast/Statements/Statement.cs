@@ -4,6 +4,9 @@ using System.Collections.Immutable;
 
 public interface IStatement : INode
 {
+    /// <summary>
+    /// Gets the label associated to this statement.
+    /// </summary>
     string? Label { get; set; }
 }
 
@@ -29,5 +32,4 @@ public abstract class BaseStatement : BaseNode, IStatement
                                        // TODO: make IStatement.Label a node?
 
     public BaseStatement(ImmutableArray<Token> tokens, ImmutableArray<INode> children) : base(tokens, children) { }
-    public BaseStatement(SourceRange source) : base(source) { }
 }

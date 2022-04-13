@@ -88,6 +88,20 @@
                 bodyChecker(repeatStmt.Body);
             }
         }
+        private static void AssertSwitchStmt(IStatement stmt, Predicate<IExpression> expressionPredicate, Action<ImmutableArray<SwitchCase>> casesChecker)
+        {
+            True(stmt is SwitchStatement);
+            if (stmt is SwitchStatement switchStmt)
+            {
+                True(expressionPredicate(switchStmt.Expression));
+                casesChecker(switchStmt.Cases);
+            }
+        }
+        private static void AssertSwitchCase(SwitchCase switchCase, Predicate<SwitchCase> switchCasePredicate, Action<ImmutableArray<IStatement>> bodyChecker)
+        {
+            True(switchCasePredicate(switchCase));
+            bodyChecker(switchCase.Body);
+        }
         private static void AssertError(INode node, Predicate<INode> predicate)
         {
             True(node is IError);
