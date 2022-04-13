@@ -118,7 +118,7 @@ public sealed class Lexer : IEnumerable<Token>
                 ':' => NewToken(TokenKind.Colon),
                 '"' or '\'' => LexString(),
                 '`' => LexHashString(),
-                '\n' => NewToken(TokenKind.EOS),
+                '\n' => LexEOS(),
                 >= '0' and <= '9' => LexNumber(),
                 char c when IsIdentifierStartChar(c) => LexIdentifierLikeToken(),
 
@@ -290,6 +290,18 @@ public sealed class Lexer : IEnumerable<Token>
             NextWhile(IsIdentifierChar);
 
             return NewToken(TokenKind.Identifier);
+        }
+
+        /// <summary>
+        /// Merges multiple sequential new-lines in a single EOS token.
+        /// </summary>
+        private Token LexEOS()
+        {
+            Debug.Assert(Peek(-1) == '\n');
+
+            while (Peek() == '\n') { Next(dropTokenOnNewLine: false); }
+
+            return NewToken(TokenKind.EOS);
         }
 
         private void SkipAllWhiteSpaces()

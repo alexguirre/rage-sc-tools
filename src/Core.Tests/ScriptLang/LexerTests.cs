@@ -472,6 +472,22 @@
         }
 
         [Fact]
+        public void MultipleEmptyLines()
+        {
+            var (tokens, diag) = Lex("foo\n\n\nbar");
+
+            False(diag.HasErrors);
+            False(diag.HasWarnings);
+
+            Equal(4, tokens.Length);
+
+            TokenEqual(TokenKind.Identifier, "foo", (1, 1), (1, 3), tokens[0]);
+            TokenEqual(TokenKind.EOS, "\n\n\n", (1, 4), (3, 1), tokens[1]);
+            TokenEqual(TokenKind.Identifier, "bar", (4, 1), (4, 3), tokens[2]);
+            TokenIsEOF(tokens.Last());
+        }
+
+        [Fact]
         public void StatementContinuation()
         {
             var (tokens, diag) = Lex("foo\\\nbar");
