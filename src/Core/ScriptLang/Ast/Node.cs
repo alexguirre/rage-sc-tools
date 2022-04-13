@@ -49,6 +49,7 @@ public abstract class BaseNode : INode
 
     public abstract TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param);
 
+    [DebuggerBrowsable(DebuggerBrowsableState.Never), EditorBrowsable(EditorBrowsableState.Never)]
     public virtual string DebuggerDisplay => GetType().Name;
 
     protected static ImmutableArray<Token> OfTokens(params Token[] tokens) => tokens.ToImmutableArray();

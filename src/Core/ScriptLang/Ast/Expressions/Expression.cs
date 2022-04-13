@@ -9,8 +9,14 @@ public record struct ExpressionSemantics(IType? Type, bool IsLValue, bool IsCons
 public interface IExpression : ISemanticNode<ExpressionSemantics>
 {
     // Helpers for accessing semantic information
+    /// <summary>
+    /// Gets the semantic type of this expression.
+    /// </summary>
     public sealed IType? Type => Semantics.Type;
     public sealed bool IsLValue => Semantics.IsLValue;
+    /// <summary>
+    /// Gets whether this expression value is known at compile time.
+    /// </summary>
     public sealed bool IsConstant => Semantics.IsConstant;
 }
 

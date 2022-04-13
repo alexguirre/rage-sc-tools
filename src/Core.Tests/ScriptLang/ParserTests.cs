@@ -53,6 +53,72 @@
         }
 
         [Fact]
+        public void AssignmentStatement()
+        {
+            var p = ParserFor(
+                @"a = b
+                  label: c + d = e + f"
+            );
+
+            Assert(p.ParseStatement(), n => n is AssignmentStatement
+            {
+                Label: null,
+                CompoundOperator: null,
+                LHS: DeclarationRefExpression { Name: "a" },
+                RHS: DeclarationRefExpression { Name: "b" },
+            });
+            Assert(p.ParseStatement(), n => n is AssignmentStatement
+            {
+                Label: "label",
+                CompoundOperator: null,
+                LHS: BinaryExpression
+                {
+                    LHS: DeclarationRefExpression { Name: "c" },
+                    RHS: DeclarationRefExpression { Name: "d" },
+                },
+                RHS: BinaryExpression
+                {
+                    LHS: DeclarationRefExpression { Name: "e" },
+                    RHS: DeclarationRefExpression { Name: "f" },
+                },
+            });
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
+        public void CompoundAssignmentStatement()
+        {
+            var p = ParserFor(
+                @"a += b
+                  label: c + d *= e + f"
+            );
+
+            Assert(p.ParseStatement(), n => n is AssignmentStatement
+            {
+                Label: null,
+                CompoundOperator: BinaryOperator.Add,
+                LHS: DeclarationRefExpression { Name: "a" },
+                RHS: DeclarationRefExpression { Name: "b" },
+            });
+            Assert(p.ParseStatement(), n => n is AssignmentStatement
+            {
+                Label: "label",
+                CompoundOperator: BinaryOperator.Multiply,
+                LHS: BinaryExpression
+                {
+                    LHS: DeclarationRefExpression { Name: "c" },
+                    RHS: DeclarationRefExpression { Name: "d" },
+                },
+                RHS: BinaryExpression
+                {
+                    LHS: DeclarationRefExpression { Name: "e" },
+                    RHS: DeclarationRefExpression { Name: "f" },
+                },
+            });
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
         public void IfStatement()
         {
             var p = ParserFor(

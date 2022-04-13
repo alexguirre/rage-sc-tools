@@ -30,7 +30,7 @@
             else if (node.Initializer is not null)
             {
                 var dest = new DeclarationRefExpression(Token.Identifier(node.Name, node.Location)) { Semantics = new(node.Type!, IsLValue: true, IsConstant: false, Declaration: node) };
-                new AssignmentStatement(node.Location, lhs: dest, rhs: node.Initializer)
+                new AssignmentStatement(Token.Equals(node.Location), lhs: dest, rhs: node.Initializer)
                     .Accept(this, func);
             }
 
@@ -142,6 +142,7 @@
 
         public override Void Visit(AssignmentStatement node, FuncDeclaration func)
         {
+            // TODO: AssignmentStatement consider compound assignments, no longer lowered to lhs = lhs binOp rhs
             node.LHS.Type!.CGAssign(CG, node);
             return default;
         }
@@ -195,7 +196,7 @@
             var constantOne = new IntLiteralExpression(Token.Integer(1, node.Location)) { Semantics = new(intTy, IsConstant: true, IsLValue: false) };
 
             // set counter to 0
-            new AssignmentStatement(node.Location, lhs: node.Counter, rhs: constantZero)
+            new AssignmentStatement(Token.Equals(node.Location), lhs: node.Counter, rhs: constantZero)
                 .Accept(this, func);
 
             var sem = node.Semantics;
@@ -213,7 +214,7 @@
 
             // increment counter
             var counterPlusOne = new BinaryExpression(Token.Plus(node.Location), node.Counter, constantOne) { Semantics = new(intTy, IsConstant: false, IsLValue: false) };
-            new AssignmentStatement(node.Location, lhs: node.Counter, rhs: counterPlusOne)
+            new AssignmentStatement(Token.Equals(node.Location), lhs: node.Counter, rhs: counterPlusOne)
                 .Accept(this, func);
 
             // jump back to condition check

@@ -160,5 +160,6 @@ public readonly record struct Token
     public static Token Bool(bool value, SourceRange location = default) => new(TokenKind.Boolean, value ? "TRUE" : "FALSE", location);
     public static Token String(string value, SourceRange location = default) => new(TokenKind.String, $"'{value.Escape()}'", location);
     public static Token Null(SourceRange location = default) => new(TokenKind.Null, "NULL", location);
+    public static Token Equals(SourceRange location = default) => new(TokenKind.Equals, "=", location);
     public static Token Plus(SourceRange location = default) => new(TokenKind.Plus, "+", location);
 }

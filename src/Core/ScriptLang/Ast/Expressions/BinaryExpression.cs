@@ -97,26 +97,4 @@ public static class BinaryOperatorExtensions
             TokenKind.OR => BinaryOperator.LogicalOr,
             _ => throw new ArgumentException($"Unknown binary operator '{token}'", nameof(token)),
         };
-
-    public static BinaryOperator FromToken(string token)
-        => token.ToUpperInvariant() switch
-        {
-            "+" => BinaryOperator.Add,
-            "-" => BinaryOperator.Subtract,
-            "*" => BinaryOperator.Multiply,
-            "/" => BinaryOperator.Divide,
-            "%" => BinaryOperator.Modulo,
-            "&" => BinaryOperator.And,
-            "^" => BinaryOperator.Xor,
-            "|" => BinaryOperator.Or,
-            "==" => BinaryOperator.Equals,
-            "<>" => BinaryOperator.NotEquals,
-            "<" => BinaryOperator.LessThan,
-            "<=" => BinaryOperator.LessThanOrEqual,
-            ">" => BinaryOperator.GreaterThan,
-            ">=" => BinaryOperator.GreaterThanOrEqual,
-            "AND" => BinaryOperator.LogicalAnd,
-            "OR" => BinaryOperator.LogicalOr,
-            _ => throw new ArgumentException($"Unknown binary operator '{token}'", nameof(token)),
-        };
 }

@@ -100,6 +100,25 @@ public class ParserNew
         {
             stmt = ParseVarDeclaration(VarKind.Local, allowMultipleDeclarations: true);
         }
+        else if (IsPossibleExpression())
+        {
+            var lhs = ParseExpression();
+            if (IsAtEOS)
+            {
+                stmt = lhs is InvocationExpression invocation ?
+                            invocation :
+                            ExpressionAsStatementError(lhs);
+            }
+            else if (Accept(AssignmentStatement.IsAssignmentOperator, out var assignmentOp))
+            {
+                stmt = new AssignmentStatement(assignmentOp, lhs, rhs: ParseExpression());
+            }
+            else
+            {
+                UnexpectedTokenExpectedAssignmentError();
+                stmt = new ErrorStatement(LastError!, Current);
+            }
+        }
         else if (TryParseIfStatement(TokenKind.IF, out _, out var ifStmt))
         {
             stmt = ifStmt;
@@ -122,17 +141,14 @@ public class ParserNew
                         new GotoStatement(gotoToken, gotoTargetToken) :
                         new ErrorStatement(LastError!, gotoToken, gotoTargetToken);
         }
-        else if (IsPossibleExpression())
-        {
-            var expr = ParseExpression();
-            stmt = expr is InvocationExpression invocation ?
-                        invocation :
-                        ExpressionAsStatementError(expr);
-        }
         else
         {
             stmt = UnknownStatementError();
-            // skip this line
+        }
+
+        if (stmt is IError)
+        {
+            // skip this line in case of errors
             while (!IsAtEOS) { Next(); }
         }
 
@@ -601,6 +617,9 @@ public class ParserNew
     private void UnexpectedTokenError(TokenKind expectedTokenA, TokenKind expectedTokenB)
         => Error(ErrorCode.ParserUnexpectedToken, $"Unexpected token '{Current.Kind}', expected '{expectedTokenA}' or '{expectedTokenB}'", Current.Location);
 
+    private void UnexpectedTokenExpectedAssignmentError()
+        => Error(ErrorCode.ParserUnexpectedToken, $"Unexpected token '{Current.Kind}', expected assignment operator", Current.Location);
+
     private ErrorStatement UnknownStatementError()
     { 
         Error(ErrorCode.ParserUnknownStatement, $"Expected statement, found '{Current.Lexeme}' ({Current.Kind})", Current.Location);
@@ -659,6 +678,18 @@ public class ParserNew
     {
         t = Current;
         if (Current.Kind == token)
+        {
+            Next();
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool Accept(Predicate<TokenKind> tokenPredicate, out Token t)
+    {
+        t = Current;
+        if (tokenPredicate(Current.Kind))
         {
             Next();
             return true;
