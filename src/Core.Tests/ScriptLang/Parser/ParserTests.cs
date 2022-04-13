@@ -78,6 +78,16 @@
                 bodyChecker(whileStmt.Body);
             }
         }
+        private static void AssertRepeatStmt(IStatement stmt, Predicate<IExpression> limitPredicate, Predicate<IExpression> counterPredicate, Action<ImmutableArray<IStatement>> bodyChecker)
+        {
+            True(stmt is RepeatStatement);
+            if (stmt is RepeatStatement repeatStmt)
+            {
+                True(limitPredicate(repeatStmt.Limit));
+                True(counterPredicate(repeatStmt.Counter));
+                bodyChecker(repeatStmt.Body);
+            }
+        }
         private static void AssertError(INode node, Predicate<INode> predicate)
         {
             True(node is IError);

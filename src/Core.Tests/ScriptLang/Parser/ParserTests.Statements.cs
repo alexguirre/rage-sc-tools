@@ -362,6 +362,63 @@
         }
 
         [Fact]
+        public void RepeatStatement()
+        {
+            var p = ParserFor(
+                @"  REPEAT 10 i
+                        foo()
+                    ENDREPEAT"
+            );
+
+            AssertRepeatStmt(p.ParseStatement(),
+                limit => limit is IntLiteralExpression { Value: 10 },
+                counter => counter is DeclarationRefExpression { Name: "i" },
+                body => Collection(body,
+                    _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "foo" }, args => Empty(args))));
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
+        public void NestedRepeatStatement()
+        {
+            var p = ParserFor(
+                @"  REPEAT a i
+                        foo()
+                        REPEAT b k
+                            bar()
+                        ENDREPEAT
+                    ENDREPEAT"
+            );
+
+            AssertRepeatStmt(p.ParseStatement(),
+                limit => limit is DeclarationRefExpression { Name: "a" },
+                counter => counter is DeclarationRefExpression { Name: "i" },
+                body => Collection(body,
+                    _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "foo" }, args => Empty(args)),
+                    _1 => AssertRepeatStmt(_1,
+                        limit => limit is DeclarationRefExpression { Name: "b" },
+                        counter => counter is DeclarationRefExpression { Name: "k" },
+                        body => Collection(body,
+                            _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "bar" }, args => Empty(args))))));
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
+        public void EmptyRepeatStatement()
+        {
+            var p = ParserFor(
+                @"  REPEAT a i
+                    ENDREPEAT"
+            );
+
+            AssertRepeatStmt(p.ParseStatement(),
+                limit => limit is DeclarationRefExpression { Name: "a" },
+                counter => counter is DeclarationRefExpression { Name: "i" },
+                body => Empty(body));
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
         public void VarDeclarationStatement()
         {
             var p = ParserFor(

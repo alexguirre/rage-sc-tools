@@ -137,6 +137,20 @@ public class ParserNew
                 stmt = new ErrorStatement(LastError!, whileToken);
             }
         }
+        else if (Accept(TokenKind.REPEAT, out var repeatToken))
+        {
+            if (Expect(ParseExpression, out var limitExpr) && Expect(ParseExpression, out var counterExpr) && ExpectEOS())
+            {
+                var body = ParseBodyUntilAny(TokenKind.ENDREPEAT);
+                stmt = Expect(TokenKind.ENDREPEAT, out var endrepeatToken) && ExpectEOS() ?
+                        new RepeatStatement(repeatToken, endrepeatToken, limitExpr, counterExpr, body) :
+                        new ErrorStatement(LastError!, repeatToken);
+            }
+            else
+            {
+                stmt = new ErrorStatement(LastError!, repeatToken);
+            }
+        }
         else if (Accept(TokenKind.BREAK, out var breakToken))
         {
             stmt = new BreakStatement(breakToken);
