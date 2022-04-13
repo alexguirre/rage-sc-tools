@@ -44,11 +44,11 @@
                   BREAK"
             );
 
-            Assert(p.ParseLabeledStatement(), n => n is BreakStatement { Label: null });
-            Assert(p.ParseLabeledStatement(), n => n is ReturnStatement { Label: null });
-            Assert(p.ParseLabeledStatement(), n => n is GotoStatement { Label: null, TargetLabel: "hello" });
-            Assert(p.ParseLabeledStatement(), n => n is ContinueStatement { Label: "hello" });
-            Assert(p.ParseLabeledStatement(), n => n is BreakStatement { Label: "world" });
+            Assert(p.ParseStatement(), n => n is BreakStatement { Label: null });
+            Assert(p.ParseStatement(), n => n is ReturnStatement { Label: null });
+            Assert(p.ParseStatement(), n => n is GotoStatement { Label: null, TargetLabel: "hello" });
+            Assert(p.ParseStatement(), n => n is ContinueStatement { Label: "hello" });
+            Assert(p.ParseStatement(), n => n is BreakStatement { Label: "world" });
             True(p.IsAtEOF);
         }
 
@@ -63,7 +63,7 @@
                     ENDIF"
             );
 
-            AssertIfStmt(p.ParseLabeledStatement(),
+            AssertIfStmt(p.ParseStatement(),
                 condition => condition is BinaryExpression
                 {
                     Operator: BinaryOperator.LogicalOr,
@@ -88,7 +88,7 @@
                     ENDIF"
             );
 
-            AssertIfStmt(p.ParseLabeledStatement(),
+            AssertIfStmt(p.ParseStatement(),
                 condition => condition is DeclarationRefExpression { Name: "a" },
                 then => Collection(then,
                     _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "foo" }, args => Empty(args))),
@@ -108,7 +108,7 @@
                     ENDIF"
             );
 
-            AssertIfStmt(p.ParseLabeledStatement(),
+            AssertIfStmt(p.ParseStatement(),
                 condition => condition is DeclarationRefExpression { Name: "a" },
                 then => Collection(then,
                     _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "foo" }, args => Empty(args))),
@@ -134,7 +134,7 @@
                     ENDIF"
             );
 
-            AssertIfStmt(p.ParseLabeledStatement(),
+            AssertIfStmt(p.ParseStatement(),
                 condition => condition is DeclarationRefExpression { Name: "a" },
                 then => Collection(then,
                     _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "foo" }, args => Empty(args))),
@@ -163,7 +163,7 @@
                     ENDIF"
             );
 
-            AssertIfStmt(p.ParseLabeledStatement(),
+            AssertIfStmt(p.ParseStatement(),
                 condition => condition is DeclarationRefExpression { Name: "a" },
                 then => Collection(then,
                     _0 => AssertInvocation(_0, callee => callee is DeclarationRefExpression { Name: "foo" }, args => Empty(args))),
@@ -185,7 +185,7 @@
                     ENDIF"
             );
 
-            AssertIfStmt(p.ParseLabeledStatement(),
+            AssertIfStmt(p.ParseStatement(),
                 condition => condition is DeclarationRefExpression { Name: "a" },
                 then => Empty(then),
                 @else => Empty(@else));
@@ -202,7 +202,7 @@
                     ENDIF"
             );
 
-            AssertIfStmt(p.ParseLabeledStatement(),
+            AssertIfStmt(p.ParseStatement(),
                 condition => condition is DeclarationRefExpression { Name: "a" },
                 then => Empty(then),
                 @else => Collection(@else,
@@ -221,15 +221,15 @@
                   label: FLOAT foo, bar"
             );
 
-            Assert(p.ParseLabeledStatement(), n => n is VarDeclaration
+            Assert(p.ParseStatement(), n => n is VarDeclaration
             {
                 Label: null, Name: "hello", IsReference: false, Type: NamedType { Name: "INT" }
             });
-            Assert(p.ParseLabeledStatement(), n => n is VarDeclaration
+            Assert(p.ParseStatement(), n => n is VarDeclaration
             {
                 Label: "label", Name: "foo", IsReference: false, Type: NamedType { Name: "FLOAT" }
             });
-            Assert(p.ParseLabeledStatement(), n => n is VarDeclaration
+            Assert(p.ParseStatement(), n => n is VarDeclaration
             {
                 Label: null, Name: "bar", IsReference: false, Type: NamedType { Name: "FLOAT" }
             });
@@ -244,17 +244,17 @@
                   label: FLOAT foo[2], bar[]"
             );
 
-            Assert(p.ParseLabeledStatement(), n => n is VarDeclaration
+            Assert(p.ParseStatement(), n => n is VarDeclaration
             {
                 Label: null, Name: "hello", IsReference: false,
                 Type: ArrayType { ItemType: NamedType { Name: "INT" }, RankExpression: IntLiteralExpression { Value: 5 } }
             });
-            Assert(p.ParseLabeledStatement(), n => n is VarDeclaration
+            Assert(p.ParseStatement(), n => n is VarDeclaration
             {
                 Label: "label", Name: "foo", IsReference: false,
                 Type: ArrayType { ItemType: NamedType { Name: "FLOAT" }, RankExpression: IntLiteralExpression { Value: 2 } }
             });
-            Assert(p.ParseLabeledStatement(), n => n is VarDeclaration
+            Assert(p.ParseStatement(), n => n is VarDeclaration
             {
                 Label: null, Name: "bar", IsReference: false,
                 Type: IncompleteArrayType { ItemType: NamedType { Name: "FLOAT" } }
@@ -270,7 +270,7 @@
                   FLOAT foo[2][3][5]"
             );
 
-            Assert(p.ParseLabeledStatement(), n => n is VarDeclaration
+            Assert(p.ParseStatement(), n => n is VarDeclaration
             {
                 Label: null, Name: "hello", IsReference: false,
                 Type: ArrayType
@@ -283,7 +283,7 @@
                     },
                 }
             });
-            Assert(p.ParseLabeledStatement(), n => n is VarDeclaration
+            Assert(p.ParseStatement(), n => n is VarDeclaration
             {
                 Label: null, Name: "foo", IsReference: false,
                 Type: ArrayType
@@ -311,11 +311,11 @@
                   FLOAT &foo"
             );
 
-            Assert(p.ParseLabeledStatement(), n => n is VarDeclaration
+            Assert(p.ParseStatement(), n => n is VarDeclaration
             { 
                 Label: null, Name: "hello", IsReference: true, Type: NamedType { Name: "INT" }
             });
-            Assert(p.ParseLabeledStatement(), n => n is VarDeclaration
+            Assert(p.ParseStatement(), n => n is VarDeclaration
             {
                 Label: null, Name: "foo", IsReference: true, Type: NamedType { Name: "FLOAT" }
             });
@@ -561,7 +561,7 @@
                   baz(0)"
             );
 
-            AssertInvocation(p.ParseLabeledStatement(),
+            AssertInvocation(p.ParseStatement(),
                 callee => callee is DeclarationRefExpression { Name: "foo" },
                 args => Collection(args,
                     _0 => True(_0 is BinaryExpression
@@ -573,12 +573,12 @@
                     _1 => True(_1 is DeclarationRefExpression { Name: "a" })
                     )
                 );
-            AssertInvocation(p.ParseLabeledStatement(),
+            AssertInvocation(p.ParseStatement(),
                 callee => callee is DeclarationRefExpression { Name: "bar" },
                 args => Empty(args)
                 );
             True(p.IsPossibleExpression());
-            AssertInvocation(p.ParseLabeledStatement(),
+            AssertInvocation(p.ParseStatement(),
                 callee => callee is DeclarationRefExpression { Name: "baz" },
                 args => Collection(args,
                     _0 => True(_0 is IntLiteralExpression { Value: 0 })
@@ -594,7 +594,7 @@
                 @"1 + 2"
             );
 
-            AssertError(p.ParseLabeledStatement(), n => n is ErrorStatement);
+            AssertError(p.ParseStatement(), n => n is ErrorStatement);
             CheckError(ErrorCode.ParserExpressionAsStatement, (1, 1), (1, 5), p.Diagnostics);
             True(p.IsAtEOF);
         }

@@ -57,14 +57,6 @@ public class ParserNew
         }
     }
 
-    public IStatement ParseLabeledStatement()
-    {
-        var label = !isInsideCommaSeparatedVarDeclaration && IsPossibleLabel() ? ParseLabel() : null;
-        var stmt = ParseStatement();
-        stmt.Label = label;
-        return stmt;
-    }
-
     public IStatement ParseStatement()
     {
         /*  statement
@@ -95,8 +87,13 @@ public class ParserNew
             | K_GOTO identifier                                         #gotoStatement
             | expression argumentList                                   #invocationStatement
             ;
+
+            labeledStatement
+            : label? statement?
+            ;
         */
 
+        var label = !isInsideCommaSeparatedVarDeclaration && IsPossibleLabel() ? ParseLabel() : null;
         IStatement stmt;
 
         if (IsPossibleVarDeclaration())
@@ -116,7 +113,7 @@ public class ParserNew
                         break;
                     }
 
-                    thenBody.Add(ParseLabeledStatement());
+                    thenBody.Add(ParseStatement());
                 }
 
                 stmt = Expect(TokenKind.ENDIF, out var endifToken) && ExpectEOS() ?
@@ -161,6 +158,7 @@ public class ParserNew
         }
 
         ExpectEOS();
+        stmt.Label = label;
         return stmt;
     }
 
