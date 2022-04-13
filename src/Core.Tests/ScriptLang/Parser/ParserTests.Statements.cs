@@ -688,5 +688,55 @@
             CheckError(ErrorCode.ParserExpressionAsStatement, (1, 1), (1, 5), p.Diagnostics);
             True(p.IsAtEOF);
         }
+
+        [Fact]
+        public void LabelOnEmptyStatement()
+        {
+            var p = ParserFor(
+                @"my_label:
+                 "
+            );
+
+            Assert(p.ParseStatement(), n => n is EmptyStatement { Label: "my_label" });
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
+        public void LabelOnNestedEmptyStatement()
+        {
+            var p = ParserFor(
+                @"  WHILE a
+                        my_label:
+                    ENDWHILE"
+            );
+
+            AssertWhileStmt(p.ParseStatement(),
+                condition => condition is NameExpression { Name: "a" },
+                body => Collection(body,
+                    _0 => Assert(_0, n => n is EmptyStatement { Label: "my_label" })));
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
+        public void SequentialLabels()
+        {
+            var p = ParserFor(
+                @"  WHILE a
+                        my_label:
+
+
+                        other_label:
+
+                            bar()
+                    ENDWHILE"
+            );
+
+            AssertWhileStmt(p.ParseStatement(),
+                condition => condition is NameExpression { Name: "a" },
+                body => Collection(body,
+                    _0 => Assert(_0, n => n is EmptyStatement { Label: "my_label" }),
+                    _1 => Assert(_1, n => n is InvocationExpression { Label: "other_label", Callee: NameExpression { Name: "bar" } })));
+            True(p.IsAtEOF);
+        }
     }
 }

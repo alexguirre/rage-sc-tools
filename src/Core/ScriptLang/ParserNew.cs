@@ -48,7 +48,6 @@ public class ParserNew
         if (Expect(TokenKind.Identifier, out var ident) &&
             Expect(TokenKind.Colon, out var colon))
         {
-            while (Accept(TokenKind.EOS, out _)) { } // ignore any new lines/EOS after a label
             return ident.Lexeme.ToString();
         }
         else
@@ -96,11 +95,19 @@ public class ParserNew
         var label = !isInsideCommaSeparatedVarDeclaration && IsPossibleLabel() ? ParseLabel() : null;
         IStatement stmt;
 
+        bool allowEmptyStatement = false;
+        if (label is not null)
+        {
+            allowEmptyStatement = Accept(TokenKind.EOS, out _); // allow new-lines after the label
+        }
+
+
         if (IsPossibleVarDeclaration())
         {
             stmt = ParseVarDeclaration(VarKind.Local, allowMultipleDeclarations: true);
         }
-        else if (IsPossibleExpression())
+        else if (IsPossibleExpression() &&
+                 !IsPossibleLabel()) // in case of sequential labels, avoid parsing the second label identifier as an expression
         {
             var lhs = ParseExpression();
             if (IsAtEOS)
@@ -183,6 +190,11 @@ public class ParserNew
                         new GotoStatement(gotoToken, gotoTargetToken) :
                         new ErrorStatement(LastError!, gotoToken, gotoTargetToken);
         }
+        else if (allowEmptyStatement)
+        {
+            // found a label followed by EOS but no statement afterwards so create an empty statement
+            stmt = new EmptyStatement();
+        }
         else
         {
             stmt = UnknownStatementError();
@@ -194,7 +206,10 @@ public class ParserNew
             while (!IsAtEOS) { Next(); }
         }
 
-        ExpectEOS();
+        if (stmt is not EmptyStatement)
+        {
+            ExpectEOS();
+        }
         stmt.Label = label;
         return stmt;
 
