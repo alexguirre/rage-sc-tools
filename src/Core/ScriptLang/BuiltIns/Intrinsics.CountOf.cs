@@ -100,7 +100,7 @@
                     if (arrayTy is ArrayType constantSizeArrayTy)
                     {
                         // Size known at compile-time
-                        cg.EmitPushConstInt(constantSizeArrayTy.Rank);
+                        cg.EmitPushConstInt(constantSizeArrayTy.Length);
                     }
                     else
                     {

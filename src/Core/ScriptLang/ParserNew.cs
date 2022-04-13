@@ -634,11 +634,11 @@ public class ParserNew
     }
 
     #region Declarators
-    private record struct DeclaratorArrayRank(Token OpenBracket, Token CloseBracket, IExpression? LengthExpression);
+    private record struct DeclaratorArrayLength(Token OpenBracket, Token CloseBracket, IExpression? LengthExpression);
     private abstract record Declarator(Token Identifier);
     private record RefDeclarator(Token Ampersand, Token Identifier) : Declarator(Identifier);
-    /// <param name="ArrayRanks">List of rank specifiers from left to right.</param>
-    private record SimpleDeclarator(Token Identifier, List<DeclaratorArrayRank>? ArrayRanks) : Declarator(Identifier);
+    /// <param name="ArrayLengths">List of length specifiers from left to right.</param>
+    private record SimpleDeclarator(Token Identifier, List<DeclaratorArrayLength>? ArrayLengths) : Declarator(Identifier);
 
     private Declarator ParseDeclarator()
     {
@@ -654,7 +654,7 @@ public class ParserNew
             NOTE: arrays are passed by reference so no need to support stuff like 'INT (&arr)[10]' in the grammar, 'INT arr[10]' is equivalent
         */
 
-        List<DeclaratorArrayRank>? arrayRanks = null;
+        List<DeclaratorArrayLength>? arrayRanks = null;
         if (Accept(TokenKind.Identifier, out var identifier))
         {
             TryParseArrayRank(ref arrayRanks);
@@ -670,7 +670,7 @@ public class ParserNew
         return new SimpleDeclarator(new() { Kind = TokenKind.Identifier, Lexeme = "<unknown>".AsMemory(), Location = Current.Location }, arrayRanks);
 
 
-        void TryParseArrayRank(ref List<DeclaratorArrayRank>? ranks)
+        void TryParseArrayRank(ref List<DeclaratorArrayLength>? ranks)
         {
             if (Accept(TokenKind.OpenBracket, out var openBracket))
             {
@@ -688,12 +688,12 @@ public class ParserNew
     private IType TypeFromDeclarator(Declarator declarator, IType baseType)
         => declarator switch
         {
-            SimpleDeclarator { ArrayRanks: not null } s =>
-                 s.ArrayRanks.Reverse<DeclaratorArrayRank>()
-                             .Aggregate(baseType, (IType ty, DeclaratorArrayRank rank)
-                                => rank.LengthExpression == null ?
-                                    new IncompleteArrayType(rank.OpenBracket, rank.CloseBracket, ty) :
-                                    new ArrayType(rank.OpenBracket, rank.CloseBracket, ty, rank.LengthExpression)),
+            SimpleDeclarator { ArrayLengths: not null } s =>
+                 s.ArrayLengths.Reverse<DeclaratorArrayLength>()
+                             .Aggregate(baseType, (IType ty, DeclaratorArrayLength arrLength)
+                                => arrLength.LengthExpression == null ?
+                                    new IncompleteArrayType(arrLength.OpenBracket, arrLength.CloseBracket, ty) :
+                                    new ArrayType(arrLength.OpenBracket, arrLength.CloseBracket, ty, arrLength.LengthExpression)),
             _ => baseType,
         };
 

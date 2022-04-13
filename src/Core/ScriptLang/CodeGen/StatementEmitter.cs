@@ -123,7 +123,7 @@
         private void EmitDefaultInitArray(ArrayType arrayTy)
         {
             // write array size
-            CG.EmitPushConstInt(arrayTy.Rank);
+            CG.EmitPushConstInt(arrayTy.Length);
             CG.Emit(Opcode.STORE_REV);
 
             if (TypeHelper.IsDefaultInitialized(arrayTy.ItemType))
@@ -131,7 +131,7 @@
                 CG.Emit(Opcode.DUP); // duplicate array address
                 CG.EmitOffset(1); // advance duplicated address to the first item (skip array size)
                 var itemSize = arrayTy.ItemType.SizeOf;
-                for (int i = 0; i < arrayTy.Rank; i++)
+                for (int i = 0; i < arrayTy.Length; i++)
                 {
                     EmitDefaultInitNoPushAddress(arrayTy.ItemType); // initialize item
                     CG.EmitOffset(itemSize); // advance to the next item

@@ -318,7 +318,7 @@
         public virtual TReturn Visit(ArrayType node, TParam param)
         {
             node.ItemType.Accept(this, param);
-            node.RankExpression.Accept(this, param);
+            node.LengthExpression.Accept(this, param);
             return DefaultReturn;
         }
 

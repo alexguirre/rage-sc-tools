@@ -567,12 +567,12 @@
             Assert(p.ParseStatement(), n => n is VarDeclaration
             {
                 Label: null, Name: "hello", IsReference: false,
-                Type: ArrayType { ItemType: NamedType { Name: "INT" }, RankExpression: IntLiteralExpression { Value: 5 } }
+                Type: ArrayType { ItemType: NamedType { Name: "INT" }, LengthExpression: IntLiteralExpression { Value: 5 } }
             });
             Assert(p.ParseStatement(), n => n is VarDeclaration
             {
                 Label: Label { Name: "label" }, Name: "foo", IsReference: false,
-                Type: ArrayType { ItemType: NamedType { Name: "FLOAT" }, RankExpression: IntLiteralExpression { Value: 2 } }
+                Type: ArrayType { ItemType: NamedType { Name: "FLOAT" }, LengthExpression: IntLiteralExpression { Value: 2 } }
             });
             Assert(p.ParseStatement(), n => n is VarDeclaration
             {
@@ -595,10 +595,10 @@
                 Label: null, Name: "hello", IsReference: false,
                 Type: ArrayType
                 {
-                    RankExpression: IntLiteralExpression { Value: 1 },
+                    LengthExpression: IntLiteralExpression { Value: 1 },
                     ItemType: ArrayType
                     {
-                        RankExpression: IntLiteralExpression { Value: 2 },
+                        LengthExpression: IntLiteralExpression { Value: 2 },
                         ItemType: NamedType { Name: "INT" },
                     },
                 }
@@ -608,13 +608,13 @@
                 Label: null, Name: "foo", IsReference: false,
                 Type: ArrayType
                 {
-                    RankExpression: IntLiteralExpression { Value: 2 },
+                    LengthExpression: IntLiteralExpression { Value: 2 },
                     ItemType: ArrayType
                     {
-                        RankExpression: IntLiteralExpression { Value: 3 },
+                        LengthExpression: IntLiteralExpression { Value: 3 },
                         ItemType: ArrayType
                         {
-                            RankExpression: IntLiteralExpression { Value: 5 },
+                            LengthExpression: IntLiteralExpression { Value: 5 },
                             ItemType: NamedType { Name: "FLOAT" },
                         },
                     },
