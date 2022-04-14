@@ -124,16 +124,26 @@
                 }
             }
         }
+        private static void AssertFunctionSignature(INode node, string name, Predicate<ITypeName?> returnTypePredicate, Action<ImmutableArray<VarDeclaration_New>> parametersChecker)
+        {
+            True(node is FunctionSignature);
+            if (node is FunctionSignature signature)
+            {
+                Equal(name, signature.Name);
+                True(returnTypePredicate(signature.ReturnType));
+                parametersChecker(signature.Parameters);
+            }
+        }
         private static void AssertError(INode node, Predicate<INode> predicate)
         {
             True(node is IError);
             True(predicate(node));
         }
 
-        private static void CheckError(ErrorCode expectedError, (int Line, int Column) expectedStart, (int Line, int Column) expectedEnd, DiagnosticsReport diagnostics)
+        private static void CheckError(ErrorCode expectedError, (int Line, int Column) expectedStart, (int Line, int Column) expectedEnd, DiagnosticsReport diagnostics, int expectedNumMatchingErrors = 1)
         {
             var expectedLocation = MakeSourceRange(expectedStart, expectedEnd);
-            Equal(1, diagnostics.Errors.Count(err => err.Code == (int)expectedError && err.Source == expectedLocation));
+            Equal(expectedNumMatchingErrors, diagnostics.Errors.Count(err => err.Code == (int)expectedError && err.Source == expectedLocation));
         }
 
         private const string TestFileName = "parser_tests.sc";

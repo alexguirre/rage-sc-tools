@@ -15,6 +15,7 @@ using ScTools.ScriptLang.Ast.Types;
 
 public class ParserNew
 {
+    internal const string MissingIdentifierLexeme = "<unknown>";
     public static StringComparer CaseInsensitiveComparer => ScriptAssembly.Assembler.CaseInsensitiveComparer;
 
     private readonly Lexer.Enumerator lexerEnumerator;
@@ -39,6 +40,55 @@ public class ParserNew
     }
 
     #region Rules
+    public bool IsPossibleFunctionSignature()
+        => Peek(0).Kind is TokenKind.FUNC or TokenKind.PROC;
+    public FunctionSignature ParseFunctionSignature()
+    {
+        Token procOrFuncKeyword, nameIdent, openParen, closeParen;
+        ITypeName? returnType = null;
+        IEnumerable<VarDeclaration_New> @params = Enumerable.Empty<VarDeclaration_New>();
+        if (!ExpectEither(TokenKind.FUNC, TokenKind.PROC, out procOrFuncKeyword))
+        {
+            procOrFuncKeyword = MissingKeyword(TokenKind.PROC);
+            Next();
+        }
+
+        if (procOrFuncKeyword.Kind is TokenKind.FUNC)
+        {
+            ExpectOrMissing(TokenKind.Identifier, out var returnTypeIdent, MissingIdentifier);
+            returnType = new TypeName(returnTypeIdent);
+            ExpectOrMissing(TokenKind.Identifier, out nameIdent, MissingIdentifier);
+        }
+        else // PROC
+        {
+            ExpectOrMissing(TokenKind.Identifier, out nameIdent, MissingIdentifier);
+        }
+
+        (@params, openParen, closeParen) = ParseParameterList();
+
+        return new FunctionSignature(procOrFuncKeyword, nameIdent, openParen, closeParen, returnType, @params);
+
+        (IEnumerable<VarDeclaration_New> Params, Token OpenParen, Token CloseParen) ParseParameterList()
+        {
+            List<VarDeclaration_New>? @params = null;
+
+            if (ExpectOrMissing(TokenKind.OpenParen, out var openParen, () => Missing(Token.OpenParen())))
+            {
+                if (Peek(0).Kind is not TokenKind.CloseParen)
+                {
+                    @params = new();
+                    do
+                    {
+                        @params.Add(ParseVarDeclaration(VarKind.Parameter, allowMultipleDeclarations: false));
+                    } while (Accept(TokenKind.Comma, out _));
+                }
+            }
+            ExpectOrMissing(TokenKind.CloseParen, out var closeParen, () => Missing(Token.CloseParen()));
+
+            return (@params ?? Enumerable.Empty<VarDeclaration_New>(), openParen, closeParen);
+        }
+    }
+
     public bool IsPossibleLabel()
         => Peek(0).Kind is TokenKind.Identifier && Peek(1).Kind is TokenKind.Colon;
     public Label? ParseLabel()
@@ -668,7 +718,7 @@ public class ParserNew
         }
 
         UnknownDeclaratorError();
-        return new SimpleDeclarator(new() { Kind = TokenKind.Identifier, Lexeme = "<unknown>".AsMemory(), Location = Current.Location }, arrayRanks);
+        return new SimpleDeclarator(MissingIdentifier(), arrayRanks);
 
 
         void TryParseArrayRank(ref List<DeclaratorArrayLength>? ranks)
@@ -703,6 +753,14 @@ public class ParserNew
 
     #endregion Rules
 
+    private Token Missing(Token token)
+        => token with { IsMissing = true, Location = Current.Location };
+    private Token MissingKeyword(TokenKind kind)
+        => Missing(Token.Keyword(kind));
+    private Token MissingIdentifier()
+        => MissingIdentifier(MissingIdentifierLexeme);
+    private Token MissingIdentifier(string identifier)
+        => Missing(Token.Identifier(identifier));
 
     private void Error(ErrorCode code, string message, SourceRange location)
         => LastError = Diagnostics.Add((int)code, DiagnosticTag.Error, message, location);
@@ -803,6 +861,16 @@ public class ParserNew
 
         UnexpectedTokenError(token);
         return false;
+    }
+
+    private bool ExpectOrMissing(TokenKind token, out Token t, Func<Token> createMissingToken)
+    {
+        if (!Expect(token, out t))
+        {
+            t = createMissingToken();
+            return false;
+        }
+        return true;
     }
 
     private bool Expect<TNode>(Func<TNode> parseFunc, out TNode node) where TNode : INode

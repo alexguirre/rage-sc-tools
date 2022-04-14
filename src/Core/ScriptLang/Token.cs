@@ -113,12 +113,14 @@ public static class TokenKindExtensions
 public readonly record struct Token
 {
     public TokenKind Kind { get; init; }
+    public bool IsMissing { get; init; }
     public ReadOnlyMemory<char> Lexeme { get; init; }
     public SourceRange Location { get; init; }
 
     public Token(TokenKind kind, ReadOnlyMemory<char> lexeme, SourceRange location = default)
     {
         Kind = kind;
+        IsMissing = false;
         Lexeme = lexeme;
         Location = location;
     }
@@ -154,6 +156,11 @@ public readonly record struct Token
         return Lexeme.ParseAsBool();
     }
 
+    public static Token Keyword(TokenKind kind, SourceRange location = default)
+    {
+        Debug.Assert(kind.IsKeyword());
+        return new(kind, kind.ToString(), location);
+    }
     public static Token Identifier(string name, SourceRange location = default) => new(TokenKind.Identifier, name, location);
     public static Token Integer(int value, SourceRange location = default) => new(TokenKind.Integer, value.ToString(), location);
     public static Token Float(float value, SourceRange location = default) => new(TokenKind.Float, value.ToString("G9"), location);
@@ -162,4 +169,6 @@ public readonly record struct Token
     public static Token Null(SourceRange location = default) => new(TokenKind.Null, "NULL", location);
     public static Token Equals(SourceRange location = default) => new(TokenKind.Equals, "=", location);
     public static Token Plus(SourceRange location = default) => new(TokenKind.Plus, "+", location);
+    public static Token OpenParen(SourceRange location = default) => new(TokenKind.OpenParen, "(", location);
+    public static Token CloseParen(SourceRange location = default) => new(TokenKind.CloseParen, ")", location);
 }
