@@ -293,14 +293,28 @@ public sealed class Lexer : IEnumerable<Token>
         }
 
         /// <summary>
-        /// Merges multiple sequential new-lines in a single EOS token.
+        /// Merges multiple sequential empty lines in a single EOS token.
         /// </summary>
         private Token LexEOS()
         {
             Debug.Assert(Peek(-1) == '\n');
 
-            while (Peek() == '\n') { Next(dropTokenOnNewLine: false); }
+            // save the original EOS start position because SkipAllWhiteSpaces drops the current token
+            var eosStartPos = startPos;
+            var eosStartLine = startLine;
+            var eosStartColumn = startColumn;
 
+            // skip whitespace/comments after the new line if any, so multiple lines with no tokens are merged in a single EOS token
+            SkipAllWhiteSpaces();
+            while (Peek() == '\n')
+            {
+                Next(dropTokenOnNewLine: false);
+                SkipAllWhiteSpaces();
+            }
+
+            startPos = eosStartPos;
+            startLine = eosStartLine;
+            startColumn = eosStartColumn;
             return NewToken(TokenKind.EOS);
         }
 

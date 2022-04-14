@@ -488,6 +488,38 @@
         }
 
         [Fact]
+        public void MultipleEmptyLinesWithWhiteSpaces()
+        {
+            var (tokens, diag) = Lex("foo\n  \t\n /*comment\ncomment*/ \nbar");
+
+            False(diag.HasErrors);
+            False(diag.HasWarnings);
+
+            Equal(4, tokens.Length);
+
+            TokenEqual(TokenKind.Identifier, "foo", (1, 1), (1, 3), tokens[0]);
+            TokenEqual(TokenKind.EOS, "\n  \t\n /*comment\ncomment*/ \n", (1, 4), (4, 11), tokens[1]);
+            TokenEqual(TokenKind.Identifier, "bar", (5, 1), (5, 3), tokens[2]);
+            TokenIsEOF(tokens.Last());
+        }
+
+        [Fact]
+        public void MultipleEmptyLinesWithWhiteSpacesNoEndingInNewLine()
+        {
+            var (tokens, diag) = Lex("foo\n  \t\n /*comment\ncomment*/bar");
+
+            False(diag.HasErrors);
+            False(diag.HasWarnings);
+
+            Equal(4, tokens.Length);
+
+            TokenEqual(TokenKind.Identifier, "foo", (1, 1), (1, 3), tokens[0]);
+            TokenEqual(TokenKind.EOS, "\n  \t\n /*comment\ncomment*/", (1, 4), (4, 9), tokens[1]);
+            TokenEqual(TokenKind.Identifier, "bar", (4, 10), (4, 12), tokens[2]);
+            TokenIsEOF(tokens.Last());
+        }
+
+        [Fact]
         public void StatementContinuation()
         {
             var (tokens, diag) = Lex("foo\\\nbar");
