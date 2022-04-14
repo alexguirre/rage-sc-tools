@@ -29,7 +29,7 @@
             Assert(p.ParseStatement(), n => n is GotoStatement { Label: null, TargetLabel: "hello" });
             Assert(p.ParseStatement(), n => n is ContinueStatement { Label: Label { Name: "hello" } });
             Assert(p.ParseStatement(), n => n is BreakStatement { Label: Label { Name: "world" } });
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -62,7 +62,7 @@
                     RHS: NameExpression { Name: "f" },
                 },
             });
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -95,7 +95,7 @@
                     RHS: NameExpression { Name: "f" },
                 },
             });
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -120,7 +120,7 @@
                     _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args)),
                     _1 => AssertInvocation(_1, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))),
                 @else => Empty(@else));
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -140,7 +140,7 @@
                     _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args))),
                 @else => Collection(@else,
                     _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))));
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -164,7 +164,7 @@
                         then => Collection(then,
                             _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))),
                         @else => Empty(@else))));
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -191,7 +191,7 @@
                             _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))),
                         @else => Collection(@else,
                             _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "baz" }, args => Empty(args))))));
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -232,7 +232,7 @@
                                             _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "hello" }, args => Empty(args))),
                                         @else => Collection(@else,
                                             _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "world" }, args => Empty(args))))))))));
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -261,7 +261,7 @@
                             _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))),
                         @else => Collection(@else,
                             _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "baz" }, args => Empty(args))))));
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -276,7 +276,7 @@
                 condition => condition is NameExpression { Name: "a" },
                 then => Empty(then),
                 @else => Empty(@else));
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -297,7 +297,7 @@
                         condition => condition is NameExpression { Name: "b" },
                         then => Empty(then),
                         @else => Empty(@else))));
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -321,7 +321,7 @@
                 body => Collection(body,
                     _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args)),
                     _1 => AssertInvocation(_1, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))));
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -344,7 +344,7 @@
                         condition => condition is NameExpression { Name: "b" },
                         body => Collection(body,
                             _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))))));
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -358,7 +358,7 @@
             AssertWhileStmt(p.ParseStatement(),
                 condition => condition is NameExpression { Name: "a" },
                 body => Empty(body));
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -375,7 +375,7 @@
                 counter => counter is NameExpression { Name: "i" },
                 body => Collection(body,
                     _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args))));
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -400,7 +400,7 @@
                         counter => counter is NameExpression { Name: "k" },
                         body => Collection(body,
                             _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))))));
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -415,7 +415,7 @@
                 limit => limit is NameExpression { Name: "a" },
                 counter => counter is NameExpression { Name: "i" },
                 body => Empty(body));
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -451,7 +451,7 @@
                         body => Collection(body,
                             _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "baz" }, args => Empty(args)),
                             _1 => True(_1 is BreakStatement)))));
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -486,7 +486,7 @@
                                         @case => @case is ValueSwitchCase { Value: IntLiteralExpression { Value: 3 } },
                                         body => Collection(body,
                                             _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))))))))));
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -516,7 +516,7 @@
                     _3 => AssertSwitchCase(_3,
                         @case => @case is ValueSwitchCase { Value: IntLiteralExpression { Value: 3 } },
                         body => Empty(body))));
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -530,7 +530,7 @@
             AssertSwitchStmt(p.ParseStatement(),
                 expr => expr is NameExpression { Name: "a" },
                 cases => Empty(cases));
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -562,7 +562,7 @@
                 Name: "bar", Declarator: VarDeclarator { Name: "bar" },
                 Initializer: null, Kind: VarKind.Local
             });
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -597,7 +597,7 @@
                 Initializer: null, Kind: VarKind.Local
             },
                 dim0 => dim0 is null);
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -632,7 +632,7 @@
                     LHS: IntLiteralExpression { Value: 5 },
                     RHS: IntLiteralExpression { Value: 1 },
                 });
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -664,7 +664,7 @@
                 Name: "bar", Declarator: VarRefDeclarator { Name: "bar" },
                 Initializer: null, Kind: VarKind.Local
             });
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -699,7 +699,7 @@
                     _0 => True(_0 is IntLiteralExpression { Value: 0 })
                     )
                 );
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -723,7 +723,7 @@
             );
 
             Assert(p.ParseStatement(), n => n is EmptyStatement { Label: Label { Name: "my_label" } });
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -739,7 +739,7 @@
                 condition => condition is NameExpression { Name: "a" },
                 body => Collection(body,
                     _0 => Assert(_0, n => n is EmptyStatement { Label: Label { Name: "my_label" } })));
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -761,7 +761,7 @@
                 body => Collection(body,
                     _0 => Assert(_0, n => n is EmptyStatement { Label: Label { Name: "my_label" } }),
                     _1 => Assert(_1, n => n is InvocationExpression { Label: Label { Name: "other_label" }, Callee: NameExpression { Name: "bar" } })));
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
     }
 }

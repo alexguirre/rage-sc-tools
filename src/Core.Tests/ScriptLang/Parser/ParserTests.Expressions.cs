@@ -29,7 +29,7 @@
             AssertParseExpression(p, n => n is BoolLiteralExpression { Value: true });
             AssertParseExpression(p, n => n is BoolLiteralExpression { Value: false });
             AssertParseExpression(p, n => n is NullExpression);
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -43,7 +43,7 @@
                 Operator: UnaryOperator.LogicalNot,
                 SubExpression: NameExpression{ Name: "hello" }
             });
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
 
             p = ParserFor(
                 @"-world"
@@ -53,7 +53,7 @@
                 Operator: UnaryOperator.Negate,
                 SubExpression: NameExpression { Name: "world" }
             });
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -74,7 +74,7 @@
                     Z: IntLiteralExpression { Value: 5 },
                 },
             });
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -134,7 +134,7 @@
             );
 
             AssertParseExpression(p, n => n is IntLiteralExpression { Value: 25 });
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -153,7 +153,7 @@
                     SubExpression: NameExpression { Name: "foo" }
                 }
             });
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -181,7 +181,7 @@
                     SubExpression: NameExpression { Name: "hello" },
                 },
             });
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -212,7 +212,7 @@
                     Index: IntLiteralExpression { Value: 1 },
                 }
             });
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
 
             p = ParserFor(
                 @"(a + b)[1]"
@@ -227,7 +227,7 @@
                 },
                 Index: IntLiteralExpression { Value: 1 },
             });
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -264,7 +264,7 @@
                     _0 => True(_0 is IntLiteralExpression { Value: 0 })
                     )
                 );
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -289,7 +289,7 @@
                 },
                 RHS: IntLiteralExpression { Value: 4 },
             });
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -314,7 +314,7 @@
                     RHS: IntLiteralExpression { Value: 4 },
                 },
             });
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -339,7 +339,7 @@
                     RHS: IntLiteralExpression { Value: 4 },
                 },
             });
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -375,7 +375,7 @@
                     RHS: NameExpression { Name: "e" },
                 },
             });
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -411,7 +411,7 @@
                     RHS: NameExpression { Name: "e" },
                 },
             });
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -437,7 +437,7 @@
                 },
                 RHS: IntLiteralExpression { Value: 4 },
             });
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -462,7 +462,7 @@
                     RHS: IntLiteralExpression { Value: 4 },
                 },
             });
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -493,7 +493,7 @@
                     RHS: NameExpression { Name: "d" },
                 },
             });
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -550,7 +550,7 @@
                     },
                 },
             });
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
     }
 }

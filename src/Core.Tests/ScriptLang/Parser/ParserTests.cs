@@ -24,13 +24,18 @@
             );
 
             True(p.IsPossibleLabel());
-            var label = p.ParseLabel();
-            True(p.IsAtEOF);
+            Assert(p.ParseLabel(), n => n is Label { Name: "my_label" });
+            NoErrorsAndIsAtEOF(p);
 
-            True(label is Label { Name: "my_label" });
         }
 
-        private static void Assert(INode node, Predicate<INode> predicate)
+        private static void NoErrorsAndIsAtEOF(ParserNew p)
+        {
+            False(p.Diagnostics.HasErrors);
+            False(p.Diagnostics.HasWarnings);
+            True(p.IsAtEOF);
+        }
+        private static void Assert(INode? node, Predicate<INode?> predicate)
         {
             False(node is IError);
             True(predicate(node));
