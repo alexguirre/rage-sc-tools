@@ -157,6 +157,34 @@
         }
 
         [Fact]
+        public void FieldAccessHasHigherPrecedenceThanBinaryOperators()
+        {
+            var p = ParserFor(
+                @"foo.bar.baz * hello . world"
+            );
+
+            AssertParseExpression(p, n => n is BinaryExpression
+            {
+                Operator: BinaryOperator.Multiply,
+                LHS: FieldAccessExpression
+                {
+                    FieldName: "baz",
+                    SubExpression: FieldAccessExpression
+                    {
+                        FieldName: "bar",
+                        SubExpression: NameExpression { Name: "foo" }
+                    }
+                },
+                RHS: FieldAccessExpression
+                {
+                    FieldName: "world",
+                    SubExpression: NameExpression { Name: "hello" },
+                },
+            });
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
         public void Indexing()
         {
             var p = ParserFor(
