@@ -599,8 +599,9 @@ public class ParserNew
     private bool IsPossibleVarDeclaration()
         => isInsideCommaSeparatedVarDeclaration ||
            Peek(0).Kind is TokenKind.Identifier && Peek(1).Kind is TokenKind.Identifier or TokenKind.Ampersand;
-    private VarDeclaration ParseVarDeclaration(VarKind varKind, bool allowMultipleDeclarations)
+    private VarDeclaration_New ParseVarDeclaration(VarKind varKind, bool allowMultipleDeclarations)
     {
+        // TODO: parse var initializers
         Token typeIdent;
         Declarator decl;
         if (isInsideCommaSeparatedVarDeclaration)
@@ -626,14 +627,14 @@ public class ParserNew
             commaSeparatedVarDeclarationTypeIdentifier = default;
         }
 
-        return new VarDeclaration(
-            decl.Identifier,
-            TypeFromDeclarator(decl, new NamedType(typeIdent)),
-            varKind,
-            isReference: decl is RefDeclarator);
+        return new VarDeclaration_New(
+            new TypeName(typeIdent),
+            AstDeclarator(decl),
+            varKind);
     }
 
     #region Declarators
+    // TODO: replace these records with the AST IVarDeclarator nodes
     private record struct DeclaratorArrayLength(Token OpenBracket, Token CloseBracket, IExpression? LengthExpression);
     private abstract record Declarator(Token Identifier);
     private record RefDeclarator(Token Ampersand, Token Identifier) : Declarator(Identifier);
@@ -685,16 +686,16 @@ public class ParserNew
         }
     }
 
-    private IType TypeFromDeclarator(Declarator declarator, IType baseType)
+    private IVarDeclarator AstDeclarator(Declarator declarator)
         => declarator switch
         {
-            SimpleDeclarator { ArrayLengths: not null } s =>
-                 s.ArrayLengths.Reverse<DeclaratorArrayLength>()
-                             .Aggregate(baseType, (IType ty, DeclaratorArrayLength arrLength)
-                                => arrLength.LengthExpression == null ?
-                                    new IncompleteArrayType(arrLength.OpenBracket, arrLength.CloseBracket, ty) :
-                                    new ArrayType(arrLength.OpenBracket, arrLength.CloseBracket, ty, arrLength.LengthExpression)),
-            _ => baseType,
+            RefDeclarator r => new VarRefDeclarator(r.Identifier, r.Ampersand),
+            SimpleDeclarator { ArrayLengths: null } s => new VarDeclarator(s.Identifier),
+            SimpleDeclarator { ArrayLengths: not null } s
+                => new VarArrayDeclarator(s.Identifier,
+                                          s.ArrayLengths.First().OpenBracket, s.ArrayLengths.Last().CloseBracket,
+                                          s.ArrayLengths.Select(l => l.LengthExpression)),
+            _ => throw new InvalidOperationException(),
         };
 
 

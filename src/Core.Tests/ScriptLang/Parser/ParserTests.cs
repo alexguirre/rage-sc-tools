@@ -6,6 +6,7 @@
 
     using ScTools.ScriptLang;
     using ScTools.ScriptLang.Ast;
+    using ScTools.ScriptLang.Ast.Declarations;
     using ScTools.ScriptLang.Ast.Errors;
     using ScTools.ScriptLang.Ast.Expressions;
     using ScTools.ScriptLang.Ast.Statements;
@@ -101,6 +102,22 @@
         {
             True(switchCasePredicate(switchCase));
             bodyChecker(switchCase.Body);
+        }
+        private static void AssertArrayVarDeclaration(IStatement stmt, Predicate<VarDeclaration_New> varDeclPredicate, params Predicate<IExpression?>[] expectedLengths)
+        {
+            True(stmt is VarDeclaration_New);
+            if (stmt is VarDeclaration_New varDecl)
+            {
+                True(varDecl.Declarator is VarArrayDeclarator);
+                True(varDeclPredicate(varDecl));
+                Equal(expectedLengths.Length, ((VarArrayDeclarator)varDecl.Declarator).Rank);
+                int i = 0;
+                foreach(var length in ((VarArrayDeclarator)varDecl.Declarator).Lengths)
+                {
+                    True(expectedLengths[i](length));
+                    i++;
+                }
+            }
         }
         private static void AssertError(INode node, Predicate<INode> predicate)
         {

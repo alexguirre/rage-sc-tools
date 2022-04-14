@@ -541,17 +541,26 @@
                   label: FLOAT foo, bar"
             );
 
-            Assert(p.ParseStatement(), n => n is VarDeclaration
+            Assert(p.ParseStatement(), n => n is VarDeclaration_New
             {
-                Label: null, Name: "hello", IsReference: false, Type: NamedType { Name: "INT" }
+                Label: null,
+                Type: TypeName { Name: "INT" },
+                Name: "hello", Declarator: VarDeclarator { Name: "hello" },
+                Initializer: null, Kind: VarKind.Local
             });
-            Assert(p.ParseStatement(), n => n is VarDeclaration
+            Assert(p.ParseStatement(), n => n is VarDeclaration_New
             {
-                Label: Label { Name: "label" }, Name: "foo", IsReference: false, Type: NamedType { Name: "FLOAT" }
+                Label: Label { Name: "label" },
+                Type: TypeName { Name: "FLOAT" },
+                Name: "foo", Declarator: VarDeclarator { Name: "foo" },
+                Initializer: null, Kind: VarKind.Local
             });
-            Assert(p.ParseStatement(), n => n is VarDeclaration
+            Assert(p.ParseStatement(), n => n is VarDeclaration_New
             {
-                Label: null, Name: "bar", IsReference: false, Type: NamedType { Name: "FLOAT" }
+                Label: null,
+                Type: TypeName { Name: "FLOAT" },
+                Name: "bar", Declarator: VarDeclarator { Name: "bar" },
+                Initializer: null, Kind: VarKind.Local
             });
             True(p.IsAtEOF);
         }
@@ -564,21 +573,30 @@
                   label: FLOAT foo[2], bar[]"
             );
 
-            Assert(p.ParseStatement(), n => n is VarDeclaration
+            AssertArrayVarDeclaration(p.ParseStatement(), n => n is VarDeclaration_New
             {
-                Label: null, Name: "hello", IsReference: false,
-                Type: ArrayType { ItemType: NamedType { Name: "INT" }, LengthExpression: IntLiteralExpression { Value: 5 } }
-            });
-            Assert(p.ParseStatement(), n => n is VarDeclaration
+                Label: null,
+                Type: TypeName { Name: "INT" },
+                Name: "hello",
+                Initializer: null, Kind: VarKind.Local
+            },
+                dim0 => dim0 is IntLiteralExpression { Value: 5 });
+            AssertArrayVarDeclaration(p.ParseStatement(), n => n is VarDeclaration_New
             {
-                Label: Label { Name: "label" }, Name: "foo", IsReference: false,
-                Type: ArrayType { ItemType: NamedType { Name: "FLOAT" }, LengthExpression: IntLiteralExpression { Value: 2 } }
-            });
-            Assert(p.ParseStatement(), n => n is VarDeclaration
+                Label: Label { Name: "label" },
+                Type: TypeName { Name: "FLOAT" },
+                Name: "foo",
+                Initializer: null, Kind: VarKind.Local
+            },
+                dim0 => dim0 is IntLiteralExpression { Value: 2 });
+            AssertArrayVarDeclaration(p.ParseStatement(), n => n is VarDeclaration_New
             {
-                Label: null, Name: "bar", IsReference: false,
-                Type: IncompleteArrayType { ItemType: NamedType { Name: "FLOAT" } }
-            });
+                Label: null,
+                Type: TypeName { Name: "FLOAT" },
+                Name: "bar",
+                Initializer: null, Kind: VarKind.Local
+            },
+                dim0 => dim0 is null);
             True(p.IsAtEOF);
         }
 
@@ -587,39 +605,33 @@
         {
             var p = ParserFor(
                 @"INT hello[1][2]
-                  FLOAT foo[2][3][5]"
+                  FLOAT foo[2][][5+1]"
             );
 
-            Assert(p.ParseStatement(), n => n is VarDeclaration
+            AssertArrayVarDeclaration(p.ParseStatement(), n => n is VarDeclaration_New
             {
-                Label: null, Name: "hello", IsReference: false,
-                Type: ArrayType
-                {
-                    LengthExpression: IntLiteralExpression { Value: 1 },
-                    ItemType: ArrayType
-                    {
-                        LengthExpression: IntLiteralExpression { Value: 2 },
-                        ItemType: NamedType { Name: "INT" },
-                    },
-                }
-            });
-            Assert(p.ParseStatement(), n => n is VarDeclaration
+                Label: null,
+                Type: TypeName { Name: "INT" },
+                Name: "hello",
+                Initializer: null, Kind: VarKind.Local
+            },
+                dim0 => dim0 is IntLiteralExpression { Value: 1 },
+                dim1 => dim1 is IntLiteralExpression { Value: 2 });
+            AssertArrayVarDeclaration(p.ParseStatement(), n => n is VarDeclaration_New
             {
-                Label: null, Name: "foo", IsReference: false,
-                Type: ArrayType
+                Label: null,
+                Type: TypeName { Name: "FLOAT" },
+                Name: "foo",
+                Initializer: null, Kind: VarKind.Local
+            },
+                dim0 => dim0 is IntLiteralExpression { Value: 2 },
+                dim1 => dim1 is null,
+                dim2 => dim2 is BinaryExpression
                 {
-                    LengthExpression: IntLiteralExpression { Value: 2 },
-                    ItemType: ArrayType
-                    {
-                        LengthExpression: IntLiteralExpression { Value: 3 },
-                        ItemType: ArrayType
-                        {
-                            LengthExpression: IntLiteralExpression { Value: 5 },
-                            ItemType: NamedType { Name: "FLOAT" },
-                        },
-                    },
-                }
-            });
+                    Operator: BinaryOperator.Add,
+                    LHS: IntLiteralExpression { Value: 5 },
+                    RHS: IntLiteralExpression { Value: 1 },
+                });
             True(p.IsAtEOF);
         }
 
@@ -628,16 +640,29 @@
         {
             var p = ParserFor(
                 @"INT &hello
-                  FLOAT &foo"
+                  label: FLOAT &foo, &bar"
             );
 
-            Assert(p.ParseStatement(), n => n is VarDeclaration
-            { 
-                Label: null, Name: "hello", IsReference: true, Type: NamedType { Name: "INT" }
-            });
-            Assert(p.ParseStatement(), n => n is VarDeclaration
+            Assert(p.ParseStatement(), n => n is VarDeclaration_New
             {
-                Label: null, Name: "foo", IsReference: true, Type: NamedType { Name: "FLOAT" }
+                Label: null,
+                Type: TypeName { Name: "INT" },
+                Name: "hello", Declarator: VarRefDeclarator { Name: "hello" },
+                Initializer: null, Kind: VarKind.Local
+            });
+            Assert(p.ParseStatement(), n => n is VarDeclaration_New
+            {
+                Label: Label { Name: "label" },
+                Type: TypeName { Name: "FLOAT" },
+                Name: "foo", Declarator: VarRefDeclarator { Name: "foo" },
+                Initializer: null, Kind: VarKind.Local
+            });
+            Assert(p.ParseStatement(), n => n is VarDeclaration_New
+            {
+                Label: null,
+                Type: TypeName { Name: "FLOAT" },
+                Name: "bar", Declarator: VarRefDeclarator { Name: "bar" },
+                Initializer: null, Kind: VarKind.Local
             });
             True(p.IsAtEOF);
         }

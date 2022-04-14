@@ -54,7 +54,9 @@ public abstract class BaseNode : INode
 
     // Helpers to pass the BaseNode constructor parameters, making the code clearer with names and without new[] { ... }
     protected static IEnumerable<Token> OfTokens(params Token[] tokens) => tokens;
+    protected static IEnumerable<Token> OfTokens(IEnumerable<Token> tokens) => tokens;
     protected static IEnumerable<INode> OfChildren(params INode[] nodes) => nodes;
+    protected static IEnumerable<INode> OfChildren(IEnumerable<INode> nodes) => nodes;
 
     private static SourceRange MergeSourceLocations(ImmutableArray<Token> tokens, ImmutableArray<INode> nodes)
     {

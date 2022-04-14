@@ -20,6 +20,10 @@
         TReturn Visit(StructDeclaration node, TParam param);
         TReturn Visit(StructField node, TParam param);
         TReturn Visit(VarDeclaration node, TParam param);
+        TReturn Visit(VarDeclaration_New node, TParam param);
+        TReturn Visit(VarDeclarator node, TParam param);
+        TReturn Visit(VarRefDeclarator node, TParam param);
+        TReturn Visit(VarArrayDeclarator node, TParam param);
 
         TReturn Visit(BinaryExpression node, TParam param);
         TReturn Visit(BoolLiteralExpression node, TParam param);
@@ -66,6 +70,8 @@
         TReturn Visit(TypeNameType node, TParam param);
         TReturn Visit(VectorType node, TParam param);
         TReturn Visit(VoidType node, TParam param);
+
+        TReturn Visit(TypeName node, TParam param);
 
         TReturn Visit(ErrorDeclaration node, TParam param);
         TReturn Visit(ErrorExpression node, TParam param);
@@ -138,6 +144,31 @@
             node.Label?.Accept(this, param);
             node.Type.Accept(this, param);
             node.Initializer?.Accept(this, param);
+            return DefaultReturn;
+        }
+
+        public virtual TReturn Visit(VarDeclaration_New node, TParam param)
+        {
+            node.Label?.Accept(this, param);
+            node.Type.Accept(this, param);
+            node.Declarator.Accept(this, param);
+            node.Initializer?.Accept(this, param);
+            return DefaultReturn;
+        }
+
+        public virtual TReturn Visit(VarDeclarator node, TParam param)
+        {
+            return DefaultReturn;
+        }
+
+        public virtual TReturn Visit(VarRefDeclarator node, TParam param)
+        {
+            return DefaultReturn;
+        }
+
+        public virtual TReturn Visit(VarArrayDeclarator node, TParam param)
+        {
+            node.Lengths.ForEach(l => l?.Accept(this, param));
             return DefaultReturn;
         }
 
@@ -399,6 +430,11 @@
             return DefaultReturn;
         }
 
+        public virtual TReturn Visit(TypeName node, TParam param)
+        {
+            return DefaultReturn;
+        }
+
         public virtual TReturn Visit(ErrorDeclaration node, TParam param)
         {
             return DefaultReturn;
@@ -442,6 +478,10 @@
         public virtual TReturn Visit(StructDeclaration node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(StructField node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(VarDeclaration node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(VarDeclaration_New node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(VarDeclarator node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(VarRefDeclarator node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(VarArrayDeclarator node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(BinaryExpression node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(BoolLiteralExpression node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(FieldAccessExpression node, TParam param) => throw new NotImplementedException();
@@ -485,6 +525,7 @@
         public virtual TReturn Visit(TypeNameType node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(VectorType node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(VoidType node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(TypeName node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(ErrorDeclaration node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(ErrorExpression node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(ErrorStatement node, TParam param) => throw new NotImplementedException();

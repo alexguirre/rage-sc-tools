@@ -4,6 +4,11 @@ using ScTools.ScriptLang.Ast.Expressions;
 using ScTools.ScriptLang.Ast.Statements;
 using ScTools.ScriptLang.Ast.Types;
 
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Diagnostics;
+using System.Linq;
+
 public enum VarKind
 {
     /// <summary>
@@ -54,4 +59,128 @@ public sealed class VarDeclaration : BaseValueDeclaration, IStatement
 
     internal VarDeclaration WithLabel(Label? label)
         => new(Tokens[0], Type, Kind, IsReference, label);
+}
+
+public sealed class VarDeclaration_New : BaseValueDeclaration_New, IStatement
+{
+    public override string Name => Declarator.Name;
+    public Label? Label { get; }
+    public ITypeName Type => (ITypeName)Children[0];
+    public IVarDeclarator Declarator => (IVarDeclarator)Children[1];
+    public VarKind Kind { get; }
+    public IExpression? Initializer { get; }
+    // TODO: move to semantic information
+    //public int Address { get; set; }
+
+    public VarDeclaration_New(ITypeName type, IVarDeclarator declarator, VarKind kind, IExpression? initializer = null, Label? label = null)
+        : base(OfTokens(), OfChildren(type, declarator).AppendIfNotNull(initializer).AppendIfNotNull(label))
+    {
+        Kind = kind;
+        Initializer = initializer;
+        Label = label;
+    }
+
+    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
+        => visitor.Visit(this, param);
+
+    internal VarDeclaration_New WithLabel(Label? label)
+        => new(Type, Declarator, Kind, Initializer, label);
+
+    public override string DebuggerDisplay =>
+        $@"{nameof(VarDeclaration_New)} {{ {nameof(Type)} = {Type.DebuggerDisplay}, {nameof(Declarator)} = {Declarator.DebuggerDisplay}, {nameof(Initializer)} = {Initializer?.DebuggerDisplay} }}";
+}
+
+// TODO: move ITypeName somewhere else
+public interface ITypeName : INode
+{
+    string Name { get; }
+}
+
+public sealed class TypeName : BaseNode, ITypeName
+{
+    public string Name => Tokens[0].Lexeme.ToString();
+
+    public TypeName(Token nameIdentifier)
+        : base(OfTokens(nameIdentifier), OfChildren())
+    {
+        Debug.Assert(nameIdentifier.Kind is TokenKind.Identifier);
+    }
+
+    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
+        => visitor.Visit(this, param);
+
+    public override string DebuggerDisplay =>
+        $@"{nameof(TypeName)} {{ {nameof(Name)} = {Name} }}";
+}
+
+public interface IVarDeclarator : INode
+{
+    string Name { get; }
+}
+
+public sealed class VarDeclarator : BaseNode, IVarDeclarator
+{
+    public string Name => Tokens[0].Lexeme.ToString();
+
+    public VarDeclarator(Token nameIdentifier)
+        : base(OfTokens(nameIdentifier), OfChildren())
+    {
+        Debug.Assert(nameIdentifier.Kind is TokenKind.Identifier);
+    }
+
+    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
+        => visitor.Visit(this, param);
+
+    public override string DebuggerDisplay =>
+        $@"{nameof(VarDeclarator)} {{ {nameof(Name)} = {Name} }}";
+}
+
+public sealed class VarRefDeclarator : BaseNode, IVarDeclarator
+{
+    public string Name => Tokens[0].Lexeme.ToString();
+
+    public VarRefDeclarator(Token nameIdentifier, Token ampersandToken)
+        : base(OfTokens(nameIdentifier, ampersandToken), OfChildren())
+    {
+        Debug.Assert(nameIdentifier.Kind is TokenKind.Identifier);
+        Debug.Assert(ampersandToken.Kind is TokenKind.Ampersand);
+    }
+
+    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
+        => visitor.Visit(this, param);
+
+    public override string DebuggerDisplay =>
+        $@"{nameof(VarRefDeclarator)} {{ {nameof(Name)} = {Name} }}";
+}
+
+public sealed class VarArrayDeclarator : BaseNode, IVarDeclarator
+{
+    public string Name => Tokens[0].Lexeme.ToString();
+
+    /// <summary>
+    /// Gets the dimensions sizes.
+    /// </summary>
+    /// <remarks>
+    /// Expected order is as they appear in the source code, from left to right.
+    /// </remarks>
+    public ImmutableArray<IExpression?> Lengths { get; }
+    /// <summary>
+    /// Gets the number of dimensions.
+    /// </summary>
+    public int Rank => Lengths.Length;
+
+    public VarArrayDeclarator(Token nameIdentifier, Token openBracket, Token closeBracket, IEnumerable<IExpression?> lengths)
+        : base(OfTokens(nameIdentifier, openBracket, closeBracket), OfChildren(lengths.Where(l => l is not null)!))
+    {
+        Debug.Assert(nameIdentifier.Kind is TokenKind.Identifier);
+        Debug.Assert(openBracket.Kind is TokenKind.OpenBracket);
+        Debug.Assert(closeBracket.Kind is TokenKind.CloseBracket);
+        Lengths = lengths.ToImmutableArray();
+    }
+
+    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
+        => visitor.Visit(this, param);
+
+    public override string DebuggerDisplay =>
+        $@"{nameof(VarArrayDeclarator)} {{ {nameof(Name)} = {Name}, {nameof(Lengths)} = [{string.Join(", ", Lengths.Select(l => l?.DebuggerDisplay ?? "null"))}] }}";
 }
