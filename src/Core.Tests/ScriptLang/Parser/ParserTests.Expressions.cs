@@ -4,6 +4,8 @@
     using ScTools.ScriptLang.Ast.Errors;
     using ScTools.ScriptLang.Ast.Expressions;
 
+    using System.Linq;
+
     using Xunit;
     using static Xunit.Assert;
 
@@ -85,7 +87,12 @@
             );
 
             True(p.IsPossibleExpression());
-            AssertError(p.ParseExpression(), n => n is ErrorExpression);
+            Assert(p.ParseExpression(), n => n is VectorExpression
+            {
+                X: ErrorExpression,
+                Y: FloatLiteralExpression { Value: 2.5f },
+                Z: IntLiteralExpression { Value: 3 },
+            });
             CheckError(ErrorCode.ParserUnknownExpression, (1, 3), (1, 3), p.Diagnostics);
         }
 
@@ -97,7 +104,12 @@
             );
 
             True(p.IsPossibleExpression());
-            AssertError(p.ParseExpression(), n => n is ErrorExpression);
+            Assert(p.ParseExpression(), n => n is VectorExpression
+            {
+                X: IntLiteralExpression { Value: 1 },
+                Y: ErrorExpression,
+                Z: IntLiteralExpression { Value: 3 },
+            });
             CheckError(ErrorCode.ParserUnknownExpression, (1, 5), (1, 5), p.Diagnostics);
         }
 
@@ -109,7 +121,12 @@
             );
 
             True(p.IsPossibleExpression());
-            AssertError(p.ParseExpression(), n => n is ErrorExpression);
+            Assert(p.ParseExpression(), n => n is VectorExpression
+            {
+                X: IntLiteralExpression { Value: 1 },
+                Y: FloatLiteralExpression { Value: 2.5f },
+                Z: ErrorExpression,
+            });
             CheckError(ErrorCode.ParserUnknownExpression, (1, 9), (1, 10), p.Diagnostics);
         }
 
@@ -121,7 +138,14 @@
             );
 
             True(p.IsPossibleExpression());
-            AssertError(p.ParseExpression(), n => n is ErrorExpression);
+            var n = p.ParseExpression();
+            Assert(n, n => n is VectorExpression
+            {
+                X: IntLiteralExpression { Value: 1 },
+                Y: IntLiteralExpression { Value: 2 },
+                Z: IntLiteralExpression { Value: 3 },
+            });
+            True(n.Tokens.Last() is { IsMissing: true, Kind: TokenKind.GreaterThanGreaterThan });
             // TODO: this SourceRange should probably be the last correct token location
             CheckError(ErrorCode.ParserUnexpectedToken, (0, 0), (0, 0), p.Diagnostics);
         }

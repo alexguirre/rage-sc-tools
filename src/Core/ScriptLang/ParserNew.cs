@@ -185,9 +185,8 @@ public class ParserNew
             if (Expect(ParseExpression, out var conditionExpr) && ExpectEOS())
             {
                 var body = ParseBodyUntilAny(TokenKind.ENDWHILE);
-                stmt = Expect(TokenKind.ENDWHILE, out var endwhileToken) && ExpectEOS() ?
-                        new WhileStatement(whileToken, endwhileToken, conditionExpr, body, label) :
-                        new ErrorStatement(LastError!, label, whileToken);
+                ExpectOrMissing(TokenKind.ENDWHILE, out var endwhileToken, () => MissingKeyword(TokenKind.ENDWHILE));
+                stmt = new WhileStatement(whileToken, endwhileToken, conditionExpr, body, label);
             }
             else
             {
@@ -199,9 +198,8 @@ public class ParserNew
             if (Expect(ParseExpression, out var limitExpr) && Expect(ParseExpression, out var counterExpr) && ExpectEOS())
             {
                 var body = ParseBodyUntilAny(TokenKind.ENDREPEAT);
-                stmt = Expect(TokenKind.ENDREPEAT, out var endrepeatToken) && ExpectEOS() ?
-                        new RepeatStatement(repeatToken, endrepeatToken, limitExpr, counterExpr, body, label) :
-                        new ErrorStatement(LastError!, label, repeatToken);
+                ExpectOrMissing(TokenKind.ENDREPEAT, out var endrepeatToken, () => MissingKeyword(TokenKind.ENDREPEAT));
+                stmt = new RepeatStatement(repeatToken, endrepeatToken, limitExpr, counterExpr, body, label);
             }
             else
             {
@@ -213,9 +211,8 @@ public class ParserNew
             if (Expect(ParseExpression, out var expr) && ExpectEOS())
             {
                 var cases = ParseSwitchCases();
-                stmt = Expect(TokenKind.ENDSWITCH, out var endswitchToken) && ExpectEOS() ?
-                        new SwitchStatement(switchToken, endswitchToken, expr, cases, label) :
-                        new ErrorStatement(LastError!, label, switchToken);
+                ExpectOrMissing(TokenKind.ENDSWITCH, out var endswitchToken, () => MissingKeyword(TokenKind.ENDSWITCH));
+                stmt = new SwitchStatement(switchToken, endswitchToken, expr, cases, label);
             }
             else
             {
@@ -236,9 +233,8 @@ public class ParserNew
         }
         else if (Accept(TokenKind.GOTO, out var gotoToken))
         {
-            stmt = Expect(TokenKind.Identifier, out var gotoTargetToken) ?
-                        new GotoStatement(gotoToken, gotoTargetToken, label) :
-                        new ErrorStatement(LastError!, label, gotoToken, gotoTargetToken);
+            ExpectOrMissing(TokenKind.Identifier, out var gotoTargetToken, MissingIdentifier);
+            stmt = new GotoStatement(gotoToken, gotoTargetToken, label);
         }
         else if (allowEmptyStatement)
         {
@@ -256,7 +252,7 @@ public class ParserNew
             while (!IsAtEOS) { Next(); }
         }
 
-        if (stmt is not EmptyStatement)
+        if (stmt is not EmptyStatement && !isInsideCommaSeparatedVarDeclaration)
         {
             ExpectEOS();
         }
@@ -280,15 +276,13 @@ public class ParserNew
                     {
                         ExpectEOS();
                         var elseBody = ParseBodyUntilAny(TokenKind.ENDIF);
-                        stmt = Expect(TokenKind.ENDIF, out var endifToken) && ExpectEOS() ?
-                                new IfStatement(ifOrElifToken, elseToken, endifToken, conditionExpr, thenBody, elseBody, label) :
-                                new ErrorStatement(LastError!, label, ifOrElifToken, elseToken);
+                        ExpectOrMissing(TokenKind.ENDIF, out var endifToken, () => MissingKeyword(TokenKind.ENDIF));
+                        stmt = new IfStatement(ifOrElifToken, elseToken, endifToken, conditionExpr, thenBody, elseBody, label);
                     }
                     else
                     {
-                        stmt = Expect(TokenKind.ENDIF, out var endifToken) && ExpectEOS() ?
-                                new IfStatement(ifOrElifToken, endifToken, conditionExpr, thenBody, label) :
-                                new ErrorStatement(LastError!, label, ifOrElifToken);
+                        ExpectOrMissing(TokenKind.ENDIF, out var endifToken, () => MissingKeyword(TokenKind.ENDIF));
+                        stmt = new IfStatement(ifOrElifToken, endifToken, conditionExpr, thenBody, label);
                     }
                 }
                 else
@@ -341,9 +335,9 @@ public class ParserNew
             return cases;
         }
 
-        List<IStatement> ParseBodyUntilAny(params TokenKind[] stopTokens)
+        IEnumerable<IStatement> ParseBodyUntilAny(params TokenKind[] stopTokens)
         {
-            var body = new List<IStatement>();
+            List<IStatement>? body = null;
             while (!IsAtEOF)
             {
                 if (stopTokens.Contains(Peek(0).Kind))
@@ -351,9 +345,10 @@ public class ParserNew
                     break;
                 }
 
+                body ??= new();
                 body.Add(ParseStatement());
             }
-            return body;
+            return body ?? Enumerable.Empty<IStatement>();
         }
     }
 
@@ -542,12 +537,11 @@ public class ParserNew
         IExpression ParseExpressionTerm()
         {
             IExpression expr;
-            if (Accept(TokenKind.OpenParen, out var openParenToken))
+            if (Accept(TokenKind.OpenParen, out _))
             {
-                expr = Expect(ParseExpression, out var innerExpr) &&
-                       Expect(TokenKind.CloseParen, out var closeParentToken) ?
-                            innerExpr :
-                            new ErrorExpression(LastError!, openParenToken);
+                Expect(ParseExpression, out var innerExpr);
+                Expect(TokenKind.CloseParen, out _);
+                expr = innerExpr;
             }
             else if (Accept(TokenKind.NOT, out var unaryOpToken) || Accept(TokenKind.Minus, out unaryOpToken))
             {
@@ -555,14 +549,13 @@ public class ParserNew
             }
             else if (Accept(TokenKind.LessThanLessThan, out var vectorOpenToken))
             {
-                expr = Expect(ParseExpression, out var x) &&
-                       Expect(TokenKind.Comma, out var comma1) &&
-                       Expect(ParseExpression, out var y) &&
-                       Expect(TokenKind.Comma, out var comma2) &&
-                       Expect(ParseExpression, out var z) &&
-                       Expect(TokenKind.GreaterThanGreaterThan, out var vectorCloseToken) ?
-                            new VectorExpression(vectorOpenToken, comma1, comma2, vectorCloseToken, x, y, z) :
-                            new ErrorExpression(LastError!, vectorOpenToken);
+                Expect(ParseExpression, out var x);
+                ExpectOrMissing(TokenKind.Comma, out var comma1, () => Missing(Token.Comma()));
+                Expect(ParseExpression, out var y);
+                ExpectOrMissing(TokenKind.Comma, out var comma2, () => Missing(Token.Comma()));
+                Expect(ParseExpression, out var z);
+                ExpectOrMissing(TokenKind.GreaterThanGreaterThan, out var vectorCloseToken, () => Missing(Token.GreaterThanGreaterThan()));
+                expr = new VectorExpression(vectorOpenToken, comma1, comma2, vectorCloseToken, x, y, z);
             }
             else if (Accept(TokenKind.Identifier, out var identToken))
             {
@@ -586,11 +579,10 @@ public class ParserNew
             }
             else if (Accept(TokenKind.SIZE_OF, out var sizeOfToken))
             {
-                expr = Expect(TokenKind.OpenParen, out var sizeOfOpenToken) &&
-                       Expect(ParseExpression, out var sizeOfExpr) &&
-                       Expect(TokenKind.CloseParen, out var sizeOfCloseToken) ?
-                            new SizeOfExpression(sizeOfToken, sizeOfOpenToken, sizeOfCloseToken, sizeOfExpr) :
-                            new ErrorExpression(LastError!, sizeOfToken);
+                ExpectOrMissing(TokenKind.OpenParen, out var sizeOfOpenToken, () => Missing(Token.OpenParen()));
+                Expect(ParseExpression, out var sizeOfExpr);
+                ExpectOrMissing(TokenKind.CloseParen, out var sizeOfCloseToken, () => Missing(Token.CloseParen()));
+                expr = new SizeOfExpression(sizeOfToken, sizeOfOpenToken, sizeOfCloseToken, sizeOfExpr);
             }
             else if (Accept(TokenKind.Null, out var nullToken))
             {
@@ -599,8 +591,6 @@ public class ParserNew
             else
             {
                 expr = UnknownExpressionError();
-                // skip the current token
-                if (!IsAtEOS) { Next(); }
             }
 
             return TryParseExpressionTermSuffix(expr);
@@ -611,35 +601,34 @@ public class ParserNew
             IExpression? newExpr = null;
             if (Accept(TokenKind.Dot, out var dotToken))
             {
-                newExpr = Expect(TokenKind.Identifier, out var ident) ?
-                            new FieldAccessExpression(dotToken, ident, expr) :
-                            new ErrorExpression(LastError!, dotToken);
+                ExpectOrMissing(TokenKind.Identifier, out var ident, MissingIdentifier);
+                newExpr = new FieldAccessExpression(dotToken, ident, expr);
             }
             else if (Accept(TokenKind.OpenBracket, out var openBracket))
             {
-                newExpr = Expect(ParseExpression, out var indexExpr) &&
-                          Expect(TokenKind.CloseBracket, out var closeBracket) ?
-                            new IndexingExpression(openBracket, closeBracket, expr, indexExpr) :
-                            new ErrorExpression(LastError!, openBracket);
+                Expect(ParseExpression, out var indexExpr);
+                ExpectOrMissing(TokenKind.CloseBracket, out var closeBracket, () => Missing(Token.CloseBracket()));
+                newExpr = new IndexingExpression(openBracket, closeBracket, expr, indexExpr);
             }
             else if (Accept(TokenKind.OpenParen, out var openParen))
             {
-                var args = new List<IExpression>();
+                List<IExpression>? args = null;
                 if (!Accept(TokenKind.CloseParen, out var closeParen))
                 {
                     while (!IsAtEOS)
                     {
+                        args ??= new();
                         args.Add(ParseExpression());
 
                         if (Accept(TokenKind.CloseParen, out closeParen) ||
-                            !Expect(TokenKind.Comma, out var comma))
+                            !Expect(TokenKind.Comma, out _))
                         {
                             break;
                         }
                     }
                 }
 
-                newExpr = new InvocationExpression(openParen, closeParen, expr, args);
+                newExpr = new InvocationExpression(openParen, closeParen, expr, args ?? Enumerable.Empty<IExpression>());
             }
 
             return newExpr is null ? expr : TryParseExpressionTermSuffix(newExpr);

@@ -171,4 +171,8 @@ public readonly record struct Token
     public static Token Plus(SourceRange location = default) => new(TokenKind.Plus, "+", location);
     public static Token OpenParen(SourceRange location = default) => new(TokenKind.OpenParen, "(", location);
     public static Token CloseParen(SourceRange location = default) => new(TokenKind.CloseParen, ")", location);
+    public static Token OpenBracket(SourceRange location = default) => new(TokenKind.OpenBracket, "[", location);
+    public static Token CloseBracket(SourceRange location = default) => new(TokenKind.CloseBracket, "]", location);
+    public static Token Comma(SourceRange location = default) => new(TokenKind.Comma, ",", location);
+    public static Token GreaterThanGreaterThan(SourceRange location = default) => new(TokenKind.GreaterThanGreaterThan, ">>", location);
 }
