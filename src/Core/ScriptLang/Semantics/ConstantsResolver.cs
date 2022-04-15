@@ -164,7 +164,7 @@
                     var strValue = constant.Initializer.Type is IError ? null : ExpressionEvaluator.EvalString(constant.Initializer, Symbols);
 
                     // simplify the initializer expression
-                    constant.Initializer = new StringLiteralExpression((strValue is null ? Token.Null() : Token.String(strValue)) with { Location = constant.Initializer?.Location ?? constant.Location });
+                    constant.Initializer = new StringLiteralExpression((strValue is null ? TokenKind.Null.Create() : Token.String(strValue)) with { Location = constant.Initializer?.Location ?? constant.Location });
                     break;
 
                 default: throw new System.NotImplementedException();
