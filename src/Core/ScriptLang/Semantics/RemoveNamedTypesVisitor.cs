@@ -24,7 +24,8 @@
     {
         public override Void Visit(EnumMemberDeclaration node, Void param)
         {
-            node.Type = Clean(node.Type);
+            // FIXME
+            //node.Type = Clean(node.Type);
             return base.Visit(node, param);
         }
 

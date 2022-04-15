@@ -22,11 +22,12 @@
 
             public int EvalInt(InvocationExpression expr, GlobalSymbolTable symbols)
             {
-                if (expr.Arguments[0].Type is TypeNameType { TypeDeclaration: EnumDeclaration enumDecl })
-                {
-                    return enumDecl.Members.Count;
-                }
-                else
+                // FIXME
+                //if (expr.Arguments[0].Type is TypeNameType { TypeDeclaration: EnumDeclaration enumDecl })
+                //{
+                //    return enumDecl.Members.Length;
+                //}
+                //else
                 {
                     throw new NotImplementedException();
                 }
@@ -75,14 +76,15 @@
                 }
                 else if (arg.Type is TypeNameType typeName)
                 {
-                    if (typeName.TypeDeclaration is not EnumDeclaration)
-                    {
-                        diagnostics.AddError($"Argument 1: cannot pass non-enum type '{typeName.TypeDeclaration.Name}' to COUNT_OF parameter", arg.Location);
-                    }
-                    else
-                    {
-                        isConstant = true;
-                    }
+                    // FIXME
+                    //if (typeName.TypeDeclaration is not EnumDeclaration)
+                    //{
+                    //    diagnostics.AddError($"Argument 1: cannot pass non-enum type '{typeName.TypeDeclaration.Name}' to COUNT_OF parameter", arg.Location);
+                    //}
+                    //else
+                    //{
+                    //    isConstant = true;
+                    //}
                 }
                 else if (arg.Type is not ErrorType)
                 {
@@ -109,11 +111,12 @@
                         cg.Emit(Opcode.LOAD);
                     }
                 }
-                else if (arg.Type is TypeNameType { TypeDeclaration: EnumDeclaration enumDecl })
-                {
-                    // Push number of enum members
-                    cg.EmitPushConstInt(enumDecl.Members.Count);
-                }
+                // FIXME
+                //else if (arg.Type is TypeNameType { TypeDeclaration: EnumDeclaration enumDecl })
+                //{
+                //    // Push number of enum members
+                //    cg.EmitPushConstInt(enumDecl.Members.Length);
+                //}
                 else
                 {
                     throw new NotImplementedException();

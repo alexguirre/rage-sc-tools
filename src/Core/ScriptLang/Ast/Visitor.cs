@@ -118,7 +118,6 @@
 
         public virtual TReturn Visit(EnumMemberDeclaration node, TParam param)
         {
-            node.Type.Accept(this, param);
             node.Initializer?.Accept(this, param);
             return DefaultReturn;
         }

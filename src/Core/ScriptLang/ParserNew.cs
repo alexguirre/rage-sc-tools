@@ -95,6 +95,49 @@ public class ParserNew
         return new(usingKeyword, pathString);
     }
 
+    public bool IsPossibleEnumDeclaration()
+        => Peek(0).Kind is TokenKind.ENUM;
+    public EnumDeclaration ParseEnumDeclaration()
+    {
+        ExpectOrMissing(TokenKind.ENUM, out var enumKeyword);
+        ExpectOrMissing(TokenKind.Identifier, out var nameIdent, MissingIdentifier);
+        ExpectEOS();
+
+        var members = new List<EnumMemberDeclaration>();
+        while (Peek(0).Kind is not TokenKind.ENDENUM)
+        {
+            members.Add(ParseEnumMember());
+
+            if (Accept(TokenKind.Comma, out _))
+            {
+                // after a comma a new-line or another enum member can follow
+                Accept(TokenKind.EOS, out _);
+            }
+            else
+            {
+                // without a comma only a new-line may follow
+                Expect(TokenKind.EOS, out _);
+            }
+        }
+
+        ExpectOrMissing(TokenKind.ENDENUM, out var endenumKeyword);
+        ExpectEOS();
+
+        return new(enumKeyword, nameIdent, endenumKeyword, members);
+
+        EnumMemberDeclaration ParseEnumMember()
+        {
+            ExpectOrMissing(TokenKind.Identifier, out var nameIdent, MissingIdentifier);
+            IExpression? initializerExpr = null;
+            if (Accept(TokenKind.Equals, out var equalsToken))
+            {
+                initializerExpr = ParseExpression();
+            }
+
+            return new(nameIdent, initializerExpr);
+        }
+    }
+
     public bool IsPossibleScriptDeclaration()
         => Peek(0).Kind is TokenKind.SCRIPT;
     public ScriptDeclaration ParseScriptDeclaration()

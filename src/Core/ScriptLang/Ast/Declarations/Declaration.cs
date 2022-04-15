@@ -92,12 +92,10 @@ public sealed class TypeName : BaseNode
 
 public abstract class BaseTypeDeclaration_New : BaseNode, ITypeDeclaration_New
 {
-    public string Name => Tokens[0].Lexeme.ToString();
+    public abstract string Name { get; }
 
-    public BaseTypeDeclaration_New(Token nameIdentifierToken)
-        : base(OfTokens(nameIdentifierToken), OfChildren())
+    public BaseTypeDeclaration_New(IEnumerable<Token> tokens, IEnumerable<INode> children) : base(tokens, children)
     {
-        Debug.Assert(nameIdentifierToken.Kind is TokenKind.Identifier);
     }
 }
 

@@ -59,14 +59,15 @@
                 var arg1 = args[0];
                 if (arg1.Type is TypeNameType typeName)
                 {
-                    if (typeName.TypeDeclaration is EnumDeclaration enumDecl)
-                    {
-                        returnType = enumDecl.CreateType(source);
-                    }
-                    else
-                    {
-                        returnType = new ErrorType(arg1.Location, diagnostics, $"Argument 1: cannot pass non-enum type '{typeName.TypeDeclaration.Name}' to INT_TO_ENUM first parameter");
-                    }
+                    // FIXME
+                    //if (typeName.TypeDeclaration is EnumDeclaration enumDecl)
+                    //{
+                    //    returnType = enumDecl.CreateType(source);
+                    //}
+                    //else
+                    //{
+                    //    returnType = new ErrorType(arg1.Location, diagnostics, $"Argument 1: cannot pass non-enum type '{typeName.TypeDeclaration.Name}' to INT_TO_ENUM first parameter");
+                    //}
                 }
                 else if (arg1.Type is ErrorType)
                 {
@@ -89,7 +90,8 @@
                     }
                 }
 
-                return (returnType, isConstant);
+                // FIXME
+                return (/*returnType*/null, isConstant);
             }
 
             public override void CGInvocation(CodeGenerator cg, InvocationExpression expr)

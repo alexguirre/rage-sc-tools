@@ -111,6 +111,15 @@
                 }
             }
         }
+        private static void AssertEnumDeclaration(INode node, string name, Action<ImmutableArray<EnumMemberDeclaration>> membersChecker)
+        {
+            True(node is EnumDeclaration);
+            if (node is EnumDeclaration enumDecl)
+            {
+                Equal(name, enumDecl.Name);
+                membersChecker(enumDecl.Members);
+            }
+        }
         private static void AssertScriptDeclaration(INode node, string name, Action<ImmutableArray<VarDeclaration_New>> parametersChecker, Action<ImmutableArray<IStatement>> bodyChecker)
         {
             True(node is ScriptDeclaration);

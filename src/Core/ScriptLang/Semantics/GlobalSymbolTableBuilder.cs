@@ -19,13 +19,15 @@
 
         public override Void Visit(EnumDeclaration node, Void param)
         {
-            AddTypeChecked(node);
+            // FIXME
+            //AddTypeChecked(node);
             return base.Visit(node, param);
         }
 
         public override Void Visit(EnumMemberDeclaration node, Void param)
         {
-            AddValueChecked(node);
+            // FIXME
+            //AddValueChecked(node);
             return DefaultReturn;
         }
 

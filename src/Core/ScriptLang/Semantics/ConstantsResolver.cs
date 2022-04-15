@@ -34,39 +34,41 @@
         {
             var dependencyFinder = new DependencyFinder(Diagnostics, Symbols);
 
-            var constants = Symbols.Values.Where(v => v is EnumMemberDeclaration or VarDeclaration { Kind: VarKind.Constant }).ToArray();
-            var constantsDependencies = constants.ToDictionary(c => c, c => c.Accept(dependencyFinder, default).ToArray());
-            var unsolved = new HashSet<IValueDeclaration>(constants);
+            // FIXME
+            //var constants = Symbols.Values.Where(v => v is EnumMemberDeclaration or VarDeclaration { Kind: VarKind.Constant }).ToArray();
+            //var constantsDependencies = constants.ToDictionary(c => c, c => c.Accept(dependencyFinder, default).ToArray());
+            //var unsolved = new HashSet<IValueDeclaration>(constants);
 
-            while (unsolved.Count > 0)
-            {
-                var origUnsolvedCount = unsolved.Count;
+            //while (unsolved.Count > 0)
+            //{
+            //    var origUnsolvedCount = unsolved.Count;
 
-                foreach (var c in constants)
-                {
-                    var dependencies = constantsDependencies[c];
-                    if (dependencies.All(d => !unsolved.Contains(d)) && unsolved.Contains(c))
-                    {
-                        Solve(c);
-                        unsolved.Remove(c);
-                    }
+            //    foreach (var c in constants)
+            //    {
+            //        var dependencies = constantsDependencies[c];
+            //        if (dependencies.All(d => !unsolved.Contains(d)) && unsolved.Contains(c))
+            //        {
+            //            Solve(c);
+            //            unsolved.Remove(c);
+            //        }
 
-                }
+            //    }
 
-                if (origUnsolvedCount == unsolved.Count)
-                {
-                    // no constants were resolved in this iteration, so there must be some dependency cycle in their initializers
-                    unsolved.ForEach(c => Diagnostics.AddError($"The evaluation of the initializer for '{c.Name}' involves a circular dependency", c.Location));
-                    break;
-                }
-            }
+            //    if (origUnsolvedCount == unsolved.Count)
+            //    {
+            //        // no constants were resolved in this iteration, so there must be some dependency cycle in their initializers
+            //        unsolved.ForEach(c => Diagnostics.AddError($"The evaluation of the initializer for '{c.Name}' involves a circular dependency", c.Location));
+            //        break;
+            //    }
+            //}
         }
 
         private void Solve(IValueDeclaration value)
         {
             switch (value)
             {
-                case EnumMemberDeclaration d: SolveEnumMember(d); break;
+                // FIXME
+                //case EnumMemberDeclaration d: SolveEnumMember(d); break;
                 case VarDeclaration d: SolveConstant(d); break;
                 default: Debug.Assert(false); break;
             }
@@ -74,40 +76,41 @@
 
         private void SolveEnumMember(EnumMemberDeclaration enumMember)
         {
-            if (enumMember.Initializer is null)
-            {
-                EnumMemberDeclaration? prevMember = GetPrevEnumMember(enumMember);
-                enumMember.Value = prevMember is null ? 0 : prevMember.Value + 1;
-            }
-            else
-            {
-                var init = enumMember.Initializer!;
-                init.Accept(exprTypeChecker, default);
-                if (!init.IsConstant)
-                {
-                    enumMember.Initializer = new ErrorExpression(init.Location, Diagnostics, $"The expression assigned to '{enumMember.Name}' must be constant");
-                    return;
-                }
+            // FIXME
+            //if (enumMember.Initializer is null)
+            //{
+            //    EnumMemberDeclaration? prevMember = GetPrevEnumMember(enumMember);
+            //    enumMember.Value = prevMember is null ? 0 : prevMember.Value + 1;
+            //}
+            //else
+            //{
+            //    var init = enumMember.Initializer!;
+            //    init.Accept(exprTypeChecker, default);
+            //    if (!init.IsConstant)
+            //    {
+            //        enumMember.Initializer = new ErrorExpression(init.Location, Diagnostics, $"The expression assigned to '{enumMember.Name}' must be constant");
+            //        return;
+            //    }
 
-                if (init is IntLiteralExpression lit)
-                {
-                    // already a literal, don't need to simplify the expression
-                    enumMember.Value = lit.Value;
-                    return;
-                }
+            //    if (init is IntLiteralExpression lit)
+            //    {
+            //        // already a literal, don't need to simplify the expression
+            //        enumMember.Value = lit.Value;
+            //        return;
+            //    }
 
-                if (!enumMember.Type.CanAssign(init.Type!, init.IsLValue) &&
-                    !BuiltInTypes.Int.CreateType(init.Location).CanAssign(init.Type!, init.IsLValue))
-                {
-                    enumMember.Type = new ErrorType(init.Location, Diagnostics, $"Cannot assign type '{init.Type}' to '{enumMember.Type}'");
-                    return;
-                }
+            //    if (!enumMember.Type.CanAssign(init.Type!, init.IsLValue) &&
+            //        !BuiltInTypes.Int.CreateType(init.Location).CanAssign(init.Type!, init.IsLValue))
+            //    {
+            //        enumMember.Type = new ErrorType(init.Location, Diagnostics, $"Cannot assign type '{init.Type}' to '{enumMember.Type}'");
+            //        return;
+            //    }
 
-                enumMember.Value = init.Type is IError ? 0 : ExpressionEvaluator.EvalInt(init, Symbols);
-            }
+            //    enumMember.Value = init.Type is IError ? 0 : ExpressionEvaluator.EvalInt(init, Symbols);
+            //}
 
-            // simplify the initializer expression
-            enumMember.Initializer = new IntLiteralExpression(Token.Integer(enumMember.Value, enumMember.Initializer?.Location ?? enumMember.Location));
+            //// simplify the initializer expression
+            //enumMember.Initializer = new IntLiteralExpression(Token.Integer(enumMember.Value, enumMember.Initializer?.Location ?? enumMember.Location));
         }
 
         private void SolveConstant(VarDeclaration constant)
@@ -173,17 +176,18 @@
 
         private static EnumMemberDeclaration? GetPrevEnumMember(EnumMemberDeclaration enumMember)
         {
-            var enumDecl = ((EnumType)enumMember.Type).Declaration;
+            // FIXME
+            //var enumDecl = ((EnumType)enumMember.Type).Declaration;
             EnumMemberDeclaration? prevMember = null;
-            foreach (var e in enumDecl.Members)
-            {
-                if (e == enumMember)
-                {
-                    break;
-                }
+            //foreach (var e in enumDecl.Members)
+            //{
+            //    if (e == enumMember)
+            //    {
+            //        break;
+            //    }
 
-                prevMember = e;
-            }
+            //    prevMember = e;
+            //}
 
             return prevMember;
         }
@@ -208,7 +212,8 @@
                 {
                     // if the enum member doesn't have an initializer, it depends on the previous enum member
                     EnumMemberDeclaration? prevMember = GetPrevEnumMember(node);
-                    return prevMember is null ? None : new[] { prevMember };
+                    // FIXME
+                    return prevMember is null ? None : None/*new[] { prevMember }*/;
                 }
                 else
                 {

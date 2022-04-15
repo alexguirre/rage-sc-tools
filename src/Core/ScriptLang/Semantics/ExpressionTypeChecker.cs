@@ -137,7 +137,8 @@
                 {
                     Type = valueDecl.Type,
                     IsLValue = valueDecl is VarDeclaration { Kind: not VarKind.Constant },
-                    IsConstant = valueDecl is EnumMemberDeclaration or VarDeclaration { Kind: VarKind.Constant }
+                    // FIXME
+                    IsConstant = false, // valueDecl is EnumMemberDeclaration or VarDeclaration { Kind: VarKind.Constant }
                 };
             }
             else if (decl is ITypeDeclaration typeDecl)

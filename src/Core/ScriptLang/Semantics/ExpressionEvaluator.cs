@@ -80,10 +80,11 @@
                 {
                     return varDecl.Initializer!.Accept(this, param);
                 }
-                else if (decl is EnumMemberDeclaration enumMember)
-                {
-                    return enumMember.Value;
-                }
+                // FIXME
+                //else if (decl is EnumMemberDeclaration enumMember)
+                //{
+                //    return enumMember.Value;
+                //}
 
                 throw new System.NotImplementedException();
             }
