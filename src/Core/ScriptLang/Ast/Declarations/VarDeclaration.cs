@@ -65,14 +65,14 @@ public sealed class VarDeclaration_New : BaseValueDeclaration_New, IStatement
 {
     public override string Name => Declarator.Name;
     public Label? Label { get; }
-    public ITypeName Type => (ITypeName)Children[0];
+    public TypeName Type => (TypeName)Children[0];
     public IVarDeclarator Declarator => (IVarDeclarator)Children[1];
     public VarKind Kind { get; }
     public IExpression? Initializer { get; }
     // TODO: move to semantic information
     //public int Address { get; set; }
 
-    public VarDeclaration_New(ITypeName type, IVarDeclarator declarator, VarKind kind, IExpression? initializer = null, Label? label = null)
+    public VarDeclaration_New(TypeName type, IVarDeclarator declarator, VarKind kind, IExpression? initializer = null, Label? label = null)
         : base(OfTokens(), OfChildren(type, declarator).AppendIfNotNull(initializer).AppendIfNotNull(label))
     {
         Kind = kind;
@@ -88,29 +88,6 @@ public sealed class VarDeclaration_New : BaseValueDeclaration_New, IStatement
 
     public override string DebuggerDisplay =>
         $@"{nameof(VarDeclaration_New)} {{ {nameof(Type)} = {Type.DebuggerDisplay}, {nameof(Declarator)} = {Declarator.DebuggerDisplay}, {nameof(Initializer)} = {Initializer?.DebuggerDisplay} }}";
-}
-
-// TODO: move ITypeName somewhere else
-public interface ITypeName : INode
-{
-    string Name { get; }
-}
-
-public sealed class TypeName : BaseNode, ITypeName
-{
-    public string Name => Tokens[0].Lexeme.ToString();
-
-    public TypeName(Token nameIdentifier)
-        : base(OfTokens(nameIdentifier), OfChildren())
-    {
-        Debug.Assert(nameIdentifier.Kind is TokenKind.Identifier);
-    }
-
-    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-        => visitor.Visit(this, param);
-
-    public override string DebuggerDisplay =>
-        $@"{nameof(TypeName)} {{ {nameof(Name)} = {Name} }}";
 }
 
 public interface IVarDeclarator : INode
@@ -137,13 +114,13 @@ public sealed class VarDeclarator : BaseNode, IVarDeclarator
 
 public sealed class VarRefDeclarator : BaseNode, IVarDeclarator
 {
-    public string Name => Tokens[0].Lexeme.ToString();
+    public string Name => Tokens[1].Lexeme.ToString();
 
-    public VarRefDeclarator(Token nameIdentifier, Token ampersandToken)
-        : base(OfTokens(nameIdentifier, ampersandToken), OfChildren())
+    public VarRefDeclarator(Token ampersandToken, Token nameIdentifier)
+        : base(OfTokens(ampersandToken, nameIdentifier), OfChildren())
     {
-        Debug.Assert(nameIdentifier.Kind is TokenKind.Identifier);
         Debug.Assert(ampersandToken.Kind is TokenKind.Ampersand);
+        Debug.Assert(nameIdentifier.Kind is TokenKind.Identifier);
     }
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)

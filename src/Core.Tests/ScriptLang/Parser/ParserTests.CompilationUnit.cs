@@ -3,6 +3,7 @@
 using ScTools.ScriptLang;
 using ScTools.ScriptLang.Ast;
 using ScTools.ScriptLang.Ast.Declarations;
+using ScTools.ScriptLang.Ast.Errors;
 using ScTools.ScriptLang.Ast.Expressions;
 using ScTools.ScriptLang.Ast.Statements;
 
@@ -90,6 +91,22 @@ public partial class ParserTests
                 body => Empty(body));
 
             CheckError(ErrorCode.ParserUsingAfterDeclaration, (6, 19), (6, 35), p.Diagnostics);
+
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
+        public void UnknownDeclaration()
+        {
+            var p = ParserFor(
+                @"something /"
+            );
+
+            var u = p.ParseCompilationUnit();
+
+            True(u.Declarations[0] is ErrorDeclaration_New);
+
+            CheckError(ErrorCode.ParserUnknownDeclaration, (1, 1), (1, 9), p.Diagnostics);
 
             True(p.IsAtEOF);
         }

@@ -126,13 +126,13 @@ public class ParserNew
         }
 
         Token nameIdent;
-        ITypeName? returnType;
+        TypeName? returnType;
         TokenKind expectedEndKeyword;
         if (procOrFuncKeyword.Kind is TokenKind.FUNC)
         {
             expectedEndKeyword = TokenKind.ENDFUNC;
             ExpectOrMissing(TokenKind.Identifier, out var returnTypeIdent, MissingIdentifier);
-            returnType = new TypeName(returnTypeIdent);
+            returnType = new(returnTypeIdent);
             ExpectOrMissing(TokenKind.Identifier, out nameIdent, MissingIdentifier);
         }
         else // PROC
@@ -717,7 +717,7 @@ public class ParserNew
     {
         // TODO: parse var initializers
         Token typeIdent;
-        Declarator decl;
+        IVarDeclarator decl;
         if (isInsideCommaSeparatedVarDeclaration)
         {
             // continue comma-separated var declarations
@@ -741,10 +741,7 @@ public class ParserNew
             commaSeparatedVarDeclarationTypeIdentifier = default;
         }
 
-        return new VarDeclaration_New(
-            new TypeName(typeIdent),
-            AstDeclarator(decl),
-            varKind);
+        return new VarDeclaration_New(new TypeName(typeIdent), decl, varKind, initializer: null);
     }
 
     private IEnumerable<IStatement> ParseBodyUntilAny(params TokenKind[] stopTokens)
@@ -763,74 +760,62 @@ public class ParserNew
         return body ?? Enumerable.Empty<IStatement>();
     }
 
-    #region Declarators
-    // TODO: replace these records with the AST IVarDeclarator nodes
-    private record struct DeclaratorArrayLength(Token OpenBracket, Token CloseBracket, IExpression? LengthExpression);
-    private abstract record Declarator(Token Identifier);
-    private record RefDeclarator(Token Ampersand, Token Identifier) : Declarator(Identifier);
-    /// <param name="ArrayLengths">List of length specifiers from left to right.</param>
-    private record SimpleDeclarator(Token Identifier, List<DeclaratorArrayLength>? ArrayLengths) : Declarator(Identifier);
-
-    private Declarator ParseDeclarator()
+    private IVarDeclarator ParseDeclarator()
     {
         /*  declarator
-            : identifier arrayRank?       #simpleDeclarator
+            : identifier arrayLength?     #simpleDeclarator
             | '&' identifier              #refDeclarator
             ;
 
-            arrayRank
-            : '[' expression? ']' arrayRank?
+            arrayLength
+            : '[' expression? ']' arrayLength?
             ;
 
-            NOTE: arrays are passed by reference so no need to support stuff like 'INT (&arr)[10]' in the grammar, 'INT arr[10]' is equivalent
+            NOTE: arrays are passed by reference so no need to support syntax like 'INT (&arr)[10]' in the grammar, 'INT arr[10]' is equivalent
         */
 
-        List<DeclaratorArrayLength>? arrayRanks = null;
         if (Accept(TokenKind.Identifier, out var identifier))
         {
-            TryParseArrayRank(ref arrayRanks);
-            return new SimpleDeclarator(identifier, arrayRanks);
+            List<IExpression?>? arrayLengths = null;
+            Token firstOpenBracket = default, lastCloseBracket = default;
+            TryParseArrayLengths(ref arrayLengths, ref firstOpenBracket, ref lastCloseBracket);
+            return arrayLengths is null ?
+                new VarDeclarator(identifier) :
+                new VarArrayDeclarator(identifier, firstOpenBracket, lastCloseBracket, arrayLengths);
         }
-        else if (Accept(TokenKind.Ampersand, out var ampersandToken) &&
-                 Expect(TokenKind.Identifier, out identifier))
+        else if (Accept(TokenKind.Ampersand, out var ampersandToken))
         {
-            return new RefDeclarator(ampersandToken, identifier);
+            ExpectOrMissing(TokenKind.Identifier, out identifier, MissingIdentifier);
+            return new VarRefDeclarator(ampersandToken, identifier);
         }
 
         UnknownDeclaratorError();
-        return new SimpleDeclarator(MissingIdentifier(), arrayRanks);
+        return new VarDeclarator(MissingIdentifier());
 
 
-        void TryParseArrayRank(ref List<DeclaratorArrayLength>? ranks)
+        void TryParseArrayLengths(ref List<IExpression?>? ranks, ref Token firstOpenBracket, ref Token lastCloseBracket)
         {
             if (Accept(TokenKind.OpenBracket, out var openBracket))
             {
+                if (firstOpenBracket.Kind is TokenKind.Bad)
+                {
+                    firstOpenBracket = openBracket;
+                }
+
                 IExpression? lengthExpr = null;
-                _ = Accept(TokenKind.CloseBracket, out var closeBracket) ||
-                    Expect<IExpression>(ParseExpression, out lengthExpr) && Expect(TokenKind.CloseBracket, out closeBracket);
+                if (!Accept(TokenKind.CloseBracket, out lastCloseBracket))
+                {
+                    lengthExpr = ParseExpression();
+                    ExpectOrMissing(TokenKind.CloseBracket, out lastCloseBracket);
+                }
 
                 ranks ??= new();
-                ranks.Add(new(openBracket, closeBracket, lengthExpr));
-                TryParseArrayRank(ref ranks);
+                ranks.Add(lengthExpr);
+
+                TryParseArrayLengths(ref ranks, ref firstOpenBracket, ref lastCloseBracket);
             }
         }
     }
-
-    private IVarDeclarator AstDeclarator(Declarator declarator)
-        => declarator switch
-        {
-            RefDeclarator r => new VarRefDeclarator(r.Identifier, r.Ampersand),
-            SimpleDeclarator { ArrayLengths: null } s => new VarDeclarator(s.Identifier),
-            SimpleDeclarator { ArrayLengths: not null } s
-                => new VarArrayDeclarator(s.Identifier,
-                                          s.ArrayLengths.First().OpenBracket, s.ArrayLengths.Last().CloseBracket,
-                                          s.ArrayLengths.Select(l => l.LengthExpression)),
-            _ => throw new InvalidOperationException(),
-        };
-
-
-    #endregion Declarators
-
     #endregion Rules
 
     private Token Missing(Token token)

@@ -121,7 +121,7 @@
                 bodyChecker(scriptDecl.Body);
             }
         }
-        private static void AssertFunctionDeclaration(INode node, string name, Predicate<ITypeName?> returnTypePredicate, Action<ImmutableArray<VarDeclaration_New>> parametersChecker, Action<ImmutableArray<IStatement>> bodyChecker)
+        private static void AssertFunctionDeclaration(INode node, string name, Predicate<TypeName?> returnTypePredicate, Action<ImmutableArray<VarDeclaration_New>> parametersChecker, Action<ImmutableArray<IStatement>> bodyChecker)
         {
             True(node is FunctionDeclaration);
             if (node is FunctionDeclaration funcDecl)

@@ -11,12 +11,12 @@ using System.Linq;
 public sealed class FunctionDeclaration : BaseValueDeclaration_New
 {
     public override string Name => Tokens[1].Lexeme.ToString();
-    public ITypeName? ReturnType { get; }
+    public TypeName? ReturnType { get; }
     public ImmutableArray<VarDeclaration_New> Parameters { get; }
     public ImmutableArray<IStatement> Body { get; }
 
     public FunctionDeclaration(Token procOrFuncKeyword, Token nameIdentifier, Token paramsOpenParen, Token paramsCloseParen, Token endKeyword,
-                               ITypeName? returnType, IEnumerable<VarDeclaration_New> parameters, IEnumerable<IStatement> body)
+                               TypeName? returnType, IEnumerable<VarDeclaration_New> parameters, IEnumerable<IStatement> body)
         : base(OfTokens(procOrFuncKeyword, nameIdentifier, paramsOpenParen, paramsCloseParen, endKeyword),
                OfChildren().AppendIfNotNull(returnType).Concat(parameters).Concat(body))
     {
