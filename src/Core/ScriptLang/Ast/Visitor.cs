@@ -16,6 +16,7 @@
 
         TReturn Visit(EnumDeclaration node, TParam param);
         TReturn Visit(EnumMemberDeclaration node, TParam param);
+        TReturn Visit(FunctionDeclaration node, TParam param);
         TReturn Visit(FuncDeclaration node, TParam param);
         TReturn Visit(FuncProtoDeclaration node, TParam param);
         TReturn Visit(GlobalBlockDeclaration node, TParam param);
@@ -109,6 +110,14 @@
         {
             node.Type.Accept(this, param);
             node.Initializer?.Accept(this, param);
+            return DefaultReturn;
+        }
+
+        public virtual TReturn Visit(FunctionDeclaration node, TParam param)
+        {
+            node.ReturnType?.Accept(this, param);
+            node.Parameters.ForEach(p => p.Accept(this, param));
+            node.Body.ForEach(stmt => stmt.Accept(this, param));
             return DefaultReturn;
         }
 
@@ -480,6 +489,7 @@
         public virtual TReturn Visit(UsingDirective node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(EnumDeclaration node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(EnumMemberDeclaration node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(FunctionDeclaration node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(FuncDeclaration node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(FuncProtoDeclaration node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(GlobalBlockDeclaration node, TParam param) => throw new NotImplementedException();

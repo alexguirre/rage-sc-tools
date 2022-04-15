@@ -124,14 +124,15 @@
                 }
             }
         }
-        private static void AssertFunctionSignature(INode node, string name, Predicate<ITypeName?> returnTypePredicate, Action<ImmutableArray<VarDeclaration_New>> parametersChecker)
+        private static void AssertFunctionDeclaration(INode node, string name, Predicate<ITypeName?> returnTypePredicate, Action<ImmutableArray<VarDeclaration_New>> parametersChecker, Action<ImmutableArray<IStatement>> bodyChecker)
         {
-            True(node is FunctionSignature);
-            if (node is FunctionSignature signature)
+            True(node is FunctionDeclaration);
+            if (node is FunctionDeclaration funcDecl)
             {
-                Equal(name, signature.Name);
-                True(returnTypePredicate(signature.ReturnType));
-                parametersChecker(signature.Parameters);
+                Equal(name, funcDecl.Name);
+                True(returnTypePredicate(funcDecl.ReturnType));
+                parametersChecker(funcDecl.Parameters);
+                bodyChecker(funcDecl.Body);
             }
         }
         private static void AssertError(INode node, Predicate<INode> predicate)

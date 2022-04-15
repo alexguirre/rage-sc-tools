@@ -51,33 +51,50 @@ public class ParserNew
         return new(usingKeyword, pathString);
     }
 
-    public bool IsPossibleFunctionSignature()
+    public bool IsPossibleFunctionDeclaration()
         => Peek(0).Kind is TokenKind.FUNC or TokenKind.PROC;
-    public FunctionSignature ParseFunctionSignature()
+    public FunctionDeclaration ParseFunctionDeclaration()
     {
-        Token procOrFuncKeyword, nameIdent, openParen, closeParen;
-        ITypeName? returnType = null;
-        IEnumerable<VarDeclaration_New> @params = Enumerable.Empty<VarDeclaration_New>();
+        Token procOrFuncKeyword;
         if (!ExpectEither(TokenKind.FUNC, TokenKind.PROC, out procOrFuncKeyword))
         {
             procOrFuncKeyword = Missing(TokenKind.PROC);
             Next();
         }
 
+        Token nameIdent;
+        ITypeName? returnType;
+        TokenKind expectedEndKeyword;
         if (procOrFuncKeyword.Kind is TokenKind.FUNC)
         {
+            expectedEndKeyword = TokenKind.ENDFUNC;
             ExpectOrMissing(TokenKind.Identifier, out var returnTypeIdent, MissingIdentifier);
             returnType = new TypeName(returnTypeIdent);
             ExpectOrMissing(TokenKind.Identifier, out nameIdent, MissingIdentifier);
         }
         else // PROC
         {
+            expectedEndKeyword = TokenKind.ENDPROC;
+            returnType = null;
             ExpectOrMissing(TokenKind.Identifier, out nameIdent, MissingIdentifier);
         }
 
-        (@params, openParen, closeParen) = ParseParameterList();
-
-        return new(procOrFuncKeyword, nameIdent, openParen, closeParen, returnType, @params);
+        (IEnumerable<VarDeclaration_New> @params, Token openParen, Token closeParen) = ParseParameterList();
+        ExpectEOS();
+        
+        var body = ParseBodyUntilAny(TokenKind.ENDFUNC, TokenKind.ENDPROC);
+        if (!ExpectOrMissing(expectedEndKeyword, out var endKeyword))
+        {
+            // didn't find the ENDFUNC or ENDPROC token matching the beginning FUNC or PROC,
+            // but if it is any of them, skip it to continue parsing correctly
+            if (Peek(0).Kind is TokenKind.ENDFUNC or TokenKind.ENDPROC)
+            {
+                Next();
+            }
+        }
+        ExpectEOS();
+        return new(procOrFuncKeyword, nameIdent, openParen, closeParen, endKeyword,
+                   returnType, @params, body);
 
         (IEnumerable<VarDeclaration_New> Params, Token OpenParen, Token CloseParen) ParseParameterList()
         {
@@ -344,22 +361,6 @@ public class ParserNew
                 while (!IsAtEOS) { Next(); }
             }
             return cases;
-        }
-
-        IEnumerable<IStatement> ParseBodyUntilAny(params TokenKind[] stopTokens)
-        {
-            List<IStatement>? body = null;
-            while (!IsAtEOF)
-            {
-                if (stopTokens.Contains(Peek(0).Kind))
-                {
-                    break;
-                }
-
-                body ??= new();
-                body.Add(ParseStatement());
-            }
-            return body ?? Enumerable.Empty<IStatement>();
         }
     }
 
@@ -681,6 +682,22 @@ public class ParserNew
             new TypeName(typeIdent),
             AstDeclarator(decl),
             varKind);
+    }
+
+    private IEnumerable<IStatement> ParseBodyUntilAny(params TokenKind[] stopTokens)
+    {
+        List<IStatement>? body = null;
+        while (!IsAtEOF)
+        {
+            if (stopTokens.Contains(Peek(0).Kind))
+            {
+                break;
+            }
+
+            body ??= new();
+            body.Add(ParseStatement());
+        }
+        return body ?? Enumerable.Empty<IStatement>();
     }
 
     #region Declarators
