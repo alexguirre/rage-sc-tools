@@ -12,10 +12,12 @@
 
         // Parser errors   0x1000 - 0x1FFF
         ParserUnexpectedToken = 0x1000,
-        ParserUnknownStatement = 0x1001,
-        ParserUnknownExpression = 0x1002,
-        ParserUnknownDeclarator = 0x1003,
-        ParserExpressionAsStatement = 0x1004,
+        ParserUnknownDeclaration = 0x1001,
+        ParserUnknownStatement = 0x1002,
+        ParserUnknownExpression = 0x1003,
+        ParserUnknownDeclarator = 0x1004,
+        ParserExpressionAsStatement = 0x1005,
+        ParserUsingAfterDeclaration = 0x1006,
 
         // Semantic errors 0x2000 - 0x2FFF
     }

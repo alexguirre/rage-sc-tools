@@ -41,6 +41,46 @@ public class ParserNew
     }
 
     #region Rules
+    public CompilationUnit ParseCompilationUnit()
+    {
+        var usings = new List<UsingDirective>();
+        var decls = new List<IDeclaration_New>();
+
+        while (!IsAtEOF)
+        {
+            if (IsPossibleVarDeclaration())
+            {
+                decls.Add(ParseVarDeclaration(VarKind.Static, allowMultipleDeclarations: true));
+            }
+            else if (IsPossibleUsingDirective())
+            {
+                var @using = ParseUsingDirective();
+                if (decls.Count > 0)
+                {
+                    UsingAfterDeclarationError(@using);
+                }
+                usings.Add(@using);
+            }
+            else if (IsPossibleFunctionDeclaration())
+            {
+                decls.Add(ParseFunctionDeclaration());
+            }
+            else if (IsPossibleScriptDeclaration())
+            {
+                decls.Add(ParseScriptDeclaration());
+            }
+            else
+            {
+                decls.Add(UnknownDeclarationError());
+                // skip the current line
+                while (!IsAtEOS) { Next(); }
+                Accept(TokenKind.EOS, out _);
+            }
+        }
+
+        return new(usings, decls);
+    }
+
     public bool IsPossibleUsingDirective()
         => Peek(0).Kind is TokenKind.USING;
     public UsingDirective ParseUsingDirective()
@@ -61,7 +101,7 @@ public class ParserNew
         (IEnumerable<VarDeclaration_New> Params, Token OpenParen, Token CloseParen)? parameterList = null;
         if (Peek(0).Kind is TokenKind.OpenParen)
         {
-            parameterList = ParseParameterList();
+            parameterList = ParseParameterList(isScriptParameterList: true);
         }
         ExpectEOS();
 
@@ -120,7 +160,7 @@ public class ParserNew
                    returnType, @params, body);
     }
 
-    private (IEnumerable<VarDeclaration_New> Params, Token OpenParen, Token CloseParen) ParseParameterList()
+    private (IEnumerable<VarDeclaration_New> Params, Token OpenParen, Token CloseParen) ParseParameterList(bool isScriptParameterList = false)
     {
         List<VarDeclaration_New>? @params = null;
 
@@ -131,7 +171,7 @@ public class ParserNew
                 @params = new();
                 do
                 {
-                    @params.Add(ParseVarDeclaration(VarKind.Parameter, allowMultipleDeclarations: false));
+                    @params.Add(ParseVarDeclaration(isScriptParameterList ? VarKind.ScriptParameter : VarKind.Parameter, allowMultipleDeclarations: false));
                 } while (Accept(TokenKind.Comma, out _));
             }
         }
@@ -817,6 +857,12 @@ public class ParserNew
     private void UnexpectedTokenExpectedAssignmentError()
         => Error(ErrorCode.ParserUnexpectedToken, $"Unexpected token '{Current.Kind}', expected assignment operator", Current.Location);
 
+    private ErrorDeclaration_New UnknownDeclarationError()
+    {
+        Error(ErrorCode.ParserUnknownDeclaration, $"Expected declaration, found '{Current.Lexeme}' ({Current.Kind})", Current.Location);
+        return new(LastError!, Current);
+    }
+
     private ErrorStatement UnknownStatementError(Label? label)
     { 
         Error(ErrorCode.ParserUnknownStatement, $"Expected statement, found '{Current.Lexeme}' ({Current.Kind})", Current.Location);
@@ -837,6 +883,9 @@ public class ParserNew
 
     private void UnknownDeclaratorError()
         => Error(ErrorCode.ParserUnknownDeclarator, $"Expected declarator, found '{Current.Lexeme}' ({Current.Kind})", Current.Location);
+
+    private void UsingAfterDeclarationError(UsingDirective @using)
+        => Error(ErrorCode.ParserUsingAfterDeclaration, $"USING directives must precede all declarations", @using.Location);
 
     private Token Peek(int offset)
     {

@@ -53,7 +53,7 @@ public partial class ParserTests
             AssertScriptDeclaration(p.ParseScriptDeclaration(), "foo",
                 @params => Empty(@params),
                 body => Collection(body,
-                    _0 => True(_0 is VarDeclaration_New { Name: "c", Type: TypeName { Name: "INT" } }),
+                    _0 => True(_0 is VarDeclaration_New { Name: "c", Type: TypeName { Name: "INT" }, Kind: VarKind.Local }),
                     _1 => True(_1 is AssignmentStatement
                     {
                         LHS: NameExpression { Name: "c" },
@@ -93,8 +93,8 @@ public partial class ParserTests
             True(p.IsPossibleScriptDeclaration());
             AssertScriptDeclaration(p.ParseScriptDeclaration(), "foo",
                 @params => Collection(@params,
-                    _0 => True(_0 is VarDeclaration_New { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
-                    _1 => True(_1 is VarDeclaration_New { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter })),
+                    _0 => True(_0 is VarDeclaration_New { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.ScriptParameter }),
+                    _1 => True(_1 is VarDeclaration_New { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.ScriptParameter })),
                 body => Empty(body));
             NoErrorsAndIsAtEOF(p);
         }
@@ -147,7 +147,7 @@ public partial class ParserTests
                     _0 => True(_0 is VarDeclaration_New { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
                     _1 => True(_1 is VarDeclaration_New { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter })),
                 body => Collection(body,
-                    _0 => True(_0 is VarDeclaration_New { Name: "c", Type: TypeName { Name: "INT" } }),
+                    _0 => True(_0 is VarDeclaration_New { Name: "c", Type: TypeName { Name: "INT" }, Kind: VarKind.Local }),
                     _1 => True(_1 is AssignmentStatement
                     {
                         LHS: NameExpression { Name: "c" },
@@ -214,7 +214,7 @@ public partial class ParserTests
                     _0 => True(_0 is VarDeclaration_New { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
                     _1 => True(_1 is VarDeclaration_New { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter })),
                 body => Collection(body,
-                    _0 => True(_0 is VarDeclaration_New { Name: "c", Type: TypeName { Name: "INT" } }),
+                    _0 => True(_0 is VarDeclaration_New { Name: "c", Type: TypeName { Name: "INT" }, Kind: VarKind.Local }),
                     _1 => True(_1 is AssignmentStatement
                     {
                         LHS: NameExpression { Name: "c" },

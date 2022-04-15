@@ -11,6 +11,7 @@
     public interface IVisitor<TReturn, TParam>
     {
         TReturn Visit(Program node, TParam param);
+        TReturn Visit(CompilationUnit node, TParam param);
 
         TReturn Visit(UsingDirective node, TParam param);
 
@@ -78,6 +79,7 @@
         TReturn Visit(TypeName node, TParam param);
 
         TReturn Visit(ErrorDeclaration node, TParam param);
+        TReturn Visit(ErrorDeclaration_New node, TParam param);
         TReturn Visit(ErrorExpression node, TParam param);
         TReturn Visit(ErrorStatement node, TParam param);
         TReturn Visit(ErrorType node, TParam param);
@@ -92,6 +94,13 @@
 
         public virtual TReturn Visit(Program node, TParam param)
         {
+            node.Declarations.ForEach(decl => decl.Accept(this, param));
+            return DefaultReturn;
+        }
+
+        public virtual TReturn Visit(CompilationUnit node, TParam param)
+        {
+            node.Usings.ForEach(@using => @using.Accept(this, param));
             node.Declarations.ForEach(decl => decl.Accept(this, param));
             return DefaultReturn;
         }
@@ -464,6 +473,11 @@
             return DefaultReturn;
         }
 
+        public virtual TReturn Visit(ErrorDeclaration_New node, TParam param)
+        {
+            return DefaultReturn;
+        }
+
         public virtual TReturn Visit(ErrorExpression node, TParam param)
         {
             return DefaultReturn;
@@ -494,6 +508,7 @@
     public abstract class EmptyVisitor<TReturn, TParam> : IVisitor<TReturn, TParam>
     {
         public virtual TReturn Visit(Program node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(CompilationUnit node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(UsingDirective node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(EnumDeclaration node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(EnumMemberDeclaration node, TParam param) => throw new NotImplementedException();
@@ -554,6 +569,7 @@
         public virtual TReturn Visit(VoidType node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(TypeName node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(ErrorDeclaration node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(ErrorDeclaration_New node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(ErrorExpression node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(ErrorStatement node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(ErrorType node, TParam param) => throw new NotImplementedException();
