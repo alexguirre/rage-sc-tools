@@ -51,6 +51,30 @@ public class ParserNew
         return new(usingKeyword, pathString);
     }
 
+    public bool IsPossibleScriptDeclaration()
+        => Peek(0).Kind is TokenKind.SCRIPT;
+    public ScriptDeclaration ParseScriptDeclaration()
+    {
+        ExpectOrMissing(TokenKind.SCRIPT, out var scriptKeyword);
+        ExpectOrMissing(TokenKind.Identifier, out var nameIdent, MissingIdentifier);
+
+        (IEnumerable<VarDeclaration_New> Params, Token OpenParen, Token CloseParen)? parameterList = null;
+        if (Peek(0).Kind is TokenKind.OpenParen)
+        {
+            parameterList = ParseParameterList();
+        }
+        ExpectEOS();
+
+        var body = ParseBodyUntilAny(TokenKind.ENDSCRIPT);
+        ExpectOrMissing(TokenKind.ENDSCRIPT, out var endscriptKeyword);
+        ExpectEOS();
+        return parameterList.HasValue ?
+                new(scriptKeyword, nameIdent, parameterList.Value.OpenParen, parameterList.Value.CloseParen, endscriptKeyword,
+                    parameterList.Value.Params, body) :
+                new(scriptKeyword, nameIdent, endscriptKeyword,
+                    body);
+    }
+
     public bool IsPossibleFunctionDeclaration()
         => Peek(0).Kind is TokenKind.FUNC or TokenKind.PROC;
     public FunctionDeclaration ParseFunctionDeclaration()
@@ -59,7 +83,6 @@ public class ParserNew
         if (!ExpectEither(TokenKind.FUNC, TokenKind.PROC, out procOrFuncKeyword))
         {
             procOrFuncKeyword = Missing(TokenKind.PROC);
-            Next();
         }
 
         Token nameIdent;
@@ -95,26 +118,26 @@ public class ParserNew
         ExpectEOS();
         return new(procOrFuncKeyword, nameIdent, openParen, closeParen, endKeyword,
                    returnType, @params, body);
+    }
 
-        (IEnumerable<VarDeclaration_New> Params, Token OpenParen, Token CloseParen) ParseParameterList()
+    private (IEnumerable<VarDeclaration_New> Params, Token OpenParen, Token CloseParen) ParseParameterList()
+    {
+        List<VarDeclaration_New>? @params = null;
+
+        if (ExpectOrMissing(TokenKind.OpenParen, out var openParen))
         {
-            List<VarDeclaration_New>? @params = null;
-
-            if (ExpectOrMissing(TokenKind.OpenParen, out var openParen))
+            if (Peek(0).Kind is not TokenKind.CloseParen)
             {
-                if (Peek(0).Kind is not TokenKind.CloseParen)
+                @params = new();
+                do
                 {
-                    @params = new();
-                    do
-                    {
-                        @params.Add(ParseVarDeclaration(VarKind.Parameter, allowMultipleDeclarations: false));
-                    } while (Accept(TokenKind.Comma, out _));
-                }
+                    @params.Add(ParseVarDeclaration(VarKind.Parameter, allowMultipleDeclarations: false));
+                } while (Accept(TokenKind.Comma, out _));
             }
-            ExpectOrMissing(TokenKind.CloseParen, out var closeParen);
-
-            return (@params ?? Enumerable.Empty<VarDeclaration_New>(), openParen, closeParen);
         }
+        ExpectOrMissing(TokenKind.CloseParen, out var closeParen);
+
+        return (@params ?? Enumerable.Empty<VarDeclaration_New>(), openParen, closeParen);
     }
 
     public bool IsPossibleLabel()

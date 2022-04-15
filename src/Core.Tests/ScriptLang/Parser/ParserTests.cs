@@ -111,6 +111,16 @@
                 }
             }
         }
+        private static void AssertScriptDeclaration(INode node, string name, Action<ImmutableArray<VarDeclaration_New>> parametersChecker, Action<ImmutableArray<IStatement>> bodyChecker)
+        {
+            True(node is ScriptDeclaration);
+            if (node is ScriptDeclaration scriptDecl)
+            {
+                Equal(name, scriptDecl.Name);
+                parametersChecker(scriptDecl.Parameters);
+                bodyChecker(scriptDecl.Body);
+            }
+        }
         private static void AssertFunctionDeclaration(INode node, string name, Predicate<ITypeName?> returnTypePredicate, Action<ImmutableArray<VarDeclaration_New>> parametersChecker, Action<ImmutableArray<IStatement>> bodyChecker)
         {
             True(node is FunctionDeclaration);

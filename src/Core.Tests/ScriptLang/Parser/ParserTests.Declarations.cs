@@ -40,6 +40,96 @@ public partial class ParserTests
         }
 
         [Fact]
+        public void ScriptDeclaration()
+        {
+            var p = ParserFor(
+                @"SCRIPT foo
+                    INT c
+                    c = 1 * 2
+                  ENDSCRIPT"
+            );
+
+            True(p.IsPossibleScriptDeclaration());
+            AssertScriptDeclaration(p.ParseScriptDeclaration(), "foo",
+                @params => Empty(@params),
+                body => Collection(body,
+                    _0 => True(_0 is VarDeclaration_New { Name: "c", Type: TypeName { Name: "INT" } }),
+                    _1 => True(_1 is AssignmentStatement
+                    {
+                        LHS: NameExpression { Name: "c" },
+                        RHS: BinaryExpression
+                        {
+                            Operator: BinaryOperator.Multiply,
+                            LHS: IntLiteralExpression { Value: 1 },
+                            RHS: IntLiteralExpression { Value: 2 },
+                        }
+                    })));
+            NoErrorsAndIsAtEOF(p);
+        }
+
+        [Fact]
+        public void EmptyScriptDeclaration()
+        {
+            var p = ParserFor(
+                @"SCRIPT foo
+                  ENDSCRIPT"
+            );
+
+            True(p.IsPossibleScriptDeclaration());
+            AssertScriptDeclaration(p.ParseScriptDeclaration(), "foo",
+                @params => Empty(@params),
+                body => Empty(body));
+            NoErrorsAndIsAtEOF(p);
+        }
+
+        [Fact]
+        public void ScriptDeclarationWithParameterList()
+        {
+            var p = ParserFor(
+                @"SCRIPT foo(INT a, FLOAT b)
+                  ENDSCRIPT"
+            );
+
+            True(p.IsPossibleScriptDeclaration());
+            AssertScriptDeclaration(p.ParseScriptDeclaration(), "foo",
+                @params => Collection(@params,
+                    _0 => True(_0 is VarDeclaration_New { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
+                    _1 => True(_1 is VarDeclaration_New { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter })),
+                body => Empty(body));
+            NoErrorsAndIsAtEOF(p);
+        }
+
+        [Fact]
+        public void ScriptDeclarationWithEmptyParameterList()
+        {
+            var p = ParserFor(
+                @"SCRIPT foo()
+                  ENDSCRIPT"
+            );
+
+            True(p.IsPossibleScriptDeclaration());
+            AssertScriptDeclaration(p.ParseScriptDeclaration(), "foo",
+                @params => Empty(@params),
+                body => Empty(body));
+            NoErrorsAndIsAtEOF(p);
+        }
+
+        [Fact]
+        public void ScriptDeclarationWithMissingName()
+        {
+            var p = ParserFor(
+                "SCRIPT\nENDSCRIPT"
+            );
+
+            True(p.IsPossibleScriptDeclaration());
+            AssertScriptDeclaration(p.ParseScriptDeclaration(), ParserNew.MissingIdentifierLexeme,
+                @params => Empty(@params),
+                body => Empty(body));
+            CheckError(ErrorCode.ParserUnexpectedToken, (1, 7), (1, 7), p.Diagnostics);
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
         public void FunctionDeclaration()
         {
             var p = ParserFor(
