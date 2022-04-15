@@ -581,6 +581,46 @@ public partial class ParserTests
         }
 
         [Fact]
+        public void VarDeclarationStatementWithInitializer()
+        {
+            var p = ParserFor(
+                @"INT hello = 1
+                  label: FLOAT foo = 3.0, bar = 2+1"
+            );
+
+            Assert(p.ParseStatement(), n => n is VarDeclaration_New
+            {
+                Label: null,
+                Type: TypeName { Name: "INT" },
+                Name: "hello", Declarator: VarDeclarator { Name: "hello" },
+                Initializer: IntLiteralExpression { Value: 1 },
+                Kind: VarKind.Local
+            });
+            Assert(p.ParseStatement(), n => n is VarDeclaration_New
+            {
+                Label: Label { Name: "label" },
+                Type: TypeName { Name: "FLOAT" },
+                Name: "foo", Declarator: VarDeclarator { Name: "foo" },
+                Initializer: FloatLiteralExpression { Value: 3.0f },
+                Kind: VarKind.Local
+            });
+            Assert(p.ParseStatement(), n => n is VarDeclaration_New
+            {
+                Label: null,
+                Type: TypeName { Name: "FLOAT" },
+                Name: "bar", Declarator: VarDeclarator { Name: "bar" },
+                Initializer: BinaryExpression
+                {
+                    Operator: BinaryOperator.Add,
+                    LHS: IntLiteralExpression { Value: 2 },
+                    RHS: IntLiteralExpression { Value: 1 },
+                },
+                Kind: VarKind.Local
+            });
+            NoErrorsAndIsAtEOF(p);
+        }
+
+        [Fact]
         public void VarDeclarationStatementWithArrayType()
         {
             var p = ParserFor(

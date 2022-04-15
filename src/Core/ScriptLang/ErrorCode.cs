@@ -18,6 +18,7 @@
         ParserUnknownDeclarator = 0x1004,
         ParserExpressionAsStatement = 0x1005,
         ParserUsingAfterDeclaration = 0x1006,
+        ParserVarInitializerNotAllowed = 0x1007,
 
         // Semantic errors 0x2000 - 0x2FFF
     }

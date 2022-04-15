@@ -50,7 +50,11 @@ public class ParserNew
         {
             if (IsPossibleVarDeclaration())
             {
-                decls.Add(ParseVarDeclaration(VarKind.Static, allowMultipleDeclarations: true));
+                decls.Add(ParseVarDeclaration(VarKind.Static, allowMultipleDeclarations: true, allowInitializer: true));
+                if (!isInsideCommaSeparatedVarDeclaration)
+                {
+                    ExpectEOS();
+                }
             }
             else if (IsPossibleUsingDirective())
             {
@@ -171,7 +175,7 @@ public class ParserNew
                 @params = new();
                 do
                 {
-                    @params.Add(ParseVarDeclaration(isScriptParameterList ? VarKind.ScriptParameter : VarKind.Parameter, allowMultipleDeclarations: false));
+                    @params.Add(ParseVarDeclaration(isScriptParameterList ? VarKind.ScriptParameter : VarKind.Parameter, allowMultipleDeclarations: false, allowInitializer: false));
                 } while (Accept(TokenKind.Comma, out _));
             }
         }
@@ -245,7 +249,7 @@ public class ParserNew
 
         if (IsPossibleVarDeclaration())
         {
-            stmt = ParseVarDeclaration(VarKind.Local, allowMultipleDeclarations: true).WithLabel(label);
+            stmt = ParseVarDeclaration(VarKind.Local, allowMultipleDeclarations: true, allowInitializer: true).WithLabel(label);
         }
         else if (IsPossibleExpression() &&
                  !IsPossibleLabel()) // in case of sequential labels, avoid parsing the second label identifier as an expression
@@ -713,7 +717,7 @@ public class ParserNew
     private bool IsPossibleVarDeclaration()
         => isInsideCommaSeparatedVarDeclaration ||
            Peek(0).Kind is TokenKind.Identifier && Peek(1).Kind is TokenKind.Identifier or TokenKind.Ampersand;
-    private VarDeclaration_New ParseVarDeclaration(VarKind varKind, bool allowMultipleDeclarations)
+    private VarDeclaration_New ParseVarDeclaration(VarKind varKind, bool allowMultipleDeclarations, bool allowInitializer)
     {
         // TODO: parse var initializers
         Token typeIdent;
@@ -730,6 +734,17 @@ public class ParserNew
             decl = ParseDeclarator();
         }
 
+        IExpression? initializerExpr = null;
+        if (Accept(TokenKind.Equals, out var equalsToken))
+        {
+            initializerExpr = ParseExpression();
+
+            if (!allowInitializer)
+            {
+                VarInitializerNotAllowedError(equalsToken, initializerExpr);
+            }
+        }
+
         if (allowMultipleDeclarations && Accept(TokenKind.Comma, out _))
         {
             isInsideCommaSeparatedVarDeclaration = true;
@@ -741,7 +756,64 @@ public class ParserNew
             commaSeparatedVarDeclarationTypeIdentifier = default;
         }
 
-        return new VarDeclaration_New(new TypeName(typeIdent), decl, varKind, initializer: null);
+        return new VarDeclaration_New(new TypeName(typeIdent), decl, varKind, initializerExpr);
+
+        IVarDeclarator ParseDeclarator()
+        {
+            /*  declarator
+                : identifier arrayLength?     #simpleDeclarator
+                | '&' identifier              #refDeclarator
+                ;
+
+                arrayLength
+                : '[' expression? ']' arrayLength?
+                ;
+
+                NOTE: arrays are passed by reference so no need to support syntax like 'INT (&arr)[10]' in the grammar, 'INT arr[10]' is equivalent
+            */
+
+            if (Accept(TokenKind.Identifier, out var identifier))
+            {
+                List<IExpression?>? arrayLengths = null;
+                Token firstOpenBracket = default, lastCloseBracket = default;
+                TryParseArrayLengths(ref arrayLengths, ref firstOpenBracket, ref lastCloseBracket);
+                return arrayLengths is null ?
+                    new VarDeclarator(identifier) :
+                    new VarArrayDeclarator(identifier, firstOpenBracket, lastCloseBracket, arrayLengths);
+            }
+            else if (Accept(TokenKind.Ampersand, out var ampersandToken))
+            {
+                ExpectOrMissing(TokenKind.Identifier, out identifier, MissingIdentifier);
+                return new VarRefDeclarator(ampersandToken, identifier);
+            }
+
+            UnknownDeclaratorError();
+            return new VarDeclarator(MissingIdentifier());
+
+
+            void TryParseArrayLengths(ref List<IExpression?>? ranks, ref Token firstOpenBracket, ref Token lastCloseBracket)
+            {
+                if (Accept(TokenKind.OpenBracket, out var openBracket))
+                {
+                    if (firstOpenBracket.Kind is TokenKind.Bad)
+                    {
+                        firstOpenBracket = openBracket;
+                    }
+
+                    IExpression? lengthExpr = null;
+                    if (!Accept(TokenKind.CloseBracket, out lastCloseBracket))
+                    {
+                        lengthExpr = ParseExpression();
+                        ExpectOrMissing(TokenKind.CloseBracket, out lastCloseBracket);
+                    }
+
+                    ranks ??= new();
+                    ranks.Add(lengthExpr);
+
+                    TryParseArrayLengths(ref ranks, ref firstOpenBracket, ref lastCloseBracket);
+                }
+            }
+        }
     }
 
     private IEnumerable<IStatement> ParseBodyUntilAny(params TokenKind[] stopTokens)
@@ -758,63 +830,6 @@ public class ParserNew
             body.Add(ParseStatement());
         }
         return body ?? Enumerable.Empty<IStatement>();
-    }
-
-    private IVarDeclarator ParseDeclarator()
-    {
-        /*  declarator
-            : identifier arrayLength?     #simpleDeclarator
-            | '&' identifier              #refDeclarator
-            ;
-
-            arrayLength
-            : '[' expression? ']' arrayLength?
-            ;
-
-            NOTE: arrays are passed by reference so no need to support syntax like 'INT (&arr)[10]' in the grammar, 'INT arr[10]' is equivalent
-        */
-
-        if (Accept(TokenKind.Identifier, out var identifier))
-        {
-            List<IExpression?>? arrayLengths = null;
-            Token firstOpenBracket = default, lastCloseBracket = default;
-            TryParseArrayLengths(ref arrayLengths, ref firstOpenBracket, ref lastCloseBracket);
-            return arrayLengths is null ?
-                new VarDeclarator(identifier) :
-                new VarArrayDeclarator(identifier, firstOpenBracket, lastCloseBracket, arrayLengths);
-        }
-        else if (Accept(TokenKind.Ampersand, out var ampersandToken))
-        {
-            ExpectOrMissing(TokenKind.Identifier, out identifier, MissingIdentifier);
-            return new VarRefDeclarator(ampersandToken, identifier);
-        }
-
-        UnknownDeclaratorError();
-        return new VarDeclarator(MissingIdentifier());
-
-
-        void TryParseArrayLengths(ref List<IExpression?>? ranks, ref Token firstOpenBracket, ref Token lastCloseBracket)
-        {
-            if (Accept(TokenKind.OpenBracket, out var openBracket))
-            {
-                if (firstOpenBracket.Kind is TokenKind.Bad)
-                {
-                    firstOpenBracket = openBracket;
-                }
-
-                IExpression? lengthExpr = null;
-                if (!Accept(TokenKind.CloseBracket, out lastCloseBracket))
-                {
-                    lengthExpr = ParseExpression();
-                    ExpectOrMissing(TokenKind.CloseBracket, out lastCloseBracket);
-                }
-
-                ranks ??= new();
-                ranks.Add(lengthExpr);
-
-                TryParseArrayLengths(ref ranks, ref firstOpenBracket, ref lastCloseBracket);
-            }
-        }
     }
     #endregion Rules
 
@@ -871,6 +886,9 @@ public class ParserNew
 
     private void UsingAfterDeclarationError(UsingDirective @using)
         => Error(ErrorCode.ParserUsingAfterDeclaration, $"USING directives must precede all declarations", @using.Location);
+
+    private void VarInitializerNotAllowedError(Token equalsToken, IExpression initializer)
+        => Error(ErrorCode.ParserVarInitializerNotAllowed, $"Variable initializer is not allowed in this context", equalsToken.Location.Merge(initializer.Location));
 
     private Token Peek(int offset)
     {

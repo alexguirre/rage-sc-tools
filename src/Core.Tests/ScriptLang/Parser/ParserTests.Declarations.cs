@@ -130,6 +130,27 @@ public partial class ParserTests
         }
 
         [Fact]
+        public void ScriptDeclarationWithParametersWithInitializers()
+        {
+            var p = ParserFor(
+                @"SCRIPT foo(INT a = 1, FLOAT b = 3.0)
+                  ENDSCRIPT"
+            );
+
+            True(p.IsPossibleScriptDeclaration());
+            AssertScriptDeclaration(p.ParseScriptDeclaration(), "foo",
+                @params => Collection(@params,
+                    _0 => True(_0 is VarDeclaration_New { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.ScriptParameter, Initializer: IntLiteralExpression{ Value: 1 } }),
+                    _1 => True(_1 is VarDeclaration_New { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.ScriptParameter, Initializer: FloatLiteralExpression { Value: 3.0f } })),
+                body => Empty(body));
+
+            CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 18), (1, 20), p.Diagnostics);
+            CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 31), (1, 35), p.Diagnostics);
+
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
         public void FunctionDeclaration()
         {
             var p = ParserFor(
@@ -181,6 +202,28 @@ public partial class ParserTests
         }
 
         [Fact]
+        public void FunctionDeclarationWithParametersWithInitializers()
+        {
+            var p = ParserFor(
+                @"FUNC BOOL foo(INT a = 1, FLOAT b = 3.0)
+                ENDFUNC"
+            );
+
+            True(p.IsPossibleFunctionDeclaration());
+            AssertFunctionDeclaration(p.ParseFunctionDeclaration(), "foo",
+                retTy => retTy is TypeName { Name: "BOOL" },
+                @params => Collection(@params,
+                    _0 => True(_0 is VarDeclaration_New { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter, Initializer: IntLiteralExpression { Value: 1 } }),
+                    _1 => True(_1 is VarDeclaration_New { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter, Initializer: FloatLiteralExpression { Value: 3.0f } })),
+                body => Empty(body));
+
+            CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 21), (1, 23), p.Diagnostics);
+            CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 34), (1, 38), p.Diagnostics);
+
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
         public void FunctionWithNoParameters()
         {
             var p = ParserFor(
@@ -227,6 +270,28 @@ public partial class ParserTests
                     }),
                     _2 => True(_2 is ReturnStatement { Expression: null })));
             NoErrorsAndIsAtEOF(p);
+        }
+
+        [Fact]
+        public void ProcedureDeclarationWithParametersWithInitializers()
+        {
+            var p = ParserFor(
+                @"PROC foo(INT a = 1, FLOAT b = 3.0)
+                ENDPROC"
+            );
+
+            True(p.IsPossibleFunctionDeclaration());
+            AssertFunctionDeclaration(p.ParseFunctionDeclaration(), "foo",
+                retTy => retTy is null,
+                @params => Collection(@params,
+                    _0 => True(_0 is VarDeclaration_New { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter, Initializer: IntLiteralExpression { Value: 1 } }),
+                    _1 => True(_1 is VarDeclaration_New { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter, Initializer: FloatLiteralExpression { Value: 3.0f } })),
+                body => Empty(body));
+
+            CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 16), (1, 18), p.Diagnostics);
+            CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 29), (1, 33), p.Diagnostics);
+
+            True(p.IsAtEOF);
         }
 
         [Fact]

@@ -71,6 +71,43 @@ public partial class ParserTests
         }
 
         [Fact]
+        public void StaticVarsWithInitializers()
+        {
+            var p = ParserFor(
+                @"INT a = 1, b = 2
+                  BOOL c = TRUE"
+            );
+
+            var u = p.ParseCompilationUnit();
+            Assert(u.Declarations[0], n => n is VarDeclaration_New
+            {
+                Label: null,
+                Type: TypeName { Name: "INT" },
+                Name: "a", Declarator: VarDeclarator { Name: "a" },
+                Initializer: IntLiteralExpression { Value: 1 },
+                Kind: VarKind.Static
+            });
+            Assert(u.Declarations[1], n => n is VarDeclaration_New
+            {
+                Label: null,
+                Type: TypeName { Name: "INT" },
+                Name: "b", Declarator: VarDeclarator { Name: "b" },
+                Initializer: IntLiteralExpression { Value: 2 },
+                Kind: VarKind.Static
+            });
+            Assert(u.Declarations[2], n => n is VarDeclaration_New
+            {
+                Label: null,
+                Type: TypeName { Name: "BOOL" },
+                Name: "c", Declarator: VarDeclarator { Name: "c" },
+                Initializer: BoolLiteralExpression { Value: true },
+                Kind: VarKind.Static
+            });
+
+            NoErrorsAndIsAtEOF(p);
+        }
+
+        [Fact]
         public void UsingAfterDeclaration()
         {
             var p = ParserFor(
