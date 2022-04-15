@@ -1,15 +1,17 @@
-﻿namespace ScTools.Tests.ScriptLang
+﻿namespace ScTools.Tests.ScriptLang;
+
+using ScTools.ScriptLang;
+using ScTools.ScriptLang.Ast;
+using ScTools.ScriptLang.Ast.Declarations;
+using ScTools.ScriptLang.Ast.Expressions;
+using ScTools.ScriptLang.Ast.Statements;
+
+using Xunit;
+using static Xunit.Assert;
+
+public partial class ParserTests
 {
-    using ScTools.ScriptLang;
-    using ScTools.ScriptLang.Ast;
-    using ScTools.ScriptLang.Ast.Declarations;
-    using ScTools.ScriptLang.Ast.Expressions;
-    using ScTools.ScriptLang.Ast.Statements;
-
-    using Xunit;
-    using static Xunit.Assert;
-
-    public partial class ParserTests
+    public class Declarations
     {
         [Fact]
         public void Using()
@@ -42,10 +44,10 @@
         {
             var p = ParserFor(
                 @"FUNC BOOL foo(INT a, FLOAT b)
-                    INT c
-                    c = a * 2
-                    RETURN TRUE
-                  ENDFUNC"
+                INT c
+                c = a * 2
+                RETURN TRUE
+                ENDFUNC"
             );
 
             True(p.IsPossibleFunctionDeclaration());
@@ -75,7 +77,7 @@
         {
             var p = ParserFor(
                 @"FUNC BOOL foo(INT a, FLOAT b)
-                  ENDFUNC"
+                ENDFUNC"
             );
 
             True(p.IsPossibleFunctionDeclaration());
@@ -93,7 +95,7 @@
         {
             var p = ParserFor(
                 @"FUNC BOOL foo()
-                  ENDFUNC"
+                ENDFUNC"
             );
 
             True(p.IsPossibleFunctionDeclaration());
@@ -109,10 +111,10 @@
         {
             var p = ParserFor(
                 @"PROC foo(INT a, FLOAT b)
-                    INT c
-                    c = a * 2
-                    RETURN
-                  ENDPROC"
+                INT c
+                c = a * 2
+                RETURN
+                ENDPROC"
             );
 
             True(p.IsPossibleFunctionDeclaration());
@@ -142,7 +144,7 @@
         {
             var p = ParserFor(
                 @"PROC foo(INT a, FLOAT b)
-                  ENDPROC"
+                ENDPROC"
             );
 
             True(p.IsPossibleFunctionDeclaration());
@@ -160,7 +162,7 @@
         {
             var p = ParserFor(
                 @"PROC foo()
-                  ENDPROC"
+                ENDPROC"
             );
 
             True(p.IsPossibleFunctionDeclaration());

@@ -1,15 +1,17 @@
-﻿namespace ScTools.Tests.ScriptLang
+﻿namespace ScTools.Tests.ScriptLang;
+
+using ScTools.ScriptLang;
+using ScTools.ScriptLang.Ast.Errors;
+using ScTools.ScriptLang.Ast.Expressions;
+
+using System.Linq;
+
+using Xunit;
+using static Xunit.Assert;
+
+public partial class ParserTests
 {
-    using ScTools.ScriptLang;
-    using ScTools.ScriptLang.Ast.Errors;
-    using ScTools.ScriptLang.Ast.Expressions;
-
-    using System.Linq;
-
-    using Xunit;
-    using static Xunit.Assert;
-
-    public partial class ParserTests
+    public class Expressions
     {
         [Fact]
         public void BasicExpressions()
@@ -43,7 +45,7 @@
             AssertParseExpression(p, n => n is UnaryExpression
             {
                 Operator: UnaryOperator.LogicalNot,
-                SubExpression: NameExpression{ Name: "hello" }
+                SubExpression: NameExpression { Name: "hello" }
             });
             NoErrorsAndIsAtEOF(p);
 
@@ -302,7 +304,7 @@
             {
                 Operator: BinaryOperator.Add,
                 LHS: BinaryExpression
-                { 
+                {
                     Operator: BinaryOperator.Multiply,
                     LHS: IntLiteralExpression { Value: 2 },
                     RHS: UnaryExpression

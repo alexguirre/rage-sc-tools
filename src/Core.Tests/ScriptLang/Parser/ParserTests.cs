@@ -16,19 +16,6 @@
 
     public partial class ParserTests
     {
-        [Fact]
-        public void Label()
-        {
-            var p = ParserFor(
-                "my_label:"
-            );
-
-            True(p.IsPossibleLabel());
-            Assert(p.ParseLabel(), n => n is Label { Name: "my_label" });
-            NoErrorsAndIsAtEOF(p);
-
-        }
-
         private static void NoErrorsAndIsAtEOF(ParserNew p)
         {
             False(p.Diagnostics.HasErrors);

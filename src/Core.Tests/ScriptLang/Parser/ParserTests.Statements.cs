@@ -1,17 +1,32 @@
-﻿namespace ScTools.Tests.ScriptLang
+﻿namespace ScTools.Tests.ScriptLang;
+
+using ScTools.ScriptLang;
+using ScTools.ScriptLang.Ast.Declarations;
+using ScTools.ScriptLang.Ast.Errors;
+using ScTools.ScriptLang.Ast.Expressions;
+using ScTools.ScriptLang.Ast.Statements;
+using ScTools.ScriptLang.Ast.Types;
+
+using Xunit;
+using static Xunit.Assert;
+
+public partial class ParserTests
 {
-    using ScTools.ScriptLang;
-    using ScTools.ScriptLang.Ast.Declarations;
-    using ScTools.ScriptLang.Ast.Errors;
-    using ScTools.ScriptLang.Ast.Expressions;
-    using ScTools.ScriptLang.Ast.Statements;
-    using ScTools.ScriptLang.Ast.Types;
-
-    using Xunit;
-    using static Xunit.Assert;
-
-    public partial class ParserTests
+    public class Statements
     {
+        [Fact]
+        public void Label()
+        {
+            var p = ParserFor(
+                "my_label:"
+            );
+
+            True(p.IsPossibleLabel());
+            Assert(p.ParseLabel(), n => n is Label { Name: "my_label" });
+            NoErrorsAndIsAtEOF(p);
+
+        }
+
         [Fact]
         public void BasicStatements()
         {
