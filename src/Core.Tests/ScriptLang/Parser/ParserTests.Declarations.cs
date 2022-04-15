@@ -1,6 +1,7 @@
 ﻿namespace ScTools.Tests.ScriptLang
 {
     using ScTools.ScriptLang;
+    using ScTools.ScriptLang.Ast;
     using ScTools.ScriptLang.Ast.Declarations;
     using ScTools.ScriptLang.Ast.Errors;
     using ScTools.ScriptLang.Ast.Expressions;
@@ -10,6 +11,32 @@
 
     public partial class ParserTests
     {
+        [Fact]
+        public void Using()
+        {
+            var p = ParserFor(
+                @"USING 'hello.sc'"
+            );
+
+            True(p.IsPossibleUsingDirective());
+            Assert(p.ParseUsingDirective(), n => n is UsingDirective { Path: "hello.sc" });
+            NoErrorsAndIsAtEOF(p);
+        }
+
+        [Fact]
+        public void UsingWithMissingPath()
+        {
+            var p = ParserFor(
+                @"USING"
+            );
+
+            True(p.IsPossibleUsingDirective());
+            Assert(p.ParseUsingDirective(), n => n is UsingDirective { Path: ParserNew.MissingUsingPathLexeme });
+            // TODO: this SourceRange should probably be the last correct token location
+            CheckError(ErrorCode.ParserUnexpectedToken, (0, 0), (0, 0), p.Diagnostics);
+            True(p.IsAtEOF);
+        }
+
         [Fact]
         public void FunctionSignature()
         {

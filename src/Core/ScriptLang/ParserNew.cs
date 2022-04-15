@@ -16,6 +16,7 @@ using ScTools.ScriptLang.Ast.Types;
 public class ParserNew
 {
     internal const string MissingIdentifierLexeme = "<unknown>";
+    internal const string MissingUsingPathLexeme = "<unknown>";
     public static StringComparer CaseInsensitiveComparer => ScriptAssembly.Assembler.CaseInsensitiveComparer;
 
     private readonly Lexer.Enumerator lexerEnumerator;
@@ -40,6 +41,16 @@ public class ParserNew
     }
 
     #region Rules
+    public bool IsPossibleUsingDirective()
+        => Peek(0).Kind is TokenKind.USING;
+    public UsingDirective ParseUsingDirective()
+    {
+        ExpectOrMissing(TokenKind.USING, out var usingKeyword);
+        ExpectOrMissing(TokenKind.String, out var pathString, () => Missing(Token.String(MissingUsingPathLexeme)));
+        ExpectEOS();
+        return new(usingKeyword, pathString);
+    }
+
     public bool IsPossibleFunctionSignature()
         => Peek(0).Kind is TokenKind.FUNC or TokenKind.PROC;
     public FunctionSignature ParseFunctionSignature()
@@ -66,7 +77,7 @@ public class ParserNew
 
         (@params, openParen, closeParen) = ParseParameterList();
 
-        return new FunctionSignature(procOrFuncKeyword, nameIdent, openParen, closeParen, returnType, @params);
+        return new(procOrFuncKeyword, nameIdent, openParen, closeParen, returnType, @params);
 
         (IEnumerable<VarDeclaration_New> Params, Token OpenParen, Token CloseParen) ParseParameterList()
         {

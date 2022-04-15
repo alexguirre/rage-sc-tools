@@ -12,6 +12,8 @@
     {
         TReturn Visit(Program node, TParam param);
 
+        TReturn Visit(UsingDirective node, TParam param);
+
         TReturn Visit(EnumDeclaration node, TParam param);
         TReturn Visit(EnumMemberDeclaration node, TParam param);
         TReturn Visit(FuncDeclaration node, TParam param);
@@ -89,6 +91,11 @@
         public virtual TReturn Visit(Program node, TParam param)
         {
             node.Declarations.ForEach(decl => decl.Accept(this, param));
+            return DefaultReturn;
+        }
+
+        public virtual TReturn Visit(UsingDirective node, TParam param)
+        {
             return DefaultReturn;
         }
 
@@ -470,6 +477,7 @@
     public abstract class EmptyVisitor<TReturn, TParam> : IVisitor<TReturn, TParam>
     {
         public virtual TReturn Visit(Program node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(UsingDirective node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(EnumDeclaration node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(EnumMemberDeclaration node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(FuncDeclaration node, TParam param) => throw new NotImplementedException();
