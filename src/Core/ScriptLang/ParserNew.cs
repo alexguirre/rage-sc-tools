@@ -65,9 +65,21 @@ public class ParserNew
                 }
                 usings.Add(@using);
             }
+            else if (IsPossibleEnumDeclaration())
+            {
+                decls.Add(ParseEnumDeclaration());
+            }
             else if (IsPossibleFunctionDeclaration())
             {
                 decls.Add(ParseFunctionDeclaration());
+            }
+            else if (IsPossibleFunctionPointerDeclaration())
+            {
+                decls.Add(ParseFunctionPointerDeclaration());
+            }
+            else if (IsPossibleNativeFunctionDeclaration())
+            {
+                decls.Add(ParseNativeFunctionDeclaration());
             }
             else if (IsPossibleScriptDeclaration())
             {
@@ -235,6 +247,38 @@ public class ParserNew
         ExpectEOS();
 
         return new(procOrFuncPtrKeyword, nameIdent, openParen, closeParen, returnType, @params);
+    }
+
+    public bool IsPossibleNativeFunctionDeclaration()
+        => Peek(0).Kind is TokenKind.NATIVE;
+    public NativeFunctionDeclaration ParseNativeFunctionDeclaration()
+    {
+        ExpectOrMissing(TokenKind.NATIVE, out var nativeKeyword);
+
+        Token procOrFuncKeyword;
+        if (!ExpectEither(TokenKind.FUNC, TokenKind.PROC, out procOrFuncKeyword))
+        {
+            procOrFuncKeyword = Missing(TokenKind.PROC);
+        }
+
+        Token nameIdent;
+        TypeName? returnType;
+        if (procOrFuncKeyword.Kind is TokenKind.FUNC)
+        {
+            ExpectOrMissing(TokenKind.Identifier, out var returnTypeIdent, MissingIdentifier);
+            returnType = new(returnTypeIdent);
+            ExpectOrMissing(TokenKind.Identifier, out nameIdent, MissingIdentifier);
+        }
+        else // PROC
+        {
+            returnType = null;
+            ExpectOrMissing(TokenKind.Identifier, out nameIdent, MissingIdentifier);
+        }
+
+        (IEnumerable<VarDeclaration_New> @params, Token openParen, Token closeParen) = ParseParameterList();
+        ExpectEOS();
+
+        return new(nativeKeyword, procOrFuncKeyword, nameIdent, openParen, closeParen, returnType, @params);
     }
 
     private (IEnumerable<VarDeclaration_New> Params, Token OpenParen, Token CloseParen) ParseParameterList(bool isScriptParameterList = false)

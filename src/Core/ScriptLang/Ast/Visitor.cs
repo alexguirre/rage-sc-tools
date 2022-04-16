@@ -19,6 +19,7 @@
         TReturn Visit(EnumMemberDeclaration node, TParam param);
         TReturn Visit(FunctionDeclaration node, TParam param);
         TReturn Visit(FunctionPointerDeclaration node, TParam param);
+        TReturn Visit(NativeFunctionDeclaration node, TParam param);
         TReturn Visit(ScriptDeclaration node, TParam param);
         TReturn Visit(FuncDeclaration node, TParam param);
         TReturn Visit(FuncProtoDeclaration node, TParam param);
@@ -132,6 +133,13 @@
         }
 
         public virtual TReturn Visit(FunctionPointerDeclaration node, TParam param)
+        {
+            node.ReturnType?.Accept(this, param);
+            node.Parameters.ForEach(p => p.Accept(this, param));
+            return DefaultReturn;
+        }
+
+        public virtual TReturn Visit(NativeFunctionDeclaration node, TParam param)
         {
             node.ReturnType?.Accept(this, param);
             node.Parameters.ForEach(p => p.Accept(this, param));
@@ -521,6 +529,7 @@
         public virtual TReturn Visit(EnumMemberDeclaration node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(FunctionDeclaration node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(FunctionPointerDeclaration node, TParam param) => throw new NotImplementedException();
+        public virtual TReturn Visit(NativeFunctionDeclaration node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(ScriptDeclaration node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(FuncDeclaration node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(FuncProtoDeclaration node, TParam param) => throw new NotImplementedException();

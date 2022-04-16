@@ -151,6 +151,16 @@
                 parametersChecker(funcPtrDecl.Parameters);
             }
         }
+        private static void AssertNativeFunctionDeclaration(INode node, string name, Predicate<TypeName?> returnTypePredicate, Action<ImmutableArray<VarDeclaration_New>> parametersChecker)
+        {
+            True(node is NativeFunctionDeclaration);
+            if (node is NativeFunctionDeclaration funcDecl)
+            {
+                Equal(name, funcDecl.Name);
+                True(returnTypePredicate(funcDecl.ReturnType));
+                parametersChecker(funcDecl.Parameters);
+            }
+        }
         private static void AssertError(INode node, Predicate<INode> predicate)
         {
             True(node is IError);

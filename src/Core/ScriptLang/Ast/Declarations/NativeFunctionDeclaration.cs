@@ -8,21 +8,22 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 
-public sealed class FunctionPointerDeclaration : BaseTypeDeclaration_New
+public sealed class NativeFunctionDeclaration : BaseValueDeclaration_New
 {
-    public override string Name => Tokens[1].Lexeme.ToString();
+    public override string Name => Tokens[2].Lexeme.ToString();
     public TypeName? ReturnType { get; }
     public ImmutableArray<VarDeclaration_New> Parameters { get; }
 
-    public FunctionPointerDeclaration(Token procOrFuncPtrKeyword, Token nameIdentifier, Token paramsOpenParen, Token paramsCloseParen,
-                                      TypeName? returnType, IEnumerable<VarDeclaration_New> parameters)
-        : base(OfTokens(procOrFuncPtrKeyword, nameIdentifier, paramsOpenParen, paramsCloseParen),
+    public NativeFunctionDeclaration(Token nativeKeyword, Token procOrFuncKeyword, Token nameIdentifier, Token paramsOpenParen, Token paramsCloseParen,
+                               TypeName? returnType, IEnumerable<VarDeclaration_New> parameters)
+        : base(OfTokens(nativeKeyword, procOrFuncKeyword, nameIdentifier, paramsOpenParen, paramsCloseParen),
                OfChildren().AppendIfNotNull(returnType).Concat(parameters))
     {
+        Debug.Assert(nativeKeyword.Kind is TokenKind.NATIVE);
         if (returnType is null)
-            Debug.Assert(procOrFuncPtrKeyword.Kind is TokenKind.PROCPTR);
+            Debug.Assert(procOrFuncKeyword.Kind is TokenKind.PROC);
         else
-            Debug.Assert(procOrFuncPtrKeyword.Kind is TokenKind.FUNCPTR);
+            Debug.Assert(procOrFuncKeyword.Kind is TokenKind.FUNC);
         Debug.Assert(nameIdentifier.Kind is TokenKind.Identifier);
         Debug.Assert(paramsOpenParen.Kind is TokenKind.OpenParen);
         Debug.Assert(paramsCloseParen.Kind is TokenKind.CloseParen);
@@ -35,5 +36,5 @@ public sealed class FunctionPointerDeclaration : BaseTypeDeclaration_New
         => visitor.Visit(this, param);
 
     public override string DebuggerDisplay =>
-        $@"{nameof(FunctionPointerDeclaration)} {{ {nameof(Name)} = {Name}, {nameof(ReturnType)} = {ReturnType?.DebuggerDisplay}, {nameof(Parameters)} = [{string.Join(", ", Parameters.Select(a => a.DebuggerDisplay))} }}";
+        $@"{nameof(NativeFunctionDeclaration)} {{ {nameof(Name)} = {Name}, {nameof(ReturnType)} = {ReturnType?.DebuggerDisplay}, {nameof(Parameters)} = [{string.Join(", ", Parameters.Select(a => a.DebuggerDisplay))} }}";
 }

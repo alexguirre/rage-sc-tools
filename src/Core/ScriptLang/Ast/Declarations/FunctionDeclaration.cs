@@ -24,6 +24,9 @@ public sealed class FunctionDeclaration : BaseValueDeclaration_New
             Debug.Assert(procOrFuncKeyword.Kind is TokenKind.PROC && endKeyword.Kind is TokenKind.ENDPROC);
         else
             Debug.Assert(procOrFuncKeyword.Kind is TokenKind.FUNC && endKeyword.Kind is TokenKind.ENDFUNC);
+        Debug.Assert(nameIdentifier.Kind is TokenKind.Identifier);
+        Debug.Assert(paramsOpenParen.Kind is TokenKind.OpenParen);
+        Debug.Assert(paramsCloseParen.Kind is TokenKind.CloseParen);
 
         ReturnType = returnType;
         Parameters = parameters.ToImmutableArray();
