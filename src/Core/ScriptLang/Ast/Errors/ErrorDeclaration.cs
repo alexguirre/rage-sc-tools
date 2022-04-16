@@ -2,11 +2,11 @@
 
 using ScTools.ScriptLang.Ast.Declarations;
 
-public sealed class ErrorDeclaration_New : BaseError, IDeclaration_New
+public sealed class ErrorDeclaration : BaseError, IDeclaration
 {
     public string Name => "#ERROR#";
 
-    public ErrorDeclaration_New(Diagnostic diagnostic, params Token[] tokens)
+    public ErrorDeclaration(Diagnostic diagnostic, params Token[] tokens)
         : base(diagnostic, OfTokens(tokens), OfChildren())
     {
     }

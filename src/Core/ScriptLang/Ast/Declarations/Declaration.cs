@@ -6,7 +6,7 @@ using System.Diagnostics;
 /// <summary>
 /// Represents a symbol declaration.
 /// </summary>
-public interface IDeclaration_New : INode
+public interface IDeclaration : INode
 {
     string Name { get; }
 }
@@ -14,14 +14,14 @@ public interface IDeclaration_New : INode
 /// <summary>
 /// Represents a declaration of a type.
 /// </summary>
-public interface ITypeDeclaration_New : IDeclaration_New
+public interface ITypeDeclaration : IDeclaration
 {
 }
 
 /// <summary>
 /// Represents a declaration of a variable, a procedure, a function or an enum member.
 /// </summary>
-public interface IValueDeclaration_New : IDeclaration_New
+public interface IValueDeclaration : IDeclaration
 {
 }
 
@@ -42,20 +42,20 @@ public sealed class TypeName : BaseNode
         $@"{nameof(TypeName)} {{ {nameof(Name)} = {Name} }}";
 }
 
-public abstract class BaseTypeDeclaration_New : BaseNode, ITypeDeclaration_New
+public abstract class BaseTypeDeclaration : BaseNode, ITypeDeclaration
 {
     public abstract string Name { get; }
 
-    public BaseTypeDeclaration_New(IEnumerable<Token> tokens, IEnumerable<INode> children) : base(tokens, children)
+    public BaseTypeDeclaration(IEnumerable<Token> tokens, IEnumerable<INode> children) : base(tokens, children)
     {
     }
 }
 
-public abstract class BaseValueDeclaration_New : BaseNode, IValueDeclaration_New
+public abstract class BaseValueDeclaration : BaseNode, IValueDeclaration
 {
     public abstract string Name { get; }
 
-    public BaseValueDeclaration_New(IEnumerable<Token> tokens, IEnumerable<INode> children) : base(tokens, children)
+    public BaseValueDeclaration(IEnumerable<Token> tokens, IEnumerable<INode> children) : base(tokens, children)
     {
     }
 }

@@ -44,7 +44,7 @@ public class ParserNew
     public CompilationUnit ParseCompilationUnit()
     {
         var usings = new List<UsingDirective>();
-        var decls = new List<IDeclaration_New>();
+        var decls = new List<IDeclaration>();
 
         bool isInConstVarDeclaration = false;
 
@@ -161,7 +161,7 @@ public class ParserNew
         ExpectOrMissing(TokenKind.Identifier, out var nameIdent, MissingIdentifier);
         ExpectEOS();
 
-        var fields = new List<VarDeclaration_New>();
+        var fields = new List<VarDeclaration>();
         while (Peek(0).Kind is not TokenKind.ENDSTRUCT)
         {
             fields.Add(ParseVarDeclaration(VarKind.Field, allowMultipleDeclarations: true, allowInitializer: true));
@@ -187,7 +187,7 @@ public class ParserNew
         ExpectOrMissing(TokenKind.Integer, out var blockIndex, () => Missing(Token.Integer(MissingGlobalBlockIndex)));
         ExpectEOS();
 
-        var vars = new List<VarDeclaration_New>();
+        var vars = new List<VarDeclaration>();
         while (Peek(0).Kind is not TokenKind.ENDGLOBAL)
         {
             vars.Add(ParseVarDeclaration(VarKind.Global, allowMultipleDeclarations: true, allowInitializer: true));
@@ -211,7 +211,7 @@ public class ParserNew
         ExpectOrMissing(TokenKind.SCRIPT, out var scriptKeyword);
         ExpectOrMissing(TokenKind.Identifier, out var nameIdent, MissingIdentifier);
 
-        (IEnumerable<VarDeclaration_New> Params, Token OpenParen, Token CloseParen)? parameterList = null;
+        (IEnumerable<VarDeclaration> Params, Token OpenParen, Token CloseParen)? parameterList = null;
         if (Peek(0).Kind is TokenKind.OpenParen)
         {
             parameterList = ParseParameterList(isScriptParameterList: true);
@@ -255,7 +255,7 @@ public class ParserNew
             ExpectOrMissing(TokenKind.Identifier, out nameIdent, MissingIdentifier);
         }
 
-        (IEnumerable<VarDeclaration_New> @params, Token openParen, Token closeParen) = ParseParameterList();
+        (IEnumerable<VarDeclaration> @params, Token openParen, Token closeParen) = ParseParameterList();
         ExpectEOS();
         
         var body = ParseBodyUntilAny(TokenKind.ENDFUNC, TokenKind.ENDPROC);
@@ -297,7 +297,7 @@ public class ParserNew
             ExpectOrMissing(TokenKind.Identifier, out nameIdent, MissingIdentifier);
         }
 
-        (IEnumerable<VarDeclaration_New> @params, Token openParen, Token closeParen) = ParseParameterList();
+        (IEnumerable<VarDeclaration> @params, Token openParen, Token closeParen) = ParseParameterList();
         ExpectEOS();
 
         return new(procOrFuncPtrKeyword, nameIdent, openParen, closeParen, returnType, @params);
@@ -329,15 +329,15 @@ public class ParserNew
             ExpectOrMissing(TokenKind.Identifier, out nameIdent, MissingIdentifier);
         }
 
-        (IEnumerable<VarDeclaration_New> @params, Token openParen, Token closeParen) = ParseParameterList();
+        (IEnumerable<VarDeclaration> @params, Token openParen, Token closeParen) = ParseParameterList();
         ExpectEOS();
 
         return new(nativeKeyword, procOrFuncKeyword, nameIdent, openParen, closeParen, returnType, @params);
     }
 
-    private (IEnumerable<VarDeclaration_New> Params, Token OpenParen, Token CloseParen) ParseParameterList(bool isScriptParameterList = false)
+    private (IEnumerable<VarDeclaration> Params, Token OpenParen, Token CloseParen) ParseParameterList(bool isScriptParameterList = false)
     {
-        List<VarDeclaration_New>? @params = null;
+        List<VarDeclaration>? @params = null;
 
         if (ExpectOrMissing(TokenKind.OpenParen, out var openParen))
         {
@@ -352,7 +352,7 @@ public class ParserNew
         }
         ExpectOrMissing(TokenKind.CloseParen, out var closeParen);
 
-        return (@params ?? Enumerable.Empty<VarDeclaration_New>(), openParen, closeParen);
+        return (@params ?? Enumerable.Empty<VarDeclaration>(), openParen, closeParen);
     }
 
     public bool IsPossibleLabel()
@@ -888,7 +888,7 @@ public class ParserNew
     private bool IsPossibleVarDeclaration()
         => isInsideCommaSeparatedVarDeclaration ||
            Peek(0).Kind is TokenKind.Identifier && Peek(1).Kind is TokenKind.Identifier or TokenKind.Ampersand;
-    private VarDeclaration_New ParseVarDeclaration(VarKind varKind, bool allowMultipleDeclarations, bool allowInitializer)
+    private VarDeclaration ParseVarDeclaration(VarKind varKind, bool allowMultipleDeclarations, bool allowInitializer)
     {
         // TODO: parse var initializers
         Token typeIdent;
@@ -1028,7 +1028,7 @@ public class ParserNew
     private void UnexpectedTokenExpectedAssignmentError()
         => Error(ErrorCode.ParserUnexpectedToken, $"Unexpected token '{Current.Kind}', expected assignment operator", Current.Location);
 
-    private ErrorDeclaration_New UnknownDeclarationError()
+    private ErrorDeclaration UnknownDeclarationError()
     {
         Error(ErrorCode.ParserUnknownDeclaration, $"Expected declaration, found '{Current.Lexeme}' ({Current.Kind})", Current.Location);
         return new(LastError!, Current);

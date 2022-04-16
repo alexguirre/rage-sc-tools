@@ -555,21 +555,21 @@ public partial class ParserTests
                   label: FLOAT foo, bar"
             );
 
-            Assert(p.ParseStatement(), n => n is VarDeclaration_New
+            Assert(p.ParseStatement(), n => n is VarDeclaration
             {
                 Label: null,
                 Type: TypeName { Name: "INT" },
                 Name: "hello", Declarator: VarDeclarator { Name: "hello" },
                 Initializer: null, Kind: VarKind.Local
             });
-            Assert(p.ParseStatement(), n => n is VarDeclaration_New
+            Assert(p.ParseStatement(), n => n is VarDeclaration
             {
                 Label: Label { Name: "label" },
                 Type: TypeName { Name: "FLOAT" },
                 Name: "foo", Declarator: VarDeclarator { Name: "foo" },
                 Initializer: null, Kind: VarKind.Local
             });
-            Assert(p.ParseStatement(), n => n is VarDeclaration_New
+            Assert(p.ParseStatement(), n => n is VarDeclaration
             {
                 Label: null,
                 Type: TypeName { Name: "FLOAT" },
@@ -587,7 +587,7 @@ public partial class ParserTests
                   label: FLOAT foo = 3.0, bar = 2+1"
             );
 
-            Assert(p.ParseStatement(), n => n is VarDeclaration_New
+            Assert(p.ParseStatement(), n => n is VarDeclaration
             {
                 Label: null,
                 Type: TypeName { Name: "INT" },
@@ -595,7 +595,7 @@ public partial class ParserTests
                 Initializer: IntLiteralExpression { Value: 1 },
                 Kind: VarKind.Local
             });
-            Assert(p.ParseStatement(), n => n is VarDeclaration_New
+            Assert(p.ParseStatement(), n => n is VarDeclaration
             {
                 Label: Label { Name: "label" },
                 Type: TypeName { Name: "FLOAT" },
@@ -603,7 +603,7 @@ public partial class ParserTests
                 Initializer: FloatLiteralExpression { Value: 3.0f },
                 Kind: VarKind.Local
             });
-            Assert(p.ParseStatement(), n => n is VarDeclaration_New
+            Assert(p.ParseStatement(), n => n is VarDeclaration
             {
                 Label: null,
                 Type: TypeName { Name: "FLOAT" },
@@ -627,7 +627,7 @@ public partial class ParserTests
                   label: FLOAT foo[2], bar[]"
             );
 
-            AssertArrayVarDeclaration(p.ParseStatement(), n => n is VarDeclaration_New
+            AssertArrayVarDeclaration(p.ParseStatement(), n => n is VarDeclaration
             {
                 Label: null,
                 Type: TypeName { Name: "INT" },
@@ -635,7 +635,7 @@ public partial class ParserTests
                 Initializer: null, Kind: VarKind.Local
             },
                 dim0 => dim0 is IntLiteralExpression { Value: 5 });
-            AssertArrayVarDeclaration(p.ParseStatement(), n => n is VarDeclaration_New
+            AssertArrayVarDeclaration(p.ParseStatement(), n => n is VarDeclaration
             {
                 Label: Label { Name: "label" },
                 Type: TypeName { Name: "FLOAT" },
@@ -643,7 +643,7 @@ public partial class ParserTests
                 Initializer: null, Kind: VarKind.Local
             },
                 dim0 => dim0 is IntLiteralExpression { Value: 2 });
-            AssertArrayVarDeclaration(p.ParseStatement(), n => n is VarDeclaration_New
+            AssertArrayVarDeclaration(p.ParseStatement(), n => n is VarDeclaration
             {
                 Label: null,
                 Type: TypeName { Name: "FLOAT" },
@@ -662,7 +662,7 @@ public partial class ParserTests
                   FLOAT foo[2][][5+1]"
             );
 
-            AssertArrayVarDeclaration(p.ParseStatement(), n => n is VarDeclaration_New
+            AssertArrayVarDeclaration(p.ParseStatement(), n => n is VarDeclaration
             {
                 Label: null,
                 Type: TypeName { Name: "INT" },
@@ -671,7 +671,7 @@ public partial class ParserTests
             },
                 dim0 => dim0 is IntLiteralExpression { Value: 1 },
                 dim1 => dim1 is IntLiteralExpression { Value: 2 });
-            AssertArrayVarDeclaration(p.ParseStatement(), n => n is VarDeclaration_New
+            AssertArrayVarDeclaration(p.ParseStatement(), n => n is VarDeclaration
             {
                 Label: null,
                 Type: TypeName { Name: "FLOAT" },
@@ -697,21 +697,21 @@ public partial class ParserTests
                   label: FLOAT &foo, &bar"
             );
 
-            Assert(p.ParseStatement(), n => n is VarDeclaration_New
+            Assert(p.ParseStatement(), n => n is VarDeclaration
             {
                 Label: null,
                 Type: TypeName { Name: "INT" },
                 Name: "hello", Declarator: VarRefDeclarator { Name: "hello" },
                 Initializer: null, Kind: VarKind.Local
             });
-            Assert(p.ParseStatement(), n => n is VarDeclaration_New
+            Assert(p.ParseStatement(), n => n is VarDeclaration
             {
                 Label: Label { Name: "label" },
                 Type: TypeName { Name: "FLOAT" },
                 Name: "foo", Declarator: VarRefDeclarator { Name: "foo" },
                 Initializer: null, Kind: VarKind.Local
             });
-            Assert(p.ParseStatement(), n => n is VarDeclaration_New
+            Assert(p.ParseStatement(), n => n is VarDeclaration
             {
                 Label: null,
                 Type: TypeName { Name: "FLOAT" },

@@ -9,9 +9,9 @@ using System.Linq;
 public sealed class CompilationUnit : BaseNode
 {
     public ImmutableArray<UsingDirective> Usings { get; }
-    public ImmutableArray<IDeclaration_New> Declarations { get; }
+    public ImmutableArray<IDeclaration> Declarations { get; }
 
-    public CompilationUnit(IEnumerable<UsingDirective> usings, IEnumerable<IDeclaration_New> declarations)
+    public CompilationUnit(IEnumerable<UsingDirective> usings, IEnumerable<IDeclaration> declarations)
            : base(OfTokens(), OfChildren().Concat(usings).Concat(declarations))
     {
         Usings = usings.ToImmutableArray();

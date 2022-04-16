@@ -8,14 +8,14 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 
-public sealed class FunctionPointerDeclaration : BaseTypeDeclaration_New
+public sealed class FunctionPointerDeclaration : BaseTypeDeclaration
 {
     public override string Name => Tokens[1].Lexeme.ToString();
     public TypeName? ReturnType { get; }
-    public ImmutableArray<VarDeclaration_New> Parameters { get; }
+    public ImmutableArray<VarDeclaration> Parameters { get; }
 
     public FunctionPointerDeclaration(Token procOrFuncPtrKeyword, Token nameIdentifier, Token paramsOpenParen, Token paramsCloseParen,
-                                      TypeName? returnType, IEnumerable<VarDeclaration_New> parameters)
+                                      TypeName? returnType, IEnumerable<VarDeclaration> parameters)
         : base(OfTokens(procOrFuncPtrKeyword, nameIdentifier, paramsOpenParen, paramsCloseParen),
                OfChildren().AppendIfNotNull(returnType).Concat(parameters))
     {

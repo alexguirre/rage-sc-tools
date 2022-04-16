@@ -41,7 +41,7 @@ public enum VarKind
     Field,
 }
 
-public sealed class VarDeclaration_New : BaseValueDeclaration_New, IStatement
+public sealed class VarDeclaration : BaseValueDeclaration, IStatement
 {
     public override string Name => Declarator.Name;
     public Label? Label { get; }
@@ -49,10 +49,8 @@ public sealed class VarDeclaration_New : BaseValueDeclaration_New, IStatement
     public IVarDeclarator Declarator => (IVarDeclarator)Children[1];
     public VarKind Kind { get; }
     public IExpression? Initializer { get; }
-    // TODO: move to semantic information
-    //public int Address { get; set; }
 
-    public VarDeclaration_New(TypeName type, IVarDeclarator declarator, VarKind kind, IExpression? initializer = null, Label? label = null)
+    public VarDeclaration(TypeName type, IVarDeclarator declarator, VarKind kind, IExpression? initializer = null, Label? label = null)
         : base(OfTokens(), OfChildren(type, declarator).AppendIfNotNull(initializer).AppendIfNotNull(label))
     {
         Kind = kind;
@@ -63,11 +61,11 @@ public sealed class VarDeclaration_New : BaseValueDeclaration_New, IStatement
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
 
-    internal VarDeclaration_New WithLabel(Label? label)
+    internal VarDeclaration WithLabel(Label? label)
         => new(Type, Declarator, Kind, Initializer, label);
 
     public override string DebuggerDisplay =>
-        $@"{nameof(VarDeclaration_New)} {{ {nameof(Type)} = {Type.DebuggerDisplay}, {nameof(Declarator)} = {Declarator.DebuggerDisplay}, {nameof(Initializer)} = {Initializer?.DebuggerDisplay} }}";
+        $@"{nameof(VarDeclaration)} {{ {nameof(Type)} = {Type.DebuggerDisplay}, {nameof(Declarator)} = {Declarator.DebuggerDisplay}, {nameof(Initializer)} = {Initializer?.DebuggerDisplay} }}";
 }
 
 public interface IVarDeclarator : INode

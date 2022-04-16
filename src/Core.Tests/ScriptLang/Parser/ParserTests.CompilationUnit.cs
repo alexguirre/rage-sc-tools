@@ -52,14 +52,14 @@ public partial class ParserTests
             );
 
             var u = p.ParseCompilationUnit();
-            Assert(u.Declarations[0], n => n is VarDeclaration_New
+            Assert(u.Declarations[0], n => n is VarDeclaration
             {
                 Label: null,
                 Type: TypeName { Name: "INT" },
                 Name: "a", Declarator: VarDeclarator { Name: "a" },
                 Initializer: null, Kind: VarKind.Static
             });
-            Assert(u.Declarations[1], n => n is VarDeclaration_New
+            Assert(u.Declarations[1], n => n is VarDeclaration
             {
                 Label: null,
                 Type: TypeName { Name: "INT" },
@@ -79,7 +79,7 @@ public partial class ParserTests
             );
 
             var u = p.ParseCompilationUnit();
-            Assert(u.Declarations[0], n => n is VarDeclaration_New
+            Assert(u.Declarations[0], n => n is VarDeclaration
             {
                 Label: null,
                 Type: TypeName { Name: "INT" },
@@ -87,7 +87,7 @@ public partial class ParserTests
                 Initializer: IntLiteralExpression { Value: 1 },
                 Kind: VarKind.Static
             });
-            Assert(u.Declarations[1], n => n is VarDeclaration_New
+            Assert(u.Declarations[1], n => n is VarDeclaration
             {
                 Label: null,
                 Type: TypeName { Name: "INT" },
@@ -95,7 +95,7 @@ public partial class ParserTests
                 Initializer: IntLiteralExpression { Value: 2 },
                 Kind: VarKind.Static
             });
-            Assert(u.Declarations[2], n => n is VarDeclaration_New
+            Assert(u.Declarations[2], n => n is VarDeclaration
             {
                 Label: null,
                 Type: TypeName { Name: "BOOL" },
@@ -115,14 +115,14 @@ public partial class ParserTests
             );
 
             var u = p.ParseCompilationUnit();
-            Assert(u.Declarations[0], n => n is VarDeclaration_New
+            Assert(u.Declarations[0], n => n is VarDeclaration
             {
                 Label: null,
                 Type: TypeName { Name: "INT" },
                 Name: "a", Declarator: VarDeclarator { Name: "a" },
                 Initializer: null, Kind: VarKind.Constant
             });
-            Assert(u.Declarations[1], n => n is VarDeclaration_New
+            Assert(u.Declarations[1], n => n is VarDeclaration
             {
                 Label: null,
                 Type: TypeName { Name: "INT" },
@@ -142,7 +142,7 @@ public partial class ParserTests
             );
 
             var u = p.ParseCompilationUnit();
-            Assert(u.Declarations[0], n => n is VarDeclaration_New
+            Assert(u.Declarations[0], n => n is VarDeclaration
             {
                 Label: null,
                 Type: TypeName { Name: "INT" },
@@ -150,7 +150,7 @@ public partial class ParserTests
                 Initializer: IntLiteralExpression { Value: 1 },
                 Kind: VarKind.Constant
             });
-            Assert(u.Declarations[1], n => n is VarDeclaration_New
+            Assert(u.Declarations[1], n => n is VarDeclaration
             {
                 Label: null,
                 Type: TypeName { Name: "INT" },
@@ -158,7 +158,7 @@ public partial class ParserTests
                 Initializer: IntLiteralExpression { Value: 2 },
                 Kind: VarKind.Constant
             });
-            Assert(u.Declarations[2], n => n is VarDeclaration_New
+            Assert(u.Declarations[2], n => n is VarDeclaration
             {
                 Label: null,
                 Type: TypeName { Name: "BOOL" },
@@ -180,7 +180,7 @@ public partial class ParserTests
             );
 
             var u = p.ParseCompilationUnit();
-            Assert(u.Declarations[0], n => n is VarDeclaration_New
+            Assert(u.Declarations[0], n => n is VarDeclaration
             {
                 Label: null,
                 Type: TypeName { Name: "INT" },
@@ -188,7 +188,7 @@ public partial class ParserTests
                 Initializer: IntLiteralExpression { Value: 1 },
                 Kind: VarKind.Constant
             });
-            Assert(u.Declarations[1], n => n is VarDeclaration_New
+            Assert(u.Declarations[1], n => n is VarDeclaration
             {
                 Label: null,
                 Type: TypeName { Name: "INT" },
@@ -196,7 +196,7 @@ public partial class ParserTests
                 Initializer: IntLiteralExpression { Value: 2 },
                 Kind: VarKind.Static
             });
-            Assert(u.Declarations[2], n => n is VarDeclaration_New
+            Assert(u.Declarations[2], n => n is VarDeclaration
             {
                 Label: null,
                 Type: TypeName { Name: "BOOL" },
@@ -242,7 +242,7 @@ public partial class ParserTests
 
             var u = p.ParseCompilationUnit();
 
-            True(u.Declarations[0] is ErrorDeclaration_New);
+            True(u.Declarations[0] is ErrorDeclaration);
 
             CheckError(ErrorCode.ParserUnknownDeclaration, (1, 1), (1, 9), p.Diagnostics);
 

@@ -8,14 +8,14 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 
-public sealed class NativeFunctionDeclaration : BaseValueDeclaration_New
+public sealed class NativeFunctionDeclaration : BaseValueDeclaration
 {
     public override string Name => Tokens[2].Lexeme.ToString();
     public TypeName? ReturnType { get; }
-    public ImmutableArray<VarDeclaration_New> Parameters { get; }
+    public ImmutableArray<VarDeclaration> Parameters { get; }
 
     public NativeFunctionDeclaration(Token nativeKeyword, Token procOrFuncKeyword, Token nameIdentifier, Token paramsOpenParen, Token paramsCloseParen,
-                               TypeName? returnType, IEnumerable<VarDeclaration_New> parameters)
+                               TypeName? returnType, IEnumerable<VarDeclaration> parameters)
         : base(OfTokens(nativeKeyword, procOrFuncKeyword, nameIdentifier, paramsOpenParen, paramsCloseParen),
                OfChildren().AppendIfNotNull(returnType).Concat(parameters))
     {

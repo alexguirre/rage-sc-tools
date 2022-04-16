@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 using ScTools.ScriptLang.Ast.Expressions;
 
-public sealed class EnumDeclaration : BaseTypeDeclaration_New
+public sealed class EnumDeclaration : BaseTypeDeclaration
 {
     public override string Name => Tokens[1].Lexeme.ToString();
     public ImmutableArray<EnumMemberDeclaration> Members { get; }
@@ -25,7 +25,7 @@ public sealed class EnumDeclaration : BaseTypeDeclaration_New
         => visitor.Visit(this, param);
 }
 
-public sealed class EnumMemberDeclaration : BaseValueDeclaration_New
+public sealed class EnumMemberDeclaration : BaseValueDeclaration
 {
     public override string Name => Tokens[0].Lexeme.ToString();
     public IExpression? Initializer => Children.Length > 0 ? (IExpression)Children[0] : null;

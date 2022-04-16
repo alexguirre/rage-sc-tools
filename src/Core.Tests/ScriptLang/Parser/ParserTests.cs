@@ -95,10 +95,10 @@
             True(switchCasePredicate(switchCase));
             bodyChecker(switchCase.Body);
         }
-        private static void AssertArrayVarDeclaration(IStatement stmt, Predicate<VarDeclaration_New> varDeclPredicate, params Predicate<IExpression?>[] expectedLengths)
+        private static void AssertArrayVarDeclaration(IStatement stmt, Predicate<VarDeclaration> varDeclPredicate, params Predicate<IExpression?>[] expectedLengths)
         {
-            True(stmt is VarDeclaration_New);
-            if (stmt is VarDeclaration_New varDecl)
+            True(stmt is VarDeclaration);
+            if (stmt is VarDeclaration varDecl)
             {
                 True(varDecl.Declarator is VarArrayDeclarator);
                 True(varDeclPredicate(varDecl));
@@ -120,7 +120,7 @@
                 membersChecker(enumDecl.Members);
             }
         }
-        private static void AssertStructDeclaration(INode node, string name, Action<ImmutableArray<VarDeclaration_New>> fieldsChecker)
+        private static void AssertStructDeclaration(INode node, string name, Action<ImmutableArray<VarDeclaration>> fieldsChecker)
         {
             True(node is StructDeclaration);
             if (node is StructDeclaration structDecl)
@@ -129,7 +129,7 @@
                 fieldsChecker(structDecl.Fields);
             }
         }
-        private static void AssertGlobalBlockDeclaration(INode node, string name, int blockIndex, Action<ImmutableArray<VarDeclaration_New>> varsChecker)
+        private static void AssertGlobalBlockDeclaration(INode node, string name, int blockIndex, Action<ImmutableArray<VarDeclaration>> varsChecker)
         {
             True(node is GlobalBlockDeclaration);
             if (node is GlobalBlockDeclaration globalBlockDecl)
@@ -139,7 +139,7 @@
                 varsChecker(globalBlockDecl.Vars);
             }
         }
-        private static void AssertScriptDeclaration(INode node, string name, Action<ImmutableArray<VarDeclaration_New>> parametersChecker, Action<ImmutableArray<IStatement>> bodyChecker)
+        private static void AssertScriptDeclaration(INode node, string name, Action<ImmutableArray<VarDeclaration>> parametersChecker, Action<ImmutableArray<IStatement>> bodyChecker)
         {
             True(node is ScriptDeclaration);
             if (node is ScriptDeclaration scriptDecl)
@@ -149,7 +149,7 @@
                 bodyChecker(scriptDecl.Body);
             }
         }
-        private static void AssertFunctionDeclaration(INode node, string name, Predicate<TypeName?> returnTypePredicate, Action<ImmutableArray<VarDeclaration_New>> parametersChecker, Action<ImmutableArray<IStatement>> bodyChecker)
+        private static void AssertFunctionDeclaration(INode node, string name, Predicate<TypeName?> returnTypePredicate, Action<ImmutableArray<VarDeclaration>> parametersChecker, Action<ImmutableArray<IStatement>> bodyChecker)
         {
             True(node is FunctionDeclaration);
             if (node is FunctionDeclaration funcDecl)
@@ -160,7 +160,7 @@
                 bodyChecker(funcDecl.Body);
             }
         }
-        private static void AssertFunctionPointerDeclaration(INode node, string name, Predicate<TypeName?> returnTypePredicate, Action<ImmutableArray<VarDeclaration_New>> parametersChecker)
+        private static void AssertFunctionPointerDeclaration(INode node, string name, Predicate<TypeName?> returnTypePredicate, Action<ImmutableArray<VarDeclaration>> parametersChecker)
         {
             True(node is FunctionPointerDeclaration);
             if (node is FunctionPointerDeclaration funcPtrDecl)
@@ -170,7 +170,7 @@
                 parametersChecker(funcPtrDecl.Parameters);
             }
         }
-        private static void AssertNativeFunctionDeclaration(INode node, string name, Predicate<TypeName?> returnTypePredicate, Action<ImmutableArray<VarDeclaration_New>> parametersChecker)
+        private static void AssertNativeFunctionDeclaration(INode node, string name, Predicate<TypeName?> returnTypePredicate, Action<ImmutableArray<VarDeclaration>> parametersChecker)
         {
             True(node is NativeFunctionDeclaration);
             if (node is NativeFunctionDeclaration funcDecl)

@@ -5,14 +5,14 @@ using ScTools.ScriptLang.Types;
 
 using System.Diagnostics;
 
-public record struct NameExpressionSemantics(TypeInfo Type, ValueKind ValueKind, IDeclaration_New? Declaration);
+public record struct NameExpressionSemantics(TypeInfo Type, ValueKind ValueKind, IDeclaration? Declaration);
 
 /// <summary>
 /// Represents a reference to a <see cref="IDeclaration"/>.
 /// </summary>
 public sealed class NameExpression : BaseExpression, ISemanticNode<NameExpressionSemantics>
 {
-    private IDeclaration_New? semanticsDeclaration;
+    private IDeclaration? semanticsDeclaration;
 
     public string Name => Tokens[0].Lexeme.ToString();
     public new NameExpressionSemantics Semantics

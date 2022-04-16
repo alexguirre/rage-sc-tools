@@ -10,9 +10,9 @@
     /// </summary>
     public sealed class ScopeSymbolTable
     {
-        private readonly Stack<Dictionary<string, IValueDeclaration_New>> scopes = new();
+        private readonly Stack<Dictionary<string, IValueDeclaration>> scopes = new();
 
-        private Dictionary<string, IValueDeclaration_New> CurrentScope => scopes.Peek();
+        private Dictionary<string, IValueDeclaration> CurrentScope => scopes.Peek();
 
         public GlobalSymbolTable GlobalSymbols { get; }
         public bool HasScope => scopes.Count > 0;
@@ -23,9 +23,9 @@
         public void PushScope() => scopes.Push(new(ParserNew.CaseInsensitiveComparer));
         public void PopScope() => scopes.Pop();
 
-        public bool AddValue(IValueDeclaration_New valueDeclaration) => CurrentScope.TryAdd(valueDeclaration.Name, valueDeclaration);
+        public bool AddValue(IValueDeclaration valueDeclaration) => CurrentScope.TryAdd(valueDeclaration.Name, valueDeclaration);
 
-        public IValueDeclaration_New? FindValue(string name)
+        public IValueDeclaration? FindValue(string name)
         {
             foreach (var scope in scopes)
             {

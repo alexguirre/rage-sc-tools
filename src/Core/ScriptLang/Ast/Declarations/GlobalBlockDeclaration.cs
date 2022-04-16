@@ -5,17 +5,17 @@
     using System.Collections.Immutable;
     using System.Diagnostics;
 
-    public sealed class GlobalBlockDeclaration : BaseNode, IDeclaration_New
+    public sealed class GlobalBlockDeclaration : BaseNode, IDeclaration
     {
         public const int MaxBlockCount = 64; // limit hardcoded in the game .exe (and max value that fits in GLOBAL_U24* instructions)
         public const int MaxSize = 0x3FFFF;
 
         public string Name => Tokens[1].Lexeme.ToString();
         public int BlockIndex => Tokens[2].GetIntLiteral();
-        public ImmutableArray<VarDeclaration_New> Vars { get; }
+        public ImmutableArray<VarDeclaration> Vars { get; }
 
         public GlobalBlockDeclaration(Token globalKeyword, Token nameIdentifier, Token blockIndex, Token endglobalKeyword,
-                                      IEnumerable<VarDeclaration_New> vars)
+                                      IEnumerable<VarDeclaration> vars)
             : base(OfTokens(globalKeyword, nameIdentifier, blockIndex, endglobalKeyword), OfChildren(vars))
         {
             Debug.Assert(globalKeyword.Kind is TokenKind.GLOBAL);

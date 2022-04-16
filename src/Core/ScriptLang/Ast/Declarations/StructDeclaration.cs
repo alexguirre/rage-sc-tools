@@ -4,12 +4,12 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 
-public sealed class StructDeclaration : BaseTypeDeclaration_New
+public sealed class StructDeclaration : BaseTypeDeclaration
 {
     public override string Name => Tokens[1].Lexeme.ToString();
-    public ImmutableArray<VarDeclaration_New> Fields { get; }
+    public ImmutableArray<VarDeclaration> Fields { get; }
 
-    public StructDeclaration(Token structKeyword, Token nameIdentifier, Token endstructKeyword, IEnumerable<VarDeclaration_New> fields)
+    public StructDeclaration(Token structKeyword, Token nameIdentifier, Token endstructKeyword, IEnumerable<VarDeclaration> fields)
         : base(OfTokens(structKeyword, nameIdentifier, endstructKeyword), OfChildren(fields))
     {
         Debug.Assert(structKeyword.Kind is TokenKind.STRUCT);

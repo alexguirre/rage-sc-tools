@@ -272,7 +272,7 @@ public partial class ParserTests
             AssertScriptDeclaration(p.ParseScriptDeclaration(), "foo",
                 @params => Empty(@params),
                 body => Collection(body,
-                    _0 => True(_0 is VarDeclaration_New { Name: "c", Type: TypeName { Name: "INT" }, Kind: VarKind.Local }),
+                    _0 => True(_0 is VarDeclaration { Name: "c", Type: TypeName { Name: "INT" }, Kind: VarKind.Local }),
                     _1 => True(_1 is AssignmentStatement
                     {
                         LHS: NameExpression { Name: "c" },
@@ -312,8 +312,8 @@ public partial class ParserTests
             True(p.IsPossibleScriptDeclaration());
             AssertScriptDeclaration(p.ParseScriptDeclaration(), "foo",
                 @params => Collection(@params,
-                    _0 => True(_0 is VarDeclaration_New { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.ScriptParameter }),
-                    _1 => True(_1 is VarDeclaration_New { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.ScriptParameter })),
+                    _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.ScriptParameter }),
+                    _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.ScriptParameter })),
                 body => Empty(body));
             NoErrorsAndIsAtEOF(p);
         }
@@ -359,8 +359,8 @@ public partial class ParserTests
             True(p.IsPossibleScriptDeclaration());
             AssertScriptDeclaration(p.ParseScriptDeclaration(), "foo",
                 @params => Collection(@params,
-                    _0 => True(_0 is VarDeclaration_New { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.ScriptParameter, Initializer: IntLiteralExpression{ Value: 1 } }),
-                    _1 => True(_1 is VarDeclaration_New { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.ScriptParameter, Initializer: FloatLiteralExpression { Value: 3.0f } })),
+                    _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.ScriptParameter, Initializer: IntLiteralExpression{ Value: 1 } }),
+                    _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.ScriptParameter, Initializer: FloatLiteralExpression { Value: 3.0f } })),
                 body => Empty(body));
 
             CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 18), (1, 20), p.Diagnostics);
@@ -384,10 +384,10 @@ public partial class ParserTests
             AssertFunctionDeclaration(p.ParseFunctionDeclaration(), "foo",
                 retTy => retTy is TypeName { Name: "BOOL" },
                 @params => Collection(@params,
-                    _0 => True(_0 is VarDeclaration_New { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
-                    _1 => True(_1 is VarDeclaration_New { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter })),
+                    _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
+                    _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter })),
                 body => Collection(body,
-                    _0 => True(_0 is VarDeclaration_New { Name: "c", Type: TypeName { Name: "INT" }, Kind: VarKind.Local }),
+                    _0 => True(_0 is VarDeclaration { Name: "c", Type: TypeName { Name: "INT" }, Kind: VarKind.Local }),
                     _1 => True(_1 is AssignmentStatement
                     {
                         LHS: NameExpression { Name: "c" },
@@ -414,8 +414,8 @@ public partial class ParserTests
             AssertFunctionDeclaration(p.ParseFunctionDeclaration(), "foo",
                 retTy => retTy is TypeName { Name: "BOOL" },
                 @params => Collection(@params,
-                    _0 => True(_0 is VarDeclaration_New { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
-                    _1 => True(_1 is VarDeclaration_New { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter })),
+                    _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
+                    _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter })),
                 body => Empty(body));
             NoErrorsAndIsAtEOF(p);
         }
@@ -432,8 +432,8 @@ public partial class ParserTests
             AssertFunctionDeclaration(p.ParseFunctionDeclaration(), "foo",
                 retTy => retTy is TypeName { Name: "BOOL" },
                 @params => Collection(@params,
-                    _0 => True(_0 is VarDeclaration_New { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter, Initializer: IntLiteralExpression { Value: 1 } }),
-                    _1 => True(_1 is VarDeclaration_New { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter, Initializer: FloatLiteralExpression { Value: 3.0f } })),
+                    _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter, Initializer: IntLiteralExpression { Value: 1 } }),
+                    _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter, Initializer: FloatLiteralExpression { Value: 3.0f } })),
                 body => Empty(body));
 
             CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 21), (1, 23), p.Diagnostics);
@@ -473,10 +473,10 @@ public partial class ParserTests
             AssertFunctionDeclaration(p.ParseFunctionDeclaration(), "foo",
                 retTy => retTy is null,
                 @params => Collection(@params,
-                    _0 => True(_0 is VarDeclaration_New { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
-                    _1 => True(_1 is VarDeclaration_New { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter })),
+                    _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
+                    _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter })),
                 body => Collection(body,
-                    _0 => True(_0 is VarDeclaration_New { Name: "c", Type: TypeName { Name: "INT" }, Kind: VarKind.Local }),
+                    _0 => True(_0 is VarDeclaration { Name: "c", Type: TypeName { Name: "INT" }, Kind: VarKind.Local }),
                     _1 => True(_1 is AssignmentStatement
                     {
                         LHS: NameExpression { Name: "c" },
@@ -503,8 +503,8 @@ public partial class ParserTests
             AssertFunctionDeclaration(p.ParseFunctionDeclaration(), "foo",
                 retTy => retTy is null,
                 @params => Collection(@params,
-                    _0 => True(_0 is VarDeclaration_New { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter, Initializer: IntLiteralExpression { Value: 1 } }),
-                    _1 => True(_1 is VarDeclaration_New { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter, Initializer: FloatLiteralExpression { Value: 3.0f } })),
+                    _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter, Initializer: IntLiteralExpression { Value: 1 } }),
+                    _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter, Initializer: FloatLiteralExpression { Value: 3.0f } })),
                 body => Empty(body));
 
             CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 16), (1, 18), p.Diagnostics);
@@ -525,8 +525,8 @@ public partial class ParserTests
             AssertFunctionDeclaration(p.ParseFunctionDeclaration(), "foo",
                 retTy => retTy is null,
                 @params => Collection(@params,
-                    _0 => True(_0 is VarDeclaration_New { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
-                    _1 => True(_1 is VarDeclaration_New { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter })),
+                    _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
+                    _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter })),
                 body => Empty(body));
             NoErrorsAndIsAtEOF(p);
         }
@@ -590,8 +590,8 @@ public partial class ParserTests
             AssertFunctionDeclaration(p.ParseFunctionDeclaration(), ParserNew.MissingIdentifierLexeme,
                 retTy => retTy is null,
                 @params => Collection(@params,
-                    _0 => True(_0 is VarDeclaration_New { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
-                    _1 => True(_1 is VarDeclaration_New { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter })),
+                    _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
+                    _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter })),
                 body => Empty(body));
             CheckError(ErrorCode.ParserUnexpectedToken, (1, 5), (1, 5), p.Diagnostics);
             True(p.IsAtEOF);
@@ -640,8 +640,8 @@ public partial class ParserTests
             AssertFunctionPointerDeclaration(p.ParseFunctionPointerDeclaration(), "foo",
                 retTy => retTy is TypeName { Name: "BOOL" },
                 @params => Collection(@params,
-                    _0 => True(_0 is VarDeclaration_New { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
-                    _1 => True(_1 is VarDeclaration_New { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter })));
+                    _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
+                    _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter })));
             NoErrorsAndIsAtEOF(p);
         }
 
@@ -656,8 +656,8 @@ public partial class ParserTests
             AssertFunctionPointerDeclaration(p.ParseFunctionPointerDeclaration(), "foo",
                 retTy => retTy is TypeName { Name: "BOOL" },
                 @params => Collection(@params,
-                    _0 => True(_0 is VarDeclaration_New { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter, Initializer: IntLiteralExpression { Value: 1 } }),
-                    _1 => True(_1 is VarDeclaration_New { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter, Initializer: FloatLiteralExpression { Value: 3.0f } })));
+                    _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter, Initializer: IntLiteralExpression { Value: 1 } }),
+                    _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter, Initializer: FloatLiteralExpression { Value: 3.0f } })));
 
             CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 24), (1, 26), p.Diagnostics);
             CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 37), (1, 41), p.Diagnostics);
@@ -690,8 +690,8 @@ public partial class ParserTests
             AssertFunctionPointerDeclaration(p.ParseFunctionPointerDeclaration(), "foo",
                 retTy => retTy is null,
                 @params => Collection(@params,
-                    _0 => True(_0 is VarDeclaration_New { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
-                    _1 => True(_1 is VarDeclaration_New { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter })));
+                    _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
+                    _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter })));
             NoErrorsAndIsAtEOF(p);
         }
 
@@ -706,8 +706,8 @@ public partial class ParserTests
             AssertFunctionPointerDeclaration(p.ParseFunctionPointerDeclaration(), "foo",
                 retTy => retTy is null,
                 @params => Collection(@params,
-                    _0 => True(_0 is VarDeclaration_New { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter, Initializer: IntLiteralExpression { Value: 1 } }),
-                    _1 => True(_1 is VarDeclaration_New { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter, Initializer: FloatLiteralExpression { Value: 3.0f } })));
+                    _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter, Initializer: IntLiteralExpression { Value: 1 } }),
+                    _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter, Initializer: FloatLiteralExpression { Value: 3.0f } })));
 
             CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 19), (1, 21), p.Diagnostics);
             CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 32), (1, 36), p.Diagnostics);
@@ -740,8 +740,8 @@ public partial class ParserTests
             AssertNativeFunctionDeclaration(p.ParseNativeFunctionDeclaration(), "foo",
                 retTy => retTy is TypeName { Name: "BOOL" },
                 @params => Collection(@params,
-                    _0 => True(_0 is VarDeclaration_New { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
-                    _1 => True(_1 is VarDeclaration_New { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter })));
+                    _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
+                    _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter })));
             NoErrorsAndIsAtEOF(p);
         }
 
@@ -756,8 +756,8 @@ public partial class ParserTests
             AssertNativeFunctionDeclaration(p.ParseNativeFunctionDeclaration(), "foo",
                 retTy => retTy is TypeName { Name: "BOOL" },
                 @params => Collection(@params,
-                    _0 => True(_0 is VarDeclaration_New { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter, Initializer: IntLiteralExpression { Value: 1 } }),
-                    _1 => True(_1 is VarDeclaration_New { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter, Initializer: FloatLiteralExpression { Value: 3.0f } })));
+                    _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter, Initializer: IntLiteralExpression { Value: 1 } }),
+                    _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter, Initializer: FloatLiteralExpression { Value: 3.0f } })));
 
             CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 28), (1, 30), p.Diagnostics);
             CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 41), (1, 45), p.Diagnostics);
@@ -790,8 +790,8 @@ public partial class ParserTests
             AssertNativeFunctionDeclaration(p.ParseNativeFunctionDeclaration(), "foo",
                 retTy => retTy is null,
                 @params => Collection(@params,
-                    _0 => True(_0 is VarDeclaration_New { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
-                    _1 => True(_1 is VarDeclaration_New { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter })));
+                    _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
+                    _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter })));
             NoErrorsAndIsAtEOF(p);
         }
 
@@ -806,8 +806,8 @@ public partial class ParserTests
             AssertNativeFunctionDeclaration(p.ParseNativeFunctionDeclaration(), "foo",
                 retTy => retTy is null,
                 @params => Collection(@params,
-                    _0 => True(_0 is VarDeclaration_New { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter, Initializer: IntLiteralExpression { Value: 1 } }),
-                    _1 => True(_1 is VarDeclaration_New { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter, Initializer: FloatLiteralExpression { Value: 3.0f } })));
+                    _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter, Initializer: IntLiteralExpression { Value: 1 } }),
+                    _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter, Initializer: FloatLiteralExpression { Value: 3.0f } })));
 
             CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 23), (1, 25), p.Diagnostics);
             CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 36), (1, 40), p.Diagnostics);
