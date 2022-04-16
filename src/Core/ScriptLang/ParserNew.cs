@@ -46,13 +46,21 @@ public class ParserNew
         var usings = new List<UsingDirective>();
         var decls = new List<IDeclaration_New>();
 
+        bool isInConstVarDeclaration = false;
+
         while (!IsAtEOF)
         {
-            if (IsPossibleVarDeclaration())
+            if (Accept(TokenKind.CONST, out _))
             {
-                decls.Add(ParseVarDeclaration(VarKind.Static, allowMultipleDeclarations: true, allowInitializer: true));
+                isInConstVarDeclaration = true;
+            }
+
+            if (isInConstVarDeclaration || IsPossibleVarDeclaration())
+            {
+                decls.Add(ParseVarDeclaration(isInConstVarDeclaration ? VarKind.Constant : VarKind.Static, allowMultipleDeclarations: true, allowInitializer: true));
                 if (!isInsideCommaSeparatedVarDeclaration)
                 {
+                    isInConstVarDeclaration = false;
                     ExpectEOS();
                 }
             }
@@ -84,6 +92,10 @@ public class ParserNew
             else if (IsPossibleScriptDeclaration())
             {
                 decls.Add(ParseScriptDeclaration());
+            }
+            else if (IsPossibleGlobalBlockDeclaration())
+            {
+                decls.Add(ParseGlobalBlockDeclaration());
             }
             else
             {

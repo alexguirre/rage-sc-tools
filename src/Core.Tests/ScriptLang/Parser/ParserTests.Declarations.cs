@@ -213,28 +213,28 @@ public partial class ParserTests
                         Name: "a", Declarator: VarDeclarator { Name: "a" },
                         Type: TypeName { Name: "INT" },
                         Initializer: null,
-                        Kind: VarKind.Field
+                        Kind: VarKind.Global
                     }),
                     _1 => True(_1 is
                     {
                         Name: "b", Declarator: VarDeclarator { Name: "b" },
                         Type: TypeName { Name: "INT" },
                         Initializer: IntLiteralExpression { Value: 1 },
-                        Kind: VarKind.Field
+                        Kind: VarKind.Global
                     }),
                     _2 => True(_2 is
                     {
                         Name: "c", Declarator: VarDeclarator { Name: "c" },
                         Type: TypeName { Name: "INT" },
                         Initializer: null,
-                        Kind: VarKind.Field
+                        Kind: VarKind.Global
                     }),
                     _3 => True(_3 is
                     {
                         Name: "d", Declarator: VarArrayDeclarator { Name: "d" },
                         Type: TypeName { Name: "FLOAT" },
                         Initializer: null,
-                        Kind: VarKind.Field
+                        Kind: VarKind.Global
                     }),
                     _4 => True(_4 is
                     {
@@ -246,14 +246,14 @@ public partial class ParserTests
                             LHS: IntLiteralExpression { Value: 2 },
                             RHS: IntLiteralExpression { Value: 1 },
                         },
-                        Kind: VarKind.Field
+                        Kind: VarKind.Global
                     }),
                     _5 => True(_5 is
                     {
                         Name: "f", Declarator: VarDeclarator { Name: "f" },
                         Type: TypeName { Name: "BOOL" },
                         Initializer: null,
-                        Kind: VarKind.Field
+                        Kind: VarKind.Global
                     })));
             NoErrorsAndIsAtEOF(p);
         }
