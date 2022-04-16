@@ -141,6 +141,16 @@
                 bodyChecker(funcDecl.Body);
             }
         }
+        private static void AssertFunctionPointerDeclaration(INode node, string name, Predicate<TypeName?> returnTypePredicate, Action<ImmutableArray<VarDeclaration_New>> parametersChecker)
+        {
+            True(node is FunctionPointerDeclaration);
+            if (node is FunctionPointerDeclaration funcPtrDecl)
+            {
+                Equal(name, funcPtrDecl.Name);
+                True(returnTypePredicate(funcPtrDecl.ReturnType));
+                parametersChecker(funcPtrDecl.Parameters);
+            }
+        }
         private static void AssertError(INode node, Predicate<INode> predicate)
         {
             True(node is IError);

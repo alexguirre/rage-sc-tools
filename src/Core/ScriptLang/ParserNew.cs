@@ -207,6 +207,36 @@ public class ParserNew
                    returnType, @params, body);
     }
 
+    public bool IsPossibleFunctionPointerDeclaration()
+        => Peek(0).Kind is TokenKind.FUNCPTR or TokenKind.PROCPTR;
+    public FunctionPointerDeclaration ParseFunctionPointerDeclaration()
+    {
+        Token procOrFuncPtrKeyword;
+        if (!ExpectEither(TokenKind.FUNCPTR, TokenKind.PROCPTR, out procOrFuncPtrKeyword))
+        {
+            procOrFuncPtrKeyword = Missing(TokenKind.PROCPTR);
+        }
+
+        Token nameIdent;
+        TypeName? returnType;
+        if (procOrFuncPtrKeyword.Kind is TokenKind.FUNCPTR)
+        {
+            ExpectOrMissing(TokenKind.Identifier, out var returnTypeIdent, MissingIdentifier);
+            returnType = new(returnTypeIdent);
+            ExpectOrMissing(TokenKind.Identifier, out nameIdent, MissingIdentifier);
+        }
+        else // PROCPTR
+        {
+            returnType = null;
+            ExpectOrMissing(TokenKind.Identifier, out nameIdent, MissingIdentifier);
+        }
+
+        (IEnumerable<VarDeclaration_New> @params, Token openParen, Token closeParen) = ParseParameterList();
+        ExpectEOS();
+
+        return new(procOrFuncPtrKeyword, nameIdent, openParen, closeParen, returnType, @params);
+    }
+
     private (IEnumerable<VarDeclaration_New> Params, Token OpenParen, Token CloseParen) ParseParameterList(bool isScriptParameterList = false)
     {
         List<VarDeclaration_New>? @params = null;

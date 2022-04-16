@@ -59,13 +59,14 @@ public enum TokenKind
     ENDSCRIPT,
     PROC,
     ENDPROC,
+    PROCPTR,
     FUNC,
     ENDFUNC,
+    FUNCPTR,
     STRUCT,
     ENDSTRUCT,
     ENUM,
     ENDENUM,
-    PROTO,
     NATIVE,
     NOT,
     AND,
@@ -147,13 +148,14 @@ public static class TokenLexemes
     public const string ENDSCRIPT = nameof(TokenKind.ENDSCRIPT);
     public const string PROC = nameof(TokenKind.PROC);
     public const string ENDPROC = nameof(TokenKind.ENDPROC);
+    public const string PROCPTR = nameof(TokenKind.PROCPTR);
     public const string FUNC = nameof(TokenKind.FUNC);
     public const string ENDFUNC = nameof(TokenKind.ENDFUNC);
+    public const string FUNCPTR = nameof(TokenKind.FUNCPTR);
     public const string STRUCT = nameof(TokenKind.STRUCT);
     public const string ENDSTRUCT = nameof(TokenKind.ENDSTRUCT);
     public const string ENUM = nameof(TokenKind.ENUM);
     public const string ENDENUM = nameof(TokenKind.ENDENUM);
-    public const string PROTO = nameof(TokenKind.PROTO);
     public const string NATIVE = nameof(TokenKind.NATIVE);
     public const string NOT = nameof(TokenKind.NOT);
     public const string AND = nameof(TokenKind.AND);
@@ -230,13 +232,14 @@ public static class TokenKindExtensions
             TokenKind.ENDSCRIPT => TokenLexemes.ENDSCRIPT,
             TokenKind.PROC => TokenLexemes.PROC,
             TokenKind.ENDPROC => TokenLexemes.ENDPROC,
+            TokenKind.PROCPTR => TokenLexemes.PROCPTR,
             TokenKind.FUNC => TokenLexemes.FUNC,
             TokenKind.ENDFUNC => TokenLexemes.ENDFUNC,
+            TokenKind.FUNCPTR => TokenLexemes.FUNCPTR,
             TokenKind.STRUCT => TokenLexemes.STRUCT,
             TokenKind.ENDSTRUCT => TokenLexemes.ENDSTRUCT,
             TokenKind.ENUM => TokenLexemes.ENUM,
             TokenKind.ENDENUM => TokenLexemes.ENDENUM,
-            TokenKind.PROTO => TokenLexemes.PROTO,
             TokenKind.NATIVE => TokenLexemes.NATIVE,
             TokenKind.NOT => TokenLexemes.NOT,
             TokenKind.AND => TokenLexemes.AND,
