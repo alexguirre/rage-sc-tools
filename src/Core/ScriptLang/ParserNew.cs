@@ -120,16 +120,7 @@ public class ParserNew
         {
             members.Add(ParseEnumMember());
 
-            if (Accept(TokenKind.Comma, out _))
-            {
-                // after a comma a new-line or another enum member can follow
-                Accept(TokenKind.EOS, out _);
-            }
-            else
-            {
-                // without a comma only a new-line may follow
-                Expect(TokenKind.EOS, out _);
-            }
+            ExpectEither(TokenKind.Comma, TokenKind.EOS, out _);
         }
 
         ExpectOrMissing(TokenKind.ENDENUM, out var endenumKeyword);
@@ -148,6 +139,31 @@ public class ParserNew
 
             return new(nameIdent, initializerExpr);
         }
+    }
+
+    public bool IsPossibleStructDeclaration()
+        => Peek(0).Kind is TokenKind.STRUCT;
+    public StructDeclaration ParseStructDeclaration()
+    {
+        ExpectOrMissing(TokenKind.STRUCT, out var structKeyword);
+        ExpectOrMissing(TokenKind.Identifier, out var nameIdent, MissingIdentifier);
+        ExpectEOS();
+
+        var fields = new List<VarDeclaration_New>();
+        while (Peek(0).Kind is not TokenKind.ENDSTRUCT)
+        {
+            fields.Add(ParseVarDeclaration(VarKind.Field, allowMultipleDeclarations: true, allowInitializer: true));
+
+            if (!isInsideCommaSeparatedVarDeclaration)
+            {
+                ExpectEOS();
+            }
+        }
+
+        ExpectOrMissing(TokenKind.ENDSTRUCT, out var endstructKeyword);
+        ExpectEOS();
+
+        return new(structKeyword, nameIdent, endstructKeyword, fields);
     }
 
     public bool IsPossibleScriptDeclaration()
@@ -847,7 +863,7 @@ public class ParserNew
         }
         else
         {
-            Expect(TokenKind.Identifier, out typeIdent);
+            ExpectOrMissing(TokenKind.Identifier, out typeIdent, MissingIdentifier);
             decl = ParseDeclarator();
         }
 
@@ -873,7 +889,7 @@ public class ParserNew
             commaSeparatedVarDeclarationTypeIdentifier = default;
         }
 
-        return new VarDeclaration_New(new TypeName(typeIdent), decl, varKind, initializerExpr);
+        return new(new(typeIdent), decl, varKind, initializerExpr);
 
         IVarDeclarator ParseDeclarator()
         {

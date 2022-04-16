@@ -1,36 +1,24 @@
-﻿namespace ScTools.ScriptLang.Ast.Declarations
+﻿namespace ScTools.ScriptLang.Ast.Declarations;
+
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Diagnostics;
+
+public sealed class StructDeclaration : BaseTypeDeclaration_New
 {
-    using System.Collections.Generic;
-    using System.Linq;
+    public override string Name => Tokens[1].Lexeme.ToString();
+    public ImmutableArray<VarDeclaration_New> Fields { get; }
 
-    using ScTools.ScriptLang.Ast.Expressions;
-    using ScTools.ScriptLang.Ast.Types;
-
-    public sealed class StructDeclaration : BaseTypeDeclaration
+    public StructDeclaration(Token structKeyword, Token nameIdentifier, Token endstructKeyword, IEnumerable<VarDeclaration_New> fields)
+        : base(OfTokens(structKeyword, nameIdentifier, endstructKeyword), OfChildren(fields))
     {
-        public IList<StructField> Fields { get; set; } = new List<StructField>();
+        Debug.Assert(structKeyword.Kind is TokenKind.STRUCT);
+        Debug.Assert(nameIdentifier.Kind is TokenKind.Identifier);
+        Debug.Assert(endstructKeyword.Kind is TokenKind.ENDSTRUCT);
 
-        public StructDeclaration(SourceRange source, string name) : base(source, name) { }
-
-        public override StructType CreateType(SourceRange source) => new(source, this);
-
-        public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-            => visitor.Visit(this, param);
-
-        public StructField? FindField(string name) => Fields.SingleOrDefault(f => ParserNew.CaseInsensitiveComparer.Equals(f.Name, name));
+        Fields = fields.ToImmutableArray();
     }
 
-    public sealed class StructField : BaseNode
-    {
-        public string Name { get; set; }
-        public IType Type { get; set; }
-        public IExpression? Initializer { get; set; }
-        public int Offset { get; set; }
-
-        public StructField(SourceRange source, string name, IType type) : base(source)
-            => (Name, Type) = (name, type);
-
-        public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-            => visitor.Visit(this, param);
-    }
+    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
+        => visitor.Visit(this, param);
 }

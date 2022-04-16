@@ -36,6 +36,10 @@ public enum VarKind
     /// A local variable that represents a parameter of a function/procedure. <see cref="VarDeclaration.Initializer"/> must be null.
     /// </summary>
     Parameter,
+    /// <summary>
+    /// A struct field.
+    /// </summary>
+    Field,
 }
 
 public sealed class VarDeclaration : BaseValueDeclaration, IStatement

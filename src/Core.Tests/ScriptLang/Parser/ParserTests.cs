@@ -120,6 +120,15 @@
                 membersChecker(enumDecl.Members);
             }
         }
+        private static void AssertStructDeclaration(INode node, string name, Action<ImmutableArray<VarDeclaration_New>> fieldsChecker)
+        {
+            True(node is StructDeclaration);
+            if (node is StructDeclaration structDecl)
+            {
+                Equal(name, structDecl.Name);
+                fieldsChecker(structDecl.Fields);
+            }
+        }
         private static void AssertScriptDeclaration(INode node, string name, Action<ImmutableArray<VarDeclaration_New>> parametersChecker, Action<ImmutableArray<IStatement>> bodyChecker)
         {
             True(node is ScriptDeclaration);

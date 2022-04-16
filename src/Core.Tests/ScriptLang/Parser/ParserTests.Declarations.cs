@@ -45,7 +45,7 @@ public partial class ParserTests
             var p = ParserFor(
                 @"ENUM foo
                     A, B = 1, C
-                    D,
+                    D
                     E = 2 + 1
                     F
                   ENDENUM"
@@ -94,6 +94,101 @@ public partial class ParserTests
                 members => Empty(members));
 
             CheckError(ErrorCode.ParserUnexpectedToken, (1, 5), (1, 5), p.Diagnostics);
+
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
+        public void StructDeclaration()
+        {
+            var p = ParserFor(
+                @"STRUCT foo
+                    INT a, b = 1, c
+                    FLOAT d[5]
+                    INT e = 2 + 1
+                    BOOL f
+                  ENDSTRUCT"
+            );
+
+            True(p.IsPossibleStructDeclaration());
+            AssertStructDeclaration(p.ParseStructDeclaration(), "foo",
+                members => Collection(members,
+                    _0 => True(_0 is
+                    {
+                        Name: "a", Declarator: VarDeclarator { Name: "a" },
+                        Type: TypeName { Name: "INT" },
+                        Initializer: null,
+                        Kind: VarKind.Field
+                    }),
+                    _1 => True(_1 is
+                    {
+                        Name: "b", Declarator: VarDeclarator { Name: "b" },
+                        Type: TypeName { Name: "INT" },
+                        Initializer: IntLiteralExpression { Value: 1 },
+                        Kind: VarKind.Field
+                    }),
+                    _2 => True(_2 is
+                    {
+                        Name: "c", Declarator: VarDeclarator { Name: "c" },
+                        Type: TypeName { Name: "INT" },
+                        Initializer: null,
+                        Kind: VarKind.Field
+                    }),
+                    _3 => True(_3 is
+                    {
+                        Name: "d", Declarator: VarArrayDeclarator { Name: "d" },
+                        Type: TypeName { Name: "FLOAT" },
+                        Initializer: null,
+                        Kind: VarKind.Field
+                    }),
+                    _4 => True(_4 is
+                    {
+                        Name: "e", Declarator: VarDeclarator { Name: "e" },
+                        Type: TypeName { Name: "INT" },
+                        Initializer: BinaryExpression
+                        {
+                            Operator: BinaryOperator.Add,
+                            LHS: IntLiteralExpression { Value: 2 },
+                            RHS: IntLiteralExpression { Value: 1 },
+                        },
+                        Kind: VarKind.Field
+                    }),
+                    _5 => True(_5 is
+                    {
+                        Name: "f", Declarator: VarDeclarator { Name: "f" },
+                        Type: TypeName { Name: "BOOL" },
+                        Initializer: null,
+                        Kind: VarKind.Field
+                    })));
+            NoErrorsAndIsAtEOF(p);
+        }
+
+        [Fact]
+        public void EmptyStructDeclaration()
+        {
+            var p = ParserFor(
+                @"STRUCT foo
+                  ENDSTRUCT"
+            );
+
+            True(p.IsPossibleStructDeclaration());
+            AssertStructDeclaration(p.ParseStructDeclaration(), "foo",
+                members => Empty(members));
+            NoErrorsAndIsAtEOF(p);
+        }
+
+        [Fact]
+        public void StructDeclarationWithMissingName()
+        {
+            var p = ParserFor(
+                "STRUCT\nENDSTRUCT"
+            );
+
+            True(p.IsPossibleStructDeclaration());
+            AssertStructDeclaration(p.ParseStructDeclaration(), ParserNew.MissingIdentifierLexeme,
+                fields => Empty(fields));
+
+            CheckError(ErrorCode.ParserUnexpectedToken, (1, 7), (1, 7), p.Diagnostics);
 
             True(p.IsAtEOF);
         }

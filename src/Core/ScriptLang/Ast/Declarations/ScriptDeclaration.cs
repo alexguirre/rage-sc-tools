@@ -7,16 +7,16 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 
-public sealed class ScriptDeclaration : BaseValueDeclaration_New
+public sealed class ScriptDeclaration : BaseNode, IDeclaration_New
 {
-    public override string Name => Tokens[1].Lexeme.ToString();
+    public string Name => Tokens[1].Lexeme.ToString();
     public ImmutableArray<VarDeclaration_New> Parameters { get; }
     public ImmutableArray<IStatement> Body { get; }
 
     public ScriptDeclaration(Token scriptKeyword, Token nameIdentifier, Token paramsOpenParen, Token paramsCloseParen, Token endscriptKeyword,
                              IEnumerable<VarDeclaration_New> parameters, IEnumerable<IStatement> body)
         : base(OfTokens(scriptKeyword, nameIdentifier, paramsOpenParen, paramsCloseParen, endscriptKeyword),
-               OfChildren().Concat(parameters).Concat(body))
+               OfChildren(parameters).Concat(body))
     {
         Debug.Assert(scriptKeyword.Kind is TokenKind.SCRIPT && endscriptKeyword.Kind is TokenKind.ENDSCRIPT);
 
@@ -27,7 +27,7 @@ public sealed class ScriptDeclaration : BaseValueDeclaration_New
     public ScriptDeclaration(Token scriptKeyword, Token nameIdentifier, Token endscriptKeyword,
                              IEnumerable<IStatement> body)
         : base(OfTokens(scriptKeyword, nameIdentifier, endscriptKeyword),
-               OfChildren().Concat(body))
+               OfChildren(body))
     {
         Debug.Assert(scriptKeyword.Kind is TokenKind.SCRIPT && endscriptKeyword.Kind is TokenKind.ENDSCRIPT);
 
