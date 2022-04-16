@@ -18,15 +18,15 @@
     using ScTools.ScriptLang.Ast.Statements;
     using ScTools.ScriptLang.Ast.Types;
     using ScTools.ScriptLang.BuiltIns;
-    using ScTools.ScriptLang.Semantics;
+    //using ScTools.ScriptLang.Semantics;
     using ScTools.ScriptLang.SymbolTables;
 
     public class CodeGenerator
     {
-        private readonly StatementEmitter stmtEmitter;
-        private readonly ValueEmitter valueEmitter;
-        private readonly AddressEmitter addressEmitter;
-        private readonly PatternOptimizer optimizer;
+        //private readonly StatementEmitter stmtEmitter;
+        //private readonly ValueEmitter valueEmitter;
+        //private readonly AddressEmitter addressEmitter;
+        //private readonly PatternOptimizer optimizer;
         private readonly List<EmittedInstruction> funcInstructions;
 
         public TextWriter Sink { get; }
@@ -44,10 +44,10 @@
             Diagnostics = diagnostics;
             NativeDB = nativeDB;
             Strings = new();
-            stmtEmitter = new(this);
-            valueEmitter = new(this);
-            addressEmitter = new(this);
-            optimizer = new();
+            //stmtEmitter = new(this);
+            //valueEmitter = new(this);
+            //addressEmitter = new(this);
+            //optimizer = new();
             funcInstructions = new();
         }
 
@@ -58,7 +58,7 @@
                 return false;
             }
 
-            Allocator.Allocate(Program, Diagnostics);
+            //Allocator.Allocate(Program, Diagnostics);
             if (Diagnostics.HasErrors)
             {
                 return false;
@@ -182,29 +182,29 @@
             }
 
             // optimize and write instructions
-            foreach (var inst in optimizer.Optimize(funcInstructions))
-            {
-                if (inst.Label is not null)
-                {
-                    Sink.WriteLine("{0}:", inst.Label);
-                }
+            //foreach (var inst in optimizer.Optimize(funcInstructions))
+            //{
+            //    if (inst.Label is not null)
+            //    {
+            //        Sink.WriteLine("{0}:", inst.Label);
+            //    }
 
-                if (inst.Instruction is not null)
-                {
-                    var (opcode, operands) = inst.Instruction.Value;
-                    Sink.WriteLine("\t{0} {1}", opcode.Mnemonic(), string.Join(", ", operands));
-                }
-            }
+            //    if (inst.Instruction is not null)
+            //    {
+            //        var (opcode, operands) = inst.Instruction.Value;
+            //        Sink.WriteLine("\t{0} {1}", opcode.Mnemonic(), string.Join(", ", operands));
+            //    }
+            //}
             funcInstructions.Clear();
         }
 
         public void EmitStatement(IStatement stmt, FuncDeclaration func)
         {
             EmitLabel(stmt);
-            stmt.Accept(stmtEmitter, func);
+            //stmt.Accept(stmtEmitter, func);
         }
-        public void EmitValue(IExpression expr) => expr.Accept(valueEmitter, default);
-        public void EmitAddress(IExpression expr) => expr.Accept(addressEmitter, default);
+        public void EmitValue(IExpression expr) { }// => expr.Accept(valueEmitter, default);
+        public void EmitAddress(IExpression expr) { }// => expr.Accept(addressEmitter, default);
 
         public void Emit(Opcode opcode, IEnumerable<object> operands) => Emit(opcode, operands.ToArray());
         public void Emit(Opcode opcode, params object[] operands) => funcInstructions.Add(new() { Instruction = (opcode, operands) });
@@ -225,7 +225,7 @@
         public void EmitJumpIfZero(string label) => Emit(Opcode.JZ, label);
 
         public void EmitSwitch(IEnumerable<ValueSwitchCase> cases)
-            => Emit(Opcode.SWITCH, cases.Select(c => $"{unchecked((uint)ExpressionEvaluator.EvalInt(c.Value, Symbols))}:{c.Semantics.Label}"));
+            => Emit(Opcode.SWITCH, cases.Select(c => "<case>"));//$"{unchecked((uint)ExpressionEvaluator.EvalInt(c.Value, Symbols))}:{c.Semantics.Label}"));
 
         public void EmitLoadFrom(IExpression lvalueExpr)
         {
@@ -400,27 +400,27 @@
 
             switch (type)
             {
-                case IntType or EnumType:
-                    dest[0].AsInt32 = initializer is not null ? ExpressionEvaluator.EvalInt(initializer, Symbols) : 0;
-                    break;
+                //case IntType or EnumType:
+                //    dest[0].AsInt32 = initializer is not null ? ExpressionEvaluator.EvalInt(initializer, Symbols) : 0;
+                //    break;
 
-                case FloatType:
-                    dest[0].AsFloat = initializer is not null ? ExpressionEvaluator.EvalFloat(initializer, Symbols) : 0.0f;
-                    break;
+                //case FloatType:
+                //    dest[0].AsFloat = initializer is not null ? ExpressionEvaluator.EvalFloat(initializer, Symbols) : 0.0f;
+                //    break;
 
-                case BoolType:
-                    dest[0].AsInt32 = initializer is not null && ExpressionEvaluator.EvalBool(initializer, Symbols) ? 1 : 0;
-                    break;
+                //case BoolType:
+                //    dest[0].AsInt32 = initializer is not null && ExpressionEvaluator.EvalBool(initializer, Symbols) ? 1 : 0;
+                //    break;
 
-                case VectorType:
-                    (dest[0].AsFloat, dest[1].AsFloat, dest[2].AsFloat) = initializer is not null ? ExpressionEvaluator.EvalVector(initializer, Symbols) : (0.0f, 0.0f, 0.0f);
-                    break;
+                //case VectorType:
+                //    (dest[0].AsFloat, dest[1].AsFloat, dest[2].AsFloat) = initializer is not null ? ExpressionEvaluator.EvalVector(initializer, Symbols) : (0.0f, 0.0f, 0.0f);
+                //    break;
 
                 case StructType structTy:
                     foreach (var field in structTy.Declaration.Fields)
                     {
-                        var fieldDest = dest.Slice(field.Offset, field.Type.SizeOf);
-                        InitializeStaticVar(fieldDest, field.Type, field.Initializer);
+                        //var fieldDest = dest.Slice(field.Offset, field.Type.SizeOf);
+                        //InitializeStaticVar(fieldDest, field.Type, field.Initializer);
                     }
                     break;
 
@@ -440,14 +440,14 @@
                     dest.Fill(default);
 
                     string? str = null;
-                    if (initializer?.Type is IntType)
-                    {
-                        str = ExpressionEvaluator.EvalInt(initializer, Symbols).ToString(CultureInfo.InvariantCulture);
-                    }
-                    else if (initializer?.Type is StringType)
-                    {
-                        str = ExpressionEvaluator.EvalString(initializer, Symbols);
-                    }
+                    //if (initializer?.Type is IntType)
+                    //{
+                    //    str = ExpressionEvaluator.EvalInt(initializer, Symbols).ToString(CultureInfo.InvariantCulture);
+                    //}
+                    //else if (initializer?.Type is StringType)
+                    //{
+                    //    str = ExpressionEvaluator.EvalString(initializer, Symbols);
+                    //}
 
                     if (str is not null)
                     {

@@ -1,4 +1,5 @@
-﻿namespace ScTools.ScriptLang.CodeGen
+﻿#if false
+namespace ScTools.ScriptLang.CodeGen
 {
     using System.Diagnostics;
 
@@ -196,3 +197,4 @@
         }
     }
 }
+#endif

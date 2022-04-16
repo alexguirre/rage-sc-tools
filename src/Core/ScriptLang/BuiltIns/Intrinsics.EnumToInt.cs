@@ -10,7 +10,7 @@
     using ScTools.ScriptLang.Ast.Expressions;
     using ScTools.ScriptLang.Ast.Types;
     using ScTools.ScriptLang.CodeGen;
-    using ScTools.ScriptLang.Semantics;
+    //using ScTools.ScriptLang.Semantics;
     using ScTools.ScriptLang.SymbolTables;
 
     public static partial class Intrinsics
@@ -23,7 +23,8 @@
 
             public int EvalInt(InvocationExpression expr, GlobalSymbolTable symbols)
             {
-                return ExpressionEvaluator.EvalInt(expr.Arguments[0], symbols);
+                throw new NotImplementedException();
+                //return ExpressionEvaluator.EvalInt(expr.Arguments[0], symbols);
             }
 
             public float EvalFloat(InvocationExpression expr, GlobalSymbolTable symbols) => throw new NotImplementedException();

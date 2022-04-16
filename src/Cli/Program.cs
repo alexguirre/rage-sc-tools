@@ -15,7 +15,7 @@
     using ScTools.ScriptAssembly;
     using ScTools.ScriptLang;
     using System.Collections.Generic;
-    using ScTools.ScriptLang.Semantics;
+    //using ScTools.ScriptLang.Semantics;
     using ScTools.ScriptLang.CodeGen;
 
     internal static class Program

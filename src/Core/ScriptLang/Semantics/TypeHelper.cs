@@ -1,4 +1,5 @@
-﻿namespace ScTools.ScriptLang.Semantics
+﻿#if false
+namespace ScTools.ScriptLang.Semantics
 {
     using System.Linq;
 
@@ -85,3 +86,4 @@
         }
     }
 }
+#endif

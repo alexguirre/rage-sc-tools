@@ -1,4 +1,5 @@
-﻿namespace ScTools.ScriptLang.Semantics
+﻿#if false
+namespace ScTools.ScriptLang.Semantics
 {
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -226,3 +227,4 @@
         }
     }
 }
+#endif

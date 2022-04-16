@@ -1,4 +1,5 @@
-﻿namespace ScTools.ScriptLang.Semantics
+﻿#if false
+namespace ScTools.ScriptLang.Semantics
 {
     using ScTools.ScriptLang.Ast;
     using ScTools.ScriptLang.Ast.Declarations;
@@ -293,3 +294,4 @@
         }
     }
 }
+#endif

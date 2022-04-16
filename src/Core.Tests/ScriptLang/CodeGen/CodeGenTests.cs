@@ -5,7 +5,7 @@
     using ScTools.ScriptAssembly;
     using ScTools.ScriptLang;
     using ScTools.ScriptLang.CodeGen;
-    using ScTools.ScriptLang.Semantics;
+    //using ScTools.ScriptLang.Semantics;
 
     using Xunit;
 
@@ -3702,6 +3702,7 @@
 
         private static void CompileRaw(string source, string expectedAssembly, NativeDB? nativeDB = null)
         {
+            throw new System.NotImplementedException();
             nativeDB ??= NativeDB.Empty;
 
             using var sourceReader = new StringReader(source);
@@ -3709,14 +3710,14 @@
             //var p = new Parser(sourceReader, "test.sc");
             //p.Parse(d);
             var ast = new ScTools.ScriptLang.Ast.Program(SourceRange.Unknown);
-            var globalSymbols = GlobalSymbolTableBuilder.Build(ast, d);
-            IdentificationVisitor.Visit(ast, d, globalSymbols, nativeDB);
-            TypeChecker.Check(ast, d, globalSymbols);
+            //var globalSymbols = GlobalSymbolTableBuilder.Build(ast, d);
+            //IdentificationVisitor.Visit(ast, d, globalSymbols, nativeDB);
+            //TypeChecker.Check(ast, d, globalSymbols);
 
             Assert.False(d.HasErrors);
 
             using var sink = new StringWriter();
-            new CodeGenerator(sink, ast, globalSymbols, d, nativeDB).Generate();
+            //new CodeGenerator(sink, ast, globalSymbols, d, nativeDB).Generate();
             var s = sink.ToString();
 
             Assert.False(d.HasErrors);

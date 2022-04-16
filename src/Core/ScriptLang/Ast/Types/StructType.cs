@@ -10,7 +10,7 @@
 
     public sealed class StructType : BaseType
     {
-        public override int SizeOf => Declaration.Fields.Sum(f => f.Type.SizeOf);
+        public override int SizeOf => Declaration.Fields.Sum(f => /*f.Type.SizeOf*/0);
         public StructDeclaration Declaration { get; set; }
 
         public StructType(SourceRange source, StructDeclaration declaration) : base(source)
@@ -25,27 +25,27 @@
 
         public override IType FieldAccess(string fieldName, SourceRange source, DiagnosticsReport diagnostics)
         {
-            var field = Declaration.FindField(fieldName);
-            if (field is null)
+            //var field = Declaration.FindField(fieldName);
+            //if (field is null)
             {
                 return new ErrorType(source, diagnostics, $"Unknown field '{fieldName}'");
             }
-            else
-            {
-                return field.Type;
-            }
+            //else
+            //{
+            //    return field.Type;
+            //}
         }
 
         public override void CGFieldAddress(CodeGenerator cg, FieldAccessExpression expr)
         {
-            var field = Declaration.FindField(expr.FieldName);
-            if (field is null)
+            //var field = Declaration.FindField(expr.FieldName);
+            //if (field is null)
             {
                 throw new ArgumentException($"Unknown field '{expr.FieldName}'", nameof(expr));
             }
 
             cg.EmitAddress(expr.SubExpression);
-            cg.EmitOffset(field.Offset);
+            //cg.EmitOffset(field.Offset);
         }
     }
 }

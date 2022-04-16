@@ -4,7 +4,7 @@
     using System.Linq;
 
     using ScTools.ScriptLang;
-    using ScTools.ScriptLang.Semantics;
+    //using ScTools.ScriptLang.Semantics;
 
     using Xunit;
 
@@ -76,6 +76,7 @@
 
         private static DiagnosticsReport ParseAndIdentify(string source, NativeDB? nativeDB = null)
         {
+            throw new System.NotImplementedException();
             using var sourceReader = new StringReader($@"
                 {source}");
             var d = new DiagnosticsReport();
@@ -83,8 +84,8 @@
             //p.Parse(d);
 
             var ast = new ScTools.ScriptLang.Ast.Program(SourceRange.Unknown);
-            var globalSymbols = GlobalSymbolTableBuilder.Build(ast, d);
-            IdentificationVisitor.Visit(ast, d, globalSymbols, nativeDB ?? NativeDB.Empty);
+            //var globalSymbols = GlobalSymbolTableBuilder.Build(ast, d);
+            //IdentificationVisitor.Visit(ast, d, globalSymbols, nativeDB ?? NativeDB.Empty);
             return d;
         }
     }

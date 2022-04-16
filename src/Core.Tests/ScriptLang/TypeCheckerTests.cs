@@ -8,7 +8,7 @@
     using System.Threading.Tasks;
 
     using ScTools.ScriptLang;
-    using ScTools.ScriptLang.Semantics;
+    //using ScTools.ScriptLang.Semantics;
 
     using Xunit;
 
@@ -521,15 +521,16 @@
 
         private static DiagnosticsReport TypeCheck(string source)
         {
+            throw new System.NotImplementedException();
             using var sourceReader = new StringReader(source);
             var d = new DiagnosticsReport();
             //var p = new Parser(sourceReader, "test.sc");
             //p.Parse(d);
 
-            var ast = new ScTools.ScriptLang.Ast.Program(SourceRange.Unknown);
-            var globalSymbols = GlobalSymbolTableBuilder.Build(ast, d);
-            IdentificationVisitor.Visit(ast, d, globalSymbols, NativeDB.Empty);
-            TypeChecker.Check(ast, d, globalSymbols);
+            //var ast = new ScTools.ScriptLang.Ast.Program(SourceRange.Unknown);
+            //var globalSymbols = GlobalSymbolTableBuilder.Build(ast, d);
+            //IdentificationVisitor.Visit(ast, d, globalSymbols, NativeDB.Empty);
+            //TypeChecker.Check(ast, d, globalSymbols);
 
             return d;
         }

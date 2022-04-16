@@ -13,7 +13,7 @@
     using ScTools.ScriptLang.Ast.Expressions;
     using ScTools.ScriptLang.Ast.Types;
     using ScTools.ScriptLang.CodeGen;
-    using ScTools.ScriptLang.Semantics;
+    //using ScTools.ScriptLang.Semantics;
     using ScTools.ScriptLang.SymbolTables;
 
     public interface IIntrinsicDeclaration : IValueDeclaration
@@ -168,8 +168,9 @@
 
             public override (float X, float Y, float Z) EvalVector(InvocationExpression expr, GlobalSymbolTable symbols)
             {
-                var value = ExpressionEvaluator.EvalFloat(expr.Arguments[0], symbols);
-                return (value, value, value);
+                throw new NotImplementedException();
+                //var value = ExpressionEvaluator.EvalFloat(expr.Arguments[0], symbols);
+                //return (value, value, value);
             }
         }
 
@@ -186,7 +187,8 @@
 
             public override int EvalInt(InvocationExpression expr, GlobalSymbolTable symbols)
             {
-                return (int)ExpressionEvaluator.EvalFloat(expr.Arguments[0], symbols);
+                throw new NotImplementedException();
+                //return (int)ExpressionEvaluator.EvalFloat(expr.Arguments[0], symbols);
             }
         }
 
@@ -203,7 +205,8 @@
 
             public override float EvalFloat(InvocationExpression expr, GlobalSymbolTable symbols)
             {
-                return ExpressionEvaluator.EvalInt(expr.Arguments[0], symbols);
+                throw new NotImplementedException();
+                //return ExpressionEvaluator.EvalInt(expr.Arguments[0], symbols);
             }
         }
 

@@ -1,4 +1,5 @@
-﻿namespace ScTools.ScriptLang.Semantics
+﻿#if false
+namespace ScTools.ScriptLang.Semantics
 {
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -58,7 +59,7 @@
             return DefaultReturn;
         }
 
-        #region Expressions
+#region Expressions
         public override Void Visit(BinaryExpression node, TypeCheckerContext param) => node.Accept(exprTypeChecker, default);
         public override Void Visit(BoolLiteralExpression node, TypeCheckerContext param) => node.Accept(exprTypeChecker, default);
         public override Void Visit(FieldAccessExpression node, TypeCheckerContext param) => node.Accept(exprTypeChecker, default);
@@ -72,9 +73,9 @@
         public override Void Visit(UnaryExpression node, TypeCheckerContext param) => node.Accept(exprTypeChecker, default);
         public override Void Visit(NameExpression node, TypeCheckerContext param) => node.Accept(exprTypeChecker, default);
         public override Void Visit(VectorExpression node, TypeCheckerContext param) => node.Accept(exprTypeChecker, default);
-        #endregion Expressions
+#endregion Expressions
 
-        #region Types
+#region Types
         public override Void Visit(ArrayType node, TypeCheckerContext param)
         {
             node.ItemType.Accept(this, param);
@@ -96,9 +97,9 @@
 
             return DefaultReturn;
         }
-        #endregion Types
+#endregion Types
 
-        #region Declarations
+#region Declarations
         public override Void Visit(FuncDeclaration node, TypeCheckerContext param)
         {
             if (!param.SecondPass)
@@ -185,9 +186,9 @@
             static string KindToString(VarKind kind)
                 => kind switch { VarKind.Global => "global variable", VarKind.Static => "static variable", VarKind.ScriptParameter => "SCRIPT parameter", _ => throw new System.NotImplementedException() };
     }
-        #endregion Declarations
+#endregion Declarations
 
-        #region Statements
+#region Statements
         public override Void Visit(AssignmentStatement node, TypeCheckerContext param)
         {
             node.LHS.Accept(this, param);
@@ -338,7 +339,7 @@
             node.Body.ForEach(stmt => stmt.Accept(this, param));
             return DefaultReturn;
         }
-        #endregion Statements
+#endregion Statements
 
         public static void Check(Program root, DiagnosticsReport diagnostics, GlobalSymbolTable globalSymbols)
         {
@@ -348,3 +349,4 @@
         }
     }
 }
+#endif
