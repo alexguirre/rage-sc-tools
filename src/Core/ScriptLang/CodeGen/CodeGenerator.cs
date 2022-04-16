@@ -1,4 +1,5 @@
-﻿namespace ScTools.ScriptLang.CodeGen
+﻿#if false
+namespace ScTools.ScriptLang.CodeGen
 {
     using System;
     using System.Collections.Generic;
@@ -470,3 +471,4 @@
         }
     }
 }
+#endif

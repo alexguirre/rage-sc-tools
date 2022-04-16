@@ -5,7 +5,6 @@ using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.Ast.Errors;
 using ScTools.ScriptLang.Ast.Expressions;
 using ScTools.ScriptLang.Ast.Statements;
-using ScTools.ScriptLang.Ast.Types;
 
 using Xunit;
 using static Xunit.Assert;

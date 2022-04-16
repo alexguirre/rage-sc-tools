@@ -3709,7 +3709,7 @@
             var d = new DiagnosticsReport();
             //var p = new Parser(sourceReader, "test.sc");
             //p.Parse(d);
-            var ast = new ScTools.ScriptLang.Ast.Program(SourceRange.Unknown);
+            //var ast = new ScTools.ScriptLang.Ast.Program(SourceRange.Unknown);
             //var globalSymbols = GlobalSymbolTableBuilder.Build(ast, d);
             //IdentificationVisitor.Visit(ast, d, globalSymbols, nativeDB);
             //TypeChecker.Check(ast, d, globalSymbols);

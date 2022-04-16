@@ -6,11 +6,9 @@
     using ScTools.ScriptLang.Ast.Errors;
     using ScTools.ScriptLang.Ast.Expressions;
     using ScTools.ScriptLang.Ast.Statements;
-    using ScTools.ScriptLang.Ast.Types;
 
     public interface IVisitor<TReturn, TParam>
     {
-        TReturn Visit(Program node, TParam param);
         TReturn Visit(CompilationUnit node, TParam param);
 
         TReturn Visit(UsingDirective node, TParam param);
@@ -21,11 +19,8 @@
         TReturn Visit(FunctionPointerDeclaration node, TParam param);
         TReturn Visit(NativeFunctionDeclaration node, TParam param);
         TReturn Visit(ScriptDeclaration node, TParam param);
-        TReturn Visit(FuncDeclaration node, TParam param);
-        TReturn Visit(FuncProtoDeclaration node, TParam param);
         TReturn Visit(GlobalBlockDeclaration node, TParam param);
         TReturn Visit(StructDeclaration node, TParam param);
-        TReturn Visit(VarDeclaration node, TParam param);
         TReturn Visit(VarDeclaration_New node, TParam param);
         TReturn Visit(VarDeclarator node, TParam param);
         TReturn Visit(VarRefDeclarator node, TParam param);
@@ -59,31 +54,11 @@
         TReturn Visit(DefaultSwitchCase node, TParam param);
         TReturn Visit(WhileStatement node, TParam param);
 
-        TReturn Visit(AnyType node, TParam param);
-        TReturn Visit(ArrayType node, TParam param);
-        TReturn Visit(BoolType node, TParam param);
-        TReturn Visit(EnumType node, TParam param);
-        TReturn Visit(FloatType node, TParam param);
-        TReturn Visit(FuncType node, TParam param);
-        TReturn Visit(HandleType node, TParam param);
-        TReturn Visit(IncompleteArrayType node, TParam param);
-        TReturn Visit(IntType node, TParam param);
-        TReturn Visit(NamedType node, TParam param);
-        TReturn Visit(NullType node, TParam param);
-        TReturn Visit(StringType node, TParam param);
-        TReturn Visit(StructType node, TParam param);
-        TReturn Visit(TextLabelType node, TParam param);
-        TReturn Visit(TypeNameType node, TParam param);
-        TReturn Visit(VectorType node, TParam param);
-        TReturn Visit(VoidType node, TParam param);
-
         TReturn Visit(TypeName node, TParam param);
 
-        TReturn Visit(ErrorDeclaration node, TParam param);
         TReturn Visit(ErrorDeclaration_New node, TParam param);
         TReturn Visit(ErrorExpression node, TParam param);
         TReturn Visit(ErrorStatement node, TParam param);
-        TReturn Visit(ErrorType node, TParam param);
     }
 
     /// <summary>
@@ -92,12 +67,6 @@
     public abstract class DFSVisitor<TReturn, TParam> : IVisitor<TReturn, TParam>
     {
         public abstract TReturn DefaultReturn { get; }
-
-        public virtual TReturn Visit(Program node, TParam param)
-        {
-            node.Declarations.ForEach(decl => decl.Accept(this, param));
-            return DefaultReturn;
-        }
 
         public virtual TReturn Visit(CompilationUnit node, TParam param)
         {
@@ -152,21 +121,6 @@
             return DefaultReturn;
         }
 
-        public virtual TReturn Visit(FuncDeclaration node, TParam param)
-        {
-            node.Prototype.Accept(this, param);
-            node.Type.Accept(this, param);
-            node.Body.ForEach(stmt => stmt.Accept(this, param));
-            return DefaultReturn;
-        }
-
-        public virtual TReturn Visit(FuncProtoDeclaration node, TParam param)
-        {
-            node.ReturnType?.Accept(this, param);
-            node.Parameters.ForEach(p => p.Accept(this, param));
-            return DefaultReturn;
-        }
-
         public virtual TReturn Visit(GlobalBlockDeclaration node, TParam param)
         {
             node.Vars.ForEach(v => v.Accept(this, param));
@@ -176,14 +130,6 @@
         public virtual TReturn Visit(StructDeclaration node, TParam param)
         {
             node.Fields.ForEach(f => f.Accept(this, param));
-            return DefaultReturn;
-        }
-
-        public virtual TReturn Visit(VarDeclaration node, TParam param)
-        {
-            node.Label?.Accept(this, param);
-            node.Type.Accept(this, param);
-            node.Initializer?.Accept(this, param);
             return DefaultReturn;
         }
 
@@ -381,101 +327,7 @@
             return DefaultReturn;
         }
 
-        public virtual TReturn Visit(AnyType node, TParam param)
-        {
-            return DefaultReturn;
-        }
-
-        public virtual TReturn Visit(ArrayType node, TParam param)
-        {
-            node.ItemType.Accept(this, param);
-            node.LengthExpression.Accept(this, param);
-            return DefaultReturn;
-        }
-
-        public virtual TReturn Visit(BoolType node, TParam param)
-        {
-            return DefaultReturn;
-        }
-
-        public virtual TReturn Visit(EnumType node, TParam param)
-        {
-            return DefaultReturn;
-        }
-
-        public virtual TReturn Visit(FloatType node, TParam param)
-        {
-            return DefaultReturn;
-        }
-
-        public virtual TReturn Visit(FuncType node, TParam param)
-        {
-            return DefaultReturn;
-        }
-
-        public virtual TReturn Visit(HandleType node, TParam param)
-        {
-            return DefaultReturn;
-        }
-
-        public virtual TReturn Visit(IncompleteArrayType node, TParam param)
-        {
-            node.ItemType.Accept(this, param);
-            return DefaultReturn;
-        }
-
-        public virtual TReturn Visit(IntType node, TParam param)
-        {
-            return DefaultReturn;
-        }
-
-        public virtual TReturn Visit(NamedType node, TParam param)
-        {
-            node.ResolvedType?.Accept(this, param);
-            return DefaultReturn;
-        }
-
-        public virtual TReturn Visit(NullType node, TParam param)
-        {
-            return DefaultReturn;
-        }
-
-        public virtual TReturn Visit(StringType node, TParam param)
-        {
-            return DefaultReturn;
-        }
-
-        public virtual TReturn Visit(StructType node, TParam param)
-        {
-            return DefaultReturn;
-        }
-
-        public virtual TReturn Visit(TextLabelType node, TParam param)
-        {
-            return DefaultReturn;
-        }
-
-        public virtual TReturn Visit(TypeNameType node, TParam param)
-        {
-            return DefaultReturn;
-        }
-
-        public virtual TReturn Visit(VectorType node, TParam param)
-        {
-            return DefaultReturn;
-        }
-
-        public virtual TReturn Visit(VoidType node, TParam param)
-        {
-            return DefaultReturn;
-        }
-
         public virtual TReturn Visit(TypeName node, TParam param)
-        {
-            return DefaultReturn;
-        }
-
-        public virtual TReturn Visit(ErrorDeclaration node, TParam param)
         {
             return DefaultReturn;
         }
@@ -494,11 +346,6 @@
         {
             return DefaultReturn;
         }
-
-        public virtual TReturn Visit(ErrorType node, TParam param)
-        {
-            return DefaultReturn;
-        }
     }
 
     /// <summary>
@@ -514,7 +361,6 @@
     /// </summary>
     public abstract class EmptyVisitor<TReturn, TParam> : IVisitor<TReturn, TParam>
     {
-        public virtual TReturn Visit(Program node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(CompilationUnit node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(UsingDirective node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(EnumDeclaration node, TParam param) => throw new NotImplementedException();
@@ -523,11 +369,8 @@
         public virtual TReturn Visit(FunctionPointerDeclaration node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(NativeFunctionDeclaration node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(ScriptDeclaration node, TParam param) => throw new NotImplementedException();
-        public virtual TReturn Visit(FuncDeclaration node, TParam param) => throw new NotImplementedException();
-        public virtual TReturn Visit(FuncProtoDeclaration node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(GlobalBlockDeclaration node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(StructDeclaration node, TParam param) => throw new NotImplementedException();
-        public virtual TReturn Visit(VarDeclaration node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(VarDeclaration_New node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(VarDeclarator node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(VarRefDeclarator node, TParam param) => throw new NotImplementedException();
@@ -558,29 +401,10 @@
         public virtual TReturn Visit(ValueSwitchCase node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(DefaultSwitchCase node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(WhileStatement node, TParam param) => throw new NotImplementedException();
-        public virtual TReturn Visit(AnyType node, TParam param) => throw new NotImplementedException();
-        public virtual TReturn Visit(ArrayType node, TParam param) => throw new NotImplementedException();
-        public virtual TReturn Visit(BoolType node, TParam param) => throw new NotImplementedException();
-        public virtual TReturn Visit(EnumType node, TParam param) => throw new NotImplementedException();
-        public virtual TReturn Visit(FloatType node, TParam param) => throw new NotImplementedException();
-        public virtual TReturn Visit(FuncType node, TParam param) => throw new NotImplementedException();
-        public virtual TReturn Visit(HandleType node, TParam param) => throw new NotImplementedException();
-        public virtual TReturn Visit(IncompleteArrayType node, TParam param) => throw new NotImplementedException();
-        public virtual TReturn Visit(IntType node, TParam param) => throw new NotImplementedException();
-        public virtual TReturn Visit(NamedType node, TParam param) => throw new NotImplementedException();
-        public virtual TReturn Visit(NullType node, TParam param) => throw new NotImplementedException();
-        public virtual TReturn Visit(StringType node, TParam param) => throw new NotImplementedException();
-        public virtual TReturn Visit(StructType node, TParam param) => throw new NotImplementedException();
-        public virtual TReturn Visit(TextLabelType node, TParam param) => throw new NotImplementedException();
-        public virtual TReturn Visit(TypeNameType node, TParam param) => throw new NotImplementedException();
-        public virtual TReturn Visit(VectorType node, TParam param) => throw new NotImplementedException();
-        public virtual TReturn Visit(VoidType node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(TypeName node, TParam param) => throw new NotImplementedException();
-        public virtual TReturn Visit(ErrorDeclaration node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(ErrorDeclaration_New node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(ErrorExpression node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(ErrorStatement node, TParam param) => throw new NotImplementedException();
-        public virtual TReturn Visit(ErrorType node, TParam param) => throw new NotImplementedException();
     }
 
     /// <summary>

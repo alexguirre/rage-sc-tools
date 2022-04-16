@@ -1,10 +1,10 @@
 ﻿namespace ScTools.ScriptLang.Ast.Expressions;
 
-using ScTools.ScriptLang.Ast.Types;
+using ScTools.ScriptLang.Types;
 
 using System.Collections.Generic;
 
-public record struct ExpressionSemantics(IType? Type, bool IsLValue, bool IsConstant);
+public record struct ExpressionSemantics(TypeInfo Type, ValueKind ValueKind);
 
 public interface IExpression : ISemanticNode<ExpressionSemantics>
 {
@@ -12,12 +12,8 @@ public interface IExpression : ISemanticNode<ExpressionSemantics>
     /// <summary>
     /// Gets the semantic type of this expression.
     /// </summary>
-    public sealed IType? Type => Semantics.Type;
-    public sealed bool IsLValue => Semantics.IsLValue;
-    /// <summary>
-    /// Gets whether this expression value is known at compile time.
-    /// </summary>
-    public sealed bool IsConstant => Semantics.IsConstant;
+    public sealed TypeInfo Type => Semantics.Type;
+    public sealed ValueKind ValueKind => Semantics.ValueKind;
 }
 
 public interface ILiteralExpression : IExpression

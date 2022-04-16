@@ -11,12 +11,12 @@ using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.Ast.Errors;
 using ScTools.ScriptLang.Ast.Expressions;
 using ScTools.ScriptLang.Ast.Statements;
-using ScTools.ScriptLang.Ast.Types;
 
 public class ParserNew
 {
     internal const string MissingIdentifierLexeme = "<unknown>";
     internal const string MissingUsingPathLexeme = "<unknown>";
+    internal const int MissingGlobalBlockIndex = -1;
     public static StringComparer CaseInsensitiveComparer => ScriptAssembly.Assembler.CaseInsensitiveComparer;
 
     private readonly Lexer.Enumerator lexerEnumerator;
@@ -164,6 +164,32 @@ public class ParserNew
         ExpectEOS();
 
         return new(structKeyword, nameIdent, endstructKeyword, fields);
+    }
+
+    public bool IsPossibleGlobalBlockDeclaration()
+        => Peek(0).Kind is TokenKind.GLOBAL;
+    public GlobalBlockDeclaration ParseGlobalBlockDeclaration()
+    {
+        ExpectOrMissing(TokenKind.GLOBAL, out var globalKeyword);
+        ExpectOrMissing(TokenKind.Identifier, out var nameIdent, MissingIdentifier);
+        ExpectOrMissing(TokenKind.Integer, out var blockIndex, () => Missing(Token.Integer(MissingGlobalBlockIndex)));
+        ExpectEOS();
+
+        var vars = new List<VarDeclaration_New>();
+        while (Peek(0).Kind is not TokenKind.ENDGLOBAL)
+        {
+            vars.Add(ParseVarDeclaration(VarKind.Global, allowMultipleDeclarations: true, allowInitializer: true));
+
+            if (!isInsideCommaSeparatedVarDeclaration)
+            {
+                ExpectEOS();
+            }
+        }
+
+        ExpectOrMissing(TokenKind.ENDGLOBAL, out var endglobalKeyword);
+        ExpectEOS();
+
+        return new(globalKeyword, nameIdent, blockIndex, endglobalKeyword, vars);
     }
 
     public bool IsPossibleScriptDeclaration()

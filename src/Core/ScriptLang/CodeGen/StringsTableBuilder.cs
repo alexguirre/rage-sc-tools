@@ -19,11 +19,11 @@
             return DefaultReturn;
         }
 
-        public static StringsTable Build(Program root)
-        {
-            var visitor = new StringsTableBuilder();
-            root.Accept(visitor, default);
-            return visitor.Strings;
-        }
+        //public static StringsTable Build(Program root)
+        //{
+        //    var visitor = new StringsTableBuilder();
+        //    root.Accept(visitor, default);
+        //    return visitor.Strings;
+        //}
     }
 }

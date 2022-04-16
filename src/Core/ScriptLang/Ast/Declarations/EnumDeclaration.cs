@@ -5,7 +5,6 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 
 using ScTools.ScriptLang.Ast.Expressions;
-using ScTools.ScriptLang.Ast.Types;
 
 public sealed class EnumDeclaration : BaseTypeDeclaration_New
 {

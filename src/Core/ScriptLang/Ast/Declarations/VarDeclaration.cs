@@ -2,7 +2,6 @@
 
 using ScTools.ScriptLang.Ast.Expressions;
 using ScTools.ScriptLang.Ast.Statements;
-using ScTools.ScriptLang.Ast.Types;
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -40,29 +39,6 @@ public enum VarKind
     /// A struct field.
     /// </summary>
     Field,
-}
-
-public sealed class VarDeclaration : BaseValueDeclaration, IStatement
-{
-    public Label? Label { get; }
-    public VarKind Kind { get; set; }
-    /// <summary>
-    /// Gets or sets whether this variable is a reference. Only valid with kind <see cref="VarKind.Parameter"/>.
-    /// </summary>
-    public bool IsReference { get; set; }
-    public IExpression? Initializer { get; set; }
-    public int Address { get; set; }
-
-    public VarDeclaration(Token nameIdentifier, IType type, VarKind kind, bool isReference, Label? label = null) : base(nameIdentifier.Lexeme.ToString(), type, nameIdentifier) // TODO: pass children to BaseValueDeclaration
-        => (Kind, IsReference, Label) = (kind, isReference, label);
-    public VarDeclaration(SourceRange source, string name, IType type, VarKind kind, bool isReference) : base(source, name, type)
-        => (Kind, IsReference) = (kind, isReference);
-
-    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-        => visitor.Visit(this, param);
-
-    internal VarDeclaration WithLabel(Label? label)
-        => new(Tokens[0], Type, Kind, IsReference, label);
 }
 
 public sealed class VarDeclaration_New : BaseValueDeclaration_New, IStatement

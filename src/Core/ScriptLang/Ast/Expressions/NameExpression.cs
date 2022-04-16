@@ -1,26 +1,26 @@
 ﻿namespace ScTools.ScriptLang.Ast.Expressions;
 
 using ScTools.ScriptLang.Ast.Declarations;
-using ScTools.ScriptLang.Ast.Types;
+using ScTools.ScriptLang.Types;
 
 using System.Diagnostics;
 
-public record struct NameExpressionSemantics(IType? Type, bool IsLValue, bool IsConstant, IDeclaration? Declaration);
+public record struct NameExpressionSemantics(TypeInfo Type, ValueKind ValueKind, IDeclaration_New? Declaration);
 
 /// <summary>
 /// Represents a reference to a <see cref="IDeclaration"/>.
 /// </summary>
 public sealed class NameExpression : BaseExpression, ISemanticNode<NameExpressionSemantics>
 {
-    private IDeclaration? semanticsDeclaration;
+    private IDeclaration_New? semanticsDeclaration;
 
     public string Name => Tokens[0].Lexeme.ToString();
     public new NameExpressionSemantics Semantics
     {
-        get => new(base.Semantics.Type, base.Semantics.IsLValue, base.Semantics.IsConstant, semanticsDeclaration);
+        get => new(base.Semantics.Type, base.Semantics.ValueKind, semanticsDeclaration);
         set
         {
-            base.Semantics = new(value.Type, value.IsLValue, value.IsConstant);
+            base.Semantics = new(value.Type, value.ValueKind);
             semanticsDeclaration = value.Declaration;
         }
     }

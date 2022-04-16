@@ -129,6 +129,16 @@
                 fieldsChecker(structDecl.Fields);
             }
         }
+        private static void AssertGlobalBlockDeclaration(INode node, string name, int blockIndex, Action<ImmutableArray<VarDeclaration_New>> varsChecker)
+        {
+            True(node is GlobalBlockDeclaration);
+            if (node is GlobalBlockDeclaration globalBlockDecl)
+            {
+                Equal(name, globalBlockDecl.Name);
+                Equal(blockIndex, globalBlockDecl.BlockIndex);
+                varsChecker(globalBlockDecl.Vars);
+            }
+        }
         private static void AssertScriptDeclaration(INode node, string name, Action<ImmutableArray<VarDeclaration_New>> parametersChecker, Action<ImmutableArray<IStatement>> bodyChecker)
         {
             True(node is ScriptDeclaration);

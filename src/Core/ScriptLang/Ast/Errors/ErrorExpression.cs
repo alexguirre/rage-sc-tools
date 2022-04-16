@@ -1,7 +1,6 @@
 ﻿namespace ScTools.ScriptLang.Ast.Errors;
 
 using ScTools.ScriptLang.Ast.Expressions;
-using ScTools.ScriptLang.Ast.Types;
 
 public sealed class ErrorExpression : BaseError, IExpression
 {
