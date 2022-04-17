@@ -9,7 +9,7 @@ using System.Linq;
 
 public sealed class ScriptDeclaration : BaseNode, IDeclaration
 {
-    public string Name => Tokens[1].Lexeme.ToString();
+    public override Token NameToken => Tokens[1];
     public ImmutableArray<VarDeclaration> Parameters { get; }
     public ImmutableArray<IStatement> Body { get; }
 
@@ -37,6 +37,7 @@ public sealed class ScriptDeclaration : BaseNode, IDeclaration
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
+    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     public override string DebuggerDisplay =>
         $@"{nameof(ScriptDeclaration)} {{ {nameof(Name)} = {Name}, {nameof(Parameters)} = [{string.Join(", ", Parameters.Select(a => a.DebuggerDisplay))}, {nameof(Body)} = [{string.Join(", ", Body.Select(a => a.DebuggerDisplay))}] }}";

@@ -15,6 +15,7 @@ public interface INode
     string DebuggerDisplay { get; }
 
     TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param);
+    void Accept(IVisitor visitor);
 }
 
 /// <summary>
@@ -48,6 +49,7 @@ public abstract class BaseNode : INode
     public BaseNode(SourceRange source) => throw new NotImplementedException("Deprecated constructor");
 
     public abstract TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param);
+    public abstract void Accept(IVisitor visitor);
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never), EditorBrowsable(EditorBrowsableState.Never)]
     public virtual string DebuggerDisplay => GetType().Name;

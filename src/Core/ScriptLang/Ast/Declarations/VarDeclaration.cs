@@ -43,7 +43,7 @@ public enum VarKind
 
 public sealed class VarDeclaration : BaseValueDeclaration, IStatement
 {
-    public override string Name => Declarator.Name;
+    public override Token NameToken => Declarator.NameToken;
     public Label? Label { get; }
     public TypeName Type => (TypeName)Children[0];
     public IVarDeclarator Declarator => (IVarDeclarator)Children[1];
@@ -60,6 +60,7 @@ public sealed class VarDeclaration : BaseValueDeclaration, IStatement
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
+    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     internal VarDeclaration WithLabel(Label? label)
         => new(Type, Declarator, Kind, Initializer, label);
@@ -70,12 +71,14 @@ public sealed class VarDeclaration : BaseValueDeclaration, IStatement
 
 public interface IVarDeclarator : INode
 {
+    Token NameToken { get; }
     string Name { get; }
 }
 
 public sealed class VarDeclarator : BaseNode, IVarDeclarator
 {
-    public string Name => Tokens[0].Lexeme.ToString();
+    public Token NameToken => Tokens[0];
+    public string Name => NameToken.ToString();
 
     public VarDeclarator(Token nameIdentifier)
         : base(OfTokens(nameIdentifier), OfChildren())
@@ -85,6 +88,7 @@ public sealed class VarDeclarator : BaseNode, IVarDeclarator
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
+    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     public override string DebuggerDisplay =>
         $@"{nameof(VarDeclarator)} {{ {nameof(Name)} = {Name} }}";
@@ -92,7 +96,8 @@ public sealed class VarDeclarator : BaseNode, IVarDeclarator
 
 public sealed class VarRefDeclarator : BaseNode, IVarDeclarator
 {
-    public string Name => Tokens[1].Lexeme.ToString();
+    public Token NameToken => Tokens[1];
+    public string Name => NameToken.ToString();
 
     public VarRefDeclarator(Token ampersandToken, Token nameIdentifier)
         : base(OfTokens(ampersandToken, nameIdentifier), OfChildren())
@@ -103,6 +108,7 @@ public sealed class VarRefDeclarator : BaseNode, IVarDeclarator
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
+    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     public override string DebuggerDisplay =>
         $@"{nameof(VarRefDeclarator)} {{ {nameof(Name)} = {Name} }}";
@@ -110,7 +116,8 @@ public sealed class VarRefDeclarator : BaseNode, IVarDeclarator
 
 public sealed class VarArrayDeclarator : BaseNode, IVarDeclarator
 {
-    public string Name => Tokens[0].Lexeme.ToString();
+    public Token NameToken => Tokens[0];
+    public string Name => NameToken.ToString();
 
     /// <summary>
     /// Gets the dimensions sizes.
@@ -135,6 +142,7 @@ public sealed class VarArrayDeclarator : BaseNode, IVarDeclarator
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
+    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     public override string DebuggerDisplay =>
         $@"{nameof(VarArrayDeclarator)} {{ {nameof(Name)} = {Name}, {nameof(Lengths)} = [{string.Join(", ", Lengths.Select(l => l?.DebuggerDisplay ?? "null"))}] }}";

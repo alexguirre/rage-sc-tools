@@ -6,4 +6,5 @@ public sealed class EmptyStatement : BaseStatement
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
+    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 }

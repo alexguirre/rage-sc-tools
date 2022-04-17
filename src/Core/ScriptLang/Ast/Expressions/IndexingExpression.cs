@@ -16,6 +16,7 @@ public sealed class IndexingExpression : BaseExpression
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
+    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     public override string DebuggerDisplay =>
         $@"{nameof(IndexingExpression)} {{ {nameof(Array)} = {Array.DebuggerDisplay}, {nameof(Index)} = {Index.DebuggerDisplay} }}";

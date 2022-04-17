@@ -612,7 +612,6 @@ public class ParserNew
                            TokenKind.Float or
                            TokenKind.String or
                            TokenKind.Boolean or
-                           TokenKind.SIZE_OF or
                            TokenKind.Null;
     public IExpression ParseExpression()
     {
@@ -826,13 +825,6 @@ public class ParserNew
             else if (Accept(TokenKind.Boolean, out var boolToken))
             {
                 expr = new BoolLiteralExpression(boolToken);
-            }
-            else if (Accept(TokenKind.SIZE_OF, out var sizeOfToken))
-            {
-                ExpectOrMissing(TokenKind.OpenParen, out var sizeOfOpenToken);
-                Expect(ParseExpression, out var sizeOfExpr);
-                ExpectOrMissing(TokenKind.CloseParen, out var sizeOfCloseToken);
-                expr = new SizeOfExpression(sizeOfToken, sizeOfOpenToken, sizeOfCloseToken, sizeOfExpr);
             }
             else if (Accept(TokenKind.Null, out var nullToken))
             {

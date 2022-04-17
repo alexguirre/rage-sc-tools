@@ -23,6 +23,7 @@ public sealed class UnaryExpression : BaseExpression
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
+    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     public override string DebuggerDisplay =>
         $@"{nameof(UnaryExpression)} {{ {nameof(Operator)} = {Operator}, {nameof(SubExpression)} = {SubExpression.DebuggerDisplay} }}";

@@ -33,6 +33,8 @@ public sealed class NameExpression : BaseExpression, ISemanticNode<NameExpressio
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
+    public override void Accept(IVisitor visitor) => visitor.Visit(this);
+
     public override string DebuggerDisplay =>
         $@"{nameof(NameExpression)} {{ {nameof(Name)} = {Name} }}";
 

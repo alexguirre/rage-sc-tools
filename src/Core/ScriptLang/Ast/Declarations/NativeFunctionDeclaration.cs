@@ -10,7 +10,7 @@ using System.Linq;
 
 public sealed class NativeFunctionDeclaration : BaseValueDeclaration
 {
-    public override string Name => Tokens[2].Lexeme.ToString();
+    public override Token NameToken => Tokens[2];
     public TypeName? ReturnType { get; }
     public ImmutableArray<VarDeclaration> Parameters { get; }
 
@@ -34,6 +34,7 @@ public sealed class NativeFunctionDeclaration : BaseValueDeclaration
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
+    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     public override string DebuggerDisplay =>
         $@"{nameof(NativeFunctionDeclaration)} {{ {nameof(Name)} = {Name}, {nameof(ReturnType)} = {ReturnType?.DebuggerDisplay}, {nameof(Parameters)} = [{string.Join(", ", Parameters.Select(a => a.DebuggerDisplay))} }}";

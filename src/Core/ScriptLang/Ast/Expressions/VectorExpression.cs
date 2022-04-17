@@ -20,6 +20,7 @@ public sealed class VectorExpression : BaseExpression
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
+    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     public override string DebuggerDisplay =>
         $@"{nameof(VectorExpression)} {{ {nameof(X)} = {X.DebuggerDisplay}, {nameof(Y)} = {Y.DebuggerDisplay}, {nameof(Z)} = {Z.DebuggerDisplay} }}";

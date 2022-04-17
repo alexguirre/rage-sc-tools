@@ -10,7 +10,7 @@ using System.Linq;
 
 public sealed class FunctionPointerDeclaration : BaseTypeDeclaration
 {
-    public override string Name => Tokens[1].Lexeme.ToString();
+    public override Token NameToken => Tokens[1];
     public TypeName? ReturnType { get; }
     public ImmutableArray<VarDeclaration> Parameters { get; }
 
@@ -33,6 +33,7 @@ public sealed class FunctionPointerDeclaration : BaseTypeDeclaration
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
+    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     public override string DebuggerDisplay =>
         $@"{nameof(FunctionPointerDeclaration)} {{ {nameof(Name)} = {Name}, {nameof(ReturnType)} = {ReturnType?.DebuggerDisplay}, {nameof(Parameters)} = [{string.Join(", ", Parameters.Select(a => a.DebuggerDisplay))} }}";

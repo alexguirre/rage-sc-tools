@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 public sealed class StructDeclaration : BaseTypeDeclaration
 {
-    public override string Name => Tokens[1].Lexeme.ToString();
+    public override Token NameToken => Tokens[1];
     public ImmutableArray<VarDeclaration> Fields { get; }
 
     public StructDeclaration(Token structKeyword, Token nameIdentifier, Token endstructKeyword, IEnumerable<VarDeclaration> fields)
@@ -21,4 +21,5 @@ public sealed class StructDeclaration : BaseTypeDeclaration
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
+    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 }

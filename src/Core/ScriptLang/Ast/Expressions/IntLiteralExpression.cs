@@ -15,6 +15,7 @@ public sealed class IntLiteralExpression : BaseExpression, ILiteralExpression<in
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
+    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     object? ILiteralExpression.Value => Value;
 

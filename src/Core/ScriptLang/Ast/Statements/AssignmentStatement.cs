@@ -22,6 +22,7 @@ public sealed class AssignmentStatement : BaseStatement
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
+    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     public override string DebuggerDisplay =>
         $@"{nameof(AssignmentStatement)} {{{(IsCompound ? $"{nameof(CompoundOperator)} = {CompoundOperator}," : "")} {nameof(LHS)} = {LHS.DebuggerDisplay}, {nameof(RHS)} = {RHS.DebuggerDisplay} }}";

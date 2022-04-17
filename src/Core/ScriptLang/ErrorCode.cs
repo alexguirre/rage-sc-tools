@@ -21,5 +21,11 @@
         ParserVarInitializerNotAllowed = 0x1007,
 
         // Semantic errors 0x2000 - 0x2FFF
+        SemanticSymbolAlreadyDefined = 0x2000,
+        SemanticUndefinedSymbol = 0x2001,
+        SemanticExpectedTypeSymbol = 0x2002,
+        SemanticLabelAlreadyDefined = 0x2003,
+        SemanticUndefinedLabel = 0x2004,
+        SemanticExpectedLabel = 0x2005,
     }
 }

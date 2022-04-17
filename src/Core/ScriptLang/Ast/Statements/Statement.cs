@@ -1,5 +1,7 @@
 ﻿namespace ScTools.ScriptLang.Ast.Statements;
 
+using ScTools.ScriptLang.Ast.Declarations;
+
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -48,7 +50,8 @@ public abstract class BaseStatement : BaseNode, IStatement
 
 public sealed class Label : BaseNode
 {
-    public string Name => Tokens[0].Lexeme.ToString();
+    public Token NameToken => Tokens[0];
+    public string Name => NameToken.Lexeme.ToString();
 
     public Label(Token identifierToken, Token colon)
         : base(OfTokens(identifierToken, colon), OfChildren())
@@ -59,6 +62,7 @@ public sealed class Label : BaseNode
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
+    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     public override string DebuggerDisplay =>
         $@"{nameof(Label)} {{ {nameof(Name)} = {Name} }}";

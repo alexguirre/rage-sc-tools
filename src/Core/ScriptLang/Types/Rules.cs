@@ -3,7 +3,7 @@
 internal static class Rules
 {
     public static bool IsAssignableFrom(this TypeInfo type, TypeInfo from, ValueKind fromValueKind)
-        => type.Accept(new IsAssignableFromVisitor(from, fromValueKind));
+        => from is ErrorType || type.Accept(new IsAssignableFromVisitor(from, fromValueKind));
     public static bool IsAssignableTo(this TypeInfo type, TypeInfo to, ValueKind thisValueKind)
         => to.IsAssignableFrom(type, thisValueKind);
 
@@ -14,6 +14,7 @@ internal static class Rules
 
         public IsAssignableFromVisitor(TypeInfo source, ValueKind sourceKind) => (Source, SourceKind) = (source, sourceKind);
 
+        public bool Visit(ErrorType destination) => true;
         public bool Visit(VoidType destination) => false;
         // TYPE& <- TYPE&
         // TYPE& <- TYPE if lvalue

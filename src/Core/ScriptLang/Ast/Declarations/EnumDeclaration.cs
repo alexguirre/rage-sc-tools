@@ -8,7 +8,7 @@ using ScTools.ScriptLang.Ast.Expressions;
 
 public sealed class EnumDeclaration : BaseTypeDeclaration
 {
-    public override string Name => Tokens[1].Lexeme.ToString();
+    public override Token NameToken => Tokens[1];
     public ImmutableArray<EnumMemberDeclaration> Members { get; }
 
     public EnumDeclaration(Token enumKeyword, Token nameIdentifier, Token endenumKeyword, IEnumerable<EnumMemberDeclaration> members)
@@ -23,11 +23,12 @@ public sealed class EnumDeclaration : BaseTypeDeclaration
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
+    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 }
 
 public sealed class EnumMemberDeclaration : BaseValueDeclaration
 {
-    public override string Name => Tokens[0].Lexeme.ToString();
+    public override Token NameToken => Tokens[0];
     public IExpression? Initializer => Children.Length > 0 ? (IExpression)Children[0] : null;
 
     public EnumMemberDeclaration(Token nameIdentifier, IExpression? initializer)
@@ -38,4 +39,5 @@ public sealed class EnumMemberDeclaration : BaseValueDeclaration
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
+    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 }

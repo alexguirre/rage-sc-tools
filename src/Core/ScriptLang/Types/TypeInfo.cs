@@ -13,6 +13,16 @@ public abstract record TypeInfo
 
 public sealed record FieldInfo(TypeInfo Type, string Name);
 
+public sealed record ErrorType : TypeInfo
+{
+    public override int SizeOf => 0;
+    public override ImmutableArray<FieldInfo> Fields => ImmutableArray<FieldInfo>.Empty;
+
+    public override TReturn Accept<TReturn>(ITypeVisitor<TReturn> visitor) => visitor.Visit(this);
+
+    public static ErrorType Instance { get; } = new();
+}
+
 public sealed record VoidType : TypeInfo
 {
     public override int SizeOf => 0;

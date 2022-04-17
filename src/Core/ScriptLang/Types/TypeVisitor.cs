@@ -2,6 +2,7 @@
 
 public interface ITypeVisitor<TReturn>
 {
+    TReturn Visit(ErrorType type);
     TReturn Visit(VoidType type);
     TReturn Visit(RefType type);
     TReturn Visit(ArrayType type);

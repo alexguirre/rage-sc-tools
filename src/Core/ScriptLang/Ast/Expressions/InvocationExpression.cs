@@ -25,6 +25,7 @@ public sealed class InvocationExpression : BaseExpression, IStatement
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
+    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     internal InvocationExpression WithLabel(Label? label)
         => new(Tokens[0], Tokens[1], Callee, Arguments, label);

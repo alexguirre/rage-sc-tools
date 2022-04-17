@@ -47,6 +47,7 @@ public sealed class BinaryExpression : BaseExpression
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
+    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     public override string DebuggerDisplay =>
         $@"{nameof(BinaryExpression)} {{ {nameof(Operator)} = {Operator}, {nameof(LHS)} = {LHS.DebuggerDisplay}, {nameof(RHS)} = {RHS.DebuggerDisplay} }}";

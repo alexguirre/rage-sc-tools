@@ -1,5 +1,7 @@
 ﻿namespace ScTools.ScriptLang.Ast.Declarations;
 
+using ScTools.ScriptLang.Types;
+
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -8,26 +10,32 @@ using System.Diagnostics;
 /// </summary>
 public interface IDeclaration : INode
 {
+    Token NameToken { get; }
     string Name { get; }
 }
+
+public record struct TypeDeclarationSemantics(TypeInfo? DeclaredType);
 
 /// <summary>
 /// Represents a declaration of a type.
 /// </summary>
-public interface ITypeDeclaration : IDeclaration
+public interface ITypeDeclaration : IDeclaration, ISemanticNode<TypeDeclarationSemantics>
 {
 }
+
+public record struct ValueDeclarationSemantics(TypeInfo? ValueType);
 
 /// <summary>
 /// Represents a declaration of a variable, a procedure, a function or an enum member.
 /// </summary>
-public interface IValueDeclaration : IDeclaration
+public interface IValueDeclaration : IDeclaration, ISemanticNode<ValueDeclarationSemantics>
 {
 }
 
 public sealed class TypeName : BaseNode
 {
-    public string Name => Tokens[0].Lexeme.ToString();
+    public Token NameToken => Tokens[0];
+    public string Name => NameToken.Lexeme.ToString();
 
     public TypeName(Token nameIdentifier)
         : base(OfTokens(nameIdentifier), OfChildren())
@@ -37,6 +45,7 @@ public sealed class TypeName : BaseNode
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
+    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     public override string DebuggerDisplay =>
         $@"{nameof(TypeName)} {{ {nameof(Name)} = {Name} }}";
@@ -44,7 +53,9 @@ public sealed class TypeName : BaseNode
 
 public abstract class BaseTypeDeclaration : BaseNode, ITypeDeclaration
 {
-    public abstract string Name { get; }
+    public abstract Token NameToken { get; }
+    public string Name => NameToken.Lexeme.ToString();
+    public TypeDeclarationSemantics Semantics { get; set; }
 
     public BaseTypeDeclaration(IEnumerable<Token> tokens, IEnumerable<INode> children) : base(tokens, children)
     {
@@ -53,7 +64,9 @@ public abstract class BaseTypeDeclaration : BaseNode, ITypeDeclaration
 
 public abstract class BaseValueDeclaration : BaseNode, IValueDeclaration
 {
-    public abstract string Name { get; }
+    public abstract Token NameToken { get; }
+    public string Name => NameToken.Lexeme.ToString();
+    public ValueDeclarationSemantics Semantics { get; set; }
 
     public BaseValueDeclaration(IEnumerable<Token> tokens, IEnumerable<INode> children) : base(tokens, children)
     {

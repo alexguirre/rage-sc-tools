@@ -36,6 +36,7 @@ public sealed class IfStatement : BaseStatement, ISemanticNode<IfStatementSemant
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
         => visitor.Visit(this, param);
+    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     public override string DebuggerDisplay =>
         $@"{nameof(IfStatement)} {{ {nameof(Condition)} = {Condition.DebuggerDisplay}, {nameof(Then)} = [{string.Join(", ", Then.Select(a => a.DebuggerDisplay))}], {nameof(Else)} = [{string.Join(", ", Else.Select(a => a.DebuggerDisplay))}] }}";

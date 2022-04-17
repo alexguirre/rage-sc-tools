@@ -7,6 +7,59 @@
     using ScTools.ScriptLang.Ast.Expressions;
     using ScTools.ScriptLang.Ast.Statements;
 
+    public interface IVisitor
+    {
+        void Visit(CompilationUnit node);
+
+        void Visit(UsingDirective node);
+
+        void Visit(EnumDeclaration node);
+        void Visit(EnumMemberDeclaration node);
+        void Visit(FunctionDeclaration node);
+        void Visit(FunctionPointerDeclaration node);
+        void Visit(NativeFunctionDeclaration node);
+        void Visit(ScriptDeclaration node);
+        void Visit(GlobalBlockDeclaration node);
+        void Visit(StructDeclaration node);
+        void Visit(VarDeclaration node);
+        void Visit(VarDeclarator node);
+        void Visit(VarRefDeclarator node);
+        void Visit(VarArrayDeclarator node);
+
+        void Visit(BinaryExpression node);
+        void Visit(BoolLiteralExpression node);
+        void Visit(FieldAccessExpression node);
+        void Visit(FloatLiteralExpression node);
+        void Visit(IndexingExpression node);
+        void Visit(IntLiteralExpression node);
+        void Visit(InvocationExpression node);
+        void Visit(NullExpression node);
+        void Visit(StringLiteralExpression node);
+        void Visit(UnaryExpression node);
+        void Visit(NameExpression node);
+        void Visit(VectorExpression node);
+
+        void Visit(Label node);
+        void Visit(AssignmentStatement node);
+        void Visit(BreakStatement node);
+        void Visit(ContinueStatement node);
+        void Visit(EmptyStatement node);
+        void Visit(GotoStatement node);
+        void Visit(IfStatement node);
+        void Visit(RepeatStatement node);
+        void Visit(ReturnStatement node);
+        void Visit(SwitchStatement node);
+        void Visit(ValueSwitchCase node);
+        void Visit(DefaultSwitchCase node);
+        void Visit(WhileStatement node);
+
+        void Visit(TypeName node);
+
+        void Visit(ErrorDeclaration node);
+        void Visit(ErrorExpression node);
+        void Visit(ErrorStatement node);
+    }
+
     public interface IVisitor<TReturn, TParam>
     {
         TReturn Visit(CompilationUnit node, TParam param);
@@ -34,7 +87,6 @@
         TReturn Visit(IntLiteralExpression node, TParam param);
         TReturn Visit(InvocationExpression node, TParam param);
         TReturn Visit(NullExpression node, TParam param);
-        TReturn Visit(SizeOfExpression node, TParam param);
         TReturn Visit(StringLiteralExpression node, TParam param);
         TReturn Visit(UnaryExpression node, TParam param);
         TReturn Visit(NameExpression node, TParam param);
@@ -203,12 +255,6 @@
 
         public virtual TReturn Visit(NullExpression node, TParam param)
         {
-            return DefaultReturn;
-        }
-
-        public virtual TReturn Visit(SizeOfExpression node, TParam param)
-        {
-            node.SubExpression.Accept(this, param);
             return DefaultReturn;
         }
 
@@ -383,7 +429,6 @@
         public virtual TReturn Visit(IntLiteralExpression node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(InvocationExpression node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(NullExpression node, TParam param) => throw new NotImplementedException();
-        public virtual TReturn Visit(SizeOfExpression node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(StringLiteralExpression node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(UnaryExpression node, TParam param) => throw new NotImplementedException();
         public virtual TReturn Visit(NameExpression node, TParam param) => throw new NotImplementedException();
