@@ -78,7 +78,7 @@ public interface IVarDeclarator : INode
 public sealed class VarDeclarator : BaseNode, IVarDeclarator
 {
     public Token NameToken => Tokens[0];
-    public string Name => NameToken.ToString();
+    public string Name => NameToken.Lexeme.ToString();
 
     public VarDeclarator(Token nameIdentifier)
         : base(OfTokens(nameIdentifier), OfChildren())
@@ -97,7 +97,7 @@ public sealed class VarDeclarator : BaseNode, IVarDeclarator
 public sealed class VarRefDeclarator : BaseNode, IVarDeclarator
 {
     public Token NameToken => Tokens[1];
-    public string Name => NameToken.ToString();
+    public string Name => NameToken.Lexeme.ToString();
 
     public VarRefDeclarator(Token ampersandToken, Token nameIdentifier)
         : base(OfTokens(ampersandToken, nameIdentifier), OfChildren())
@@ -117,7 +117,7 @@ public sealed class VarRefDeclarator : BaseNode, IVarDeclarator
 public sealed class VarArrayDeclarator : BaseNode, IVarDeclarator
 {
     public Token NameToken => Tokens[0];
-    public string Name => NameToken.ToString();
+    public string Name => NameToken.Lexeme.ToString();
 
     /// <summary>
     /// Gets the dimensions sizes.

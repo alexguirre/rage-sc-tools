@@ -7,13 +7,13 @@ using System.Diagnostics;
 /// </remarks> 
 public sealed class StringLiteralExpression : BaseExpression, ILiteralExpression<string?>
 {
-    public string? Value { get; }
+    public string Value { get; }
 
     public StringLiteralExpression(Token stringOrNullToken)
         : base(OfTokens(stringOrNullToken), OfChildren())
     {
-        Debug.Assert(stringOrNullToken.Kind is TokenKind.String or TokenKind.Null);
-        Value = stringOrNullToken.Kind is TokenKind.String ? stringOrNullToken.GetStringLiteral() : null;
+        Debug.Assert(stringOrNullToken.Kind is TokenKind.String);
+        Value = stringOrNullToken.GetStringLiteral();
     }
 
     public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
@@ -23,5 +23,5 @@ public sealed class StringLiteralExpression : BaseExpression, ILiteralExpression
     object? ILiteralExpression.Value => Value;
 
     public override string DebuggerDisplay =>
-        $@"{nameof(StringLiteralExpression)} {{ {nameof(Value)} = {(Value is null ? "NULL" : $"'{Value.Escape()}'")} }}";
+        $@"{nameof(StringLiteralExpression)} {{ {nameof(Value)} = '{Value.Escape()}' }}";
 }

@@ -10,7 +10,8 @@
         public const int MaxBlockCount = 64; // limit hardcoded in the game .exe (and max value that fits in GLOBAL_U24* instructions)
         public const int MaxSize = 0x3FFFF;
 
-        public override Token NameToken => Tokens[1];
+        public Token NameToken => Tokens[1];
+        public string Name => NameToken.Lexeme.ToString();
         public int BlockIndex => Tokens[2].GetIntLiteral();
         public ImmutableArray<VarDeclaration> Vars { get; }
 

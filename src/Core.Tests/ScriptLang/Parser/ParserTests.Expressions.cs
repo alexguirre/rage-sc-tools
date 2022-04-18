@@ -1,4 +1,4 @@
-﻿namespace ScTools.Tests.ScriptLang;
+﻿namespace ScTools.Tests.ScriptLang.Parser;
 
 using ScTools.ScriptLang;
 using ScTools.ScriptLang.Ast.Errors;

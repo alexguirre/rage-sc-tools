@@ -8,12 +8,12 @@ using System;
 using System.Collections.Immutable;
 using System.Linq;
 
-internal sealed class TypeFactory : EmptyVisitor<TypeInfo, SemanticAnalyzer>
+internal sealed class TypeFactory : EmptyVisitor<TypeInfo, SemanticsAnalyzer>
 {
     private readonly Visitor visitor;
-    private readonly SemanticAnalyzer semantics;
+    private readonly SemanticsAnalyzer semantics;
 
-    public TypeFactory(SemanticAnalyzer semantics)
+    public TypeFactory(SemanticsAnalyzer semantics)
     {
         visitor = new();
         this.semantics = semantics;
@@ -25,7 +25,7 @@ internal sealed class TypeFactory : EmptyVisitor<TypeInfo, SemanticAnalyzer>
 
     private static TypeInfo Error => ErrorType.Instance;
 
-    private sealed class Visitor : EmptyVisitor<TypeInfo, SemanticAnalyzer>
+    private sealed class Visitor : EmptyVisitor<TypeInfo, SemanticsAnalyzer>
     {
         private readonly VarDeclaratorVisitor varDeclaratorVisitor;
 
@@ -34,7 +34,7 @@ internal sealed class TypeFactory : EmptyVisitor<TypeInfo, SemanticAnalyzer>
             varDeclaratorVisitor = new(this);
         }
 
-        public override TypeInfo Visit(EnumDeclaration node, SemanticAnalyzer s)
+        public override TypeInfo Visit(EnumDeclaration node, SemanticsAnalyzer s)
         {
             if (node.Semantics.DeclaredType is null)
             {
@@ -46,10 +46,10 @@ internal sealed class TypeFactory : EmptyVisitor<TypeInfo, SemanticAnalyzer>
             return node.Semantics.DeclaredType;
         }
 
-        public override TypeInfo Visit(EnumMemberDeclaration node, SemanticAnalyzer s)
+        public override TypeInfo Visit(EnumMemberDeclaration node, SemanticsAnalyzer s)
             => node.Semantics.ValueType ?? throw new InvalidOperationException($"Visited enum member '{node.Name}' before its enum declaration");
 
-        public override TypeInfo Visit(StructDeclaration node, SemanticAnalyzer s)
+        public override TypeInfo Visit(StructDeclaration node, SemanticsAnalyzer s)
         {
             if (node.Semantics.DeclaredType is null)
             {
@@ -60,22 +60,54 @@ internal sealed class TypeFactory : EmptyVisitor<TypeInfo, SemanticAnalyzer>
             return node.Semantics.DeclaredType;
         }
 
-        public override TypeInfo Visit(TypeName node, SemanticAnalyzer s)
+        public override TypeInfo Visit(TypeName node, SemanticsAnalyzer s)
             => s.GetTypeSymbol(node, out var type) ? type : Error;
 
-        public override TypeInfo Visit(VarDeclaration node, SemanticAnalyzer s)
-            => node.Declarator.Accept(varDeclaratorVisitor, (node, s));
+        public override TypeInfo Visit(VarDeclaration node, SemanticsAnalyzer s)
+        {
+            if (node.Semantics.ValueType is null)
+            {
+                var ty = node.Declarator.Accept(varDeclaratorVisitor, (node, s));
+                node.Semantics = node.Semantics with { ValueType = ty };
+            }
 
-        public override TypeInfo Visit(FunctionDeclaration node, SemanticAnalyzer s)
-            => MakeFunctionType(node.ReturnType, node.Parameters, s);
+            return node.Semantics.ValueType;
+        }
 
-        public override TypeInfo Visit(FunctionPointerDeclaration node, SemanticAnalyzer s)
-            => MakeFunctionType(node.ReturnType, node.Parameters, s);
+        public override TypeInfo Visit(FunctionDeclaration node, SemanticsAnalyzer s)
+        {
+            if (node.Semantics.ValueType is null)
+            {
+                var ty = MakeFunctionType(node.ReturnType, node.Parameters, s);
+                node.Semantics = node.Semantics with { ValueType = ty };
+            }
 
-        public override TypeInfo Visit(NativeFunctionDeclaration node, SemanticAnalyzer s)
-            => MakeFunctionType(node.ReturnType, node.Parameters, s);
+            return node.Semantics.ValueType;
+        }
 
-        private FunctionType MakeFunctionType(TypeName? returnType, ImmutableArray<VarDeclaration> parameters, SemanticAnalyzer s)
+        public override TypeInfo Visit(FunctionPointerDeclaration node, SemanticsAnalyzer s)
+        {
+            if (node.Semantics.DeclaredType is null)
+            {
+                var ty = MakeFunctionType(node.ReturnType, node.Parameters, s);
+                node.Semantics = node.Semantics with { DeclaredType = ty };
+            }
+
+            return node.Semantics.DeclaredType;
+        }
+
+        public override TypeInfo Visit(NativeFunctionDeclaration node, SemanticsAnalyzer s)
+        {
+            if (node.Semantics.ValueType is null)
+            {
+                var ty = MakeFunctionType(node.ReturnType, node.Parameters, s);
+                node.Semantics = node.Semantics with { ValueType = ty };
+            }
+
+            return node.Semantics.ValueType;
+        }
+
+        private FunctionType MakeFunctionType(TypeName? returnType, ImmutableArray<VarDeclaration> parameters, SemanticsAnalyzer s)
         {
             var returnTy = returnType?.Accept(this, s) ?? VoidType.Instance;
             var parametersTy = parameters.Select(p => p.Accept(this, s));
@@ -83,7 +115,7 @@ internal sealed class TypeFactory : EmptyVisitor<TypeInfo, SemanticAnalyzer>
         }
     }
 
-    private sealed class VarDeclaratorVisitor : EmptyVisitor<TypeInfo, (VarDeclaration Var, SemanticAnalyzer S)>
+    private sealed class VarDeclaratorVisitor : EmptyVisitor<TypeInfo, (VarDeclaration Var, SemanticsAnalyzer S)>
     {
         private readonly Visitor declarationVisitor;
 
@@ -92,13 +124,13 @@ internal sealed class TypeFactory : EmptyVisitor<TypeInfo, SemanticAnalyzer>
             this.declarationVisitor = declarationVisitor;
         }
 
-        public override TypeInfo Visit(VarDeclarator node, (VarDeclaration Var, SemanticAnalyzer S) param)
+        public override TypeInfo Visit(VarDeclarator node, (VarDeclaration Var, SemanticsAnalyzer S) param)
             => param.Var.Type.Accept(declarationVisitor, param.S);
 
-        public override TypeInfo Visit(VarRefDeclarator node, (VarDeclaration Var, SemanticAnalyzer S) param)
+        public override TypeInfo Visit(VarRefDeclarator node, (VarDeclaration Var, SemanticsAnalyzer S) param)
             => new RefType(param.Var.Type.Accept(declarationVisitor, param.S));
 
-        public override TypeInfo Visit(VarArrayDeclarator node, (VarDeclaration Var, SemanticAnalyzer S) param)
+        public override TypeInfo Visit(VarArrayDeclarator node, (VarDeclaration Var, SemanticsAnalyzer S) param)
         {
             TypeInfo itemType = param.Var.Type.Accept(declarationVisitor, param.S);
             // TODO: array type error checking

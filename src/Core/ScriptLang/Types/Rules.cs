@@ -2,6 +2,61 @@
 
 internal static class Rules
 {
+    //public static TypeInfo PromoteBinaryOperands(TypeInfo lhs, TypeInfo rhs)
+    //{
+    //    if (lhs is FloatType || rhs is FloatType)
+    //    {
+    //        return FloatType.Instance;
+    //    }
+    //}
+
+    //public TecsypeInfo TryPromote
+
+    /*
+     * -> indicates the type of the expression
+     * :- indicates that a promotion occurred
+
+        Add,
+        Subtract,
+        Multiply,
+        Divide,
+            INT    op INT                        -> INT
+            FLOAT  op FLOAT                      -> FLOAT
+            INT    op FLOAT  :- FLOAT op FLOAT   -> FLOAT
+            FLOAT  op INT    :- FLOAT op FLOAT   -> FLOAT
+            VECTOR op VECTOR                     -> VECTOR
+
+        Modulo,
+            INT    op INT                       -> INT
+            FLOAT  op FLOAT                     -> FLOAT
+            INT    op FLOAT  :- FLOAT op FLOAT  -> FLOAT
+            FLOAT  op INT    :- FLOAT op FLOAT  -> FLOAT
+
+        And,
+        Xor,
+        Or,
+            INT op INT  -> INT
+
+        Equals,
+        NotEquals,
+        LessThan,
+        LessThanOrEqual,
+        GreaterThan,
+        GreaterThanOrEqual,
+            INT op INT                        -> BOOL
+            FLOAT op FLOAT                    -> BOOL
+            INT op FLOAT   :- FLOAT op FLOAT  -> BOOL
+            FLOAT op INT   :- FLOAT op FLOAT  -> BOOL
+
+        LogicalAnd,
+        LogicalOr,
+            INT op INT                        -> BOOL
+            BOOL op BOOL                      -> BOOL
+            INT op BOOL                       -> BOOL
+            BOOL op INT                       -> BOOL
+     */
+
+
     public static bool IsAssignableFrom(this TypeInfo type, TypeInfo from, ValueKind fromValueKind)
         => from is ErrorType || type.Accept(new IsAssignableFromVisitor(from, fromValueKind));
     public static bool IsAssignableTo(this TypeInfo type, TypeInfo to, ValueKind thisValueKind)

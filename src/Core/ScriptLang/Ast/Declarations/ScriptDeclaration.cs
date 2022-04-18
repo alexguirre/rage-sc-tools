@@ -9,7 +9,8 @@ using System.Linq;
 
 public sealed class ScriptDeclaration : BaseNode, IDeclaration
 {
-    public override Token NameToken => Tokens[1];
+    public Token NameToken => Tokens[1];
+    public string Name => NameToken.Lexeme.ToString();
     public ImmutableArray<VarDeclaration> Parameters { get; }
     public ImmutableArray<IStatement> Body { get; }
 

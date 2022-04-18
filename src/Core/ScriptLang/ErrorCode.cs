@@ -27,5 +27,6 @@
         SemanticLabelAlreadyDefined = 0x2003,
         SemanticUndefinedLabel = 0x2004,
         SemanticExpectedLabel = 0x2005,
+        SemanticExpectedInitializer = 0x2006,
     }
 }

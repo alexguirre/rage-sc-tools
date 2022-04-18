@@ -5,7 +5,7 @@ using ScTools.ScriptLang.Types;
 
 using System.Diagnostics;
 
-public record struct NameExpressionSemantics(TypeInfo Type, ValueKind ValueKind, IDeclaration? Declaration);
+public record struct NameExpressionSemantics(TypeInfo? Type, ValueKind ValueKind, IDeclaration? Declaration);
 
 /// <summary>
 /// Represents a reference to a <see cref="IDeclaration"/>.

@@ -18,7 +18,7 @@ public sealed record TextLabelType(int Length) : TypeInfo
 
     static TextLabelType()
     {
-        var arr = ImmutableArray.CreateBuilder<TextLabelType>();
+        var arr = ImmutableArray.CreateBuilder<TextLabelType>(initialCapacity: (MaxLength - MinLength) / 8 + 1);
         for (int length = MinLength; length <= MaxLength; length += 8)
         {
             arr.Add(new TextLabelType(length));

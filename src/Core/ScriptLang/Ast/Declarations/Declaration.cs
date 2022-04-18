@@ -1,5 +1,6 @@
 ﻿namespace ScTools.ScriptLang.Ast.Declarations;
 
+using ScTools.ScriptLang.Semantics;
 using ScTools.ScriptLang.Types;
 
 using System.Collections.Generic;
@@ -23,7 +24,7 @@ public interface ITypeDeclaration : IDeclaration, ISemanticNode<TypeDeclarationS
 {
 }
 
-public record struct ValueDeclarationSemantics(TypeInfo? ValueType);
+public record struct ValueDeclarationSemantics(TypeInfo? ValueType, ConstantValue? ConstantValue);
 
 /// <summary>
 /// Represents a declaration of a variable, a procedure, a function or an enum member.

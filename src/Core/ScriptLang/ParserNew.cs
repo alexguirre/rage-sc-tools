@@ -132,7 +132,12 @@ public class ParserNew
         {
             members.Add(ParseEnumMember());
 
-            ExpectEither(TokenKind.Comma, TokenKind.EOS, out _);
+            if (!ExpectEither(TokenKind.Comma, TokenKind.EOS, out _))
+            {
+                // skip this line
+                while (!IsAtEOS) { Next(); }
+                ExpectEOS();
+            }
         }
 
         ExpectOrMissing(TokenKind.ENDENUM, out var endenumKeyword);
