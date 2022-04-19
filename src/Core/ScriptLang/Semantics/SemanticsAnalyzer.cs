@@ -8,6 +8,7 @@ using ScTools.ScriptLang.Ast.Statements;
 using ScTools.ScriptLang.Types;
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 public sealed class SemanticsAnalyzer : IVisitor
@@ -46,20 +47,35 @@ public sealed class SemanticsAnalyzer : IVisitor
 
     public void Visit(EnumMemberDeclaration node)
     {
-        // TODO: type check enum member initializer
-        ConstantValue value;
-        if (node.Initializer is not null /* and type check is successful*/)
+        Debug.Assert(node.Semantics.ValueType is not null); // Visit(EnumDeclaration) should have already set the type of its members
+
+        var initializerResult = node.Initializer?.Accept(ExpressionTypeChecker.Instance, this) ?? default;
+
+        ConstantValue? value = null;
+        if (!initializerResult.IsError)
         {
-            value = ConstantExpressionEvaluator.Eval(node.Initializer, this);
+            Debug.Assert(node.Initializer is not null);
+            if (IntType.Instance.IsAssignableFrom(initializerResult.Type) ||
+                node.Semantics.ValueType.IsAssignableFrom(initializerResult.Type))
+            {
+                value = ConstantExpressionEvaluator.Eval(node.Initializer, this);
+                value = ConstantValue.Int(value.IntValue); // force result type to INT (in case of NULL)
+            }
+            else
+            {
+                CannotConvertTypeError(initializerResult.Type, IntType.Instance, node.Initializer.Location);
+            }
         }
-        else
+
+        if (value is null)
         {
+            // fallback to incremental numeration if there is no initializer or it had an error
             value = previousEnumMember is null ?
                 ConstantValue.Int(0) :
                 ConstantValue.Int(previousEnumMember.Semantics.ConstantValue!.IntValue + 1);
         }
 
-        node.Semantics = node.Semantics with { ConstantValue = ConstantValue.Int(value.IntValue) }; // force result type to INT
+        node.Semantics = node.Semantics with { ConstantValue = value };
         previousEnumMember = node;
 
         AddSymbol(node);
@@ -394,4 +410,6 @@ public sealed class SemanticsAnalyzer : IVisitor
         => Error(ErrorCode.SemanticUndefinedLabel, $"Label '{name}' is undefined", location);
     private void ExpectedLabelError(string name, SourceRange location)
             => Error(ErrorCode.SemanticExpectedLabel, $"Expected a label, but found '{name}'", location);
+    private void CannotConvertTypeError(TypeInfo source, TypeInfo destination, SourceRange location)
+        => Error(ErrorCode.SemanticCannotConvertType, $"Cannot convert type '{source.GetType().Name}' to '{destination.GetType().Name}'", location);
 }

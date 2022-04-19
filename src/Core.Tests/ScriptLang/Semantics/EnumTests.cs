@@ -11,6 +11,7 @@ using static Xunit.Assert;
 
 public class EnumTests : SemanticsTestsBase
 {
+    // TODO: support HASH_ENUM
     [Fact]
     public void MembersWithoutInitializersGetAssignedIncrementingValues()
     {
@@ -20,6 +21,7 @@ public class EnumTests : SemanticsTestsBase
               ENDENUM"
         );
 
+        False(s.Diagnostics.HasErrors);
         True(s.GetTypeSymbolUnchecked("foo", out var ty));
         var enumTy = (EnumType)ty!;
         AssertEnum(s, "A", enumTy, 0);
@@ -37,6 +39,7 @@ public class EnumTests : SemanticsTestsBase
               ENDENUM"
         );
 
+        False(s.Diagnostics.HasErrors);
         True(s.GetTypeSymbolUnchecked("foo", out var ty));
         var enumTy = (EnumType)ty!;
         AssertEnum(s, "A", enumTy, 0);
@@ -55,6 +58,7 @@ public class EnumTests : SemanticsTestsBase
               ENDENUM"
         );
 
+        False(s.Diagnostics.HasErrors);
         True(s.GetTypeSymbolUnchecked("foo", out var ty));
         var enumTy = (EnumType)ty!;
         AssertEnum(s, "A", enumTy, (1 + 2 * 3) & 0xFE);
@@ -70,9 +74,27 @@ public class EnumTests : SemanticsTestsBase
               ENDENUM"
         );
 
+        False(s.Diagnostics.HasErrors);
         True(s.GetTypeSymbolUnchecked("foo", out var ty));
         var enumTy = (EnumType)ty!;
         AssertEnum(s, "A", enumTy, 0);
+    }
+
+    [Fact]
+    public void MemberSetToPreviousMember()
+    {
+        var s = Analyze(
+            @"ENUM foo
+                A = 1
+                B = A
+              ENDENUM"
+        );
+
+        False(s.Diagnostics.HasErrors);
+        True(s.GetTypeSymbolUnchecked("foo", out var ty));
+        var enumTy = (EnumType)ty!;
+        AssertEnum(s, "A", enumTy, 1);
+        AssertEnum(s, "B", enumTy, 1);
     }
 
     [Fact]
@@ -85,6 +107,7 @@ public class EnumTests : SemanticsTestsBase
               ENDENUM"
         );
 
+        False(s.Diagnostics.HasErrors);
         True(s.GetTypeSymbolUnchecked("foo", out var ty));
         var enumTy = (EnumType)ty!;
         AssertEnum(s, "A", enumTy, 1);

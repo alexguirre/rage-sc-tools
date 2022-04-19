@@ -1,24 +1,26 @@
 ﻿namespace ScTools.Tests.ScriptLang.Semantics;
 
 using ScTools.ScriptLang;
-using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.Semantics;
 using ScTools.ScriptLang.Types;
 
+using System.Collections.Generic;
 using System.Linq;
-using Xunit;
 
 using static Xunit.Assert;
 
 public abstract class SemanticsTestsBase
 {
+    public static IEnumerable<object[]> GetAllHandleTypes() => HandleType.All.Select(h => new object[] { h });
+    public static IEnumerable<object[]> GetAllTextLabelTypes() => TextLabelType.All.Select(h => new object[] { h });
+
     protected static void CheckError(ErrorCode expectedError, (int Line, int Column) expectedStart, (int Line, int Column) expectedEnd, DiagnosticsReport diagnostics, int expectedNumMatchingErrors = 1)
     {
         var expectedLocation = MakeSourceRange(expectedStart, expectedEnd);
         Equal(expectedNumMatchingErrors, diagnostics.Errors.Count(err => err.Code == (int)expectedError && err.Source == expectedLocation));
     }
 
-    protected const string TestFileName = "parser_tests.sc";
+    protected const string TestFileName = "semantics_tests.sc";
 
     protected static SourceRange MakeSourceRange((int Line, int Column) start, (int Line, int Column) end)
         => new((start.Line, start.Column, TestFileName), (end.Line, end.Column, TestFileName));

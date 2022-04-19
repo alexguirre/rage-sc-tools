@@ -67,16 +67,8 @@ internal static class ConstantExpressionEvaluator
 
         public override ConstantValue Visit(BinaryExpression node, SemanticsAnalyzer param)
         {
-            // TODO: ConstantExpressionEvaluator handle binary expressions
             /*
-                Add,
-                Subtract,
-                Multiply,
-                Divide,
-                Modulo,
-                And,
-                Xor,
-                Or,
+                TODO: support remaining binary operators
                 Equals,
                 NotEquals,
                 LessThan,
@@ -168,6 +160,21 @@ internal static class ConstantExpressionEvaluator
             // TODO: ConstantExpressionEvaluator handle intrinsics calls
 
             return base.Visit(node, param);
+        }
+
+        public override ConstantValue Visit(NameExpression node, SemanticsAnalyzer s)
+        {
+            if (!s.GetSymbolUnchecked(node.Name, out var decl))
+            {
+                throw new ArgumentException($"Unknown symbol '{node.Name}'", nameof(node));
+            }
+
+            if (decl is not IValueDeclaration { Semantics.ConstantValue: not null } constValueDecl)
+            {
+                throw new ArgumentException($"Symbol '{node.Name}' is not a constant value declaration", nameof(node));
+            }
+
+            return constValueDecl.Semantics.ConstantValue;
         }
     }
 }

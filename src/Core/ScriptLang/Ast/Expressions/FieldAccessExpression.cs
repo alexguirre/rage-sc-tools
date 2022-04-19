@@ -5,7 +5,8 @@ using System.Diagnostics;
 public sealed class FieldAccessExpression : BaseExpression
 {
     public IExpression SubExpression => (IExpression)Children[0];
-    public string FieldName => Tokens[1].Lexeme.ToString();
+    public Token FieldNameToken => Tokens[1];
+    public string FieldName => FieldNameToken.Lexeme.ToString();
 
     public FieldAccessExpression(Token dotToken, Token fieldNameIdentifierToken, IExpression lhs)
         : base(OfTokens(dotToken, fieldNameIdentifierToken), OfChildren(lhs))

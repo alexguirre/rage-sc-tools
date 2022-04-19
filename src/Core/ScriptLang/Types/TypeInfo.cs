@@ -1,5 +1,7 @@
 ﻿namespace ScTools.ScriptLang.Types;
 
+using ScTools.ScriptLang.Ast.Declarations;
+
 using System.Collections.Immutable;
 using System.Linq;
 
@@ -114,6 +116,18 @@ public sealed record RefType(TypeInfo Pointee) : TypeInfo
 public sealed record ArrayType(TypeInfo Item, int Length) : TypeInfo
 {
     public override int SizeOf { get; } = 1 + Item.SizeOf * Length;
+    public override ImmutableArray<FieldInfo> Fields => ImmutableArray<FieldInfo>.Empty;
+
+    public override TReturn Accept<TReturn>(ITypeVisitor<TReturn> visitor) => visitor.Visit(this);
+}
+
+/// <summary>
+/// Represents a type name when used as a expression.
+/// For example, in INT_TO_ENUM(MYENUM, 1) the type of 'MYENUM' would be <see cref="TypeNameType"/>.
+/// </summary>
+public sealed record TypeNameType(ITypeDeclaration TypeDeclaration) : TypeInfo
+{
+    public override int SizeOf => 0;
     public override ImmutableArray<FieldInfo> Fields => ImmutableArray<FieldInfo>.Empty;
 
     public override TReturn Accept<TReturn>(ITypeVisitor<TReturn> visitor) => visitor.Visit(this);

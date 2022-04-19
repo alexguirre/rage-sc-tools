@@ -57,10 +57,10 @@ internal static class Rules
      */
 
 
-    public static bool IsAssignableFrom(this TypeInfo type, TypeInfo from, ValueKind fromValueKind)
-        => from is ErrorType || type.Accept(new IsAssignableFromVisitor(from, fromValueKind));
-    public static bool IsAssignableTo(this TypeInfo type, TypeInfo to, ValueKind thisValueKind)
-        => to.IsAssignableFrom(type, thisValueKind);
+    public static bool IsAssignableFrom(this TypeInfo destination, TypeInfo source, ValueKind sourceValueKind = 0)
+        => source is ErrorType || destination.Accept(new IsAssignableFromVisitor(source, sourceValueKind));
+    public static bool IsAssignableTo(this TypeInfo source, TypeInfo destination, ValueKind sourceValueKind = 0)
+        => destination.IsAssignableFrom(source, sourceValueKind);
 
     private sealed class IsAssignableFromVisitor : ITypeVisitor<bool>
     {
@@ -120,5 +120,6 @@ internal static class Rules
         public bool Visit(TextLabelType destination) => Source is TextLabelType or StringType;
         // FUNCPTR <- FUNCPTR
         public bool Visit(FunctionType destination) => destination == Source;
+        public bool Visit(TypeNameType destination) => false;
     }
 }

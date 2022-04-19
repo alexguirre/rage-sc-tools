@@ -28,5 +28,12 @@
         SemanticUndefinedLabel = 0x2004,
         SemanticExpectedLabel = 0x2005,
         SemanticExpectedInitializer = 0x2006,
+        SemanticInitializerExpressionIsNotConstant = 0x2007,
+        SemanticTypeNotAllowedInConstant = 0x2008,
+        SemanticBadUnaryOp = 0x2009,
+        SemanticBadBinaryOp = 0x200A,
+        SemanticUnknownField = 0x200B,
+        SemanticScriptNameNotAllowedInExpression = 0x200C,
+        SemanticCannotConvertType = 0x200D,
     }
 }

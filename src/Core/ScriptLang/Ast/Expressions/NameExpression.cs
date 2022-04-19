@@ -14,7 +14,8 @@ public sealed class NameExpression : BaseExpression, ISemanticNode<NameExpressio
 {
     private IDeclaration? semanticsDeclaration;
 
-    public string Name => Tokens[0].Lexeme.ToString();
+    public Token NameToken => Tokens[0];
+    public string Name => NameToken.Lexeme.ToString();
     public new NameExpressionSemantics Semantics
     {
         get => new(base.Semantics.Type, base.Semantics.ValueKind, semanticsDeclaration);

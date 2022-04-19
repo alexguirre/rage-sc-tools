@@ -34,6 +34,7 @@ public class ConstantsTests : SemanticsTestsBase
             @$"CONST INT foo = {initializerExpr}"
         );
 
+        False(s.Diagnostics.HasErrors);
         AssertConst(s, "foo", IntType.Instance, expected);
     }
 
@@ -49,6 +50,7 @@ public class ConstantsTests : SemanticsTestsBase
             @$"CONST FLOAT foo = {initializerExpr}"
         );
 
+        False(s.Diagnostics.HasErrors);
         AssertConst(s, "foo", FloatType.Instance, expected);
     }
 
@@ -67,6 +69,7 @@ public class ConstantsTests : SemanticsTestsBase
             @$"CONST BOOL foo = {initializerExpr}"
         );
 
+        False(s.Diagnostics.HasErrors);
         AssertConst(s, "foo", BoolType.Instance, expected);
     }
 
@@ -81,6 +84,7 @@ public class ConstantsTests : SemanticsTestsBase
             @$"CONST STRING foo = {initializerExpr}"
         );
 
+        False(s.Diagnostics.HasErrors);
         AssertConst(s, "foo", StringType.Instance, expected);
     }
 
@@ -95,7 +99,159 @@ public class ConstantsTests : SemanticsTestsBase
             @$"CONST VECTOR foo = {initializerExpr}"
         );
 
+        False(s.Diagnostics.HasErrors);
         AssertConstVec(s, "foo", expectedX, expectedY, expectedZ);
+    }
+
+    [Fact]
+    public void CannotInitializeToFunctionInvocation()
+    {
+        var s = Analyze(
+            @$"FUNC INT foo()
+                RETURN 1
+               ENDFUNC
+
+               CONST INT bar = foo()"
+        );
+
+        CheckError(ErrorCode.SemanticInitializerExpressionIsNotConstant, (5, 26), (5, 30), s.Diagnostics);
+    }
+
+    [Fact]
+    public void CannotInitializeToStaticVariable()
+    {
+        var s = Analyze(
+            @$"INT foo = 1
+               CONST INT bar = foo"
+        );
+
+        CheckError(ErrorCode.SemanticInitializerExpressionIsNotConstant, (2, 32), (2, 34), s.Diagnostics);
+    }
+
+    [Fact]
+    public void CanInitializeToConstant()
+    {
+        var s = Analyze(
+            @$"CONST INT foo = 1
+               CONST INT bar = foo"
+        );
+
+        False(s.Diagnostics.HasErrors);
+        AssertConst(s, "foo", IntType.Instance, 1);
+        AssertConst(s, "bar", IntType.Instance, 1);
+    }
+
+    [Fact]
+    public void CannotInitializeToConstantDefinedAfter()
+    {
+        var s = Analyze(
+            @$"CONST INT bar = foo
+               CONST INT foo = 1"
+        );
+
+        AssertConst(s, "bar", IntType.Instance, 0);
+        AssertConst(s, "foo", IntType.Instance, 1);
+
+        CheckError(ErrorCode.SemanticUndefinedSymbol, (1, 17), (1, 19), s.Diagnostics);
+    }
+
+    [Theory]
+    [MemberData(nameof(GetAllHandleTypes))]
+    public void HandleTypesAreNotAllowed(HandleType handleType)
+    {
+        var handleTypeName = HandleType.KindToTypeName(handleType.Kind);
+        var s = Analyze(
+            @$"CONST {handleTypeName} foo = NULL"
+        );
+
+        CheckError(ErrorCode.SemanticTypeNotAllowedInConstant, (1, 7), (1, 7 + handleTypeName.Length - 1), s.Diagnostics);
+    }
+
+    [Theory]
+    [MemberData(nameof(GetAllTextLabelTypes))]
+    public void TextLabelTypesAreNotAllowed(TextLabelType tlType)
+    {
+        var tlTypeName = TextLabelType.GetTypeNameForLength(tlType.Length);
+        var s = Analyze(
+            @$"CONST {tlTypeName} foo = ''"
+        );
+
+        CheckError(ErrorCode.SemanticTypeNotAllowedInConstant, (1, 7), (1, 7 + tlTypeName.Length - 1), s.Diagnostics);
+    }
+
+    [Fact]
+    public void StructTypesAreNotAllowed()
+    {
+        var s = Analyze(
+            @$"STRUCT MYDATA
+                INT a = 1
+               ENDSTRUCT
+
+               CONST MYDATA foo"
+        );
+
+        CheckError(ErrorCode.SemanticTypeNotAllowedInConstant, (5, 22), (5, 27), s.Diagnostics);
+    }
+
+    [Fact]
+    public void EnumTypesAreAllowed()
+    {
+        var s = Analyze(
+            @$"ENUM MYENUM
+                A = 1
+               ENDENUM
+
+               CONST MYENUM foo = A"
+        );
+
+        False(s.Diagnostics.HasErrors);
+        True(s.GetTypeSymbolUnchecked("MYENUM", out var enumTy));
+        AssertConst(s, "foo", enumTy!, 1);
+    }
+
+    [Fact]
+    public void FunctionPointerTypesAreNotAllowed()
+    {
+        var s = Analyze(
+            @$"PROCPTR FOOHANDLER()
+
+               PROC CUSTOM_HANDLER()
+               ENDPROC
+
+               CONST FOOHANDLER foo = CUSTOM_HANDLER"
+        );
+
+        CheckError(ErrorCode.SemanticTypeNotAllowedInConstant, (6, 22), (6, 31), s.Diagnostics);
+    }
+
+    [Fact]
+    public void ReferencesAreNotAllowed()
+    {
+        var s = Analyze(
+            @$"CONST INT& foo"
+        );
+
+        CheckError(ErrorCode.SemanticTypeNotAllowedInConstant, (1, 7), (1, 10), s.Diagnostics);
+    }
+
+    [Fact]
+    public void AnyTypeIsNotAllowed()
+    {
+        var s = Analyze(
+            @$"CONST ANY foo = 1"
+        );
+
+        CheckError(ErrorCode.SemanticTypeNotAllowedInConstant, (1, 7), (1, 9), s.Diagnostics);
+    }
+
+    [Fact]
+    public void ArrayTypesAreNotAllowed()
+    {
+        var s = Analyze(
+            @"CONST INT foo[10]"
+        );
+
+        CheckError(ErrorCode.SemanticTypeNotAllowedInConstant, (1, 7), (1, 9), s.Diagnostics);
     }
 
     private static void AssertConst<T>(SemanticsAnalyzer s, string varName, TypeInfo expectedType, T expectedValue)
