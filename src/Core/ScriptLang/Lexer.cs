@@ -147,7 +147,7 @@ public sealed class Lexer : IEnumerable<Token>
         private Token LexHashString()
         {
             Debug.Assert(Peek(-1) is '`');
-            return LexStringLikeToken(TokenKind.HashString, '`');
+            return LexStringLikeToken(TokenKind.Integer, '`');
         }
 
         private Token LexStringLikeToken(TokenKind kind, char delimiter)

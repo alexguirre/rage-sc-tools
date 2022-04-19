@@ -48,8 +48,7 @@ public enum TokenKind
 
     // Literals
     String,     // "...", '...'
-    HashString, // `...`
-    Integer,    // decimal or hexadecimal prefixed by 0x
+    Integer,    // decimal or hexadecimal prefixed by 0x, or hash strings `...`
     Float,
     Boolean,    // TRUE, FALSE
     Null,       // NULL
@@ -269,7 +268,7 @@ public static class TokenKindExtensions
         };
 
     public static bool HasCanonicalLexeme(this TokenKind kind)
-        => kind is not (TokenKind.Bad or TokenKind.Identifier or TokenKind.String or TokenKind.HashString or
+        => kind is not (TokenKind.Bad or TokenKind.Identifier or TokenKind.String or
                        TokenKind.Integer or TokenKind.Float or TokenKind.Boolean);
 
     public static Token Create(this TokenKind kind, string lexeme, SourceRange location = default)
@@ -309,6 +308,15 @@ public readonly record struct Token
     public int GetIntLiteral()
     {
         Debug.Assert(Kind is TokenKind.Integer);
+        if (Lexeme.Length >= 2)
+        {
+            var lexemeSpan = Lexeme.Span;
+            if (lexemeSpan[0] == '`' && lexemeSpan[^1] == '`')
+            {
+                return unchecked((int)lexemeSpan[1..^1].Unescape().ToLowercaseHash());
+            }
+        }
+
         return Lexeme.ParseAsInt();
     }
 

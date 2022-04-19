@@ -49,35 +49,23 @@ public class EnumTests : SemanticsTestsBase
         AssertEnum(s, "E", enumTy, 0);
     }
 
-    [Fact]
-    public void MemberInitializerExpressionsAreEvaluated()
+    [Theory]
+    [InlineData("1", 1)]
+    [InlineData("NULL", 0)] // NULL is implicity converted to INT as 0, so it should be allowed in enum initializers as well
+    [InlineData("`foo` - 1", 0x238678DD - 1)]
+    [InlineData("(1 + 2 * 3) & 0xFE", (1 + 2 * 3) & 0xFE)]
+    public void MemberInitializerExpressionsAreEvaluated(string initializerExpr, int expected)
     {
         var s = Analyze(
-            @"ENUM foo
-                A = (1 + 2 * 3) & 0xFE
+           @$"ENUM foo
+                A = {initializerExpr}
               ENDENUM"
         );
 
         False(s.Diagnostics.HasErrors);
         True(s.GetTypeSymbolUnchecked("foo", out var ty));
         var enumTy = (EnumType)ty!;
-        AssertEnum(s, "A", enumTy, (1 + 2 * 3) & 0xFE);
-    }
-
-    [Fact]
-    public void MemberSetToNull()
-    {
-        // NULL is implicity converted to INT as 0, so it should be allowed in enum initializers as well
-        var s = Analyze(
-            @"ENUM foo
-                A = NULL
-              ENDENUM"
-        );
-
-        False(s.Diagnostics.HasErrors);
-        True(s.GetTypeSymbolUnchecked("foo", out var ty));
-        var enumTy = (EnumType)ty!;
-        AssertEnum(s, "A", enumTy, 0);
+        AssertEnum(s, "A", enumTy, expected);
     }
 
     [Fact]

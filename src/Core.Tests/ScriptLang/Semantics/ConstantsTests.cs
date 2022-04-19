@@ -149,7 +149,6 @@ public class ConstantsTests : SemanticsTestsBase
                CONST INT foo = 1"
         );
 
-        AssertConst(s, "bar", IntType.Instance, 0);
         AssertConst(s, "foo", IntType.Instance, 1);
 
         CheckError(ErrorCode.SemanticUndefinedSymbol, (1, 17), (1, 19), s.Diagnostics);
@@ -273,6 +272,7 @@ public class ConstantsTests : SemanticsTestsBase
                 case float v: Equal(v, constVar.Semantics.ConstantValue!.FloatValue); break;
                 case bool v: Equal(v, constVar.Semantics.ConstantValue!.BoolValue); break;
                 case string v: Equal(v, constVar.Semantics.ConstantValue!.StringValue); break;
+                case null: Null(constVar.Semantics.ConstantValue!.StringValue); break;
                 default: throw new NotImplementedException();
             }
         }

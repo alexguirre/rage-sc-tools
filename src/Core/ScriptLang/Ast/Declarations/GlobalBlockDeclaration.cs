@@ -12,7 +12,8 @@
 
         public Token NameToken => Tokens[1];
         public string Name => NameToken.Lexeme.ToString();
-        public int BlockIndex => Tokens[2].GetIntLiteral();
+        public Token BlockIndexToken => Tokens[2];
+        public int BlockIndex => BlockIndexToken.GetIntLiteral();
         public ImmutableArray<VarDeclaration> Vars { get; }
 
         public GlobalBlockDeclaration(Token globalKeyword, Token nameIdentifier, Token blockIndex, Token endglobalKeyword,
