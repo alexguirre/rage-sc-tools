@@ -3,7 +3,9 @@
 using ScTools.ScriptLang.Types;
 
 using System;
+using System.Diagnostics;
 
+[DebuggerDisplay("{ToString(),nq}")]
 public abstract record ConstantValue
 {
     public abstract TypeInfo Type { get; }
@@ -24,50 +26,60 @@ public abstract record ConstantValue
     {
         public override TypeInfo Type => IntType.Instance;
         public override int IntValue => Value;
-        public override float FloatValue => throw new InvalidOperationException("Cannot implicity converted INT to FLOAT");
+        public override float FloatValue => Value;
         public override bool BoolValue => Value != 0;
-        public override string? StringValue => throw new InvalidOperationException("Cannot implicity converted INT to STRING");
-        public override (float X, float Y, float Z) VectorValue => throw new InvalidOperationException("Cannot implicity converted INT to VECTOR");
+        public override string? StringValue => throw new InvalidOperationException("Cannot implicity convert INT to STRING");
+        public override (float X, float Y, float Z) VectorValue => throw new InvalidOperationException("Cannot implicity convert INT to VECTOR");
+
+        public override string ToString() => $"{nameof(ConstantValueInt)}({Value})";
     }
 
     private sealed record ConstantValueFloat(float Value) : ConstantValue
     {
         public override TypeInfo Type => FloatType.Instance;
-        public override int IntValue => throw new InvalidOperationException("Cannot implicity converted FLOAT to INT");
+        public override int IntValue => throw new InvalidOperationException("Cannot implicity convert FLOAT to INT");
         public override float FloatValue => Value;
-        public override bool BoolValue => throw new InvalidOperationException("Cannot implicity converted FLOAT to BOOL");
-        public override string? StringValue => throw new InvalidOperationException("Cannot implicity converted FLOAT to STRING");
-        public override (float X, float Y, float Z) VectorValue => throw new InvalidOperationException("Cannot implicity converted FLOAT to VECTOR");
+        public override bool BoolValue => throw new InvalidOperationException("Cannot implicity convert FLOAT to BOOL");
+        public override string? StringValue => throw new InvalidOperationException("Cannot implicity convert FLOAT to STRING");
+        public override (float X, float Y, float Z) VectorValue => throw new InvalidOperationException("Cannot implicity convert FLOAT to VECTOR");
+
+        public override string ToString() => $"{nameof(ConstantValueFloat)}({Value})";
     }
 
     private sealed record ConstantValueBool(bool Value) : ConstantValue
     {
         public override TypeInfo Type => BoolType.Instance;
-        public override int IntValue => throw new InvalidOperationException("Cannot implicity converted BOOL to INT");
-        public override float FloatValue => throw new InvalidOperationException("Cannot implicity converted BOOL to FLOAT");
+        public override int IntValue => throw new InvalidOperationException("Cannot implicity convert BOOL to INT");
+        public override float FloatValue => throw new InvalidOperationException("Cannot implicity convert BOOL to FLOAT");
         public override bool BoolValue => Value;
-        public override string? StringValue => throw new InvalidOperationException("Cannot implicity converted BOOL to STRING");
-        public override (float X, float Y, float Z) VectorValue => throw new InvalidOperationException("Cannot implicity converted BOOL to VECTOR");
+        public override string? StringValue => throw new InvalidOperationException("Cannot implicity convert BOOL to STRING");
+        public override (float X, float Y, float Z) VectorValue => throw new InvalidOperationException("Cannot implicity convert BOOL to VECTOR");
+
+        public override string ToString() => $"{nameof(ConstantValueBool)}({Value})";
     }
 
     private sealed record ConstantValueString(string Value) : ConstantValue
     {
         public override TypeInfo Type => StringType.Instance;
-        public override int IntValue => throw new InvalidOperationException("Cannot implicity converted STRING to INT");
-        public override float FloatValue => throw new InvalidOperationException("Cannot implicity converted STRING to FLOAT");
-        public override bool BoolValue => throw new InvalidOperationException("Cannot implicity converted STRING to BOOL");
+        public override int IntValue => throw new InvalidOperationException("Cannot implicity convert STRING to INT");
+        public override float FloatValue => throw new InvalidOperationException("Cannot implicity convert STRING to FLOAT");
+        public override bool BoolValue => throw new InvalidOperationException("Cannot implicity convert STRING to BOOL");
         public override string? StringValue => Value;
-        public override (float X, float Y, float Z) VectorValue => throw new InvalidOperationException("Cannot implicity converted STRING to VECTOR");
+        public override (float X, float Y, float Z) VectorValue => throw new InvalidOperationException("Cannot implicity convert STRING to VECTOR");
+
+        public override string ToString() => $"{nameof(ConstantValueString)}({Value})";
     }
 
     private sealed record ConstantValueVector(float X, float Y, float Z) : ConstantValue
     {
         public override TypeInfo Type => VectorType.Instance;
-        public override int IntValue => throw new InvalidOperationException("Cannot implicity converted VECTOR to INT");
-        public override float FloatValue => throw new InvalidOperationException("Cannot implicity converted VECTOR to FLOAT");
-        public override bool BoolValue => throw new InvalidOperationException("Cannot implicity converted VECTOR to BOOL");
-        public override string? StringValue => throw new InvalidOperationException("Cannot implicity converted VECTOR to STRING");
+        public override int IntValue => throw new InvalidOperationException("Cannot implicity convert VECTOR to INT");
+        public override float FloatValue => throw new InvalidOperationException("Cannot implicity convert VECTOR to FLOAT");
+        public override bool BoolValue => throw new InvalidOperationException("Cannot implicity convert VECTOR to BOOL");
+        public override string? StringValue => throw new InvalidOperationException("Cannot implicity convert VECTOR to STRING");
         public override (float X, float Y, float Z) VectorValue => (X, Y, Z);
+
+        public override string ToString() => $"{nameof(ConstantValueVector)}({X}, {Y}, {Z})";
     }
 
     private sealed record ConstantValueNull : ConstantValue
@@ -80,6 +92,8 @@ public abstract record ConstantValue
         public override (float X, float Y, float Z) VectorValue => (0.0f, 0.0f, 0.0f);
 
         private ConstantValueNull() { }
+
+        public override string ToString() => nameof(ConstantValueString);
 
         public static readonly ConstantValueNull Instance = new();
     }

@@ -96,6 +96,7 @@ public sealed class VarDeclarator : BaseNode, IVarDeclarator
 
 public sealed class VarRefDeclarator : BaseNode, IVarDeclarator
 {
+    public Token AmpersandToken => Tokens[0];
     public Token NameToken => Tokens[1];
     public string Name => NameToken.Lexeme.ToString();
 

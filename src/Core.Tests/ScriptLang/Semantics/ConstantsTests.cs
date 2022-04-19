@@ -20,7 +20,7 @@ public class ConstantsTests : SemanticsTestsBase
             @"CONST INT foo"
         );
 
-        CheckError(ErrorCode.SemanticExpectedInitializer, (1, 11), (1, 13), s.Diagnostics);
+        CheckError(ErrorCode.SemanticConstantWithoutInitializer, (1, 11), (1, 13), s.Diagnostics);
     }
 
     [Theory]
@@ -244,14 +244,17 @@ public class ConstantsTests : SemanticsTestsBase
         CheckError(ErrorCode.SemanticTypeNotAllowedInConstant, (1, 7), (1, 9), s.Diagnostics);
     }
 
-    [Fact]
-    public void ArrayTypesAreNotAllowed()
+    [Theory]
+    [InlineData("[10]")]
+    [InlineData("[10][20]")]
+    [InlineData("[]")]
+    public void ArrayTypesAreNotAllowed(string arraySize)
     {
         var s = Analyze(
-            @"CONST INT foo[10]"
+            @$"CONST INT foo{arraySize}"
         );
 
-        CheckError(ErrorCode.SemanticTypeNotAllowedInConstant, (1, 7), (1, 9), s.Diagnostics);
+        CheckError(ErrorCode.SemanticTypeNotAllowedInConstant, (1, 7), (1, 13 + arraySize.Length), s.Diagnostics);
     }
 
     private static void AssertConst<T>(SemanticsAnalyzer s, string varName, TypeInfo expectedType, T expectedValue)
@@ -264,7 +267,6 @@ public class ConstantsTests : SemanticsTestsBase
             NotNull(constVar.Initializer);
             Equal(expectedType, constVar.Semantics.ValueType);
             NotNull(constVar.Semantics.ConstantValue);
-            Equal(expectedType, constVar.Semantics.ConstantValue!.Type);
             switch (expectedValue)
             {
                 case int v: Equal(v, constVar.Semantics.ConstantValue!.IntValue); break;

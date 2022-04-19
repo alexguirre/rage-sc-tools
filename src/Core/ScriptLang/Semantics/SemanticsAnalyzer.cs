@@ -11,12 +11,13 @@ using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
-public sealed class SemanticsAnalyzer : IVisitor
+public sealed class SemanticsAnalyzer : Visitor
 {
     private readonly SymbolTable<IDeclaration> symbols = new();
     private readonly SymbolTable<Label> labels = new();
     private readonly TypeRegistry typeRegistry = new();
     private readonly TypeFactory typeFactory;
+    private readonly ExpressionTypeChecker exprTypeChecker = new();
 
     private EnumMemberDeclaration? previousEnumMember = null;
 
@@ -28,16 +29,16 @@ public sealed class SemanticsAnalyzer : IVisitor
         typeFactory = new(this);
     }
 
-    public void Visit(CompilationUnit node)
+    public override void Visit(CompilationUnit node)
     {
         // TODO: what to do with the USINGs
 
         node.Declarations.ForEach(decl => decl.Accept(this));
     }
 
-    public void Visit(UsingDirective node) => throw new InvalidOperationException();
+    public override void Visit(UsingDirective node) => throw new InvalidOperationException();
 
-    public void Visit(EnumDeclaration node)
+    public override void Visit(EnumDeclaration node)
     {
         AddSymbol(node);
 
@@ -45,25 +46,25 @@ public sealed class SemanticsAnalyzer : IVisitor
         previousEnumMember = null;
     }
 
-    public void Visit(EnumMemberDeclaration node)
+    public override void Visit(EnumMemberDeclaration node)
     {
         Debug.Assert(node.Semantics.ValueType is not null); // Visit(EnumDeclaration) should have already set the type of its members
 
-        var initializerResult = node.Initializer?.Accept(ExpressionTypeChecker.Instance, this) ?? default;
+        var initializerType = node.Initializer?.Accept(exprTypeChecker, this) ?? ErrorType.Instance;
 
         ConstantValue? value = null;
-        if (!initializerResult.IsError)
+        if (!initializerType.IsError)
         {
             Debug.Assert(node.Initializer is not null);
-            if (IntType.Instance.IsAssignableFrom(initializerResult.Type) ||
-                node.Semantics.ValueType.IsAssignableFrom(initializerResult.Type))
+            if (IntType.Instance.IsAssignableFrom(initializerType) ||
+                node.Semantics.ValueType.IsAssignableFrom(initializerType))
             {
                 value = ConstantExpressionEvaluator.Eval(node.Initializer, this);
                 value = ConstantValue.Int(value.IntValue); // force result type to INT (in case of NULL)
             }
             else
             {
-                CannotConvertTypeError(initializerResult.Type, IntType.Instance, node.Initializer.Location);
+                CannotConvertTypeError(initializerType, IntType.Instance, node.Initializer.Location);
             }
         }
 
@@ -81,7 +82,7 @@ public sealed class SemanticsAnalyzer : IVisitor
         AddSymbol(node);
     }
 
-    public void Visit(FunctionDeclaration node)
+    public override void Visit(FunctionDeclaration node)
     {
         AddSymbol(node);
 
@@ -95,7 +96,7 @@ public sealed class SemanticsAnalyzer : IVisitor
         symbols.PopScope();
     }
 
-    public void Visit(FunctionPointerDeclaration node)
+    public override void Visit(FunctionPointerDeclaration node)
     {
         AddSymbol(node);
 
@@ -104,7 +105,7 @@ public sealed class SemanticsAnalyzer : IVisitor
         symbols.PopScope();
     }
 
-    public void Visit(NativeFunctionDeclaration node)
+    public override void Visit(NativeFunctionDeclaration node)
     {
         AddSymbol(node);
 
@@ -113,7 +114,7 @@ public sealed class SemanticsAnalyzer : IVisitor
         symbols.PopScope();
     }
 
-    public void Visit(ScriptDeclaration node)
+    public override void Visit(ScriptDeclaration node)
     {
         AddSymbol(node);
 
@@ -127,177 +128,137 @@ public sealed class SemanticsAnalyzer : IVisitor
         symbols.PopScope();
     }
 
-    public void Visit(GlobalBlockDeclaration node)
+    public override void Visit(GlobalBlockDeclaration node)
     {
         throw new System.NotImplementedException();
     }
 
-    public void Visit(StructDeclaration node)
+    public override void Visit(StructDeclaration node)
     {
         AddSymbol(node);
     }
 
-    public void Visit(VarDeclaration node)
+    public override void Visit(VarDeclaration node)
     {
+        var varType = typeFactory.GetFrom(node);
+
+        if (node.Kind is VarKind.Constant)
+        {
+            if (varType is not (IntType or FloatType or BoolType or StringType or VectorType or EnumType))
+            {
+                TypeNotAllowedInConstantError(node, varType);
+            }
+            else
+            {
+                if (node.Initializer is null)
+                {
+                    ConstantWithoutInitializerError(node);
+                }
+
+                var initializerType = node.Initializer?.Accept(exprTypeChecker, this) ?? ErrorType.Instance;
+
+                ConstantValue? value = null;
+                if (!varType.IsError && !initializerType.IsError)
+                {
+                    Debug.Assert(node.Initializer is not null);
+                    if (!node.Initializer.ValueKind.Is(ValueKind.Constant))
+                    {
+                        InitializerExpressionIsNotConstantError(node);
+                    }
+                    else if (varType.IsAssignableFrom(initializerType))
+                    {
+                        value = ConstantExpressionEvaluator.Eval(node.Initializer, this);
+                    }
+                    else
+                    {
+                        CannotConvertTypeError(initializerType, varType, node.Initializer.Location);
+                    }
+                }
+
+                node.Semantics = node.Semantics with { ConstantValue = value };
+            }
+        }
+
+
         AddSymbol(node);
     }
 
-    public void Visit(VarDeclarator node)
-    {
-        throw new System.NotImplementedException();
-    }
-
-    public void Visit(VarRefDeclarator node)
-    {
-        throw new System.NotImplementedException();
-    }
-
-    public void Visit(VarArrayDeclarator node)
-    {
-        throw new System.NotImplementedException();
-    }
-
-    public void Visit(BinaryExpression node)
-    {
-        throw new System.NotImplementedException();
-    }
-
-    public void Visit(BoolLiteralExpression node)
-    {
-        throw new System.NotImplementedException();
-    }
-
-    public void Visit(FieldAccessExpression node)
-    {
-        throw new System.NotImplementedException();
-    }
-
-    public void Visit(FloatLiteralExpression node)
-    {
-        throw new System.NotImplementedException();
-    }
-
-    public void Visit(IndexingExpression node)
-    {
-        throw new System.NotImplementedException();
-    }
-
-    public void Visit(IntLiteralExpression node)
-    {
-        throw new System.NotImplementedException();
-    }
-
-    public void Visit(InvocationExpression node)
-    {
-        throw new System.NotImplementedException();
-    }
-
-    public void Visit(NullExpression node)
-    {
-        throw new System.NotImplementedException();
-    }
-
-    public void Visit(StringLiteralExpression node)
-    {
-        throw new System.NotImplementedException();
-    }
-
-    public void Visit(UnaryExpression node)
-    {
-        throw new System.NotImplementedException();
-    }
-
-    public void Visit(NameExpression node)
-    {
-        throw new System.NotImplementedException();
-    }
-
-    public void Visit(VectorExpression node)
-    {
-        throw new System.NotImplementedException();
-    }
-
-    public void Visit(Label node)
+    public override void Visit(Label node)
     {
         AddLabel(node);
     }
 
-    public void Visit(AssignmentStatement node)
+    public override void Visit(AssignmentStatement node)
     {
         throw new System.NotImplementedException();
     }
 
-    public void Visit(BreakStatement node)
+    public override void Visit(BreakStatement node)
     {
         throw new System.NotImplementedException();
     }
 
-    public void Visit(ContinueStatement node)
+    public override void Visit(ContinueStatement node)
     {
         throw new System.NotImplementedException();
     }
 
-    public void Visit(EmptyStatement node)
+    public override void Visit(EmptyStatement node)
     {
         throw new System.NotImplementedException();
     }
 
-    public void Visit(GotoStatement node)
+    public override void Visit(GotoStatement node)
     {
         throw new System.NotImplementedException();
     }
 
-    public void Visit(IfStatement node)
+    public override void Visit(IfStatement node)
     {
         throw new System.NotImplementedException();
     }
 
-    public void Visit(RepeatStatement node)
+    public override void Visit(RepeatStatement node)
     {
         throw new System.NotImplementedException();
     }
 
-    public void Visit(ReturnStatement node)
+    public override void Visit(ReturnStatement node)
     {
         throw new System.NotImplementedException();
     }
 
-    public void Visit(SwitchStatement node)
+    public override void Visit(SwitchStatement node)
     {
         throw new System.NotImplementedException();
     }
 
-    public void Visit(ValueSwitchCase node)
+    public override void Visit(ValueSwitchCase node)
     {
         throw new System.NotImplementedException();
     }
 
-    public void Visit(DefaultSwitchCase node)
+    public override void Visit(DefaultSwitchCase node)
     {
         throw new System.NotImplementedException();
     }
 
-    public void Visit(WhileStatement node)
+    public override void Visit(WhileStatement node)
     {
         throw new System.NotImplementedException();
     }
 
-    public void Visit(TypeName node)
+    public override void Visit(TypeName node)
     {
         // empty
     }
 
-    public void Visit(ErrorDeclaration node)
+    public override void Visit(ErrorDeclaration node)
     {
         // empty
     }
 
-    public void Visit(ErrorExpression node)
-    {
-        // empty
-    }
-
-    public void Visit(ErrorStatement node)
+    public override void Visit(ErrorStatement node)
     {
         // empty
     }
@@ -410,6 +371,20 @@ public sealed class SemanticsAnalyzer : IVisitor
         => Error(ErrorCode.SemanticUndefinedLabel, $"Label '{name}' is undefined", location);
     private void ExpectedLabelError(string name, SourceRange location)
             => Error(ErrorCode.SemanticExpectedLabel, $"Expected a label, but found '{name}'", location);
-    private void CannotConvertTypeError(TypeInfo source, TypeInfo destination, SourceRange location)
+    public void CannotConvertTypeError(TypeInfo source, TypeInfo destination, SourceRange location)
         => Error(ErrorCode.SemanticCannotConvertType, $"Cannot convert type '{source.GetType().Name}' to '{destination.GetType().Name}'", location);
+    private void ConstantWithoutInitializerError(VarDeclaration constVarDecl)
+        => Error(ErrorCode.SemanticConstantWithoutInitializer, $"Constant '{constVarDecl.Name}' requires an initializer", constVarDecl.NameToken.Location);
+    private void InitializerExpressionIsNotConstantError(VarDeclaration constVarDecl)
+        => Error(ErrorCode.SemanticInitializerExpressionIsNotConstant, $"Initializer expression of constant '{constVarDecl.Name}' must be constant", constVarDecl.Initializer!.Location);
+    private void TypeNotAllowedInConstantError(VarDeclaration constVarDecl, TypeInfo type)
+    {
+        var loc = constVarDecl.Declarator switch
+        {
+            VarRefDeclarator r => constVarDecl.Type.Location.Merge(r.AmpersandToken.Location),
+            VarArrayDeclarator a => constVarDecl.Type.Location.Merge(a.Location),
+            _ => constVarDecl.Type.Location,
+        };
+        Error(ErrorCode.SemanticTypeNotAllowedInConstant, $"Type '{type}' is not allowed in constants", loc);
+    }
 }

@@ -9,6 +9,7 @@ public abstract record TypeInfo
 {
     public abstract int SizeOf { get; }
     public abstract ImmutableArray<FieldInfo> Fields { get; }
+    public virtual bool IsError => false;
 
     public abstract TReturn Accept<TReturn>(ITypeVisitor<TReturn> visitor);
 }
@@ -19,6 +20,7 @@ public sealed record ErrorType : TypeInfo
 {
     public override int SizeOf => 0;
     public override ImmutableArray<FieldInfo> Fields => ImmutableArray<FieldInfo>.Empty;
+    public override bool IsError => true;
 
     public override TReturn Accept<TReturn>(ITypeVisitor<TReturn> visitor) => visitor.Visit(this);
 

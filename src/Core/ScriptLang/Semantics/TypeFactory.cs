@@ -132,9 +132,10 @@ internal sealed class TypeFactory : EmptyVisitor<TypeInfo, SemanticsAnalyzer>
 
         public override TypeInfo Visit(VarArrayDeclarator node, (VarDeclaration Var, SemanticsAnalyzer S) param)
         {
-            TypeInfo itemType = param.Var.Type.Accept(declarationVisitor, param.S);
-            // TODO: array type error checking
-            return Error;
+            var itemType = param.Var.Type.Accept(declarationVisitor, param.S);
+            // TODO: evaluate length expression of arrays
+            var arrayType = node.Lengths.Reverse().Aggregate(itemType, (ty, lengthExpr) => new ArrayType(ty, 999));
+            return arrayType;
         }
     }
 

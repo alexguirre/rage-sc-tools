@@ -10,61 +10,35 @@
     using ScTools.ScriptLang.Ast.Expressions;
     using ScTools.ScriptLang.Types;
 
-    internal record struct TypeInfoOrError(TypeInfo? type)
-    {
-        private readonly TypeInfo? type = type;
-        public TypeInfo Type => type ?? throw new InvalidOperationException("Type is not available");
-        public bool IsError => type is null;
-    }
-
     /// <summary>
     /// Handles type-checking of <see cref="IExpression"/>s.
     /// Only visit methods for expression nodes are implemented, the other methods throw <see cref="System.NotImplementedException"/>.
     /// </summary>
-    internal sealed class ExpressionTypeChecker : EmptyVisitor<TypeInfoOrError, SemanticsAnalyzer>
+    internal sealed class ExpressionTypeChecker : EmptyVisitor<TypeInfo, SemanticsAnalyzer>
     {
-        public static readonly ExpressionTypeChecker Instance = new();
+        private static readonly ErrorType ErrorType = ErrorType.Instance;
 
-        public override TypeInfoOrError Visit(NullExpression node, SemanticsAnalyzer s)
+        private static TypeInfo Literal(IExpression node, TypeInfo type)
         {
-            node.Semantics = new(Type: NullType.Instance, ValueKind: ValueKind.Constant | ValueKind.RValue);
-            return new(node.Semantics.Type);
+            node.Semantics = new(Type: type, ValueKind: ValueKind.Constant | ValueKind.RValue);
+            return type;
         }
 
-        public override TypeInfoOrError Visit(IntLiteralExpression node, SemanticsAnalyzer s)
-        {
-            node.Semantics = new(Type: IntType.Instance, ValueKind: ValueKind.Constant | ValueKind.RValue);
-            return new(node.Semantics.Type);
-        }
+        public override TypeInfo Visit(NullExpression node, SemanticsAnalyzer s) => Literal(node, NullType.Instance);
+        public override TypeInfo Visit(IntLiteralExpression node, SemanticsAnalyzer s) => Literal(node, IntType.Instance);
+        public override TypeInfo Visit(FloatLiteralExpression node, SemanticsAnalyzer s) => Literal(node, FloatType.Instance);
+        public override TypeInfo Visit(BoolLiteralExpression node, SemanticsAnalyzer s) => Literal(node, BoolType.Instance);
+        public override TypeInfo Visit(StringLiteralExpression node, SemanticsAnalyzer s) => Literal(node, StringType.Instance);
 
-        public override TypeInfoOrError Visit(FloatLiteralExpression node, SemanticsAnalyzer s)
+        public override TypeInfo Visit(UnaryExpression node, SemanticsAnalyzer s)
         {
-            node.Semantics = new(Type: FloatType.Instance, ValueKind: ValueKind.Constant | ValueKind.RValue);
-            return new(node.Semantics.Type);
-        }
-
-        public override TypeInfoOrError Visit(BoolLiteralExpression node, SemanticsAnalyzer s)
-        {
-            node.Semantics = new(Type: BoolType.Instance, ValueKind: ValueKind.Constant | ValueKind.RValue);
-            return new(node.Semantics.Type);
-        }
-
-        public override TypeInfoOrError Visit(StringLiteralExpression node, SemanticsAnalyzer s)
-        {
-            node.Semantics = new(Type: StringType.Instance, ValueKind: ValueKind.Constant | ValueKind.RValue);
-            return new(node.Semantics.Type);
-        }
-
-        public override TypeInfoOrError Visit(UnaryExpression node, SemanticsAnalyzer s)
-        {
-            var innerResult = node.SubExpression.Accept(this, s);
-            if (innerResult.IsError)
+            var type = node.SubExpression.Accept(this, s);
+            if (type.IsError)
             {
-                return new(null);
+                return ErrorType;
             }
 
-            var type = innerResult.Type;
-            var result = type switch
+            return type switch
             {
                 IntType => CheckUnaryOp(s, node, type, UnaryOperator.Negate, UnaryOperator.LogicalNot),
                 FloatType or VectorType => CheckUnaryOp(s, node, type, UnaryOperator.Negate),
@@ -72,44 +46,42 @@
                 _ => UnaryOperatorNotSupportedError(s, node, type),
             };
 
-            return result;
-
-            static TypeInfoOrError CheckUnaryOp(SemanticsAnalyzer s, UnaryExpression node, TypeInfo type, params UnaryOperator[] supportedOperators)
+            static TypeInfo CheckUnaryOp(SemanticsAnalyzer s, UnaryExpression node, TypeInfo type, params UnaryOperator[] supportedOperators)
             {
                 if (!supportedOperators.Contains(node.Operator))
                 {
                     return UnaryOperatorNotSupportedError(s, node, type);
                 }
 
-                TypeInfoOrError result = node.Operator switch
+                var result = node.Operator switch
                 {
-                    UnaryOperator.Negate => new(type), // negation always return the same type
-                    UnaryOperator.LogicalNot => new(BoolType.Instance), // NOT always returns a bool
+                    UnaryOperator.Negate => type, // negation always return the same type
+                    UnaryOperator.LogicalNot => BoolType.Instance, // NOT always returns a bool
                     _ => throw new ArgumentOutOfRangeException($"Unknown unary operator '{node.Operator}'", nameof(node))
                 };
 
                 if (!result.IsError)
                 {
-                    node.Semantics = new(result.Type, ValueKind.RValue | (node.SubExpression.ValueKind & ValueKind.Constant));
+                    node.Semantics = new(result, ValueKind.RValue | (node.SubExpression.ValueKind & ValueKind.Constant));
                 }
                 return result;
             }
 
-            static TypeInfoOrError UnaryOperatorNotSupportedError(SemanticsAnalyzer s, UnaryExpression node, TypeInfo type)
+            static TypeInfo UnaryOperatorNotSupportedError(SemanticsAnalyzer s, UnaryExpression node, TypeInfo type)
             {
                 Error(s, ErrorCode.SemanticBadUnaryOp, $"Unary operator '{node.Operator}' not supported on type '{type}'", node.Location);
-                return new(null);
+                return ErrorType;
             }
         }
 
-        public override TypeInfoOrError Visit(BinaryExpression node, SemanticsAnalyzer s)
+        public override TypeInfo Visit(BinaryExpression node, SemanticsAnalyzer s)
         {
-            var lhsResult = node.LHS.Accept(this, s);
-            var rhsResult = node.RHS.Accept(this, s);
+            var lhs = node.LHS.Accept(this, s);
+            var rhs = node.RHS.Accept(this, s);
 
-            if (lhsResult.IsError || rhsResult.IsError)
+            if (lhs.IsError || rhs.IsError)
             {
-                return new(null);
+                return ErrorType;
             }
 
             TypeInfo INT = IntType.Instance,
@@ -117,8 +89,6 @@
                      BOOL = BoolType.Instance,
                      VECTOR = VectorType.Instance,
                      NULL = NullType.Instance;
-
-            var (lhs, rhs) = (lhsResult.Type, rhsResult.Type);
 
             if (node.Operator is BinaryOperator.Add or BinaryOperator.Subtract or
                                  BinaryOperator.Multiply or BinaryOperator.Divide)
@@ -189,7 +159,7 @@
                 throw new ArgumentException($"Unknown binary operator '{node.Operator}'", nameof(node));
             }
 
-            static TypeInfoOrError CheckBinaryOp(SemanticsAnalyzer s, BinaryExpression node, (TypeInfo LHS, TypeInfo RHS) typePair, params (TypeInfo LHS, TypeInfo RHS, TypeInfo Result)[] typePatterns)
+            static TypeInfo CheckBinaryOp(SemanticsAnalyzer s, BinaryExpression node, (TypeInfo LHS, TypeInfo RHS) typePair, params (TypeInfo LHS, TypeInfo RHS, TypeInfo Result)[] typePatterns)
             {
                 var match = typePatterns.FirstOrDefault(p => (p.LHS, p.RHS) == typePair);
                 if (match == default)
@@ -197,47 +167,46 @@
                     return BinaryOperatorNotSupportedError(s, node, typePair);
                 }
 
-                TypeInfoOrError result = new(match.Result);
-                if (!result.IsError)
+                var type = match.Result;
+                if (!type.IsError)
                 {
-                    node.Semantics = new(result.Type, ValueKind.RValue | (node.LHS.ValueKind & node.RHS.ValueKind & ValueKind.Constant));
+                    node.Semantics = new(type, ValueKind.RValue | (node.LHS.ValueKind & node.RHS.ValueKind & ValueKind.Constant));
                 }
-                return result;
+                return type;
             }
 
-            static TypeInfoOrError BinaryOperatorNotSupportedError(SemanticsAnalyzer s, BinaryExpression node, (TypeInfo LHS, TypeInfo RHS) typePair)
+            static TypeInfo BinaryOperatorNotSupportedError(SemanticsAnalyzer s, BinaryExpression node, (TypeInfo LHS, TypeInfo RHS) typePair)
             {
                 Error(s, ErrorCode.SemanticBadBinaryOp, $"Binary operator '{node.Operator}' not supported on types '{typePair.LHS}' and '{typePair.RHS}'", node.Location);
-                return new(null);
+                return ErrorType;
             }
         }
 
-        public override TypeInfoOrError Visit(FieldAccessExpression node, SemanticsAnalyzer s)
+        public override TypeInfo Visit(FieldAccessExpression node, SemanticsAnalyzer s)
         {
-            var innerResult = node.SubExpression.Accept(this, s);
-            if (innerResult.IsError)
+            var type = node.SubExpression.Accept(this, s);
+            if (type.IsError)
             {
-                return new(null);
+                return ErrorType;
             }
 
-            var type = innerResult.Type;
             var field = type.Fields.SingleOrDefault(f => ParserNew.CaseInsensitiveComparer.Equals(f.Name, node.FieldName));
             if (field is not null)
             {
                 node.Semantics = new(field.Type, node.SubExpression.ValueKind);
-                return new(field.Type);
+                return field.Type;
             }
 
             return UnknownFieldError(s, node, type);
 
-            static TypeInfoOrError UnknownFieldError(SemanticsAnalyzer s, FieldAccessExpression node, TypeInfo type)
+            static TypeInfo UnknownFieldError(SemanticsAnalyzer s, FieldAccessExpression node, TypeInfo type)
             {
                 Error(s, ErrorCode.SemanticUnknownField, $"'{type}' does not contain a field named '{node.FieldName}'", node.FieldNameToken.Location);
-                return new(null);
+                return ErrorType;
             }
         }
 
-        public override TypeInfoOrError Visit(IndexingExpression node, SemanticsAnalyzer s)
+        public override TypeInfo Visit(IndexingExpression node, SemanticsAnalyzer s)
         {
             throw new NotImplementedException();
             //node.Array.Accept(this, param);
@@ -249,7 +218,7 @@
             //return default;
         }
 
-        public override TypeInfoOrError Visit(InvocationExpression node, SemanticsAnalyzer s)
+        public override TypeInfo Visit(InvocationExpression node, SemanticsAnalyzer s)
         {
             throw new NotImplementedException();
             //node.Callee.Accept(this, param);
@@ -262,11 +231,11 @@
             //return default;
         }
 
-        public override TypeInfoOrError Visit(NameExpression node, SemanticsAnalyzer s)
+        public override TypeInfo Visit(NameExpression node, SemanticsAnalyzer s)
         {
             if (!s.GetSymbol(node, out var decl))
             {
-                return new(null);
+                return ErrorType;
             }
 
             if (decl is ScriptDeclaration)
@@ -283,7 +252,7 @@
             };
 
             node.Semantics = new(type, valueKind, decl);
-            return new(type);
+            return type ?? ErrorType;
 
             static ValueKind ValueKindOfDeclaration(IValueDeclaration valueDecl)
                 => valueDecl switch
@@ -296,41 +265,44 @@
                     _ => throw new ArgumentException("Unknown value declaration", nameof(valueDecl)),
                 };
 
-            static TypeInfoOrError ScriptNameNotAllowedInExpressionError(SemanticsAnalyzer s, NameExpression name)
+            static TypeInfo ScriptNameNotAllowedInExpressionError(SemanticsAnalyzer s, NameExpression name)
             {
                 Error(s, ErrorCode.SemanticScriptNameNotAllowedInExpression, $"Script names are not allowed in expressions", name.Location);
-                return new(null);
+                return ErrorType;
             }
         }
 
-        public override TypeInfoOrError Visit(VectorExpression node, SemanticsAnalyzer s)
+        public override TypeInfo Visit(VectorExpression node, SemanticsAnalyzer s)
         {
-            throw new NotImplementedException();
-            //node.X.Accept(this, param);
-            //node.Y.Accept(this, param);
-            //node.Z.Accept(this, param);
+            var x = node.X.Accept(this, s);
+            var y = node.Y.Accept(this, s);
+            var z = node.Z.Accept(this, s);
 
-            //var vectorTy = BuiltInTypes.Vector.CreateType(node.Location);
-            //node.Semantics = new(Type: vectorTy,
-            //                     IsLValue: false,
-            //                     IsConstant: node.X.IsConstant && node.Y.IsConstant && node.Z.IsConstant);
+            CheckComponent(s, node.X, x);
+            CheckComponent(s, node.Y, y);
+            CheckComponent(s, node.Z, z);
 
-            //var floatTy = BuiltInTypes.Float.CreateType(node.Location);
-            //for (int i = 0; i < 3; i++)
-            //{
-            //    var src = i switch { 0 => node.X, 1 => node.Y, 2 => node.Z, _ => throw new System.NotImplementedException() };
-            //    if (!floatTy.CanAssign(src.Type!, src.IsLValue))
-            //    {
-            //        var comp = i switch { 0 => "X", 1 => "Y", 2 => "Z", _ => throw new System.NotImplementedException() };
-            //        Diagnostics.AddError($"Vector component {comp} requires type '{floatTy}', found '{src.Type}'", src.Location);
-            //    }
-            //}
+            if (x.IsError || y.IsError || z.IsError)
+            {
+                return ErrorType;
+            }
 
-            //return default;
+            node.Semantics = new(
+                VectorType.Instance,
+                ValueKind.RValue | (node.X.ValueKind & node.Y.ValueKind & node.Z.ValueKind & ValueKind.Constant));
+
+            return VectorType.Instance;
+
+            static void CheckComponent(SemanticsAnalyzer s, IExpression componentExpr, TypeInfo componentType)
+            {
+                if (!componentType.IsError && !FloatType.Instance.IsAssignableFrom(componentType, componentExpr.ValueKind))
+                {
+                    s.CannotConvertTypeError(componentType, FloatType.Instance, componentExpr.Location);
+                }
+            }
         }
 
-        public override TypeInfoOrError Visit(ErrorExpression node, SemanticsAnalyzer s)
-            => new(null);
+        public override TypeInfo Visit(ErrorExpression node, SemanticsAnalyzer s) => ErrorType;
 
         private static void Error(SemanticsAnalyzer s, ErrorCode code, string message, SourceRange location)
             => s.Diagnostics.Add((int)code, DiagnosticTag.Error, message, location);

@@ -80,8 +80,8 @@ internal static class Rules
         public bool Visit(ArrayType destination) => false;
         // INT <- INT | NULL
         public bool Visit(IntType destination) => Source is IntType or NullType;
-        // FLOAT <- FLOAT | NULL
-        public bool Visit(FloatType destination) => Source is FloatType or NullType;
+        // FLOAT <- FLOAT | INT | NULL
+        public bool Visit(FloatType destination) => Source is FloatType or IntType or NullType;
         // BOOL <- BOOL | INT | NULL
         public bool Visit(BoolType destination) => Source is BoolType or IntType or NullType;
         // STRING <- STRING | NULL | TEXT_LABEL if lvalue

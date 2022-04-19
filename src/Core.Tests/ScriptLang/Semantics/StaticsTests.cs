@@ -276,11 +276,27 @@ public class StaticsTests : SemanticsTestsBase
     public void ArrayTypesAreAllowed()
     {
         var s = Analyze(
-            @"INT foo[10]"
+            @"INT foo1[10]
+              INT foo2[10][20]
+              INT foo3[10][20][30]"
         );
 
         False(s.Diagnostics.HasErrors);
-        AssertStatic(s, "foo", new ArrayType(IntType.Instance, 10));
+        AssertStatic(s, "foo1", new ArrayType(IntType.Instance, 10));
+        AssertStatic(s, "foo2", new ArrayType(new ArrayType(IntType.Instance, 20), 10));
+        AssertStatic(s, "foo3", new ArrayType(new ArrayType(new ArrayType(IntType.Instance, 30), 20), 10));
+    }
+
+    [Fact]
+    public void IncompleteArrayTypesAreNotAllowed()
+    {
+        // TODO: represent 'incomplete' arrays in type systems
+        var s = Analyze(
+            @"INT foo[]"
+        );
+
+        True(s.Diagnostics.HasErrors);
+        //CheckError
     }
 
     private static void AssertStatic(SemanticsAnalyzer s, string varName, TypeInfo expectedType, bool hasInitializer = false)
