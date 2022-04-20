@@ -28,6 +28,8 @@ public class ConstantsTests : SemanticsTestsBase
     [InlineData("NULL", 0)]
     [InlineData("`foo` - 1", 0x238678DD - 1)]
     [InlineData("(1 + 2 * 3) & 0xFE", (1 + 2 * 3) & 0xFE)]
+    [InlineData("123 ^ 456", 123 ^ 456)]
+    [InlineData("123 | 456", 123 | 456)]
     public void IntInitializerExpressionIsEvaluated(string initializerExpr, int expected)
     {
         var s = Analyze(
@@ -44,6 +46,7 @@ public class ConstantsTests : SemanticsTestsBase
     [InlineData("NULL", 0.0f)]
     [InlineData("1.0 + 2.0 * 3.0", 1.0f + 2.0f * 3.0f)]
     [InlineData("1 + 2 * 3", (float)(1 + 2 * 3))] // INT expression is promoted to FLOAT
+    [InlineData("1 + 2.0 * 3", 1 + 2.0f * 3)]
     public void FloatInitializerExpressionIsEvaluated(string initializerExpr, float expected)
     {
         var s = Analyze(
@@ -63,6 +66,18 @@ public class ConstantsTests : SemanticsTestsBase
     [InlineData("1+1", true)]
     [InlineData("TRUE AND FALSE", false)]
     [InlineData("1 == 0 OR TRUE AND 1", true)]
+    [InlineData("'hello' == NULL", false)]
+    [InlineData("NULL <> 'hello'", true)]
+    [InlineData("123 > 122", true)]
+    [InlineData("121 >= 122", false)]
+    [InlineData("123 < 122", false)]
+    [InlineData("123 <= 123", true)]
+    [InlineData("123.25 > 122.5", true)]
+    [InlineData("121.75 >= 122.5", false)]
+    [InlineData("123.25 < 122.5", false)]
+    [InlineData("123.5 <= 123.5", true)]
+    [InlineData("TRUE == TRUE", true)]
+    [InlineData("TRUE <> FALSE", true)]
     public void BoolInitializerExpressionIsEvaluated(string initializerExpr, bool expected)
     {
         var s = Analyze(

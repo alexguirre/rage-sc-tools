@@ -54,6 +54,8 @@ public class EnumTests : SemanticsTestsBase
     [InlineData("NULL", 0)] // NULL is implicity converted to INT as 0, so it should be allowed in enum initializers as well
     [InlineData("`foo` - 1", 0x238678DD - 1)]
     [InlineData("(1 + 2 * 3) & 0xFE", (1 + 2 * 3) & 0xFE)]
+    [InlineData("123 ^ 456", 123 ^ 456)]
+    [InlineData("123 | 456", 123 | 456)]
     public void MemberInitializerExpressionsAreEvaluated(string initializerExpr, int expected)
     {
         var s = Analyze(
@@ -68,13 +70,18 @@ public class EnumTests : SemanticsTestsBase
         AssertEnum(s, "A", enumTy, expected);
     }
 
-    [Fact]
-    public void MemberSetToPreviousMember()
+    [Theory]
+    [InlineData("A", 1)]
+    [InlineData("ENUM_TO_INT(A) + 3", 4)]
+    [InlineData("A | B", 3)]
+    [InlineData("A & B", 0)]
+    public void MemberInitializerUsesPreviousMembers(string initializerExpr, int expectedValue)
     {
         var s = Analyze(
-            @"ENUM foo
+            @$"ENUM foo
                 A = 1
-                B = A
+                B = 2
+                C = {initializerExpr}
               ENDENUM"
         );
 
@@ -82,24 +89,8 @@ public class EnumTests : SemanticsTestsBase
         True(s.GetTypeSymbolUnchecked("foo", out var ty));
         var enumTy = (EnumType)ty!;
         AssertEnum(s, "A", enumTy, 1);
-        AssertEnum(s, "B", enumTy, 1);
-    }
-
-    [Fact]
-    public void MemberInitializerCanUsePreviousMember()
-    {
-        var s = Analyze(
-            @"ENUM foo
-                A = 1
-                B = ENUM_TO_INT(A) + 3
-              ENDENUM"
-        );
-
-        False(s.Diagnostics.HasErrors);
-        True(s.GetTypeSymbolUnchecked("foo", out var ty));
-        var enumTy = (EnumType)ty!;
-        AssertEnum(s, "A", enumTy, 1);
-        AssertEnum(s, "B", enumTy, 4);
+        AssertEnum(s, "B", enumTy, 2);
+        AssertEnum(s, "C", enumTy, expectedValue);
     }
 
     [Fact]

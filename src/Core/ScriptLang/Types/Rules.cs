@@ -10,52 +10,18 @@ internal static class Rules
     //    }
     //}
 
-    //public TecsypeInfo TryPromote
+    public static bool IsPromotableTo(this TypeInfo source, TypeInfo destination)
+        => source == destination || source switch
+        {
+            NullType => destination is IntType or FloatType or StringType or BoolType or AnyType or HandleType,
+            IntType => destination is FloatType or BoolType,
+            HandleType
+            {
+                Kind: HandleKind.PedIndex or HandleKind.VehicleIndex or HandleKind.ObjectIndex
+            } => destination is HandleType { Kind: HandleKind.EntityIndex },
 
-    /*
-     * -> indicates the type of the expression
-     * :- indicates that a promotion occurred
-
-        Add,
-        Subtract,
-        Multiply,
-        Divide,
-            INT    op INT                        -> INT
-            FLOAT  op FLOAT                      -> FLOAT
-            INT    op FLOAT  :- FLOAT op FLOAT   -> FLOAT
-            FLOAT  op INT    :- FLOAT op FLOAT   -> FLOAT
-            VECTOR op VECTOR                     -> VECTOR
-
-        Modulo,
-            INT    op INT                       -> INT
-            FLOAT  op FLOAT                     -> FLOAT
-            INT    op FLOAT  :- FLOAT op FLOAT  -> FLOAT
-            FLOAT  op INT    :- FLOAT op FLOAT  -> FLOAT
-
-        And,
-        Xor,
-        Or,
-            INT op INT  -> INT
-
-        Equals,
-        NotEquals,
-        LessThan,
-        LessThanOrEqual,
-        GreaterThan,
-        GreaterThanOrEqual,
-            INT op INT                        -> BOOL
-            FLOAT op FLOAT                    -> BOOL
-            INT op FLOAT   :- FLOAT op FLOAT  -> BOOL
-            FLOAT op INT   :- FLOAT op FLOAT  -> BOOL
-
-        LogicalAnd,
-        LogicalOr,
-            INT op INT                        -> BOOL
-            BOOL op BOOL                      -> BOOL
-            INT op BOOL                       -> BOOL
-            BOOL op INT                       -> BOOL
-     */
-
+            _ => false,
+        };
 
     public static bool IsAssignableFrom(this TypeInfo destination, TypeInfo source, ValueKind sourceValueKind = 0)
         => source is ErrorType || destination.Accept(new IsAssignableFromVisitor(source, sourceValueKind));

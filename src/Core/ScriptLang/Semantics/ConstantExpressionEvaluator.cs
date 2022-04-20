@@ -67,45 +67,50 @@ internal static class ConstantExpressionEvaluator
 
         public override ConstantValue Visit(BinaryExpression node, SemanticsAnalyzer param)
         {
-            /*
-                TODO: support remaining binary operators
-                Equals,
-                NotEquals,
-                LessThan,
-                LessThanOrEqual,
-                GreaterThan,
-                GreaterThanOrEqual,
-                LogicalAnd,
-                LogicalOr,
-             */
-
+            // TODO: handle promotions here based on Rules.IsPromotableTo()?
             var lhs = node.LHS.Accept(this, param);
             var rhs = node.RHS.Accept(this, param);
             var result = (lhs.Type, rhs.Type) switch
             {
                 (FloatType, FloatType) or
                 (FloatType, IntType) or
-                (IntType, FloatType) => MakeFloat(node.Operator switch
+                (IntType, FloatType) => node.Operator switch
                 {
-                    BinaryOperator.Add => PromoteToFloat(lhs) + PromoteToFloat(rhs),
-                    BinaryOperator.Subtract => PromoteToFloat(lhs) - PromoteToFloat(rhs),
-                    BinaryOperator.Multiply => PromoteToFloat(lhs) * PromoteToFloat(rhs),
-                    BinaryOperator.Divide => PromoteToFloat(lhs) / PromoteToFloat(rhs),
-                    BinaryOperator.Modulo => PromoteToFloat(lhs) % PromoteToFloat(rhs),
+                    BinaryOperator.Add => Float(lhs.FloatValue + rhs.FloatValue),
+                    BinaryOperator.Subtract => Float(lhs.FloatValue - rhs.FloatValue),
+                    BinaryOperator.Multiply => Float(lhs.FloatValue * rhs.FloatValue),
+                    BinaryOperator.Divide => Float(lhs.FloatValue / rhs.FloatValue),
+                    BinaryOperator.Modulo => Float(lhs.FloatValue % rhs.FloatValue),
+
+                    BinaryOperator.Equals => Bool(lhs.FloatValue == rhs.FloatValue),
+                    BinaryOperator.NotEquals => Bool(lhs.FloatValue != rhs.FloatValue),
+                    BinaryOperator.LessThan => Bool(lhs.FloatValue < rhs.FloatValue),
+                    BinaryOperator.LessThanOrEqual => Bool(lhs.FloatValue <= rhs.FloatValue),
+                    BinaryOperator.GreaterThan => Bool(lhs.FloatValue > rhs.FloatValue),
+                    BinaryOperator.GreaterThanOrEqual => Bool(lhs.FloatValue >= rhs.FloatValue),
+
                     _ => null,
-                }),
-                (IntType, IntType) => MakeInt(node.Operator switch
+                },
+                (IntType, IntType) => node.Operator switch
                 {
-                    BinaryOperator.Add => lhs.IntValue + rhs.IntValue,
-                    BinaryOperator.Subtract => lhs.IntValue - rhs.IntValue,
-                    BinaryOperator.Multiply => lhs.IntValue * rhs.IntValue,
-                    BinaryOperator.Divide => lhs.IntValue / rhs.IntValue,
-                    BinaryOperator.Modulo => lhs.IntValue % rhs.IntValue,
-                    BinaryOperator.And => lhs.IntValue & rhs.IntValue,
-                    BinaryOperator.Xor => lhs.IntValue ^ rhs.IntValue,
-                    BinaryOperator.Or => lhs.IntValue | rhs.IntValue,
+                    BinaryOperator.Add => Int(lhs.IntValue + rhs.IntValue),
+                    BinaryOperator.Subtract => Int(lhs.IntValue - rhs.IntValue),
+                    BinaryOperator.Multiply => Int(lhs.IntValue * rhs.IntValue),
+                    BinaryOperator.Divide => Int(lhs.IntValue / rhs.IntValue),
+                    BinaryOperator.Modulo => Int(lhs.IntValue % rhs.IntValue),
+                    BinaryOperator.And => Int(lhs.IntValue & rhs.IntValue),
+                    BinaryOperator.Xor => Int(lhs.IntValue ^ rhs.IntValue),
+                    BinaryOperator.Or => Int(lhs.IntValue | rhs.IntValue),
+
+                    BinaryOperator.Equals => Bool(lhs.IntValue == rhs.IntValue),
+                    BinaryOperator.NotEquals => Bool(lhs.IntValue != rhs.IntValue),
+                    BinaryOperator.LessThan => Bool(lhs.IntValue < rhs.IntValue),
+                    BinaryOperator.LessThanOrEqual => Bool(lhs.IntValue <= rhs.IntValue),
+                    BinaryOperator.GreaterThan => Bool(lhs.IntValue > rhs.IntValue),
+                    BinaryOperator.GreaterThanOrEqual => Bool(lhs.IntValue >= rhs.IntValue),
+
                     _ => null,
-                }),
+                },
                 (VectorType, VectorType) => node.Operator switch
                 {
                     BinaryOperator.Add => VecAdd(lhs, rhs),
@@ -114,13 +119,31 @@ internal static class ConstantExpressionEvaluator
                     BinaryOperator.Divide => VecDiv(lhs, rhs),
                     _ => null,
                 },
+                (BoolType, BoolType) or
+                (BoolType, IntType) or
+                (IntType, BoolType) => node.Operator switch
+                {
+                    BinaryOperator.Equals => Bool(lhs.BoolValue == rhs.BoolValue),
+                    BinaryOperator.NotEquals => Bool(lhs.BoolValue != rhs.BoolValue),
+                    BinaryOperator.LogicalAnd => Bool(lhs.BoolValue && rhs.BoolValue),
+                    BinaryOperator.LogicalOr => Bool(lhs.BoolValue || rhs.BoolValue),
+                    _ => null,
+                },
+                (StringType, NullType) or
+                (NullType, StringType) => node.Operator switch
+                {
+                    BinaryOperator.Equals => Bool(lhs.StringValue == rhs.StringValue),
+                    BinaryOperator.NotEquals => Bool(lhs.StringValue != rhs.StringValue),
+                    _ => null,
+                },
                 _ => null,
             };
 
             return result ?? throw new InvalidOperationException($"Binary operator '{node.Operator}' is not supported on types '{lhs.Type.GetType().Name}' and '{rhs.Type.GetType().Name}'");
 
-            static ConstantValue? MakeInt(int? value) => value is null ? null : ConstantValue.Int(value.Value);
-            static ConstantValue? MakeFloat(float? value) => value is null ? null : ConstantValue.Float(value.Value);
+            static ConstantValue Int(int value) => ConstantValue.Int(value);
+            static ConstantValue Float(float value) => ConstantValue.Float(value);
+            static ConstantValue Bool(bool value) => ConstantValue.Bool(value);
             static ConstantValue VecAdd(ConstantValue lhs, ConstantValue rhs)
             {
                 var (ax, ay, az) = lhs.VectorValue;
@@ -145,14 +168,6 @@ internal static class ConstantExpressionEvaluator
                 var (bx, by, bz) = rhs.VectorValue;
                 return ConstantValue.Vector(ax / bx, ay / by, az / bz);
             }
-
-            static float PromoteToFloat(ConstantValue value)
-                => value.Type switch
-                {
-                    FloatType => value.FloatValue,
-                    IntType => value.IntValue,
-                    _ => throw new ArgumentException($"Cannot promote '{value.Type.GetType().Name}' to FLOAT", nameof(value)),
-                };
         }
 
         public override ConstantValue Visit(InvocationExpression node, SemanticsAnalyzer param)

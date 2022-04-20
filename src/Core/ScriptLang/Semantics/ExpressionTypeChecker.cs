@@ -57,7 +57,7 @@
                 {
                     UnaryOperator.Negate => type, // negation always return the same type
                     UnaryOperator.LogicalNot => BoolType.Instance, // NOT always returns a bool
-                    _ => throw new ArgumentOutOfRangeException($"Unknown unary operator '{node.Operator}'", nameof(node))
+                    _ => throw new ArgumentOutOfRangeException(nameof(node), $"Unknown unary operator '{node.Operator}'")
                 };
 
                 if (!result.IsError)
@@ -65,12 +65,6 @@
                     node.Semantics = new(result, ValueKind.RValue | (node.SubExpression.ValueKind & ValueKind.Constant));
                 }
                 return result;
-            }
-
-            static TypeInfo UnaryOperatorNotSupportedError(SemanticsAnalyzer s, UnaryExpression node, TypeInfo type)
-            {
-                Error(s, ErrorCode.SemanticBadUnaryOp, $"Unary operator '{node.Operator}' not supported on type '{type}'", node.Location);
-                return ErrorType;
             }
         }
 
@@ -87,6 +81,7 @@
             TypeInfo INT = IntType.Instance,
                      FLOAT = FloatType.Instance,
                      BOOL = BoolType.Instance,
+                     STRING = StringType.Instance,
                      VECTOR = VectorType.Instance,
                      NULL = NullType.Instance;
 
@@ -97,62 +92,68 @@
                 //   LHS  op RHS  -> Result
                     (INT,    INT,    INT),
                     (FLOAT,  FLOAT,  FLOAT),
-                    (INT,    FLOAT,  FLOAT),
-                    (FLOAT,  INT,    FLOAT),
-                    (VECTOR, VECTOR, VECTOR),
-                    // handle NULL promotion to INT
-                    (INT,    NULL,   INT),
-                    (NULL,   INT,    INT),
-                    (FLOAT,  NULL,   FLOAT),
-                    (NULL,   FLOAT,  FLOAT));
+                    (VECTOR, VECTOR, VECTOR));
             }
             else if (node.Operator is BinaryOperator.Modulo)
             {
                 return CheckBinaryOp(s, node, (lhs, rhs),
                 //   LHS  op RHS  -> Result
                     (INT,    INT,    INT),
-                    (FLOAT,  FLOAT,  FLOAT),
-                    (INT,    FLOAT,  FLOAT),
-                    (FLOAT,  INT,    FLOAT),
-                    // handle NULL promotion to INT
-                    (INT,    NULL,   INT),
-                    (NULL,   INT,    INT),
-                    (FLOAT,  NULL,   FLOAT),
-                    (NULL,   FLOAT,  FLOAT));
+                    (FLOAT,  FLOAT,  FLOAT));
             }
             else if (node.Operator is BinaryOperator.And or BinaryOperator.Xor or BinaryOperator.Or)
             {
+                if (lhs is EnumType && lhs == rhs)
+                {
+                    return SetBinaryOpResultType(node, lhs);
+                }
+
                 return CheckBinaryOp(s, node, (lhs, rhs),
                 //   LHS  op RHS  -> Result
-                    (INT,    INT,    INT),
-                    // handle NULL promotion to INT
-                    (INT,    NULL,   INT),
-                    (NULL,   INT,    INT));
+                    (INT,    INT,    INT));
             }
-            else if (node.Operator is BinaryOperator.Equals or BinaryOperator.NotEquals or
-                                      BinaryOperator.LessThan or BinaryOperator.LessThanOrEqual or
-                                      BinaryOperator.GreaterThan or BinaryOperator.GreaterThanOrEqual)
+            else if (node.Operator is BinaryOperator.Equals or BinaryOperator.NotEquals)
             {
+                if (lhs is EnumType && lhs == rhs)
+                {
+                    return SetBinaryOpResultType(node, BOOL);
+                }
+                else if (lhs is HandleType && rhs is HandleType)
+                {
+                    bool isComparableHandle = (lhs == rhs) || lhs.IsPromotableTo(rhs) || rhs.IsPromotableTo(lhs);
+                    if (isComparableHandle)
+                    {
+                        return SetBinaryOpResultType(node, BOOL);
+                    }
+                }
+
                 return CheckBinaryOp(s, node, (lhs, rhs),
                 //   LHS  op RHS  -> Result
                     (INT,    INT,    BOOL),
                     (FLOAT,  FLOAT,  BOOL),
-                    (INT,    FLOAT,  BOOL),
-                    (FLOAT,  INT,    BOOL),
                     (BOOL,   BOOL,   BOOL),
-                    (INT,    BOOL,   BOOL),
-                    (BOOL,   INT,    BOOL));
-                // handle NULL promotion to INT?
+                    (STRING, NULL,   BOOL),
+                    (NULL,   STRING, BOOL));
+            }
+            else if (node.Operator is BinaryOperator.LessThan or BinaryOperator.LessThanOrEqual or
+                                      BinaryOperator.GreaterThan or BinaryOperator.GreaterThanOrEqual)
+            {
+                if (lhs is EnumType && lhs == rhs)
+                {
+                    return SetBinaryOpResultType(node, BOOL);
+                }
+
+                return CheckBinaryOp(s, node, (lhs, rhs),
+                //   LHS  op RHS  -> Result
+                    (INT,    INT,    BOOL),
+                    (FLOAT,  FLOAT,  BOOL));
             }
             else if (node.Operator is BinaryOperator.LogicalAnd or BinaryOperator.LogicalOr)
             {
                 return CheckBinaryOp(s, node, (lhs, rhs),
                 //   LHS  op RHS  -> Result
                     (INT,    INT,    BOOL),
-                    (BOOL,   BOOL,   BOOL),
-                    (INT,    BOOL,   BOOL),
-                    (BOOL,   INT,    BOOL));
-                // handle NULL promotion to INT?
+                    (BOOL,   BOOL,   BOOL));
             }
             else
             {
@@ -161,24 +162,26 @@
 
             static TypeInfo CheckBinaryOp(SemanticsAnalyzer s, BinaryExpression node, (TypeInfo LHS, TypeInfo RHS) typePair, params (TypeInfo LHS, TypeInfo RHS, TypeInfo Result)[] typePatterns)
             {
-                var match = typePatterns.FirstOrDefault(p => (p.LHS, p.RHS) == typePair);
+                var (lhs, rhs) = typePair;
+
+                var match = typePatterns.FirstOrDefault(p => (lhs == p.LHS && rhs == p.RHS) ||
+                                                             (lhs == p.LHS && rhs.IsPromotableTo(p.RHS)) ||
+                                                             (lhs.IsPromotableTo(p.LHS) && rhs == p.RHS));
                 if (match == default)
                 {
                     return BinaryOperatorNotSupportedError(s, node, typePair);
                 }
 
-                var type = match.Result;
+                return SetBinaryOpResultType(node, match.Result);
+            }
+
+            static TypeInfo SetBinaryOpResultType(BinaryExpression node, TypeInfo type)
+            {
                 if (!type.IsError)
                 {
                     node.Semantics = new(type, ValueKind.RValue | (node.LHS.ValueKind & node.RHS.ValueKind & ValueKind.Constant));
                 }
                 return type;
-            }
-
-            static TypeInfo BinaryOperatorNotSupportedError(SemanticsAnalyzer s, BinaryExpression node, (TypeInfo LHS, TypeInfo RHS) typePair)
-            {
-                Error(s, ErrorCode.SemanticBadBinaryOp, $"Binary operator '{node.Operator}' not supported on types '{typePair.LHS}' and '{typePair.RHS}'", node.Location);
-                return ErrorType;
             }
         }
 
@@ -198,12 +201,6 @@
             }
 
             return UnknownFieldError(s, node, type);
-
-            static TypeInfo UnknownFieldError(SemanticsAnalyzer s, FieldAccessExpression node, TypeInfo type)
-            {
-                Error(s, ErrorCode.SemanticUnknownField, $"'{type}' does not contain a field named '{node.FieldName}'", node.FieldNameToken.Location);
-                return ErrorType;
-            }
         }
 
         public override TypeInfo Visit(IndexingExpression node, SemanticsAnalyzer s)
@@ -264,12 +261,6 @@
                     VarDeclaration { Kind: VarKind.Constant } => ValueKind.RValue | ValueKind.Constant,
                     _ => throw new ArgumentException("Unknown value declaration", nameof(valueDecl)),
                 };
-
-            static TypeInfo ScriptNameNotAllowedInExpressionError(SemanticsAnalyzer s, NameExpression name)
-            {
-                Error(s, ErrorCode.SemanticScriptNameNotAllowedInExpression, $"Script names are not allowed in expressions", name.Location);
-                return ErrorType;
-            }
         }
 
         public override TypeInfo Visit(VectorExpression node, SemanticsAnalyzer s)
@@ -304,7 +295,33 @@
 
         public override TypeInfo Visit(ErrorExpression node, SemanticsAnalyzer s) => ErrorType;
 
+        #region Errors
         private static void Error(SemanticsAnalyzer s, ErrorCode code, string message, SourceRange location)
             => s.Diagnostics.Add((int)code, DiagnosticTag.Error, message, location);
+
+        private static TypeInfo UnaryOperatorNotSupportedError(SemanticsAnalyzer s, UnaryExpression node, TypeInfo type)
+        {
+            Error(s, ErrorCode.SemanticBadUnaryOp, $"Unary operator '{node.Operator}' not supported on type '{type}'", node.Location);
+            return ErrorType;
+        }
+
+        private static TypeInfo BinaryOperatorNotSupportedError(SemanticsAnalyzer s, BinaryExpression node, (TypeInfo LHS, TypeInfo RHS) typePair)
+        {
+            Error(s, ErrorCode.SemanticBadBinaryOp, $"Binary operator '{node.Operator}' not supported on types '{typePair.LHS}' and '{typePair.RHS}'", node.Location);
+            return ErrorType;
+        }
+
+        private static TypeInfo UnknownFieldError(SemanticsAnalyzer s, FieldAccessExpression node, TypeInfo type)
+        {
+            Error(s, ErrorCode.SemanticUnknownField, $"'{type}' does not contain a field named '{node.FieldName}'", node.FieldNameToken.Location);
+            return ErrorType;
+        }
+
+        private static TypeInfo ScriptNameNotAllowedInExpressionError(SemanticsAnalyzer s, NameExpression name)
+        {
+            Error(s, ErrorCode.SemanticScriptNameNotAllowedInExpression, $"Script names are not allowed in expressions", name.Location);
+            return ErrorType;
+        }
+        #endregion Errors
     }
 }

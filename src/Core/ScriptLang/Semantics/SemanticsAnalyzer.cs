@@ -8,18 +8,25 @@ using ScTools.ScriptLang.Ast.Statements;
 using ScTools.ScriptLang.Types;
 
 using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 public sealed class SemanticsAnalyzer : Visitor
 {
-    private readonly SymbolTable<IDeclaration> symbols = new();
-    private readonly SymbolTable<Label> labels = new();
-    private readonly TypeRegistry typeRegistry = new();
+    // helpers
     private readonly TypeFactory typeFactory;
     private readonly ExpressionTypeChecker exprTypeChecker = new();
 
+    // context
+    private readonly SymbolTable<IDeclaration> symbols = new();
+    private readonly SymbolTable<IStatement> labels = new();
+    private readonly TypeRegistry typeRegistry = new();
     private EnumMemberDeclaration? previousEnumMember = null;
+    private readonly Stack<IBreakableStatement> breakableStatements = new();
+    private readonly Stack<ILoopStatement> loopStatements = new();
+    private readonly List<GotoStatement> gotosToResolve = new();
 
     public DiagnosticsReport Diagnostics { get; }
 
@@ -82,50 +89,42 @@ public sealed class SemanticsAnalyzer : Visitor
         AddSymbol(node);
     }
 
+    public override void Visit(ScriptDeclaration node)
+    {
+        AddSymbol(node);
+
+        EnterFunctionScope();
+        node.Parameters.ForEach(p => p.Accept(this));
+        VisitBody(node.Body);
+        ExitFunctionScope();
+    }
+
     public override void Visit(FunctionDeclaration node)
     {
         AddSymbol(node);
 
-        symbols.PushScope();
-        labels.PushScope();
-
+        EnterFunctionScope();
         node.Parameters.ForEach(p => p.Accept(this));
-        node.Body.ForEach(stmt => stmt.Accept(this));
-
-        labels.PopScope();
-        symbols.PopScope();
+        VisitBody(node.Body);
+        ExitFunctionScope();
     }
 
     public override void Visit(FunctionPointerDeclaration node)
     {
         AddSymbol(node);
 
-        symbols.PushScope();
+        EnterScope();
         node.Parameters.ForEach(p => p.Accept(this));
-        symbols.PopScope();
+        ExitScope();
     }
 
     public override void Visit(NativeFunctionDeclaration node)
     {
         AddSymbol(node);
 
-        symbols.PushScope();
+        EnterScope();
         node.Parameters.ForEach(p => p.Accept(this));
-        symbols.PopScope();
-    }
-
-    public override void Visit(ScriptDeclaration node)
-    {
-        AddSymbol(node);
-
-        symbols.PushScope();
-        labels.PushScope();
-
-        node.Parameters.ForEach(p => p.Accept(this));
-        node.Body.ForEach(stmt => stmt.Accept(this));
-
-        labels.PopScope();
-        symbols.PopScope();
+        ExitScope();
     }
 
     public override void Visit(GlobalBlockDeclaration node)
@@ -136,11 +135,22 @@ public sealed class SemanticsAnalyzer : Visitor
     public override void Visit(StructDeclaration node)
     {
         AddSymbol(node);
+
+        // TODO: check no reference in fields
+        // TODO: type-check field initializer (in Visit(VarDeclaration) probably)
+        // TODO: ensure field initializer is constant
     }
 
     public override void Visit(VarDeclaration node)
     {
         var varType = typeFactory.GetFrom(node);
+
+        // TODO: global variables
+        // TODO: static variables
+        // TODO: local variables
+        // TODO: parameters
+        // TODO: script parameters
+        // TODO: struct fields
 
         if (node.Kind is VarKind.Constant)
         {
@@ -179,13 +189,7 @@ public sealed class SemanticsAnalyzer : Visitor
             }
         }
 
-
         AddSymbol(node);
-    }
-
-    public override void Visit(Label node)
-    {
-        AddLabel(node);
     }
 
     public override void Visit(AssignmentStatement node)
@@ -195,62 +199,109 @@ public sealed class SemanticsAnalyzer : Visitor
 
     public override void Visit(BreakStatement node)
     {
-        throw new System.NotImplementedException();
+        if (breakableStatements.TryPeek(out var breakableStmt))
+        {
+            node.Semantics = node.Semantics with { EnclosingStatement = breakableStmt };
+        }
+        else
+        {
+            // TODO: report error "BREAK statement not in loop or switch"
+        }
     }
 
     public override void Visit(ContinueStatement node)
     {
-        throw new System.NotImplementedException();
+        if (loopStatements.TryPeek(out var loopStmt))
+        {
+            node.Semantics = node.Semantics with { EnclosingLoop = loopStmt };
+        }
+        else
+        {
+            // TODO: report error "CONTINUE statement not in loop"
+        }
     }
 
     public override void Visit(EmptyStatement node)
     {
-        throw new System.NotImplementedException();
+        // empty
     }
 
     public override void Visit(GotoStatement node)
     {
-        throw new System.NotImplementedException();
+        // GOTOs targets will be resolved once we know all labels that exist in the current function before leaving its scope
+        gotosToResolve.Add(node);
     }
 
     public override void Visit(IfStatement node)
     {
-        throw new System.NotImplementedException();
+        var conditionType = node.Condition.Accept(exprTypeChecker, this);
+        if (!conditionType.IsError && !BoolType.Instance.IsAssignableFrom(conditionType, node.Condition.ValueKind))
+        {
+            CannotConvertTypeError(conditionType, BoolType.Instance, node.Condition.Location);
+        }
+
+        EnterScope();
+        VisitBody(node.Then);
+        ExitScope();
+        EnterScope();
+        VisitBody(node.Else);
+        ExitScope();
     }
 
     public override void Visit(RepeatStatement node)
     {
         throw new System.NotImplementedException();
+
+        // TODO: type-check limit and counter
+        EnterLoop(node);
+        VisitBody(node.Body);
+        ExitLoop(node);
     }
 
     public override void Visit(ReturnStatement node)
     {
         throw new System.NotImplementedException();
+        // TODO: type-check return type
     }
 
     public override void Visit(SwitchStatement node)
     {
         throw new System.NotImplementedException();
+
+        // TODO: type-check switch expression
+        EnterBreakableStatement(node);
+        node.Cases.ForEach(c => c.Accept(this));
+        ExitBreakableStatement(node);
     }
 
     public override void Visit(ValueSwitchCase node)
     {
         throw new System.NotImplementedException();
+
+        // TODO: type-check case value expression
+        // TODO: ensure there the case value is not repeated
+        VisitBody(node.Body);
     }
 
     public override void Visit(DefaultSwitchCase node)
     {
         throw new System.NotImplementedException();
+
+        // TODO: ensure there is a single DEFAULT case
+        VisitBody(node.Body);
     }
 
     public override void Visit(WhileStatement node)
     {
-        throw new System.NotImplementedException();
-    }
+        var conditionType = node.Condition.Accept(exprTypeChecker, this);
+        if (!conditionType.IsError && !BoolType.Instance.IsAssignableFrom(conditionType, node.Condition.ValueKind))
+        {
+            CannotConvertTypeError(conditionType, BoolType.Instance, node.Condition.Location);
+        }
 
-    public override void Visit(TypeName node)
-    {
-        // empty
+        EnterLoop(node);
+        VisitBody(node.Body);
+        ExitLoop(node);
     }
 
     public override void Visit(ErrorDeclaration node)
@@ -261,6 +312,72 @@ public sealed class SemanticsAnalyzer : Visitor
     public override void Visit(ErrorStatement node)
     {
         // empty
+    }
+
+    private void EnterScope() => symbols.PushScope();
+    private void ExitScope() => symbols.PopScope();
+
+    private void EnterFunctionScope()
+    {
+        EnterScope();
+        labels.PushScope();
+        gotosToResolve.Clear();
+    }
+
+    private void ExitFunctionScope()
+    {
+        ResolveGotos();
+
+        labels.PopScope();
+        ExitScope();
+
+
+        void ResolveGotos()
+        {
+            foreach (var @goto in gotosToResolve)
+            {
+                if (labels.Find(@goto.TargetLabel, out var targetLabel))
+                {
+                    @goto.Semantics = @goto.Semantics with { Target = targetLabel };
+                }
+            }
+            gotosToResolve.Clear();
+        }
+    }
+
+    private void EnterLoop(ILoopStatement loopStmt)
+    {
+        loopStatements.Push(loopStmt);
+        EnterBreakableStatement(loopStmt);
+    }
+
+    private void ExitLoop(ILoopStatement loopStmt)
+    {
+        ExitBreakableStatement(loopStmt);
+        var exitedLoop = loopStatements.Pop();
+        Debug.Assert(exitedLoop == loopStmt);
+    }
+
+    private void EnterBreakableStatement(IBreakableStatement breakableStmt)
+    {
+        breakableStatements.Push(breakableStmt);
+        EnterScope();
+    }
+
+    private void ExitBreakableStatement(IBreakableStatement breakableStmt)
+    {
+        ExitScope();
+        var exitedStmt = breakableStatements.Pop();
+        Debug.Assert(exitedStmt == breakableStmt);
+    }
+
+    private void VisitBody(ImmutableArray<IStatement> statements)
+    {
+        foreach (var stmt in statements)
+        {
+            AddLabel(stmt);
+            stmt.Accept(this);
+        }
     }
 
     private void AddSymbol(IDeclaration declaration)
@@ -332,52 +449,54 @@ public sealed class SemanticsAnalyzer : Visitor
     }
     public bool GetTypeSymbolUnchecked(string name, [MaybeNullWhen(false)] out TypeInfo type) => typeRegistry.Find(name, out type);
 
-    private void AddLabel(Label label)
+    private void AddLabel(IStatement stmt)
     {
-        if (!labels.Add(label.Name, label))
+        if (stmt.Label is null) { return; }
+
+        if (!labels.Add(stmt.Label.Name, stmt))
         {
-            LabelAlreadyDefinedError(label);
+            LabelAlreadyDefinedError(stmt.Label);
         }
     }
 
-    public bool GetLabel(Token identifier, [MaybeNullWhen(false)] out Label label) => GetLabel(identifier.Lexeme.ToString(), identifier.Location, out label);
-    public bool GetLabel(string name, SourceRange location, [MaybeNullWhen(false)] out Label label)
+    public bool GetLabel(Token identifier, [MaybeNullWhen(false)] out IStatement stmt) => GetLabel(identifier.Lexeme.ToString(), identifier.Location, out stmt);
+    public bool GetLabel(string name, SourceRange location, [MaybeNullWhen(false)] out IStatement stmt)
     {
-        if (GetLabelUnchecked(name, out label))
+        if (GetLabelUnchecked(name, out stmt))
         {
             return true;
         }
         else
         {
             UndefinedLabelError(name, location);
-            label = null;
+            stmt = null;
             return false;
         }
     }
-    public bool GetLabelUnchecked(string name, [MaybeNullWhen(false)] out Label label) => labels.Find(name, out label);
+    public bool GetLabelUnchecked(string name, [MaybeNullWhen(false)] out IStatement stmt) => labels.Find(name, out stmt);
 
-
+    #region Errors
     private void Error(ErrorCode code, string message, SourceRange location)
         => Diagnostics.Add((int)code, DiagnosticTag.Error, message, location);
-    private void SymbolAlreadyDefinedError(IDeclaration declaration)
+    internal void SymbolAlreadyDefinedError(IDeclaration declaration)
         => Error(ErrorCode.SemanticSymbolAlreadyDefined, $"Symbol '{declaration.Name}' is already defined", declaration.NameToken.Location);
-    private void UndefinedSymbolError(string name, SourceRange location)
+    internal void UndefinedSymbolError(string name, SourceRange location)
         => Error(ErrorCode.SemanticUndefinedSymbol, $"Symbol '{name}' is undefined", location);
-    private void ExpectedTypeSymbolError(string name, SourceRange location)
+    internal void ExpectedTypeSymbolError(string name, SourceRange location)
         => Error(ErrorCode.SemanticExpectedTypeSymbol, $"Expected a type, but found '{name}'", location);
-    private void LabelAlreadyDefinedError(Label declaration)
+    internal void LabelAlreadyDefinedError(Label declaration)
         => Error(ErrorCode.SemanticLabelAlreadyDefined, $"Label '{declaration.Name}' is already defined", declaration.NameToken.Location);
-    private void UndefinedLabelError(string name, SourceRange location)
+    internal void UndefinedLabelError(string name, SourceRange location)
         => Error(ErrorCode.SemanticUndefinedLabel, $"Label '{name}' is undefined", location);
-    private void ExpectedLabelError(string name, SourceRange location)
+    internal void ExpectedLabelError(string name, SourceRange location)
             => Error(ErrorCode.SemanticExpectedLabel, $"Expected a label, but found '{name}'", location);
-    public void CannotConvertTypeError(TypeInfo source, TypeInfo destination, SourceRange location)
+    internal void CannotConvertTypeError(TypeInfo source, TypeInfo destination, SourceRange location)
         => Error(ErrorCode.SemanticCannotConvertType, $"Cannot convert type '{source.GetType().Name}' to '{destination.GetType().Name}'", location);
-    private void ConstantWithoutInitializerError(VarDeclaration constVarDecl)
+    internal void ConstantWithoutInitializerError(VarDeclaration constVarDecl)
         => Error(ErrorCode.SemanticConstantWithoutInitializer, $"Constant '{constVarDecl.Name}' requires an initializer", constVarDecl.NameToken.Location);
-    private void InitializerExpressionIsNotConstantError(VarDeclaration constVarDecl)
+    internal void InitializerExpressionIsNotConstantError(VarDeclaration constVarDecl)
         => Error(ErrorCode.SemanticInitializerExpressionIsNotConstant, $"Initializer expression of constant '{constVarDecl.Name}' must be constant", constVarDecl.Initializer!.Location);
-    private void TypeNotAllowedInConstantError(VarDeclaration constVarDecl, TypeInfo type)
+    internal void TypeNotAllowedInConstantError(VarDeclaration constVarDecl, TypeInfo type)
     {
         var loc = constVarDecl.Declarator switch
         {
@@ -387,4 +506,5 @@ public sealed class SemanticsAnalyzer : Visitor
         };
         Error(ErrorCode.SemanticTypeNotAllowedInConstant, $"Type '{type}' is not allowed in constants", loc);
     }
+    #endregion Errors
 }

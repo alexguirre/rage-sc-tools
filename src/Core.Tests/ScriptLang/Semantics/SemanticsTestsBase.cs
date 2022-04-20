@@ -1,6 +1,7 @@
 ﻿namespace ScTools.Tests.ScriptLang.Semantics;
 
 using ScTools.ScriptLang;
+using ScTools.ScriptLang.Ast;
 using ScTools.ScriptLang.Semantics;
 using ScTools.ScriptLang.Types;
 
@@ -32,12 +33,15 @@ public abstract class SemanticsTestsBase
     }
 
     protected static SemanticsAnalyzer Analyze(string source)
+        => AnalyzeAndAst(source).Semantics;
+
+    protected static (SemanticsAnalyzer Semantics, CompilationUnit Ast) AnalyzeAndAst(string source)
     {
         var p = ParserFor(source);
 
         var u = p.ParseCompilationUnit();
         var s = new SemanticsAnalyzer(p.Diagnostics);
         u.Accept(s);
-        return s;
+        return (s, u);
     }
 }
