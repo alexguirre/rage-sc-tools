@@ -109,7 +109,7 @@ public sealed class SemanticsAnalyzer : Visitor
         ExitFunctionScope();
     }
 
-    public override void Visit(FunctionPointerDeclaration node)
+    public override void Visit(FunctionPointerTypeDeclaration node)
     {
         AddSymbol(node);
 

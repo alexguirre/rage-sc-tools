@@ -8,13 +8,13 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 
-public sealed class FunctionPointerDeclaration : BaseTypeDeclaration
+public sealed class FunctionPointerTypeDeclaration : BaseTypeDeclaration
 {
     public override Token NameToken => Tokens[1];
     public TypeName? ReturnType { get; }
     public ImmutableArray<VarDeclaration> Parameters { get; }
 
-    public FunctionPointerDeclaration(Token procOrFuncPtrKeyword, Token nameIdentifier, Token paramsOpenParen, Token paramsCloseParen,
+    public FunctionPointerTypeDeclaration(Token procOrFuncPtrKeyword, Token nameIdentifier, Token paramsOpenParen, Token paramsCloseParen,
                                       TypeName? returnType, IEnumerable<VarDeclaration> parameters)
         : base(OfTokens(procOrFuncPtrKeyword, nameIdentifier, paramsOpenParen, paramsCloseParen),
                OfChildren().AppendIfNotNull(returnType).Concat(parameters))
@@ -36,5 +36,5 @@ public sealed class FunctionPointerDeclaration : BaseTypeDeclaration
     public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     public override string DebuggerDisplay =>
-        $@"{nameof(FunctionPointerDeclaration)} {{ {nameof(Name)} = {Name}, {nameof(ReturnType)} = {ReturnType?.DebuggerDisplay}, {nameof(Parameters)} = [{string.Join(", ", Parameters.Select(a => a.DebuggerDisplay))} }}";
+        $@"{nameof(FunctionPointerTypeDeclaration)} {{ {nameof(Name)} = {Name}, {nameof(ReturnType)} = {ReturnType?.DebuggerDisplay}, {nameof(Parameters)} = [{string.Join(", ", Parameters.Select(a => a.DebuggerDisplay))} }}";
 }

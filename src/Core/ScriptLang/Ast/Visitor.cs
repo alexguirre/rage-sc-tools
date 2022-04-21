@@ -16,7 +16,7 @@
         void Visit(EnumDeclaration node);
         void Visit(EnumMemberDeclaration node);
         void Visit(FunctionDeclaration node);
-        void Visit(FunctionPointerDeclaration node);
+        void Visit(FunctionPointerTypeDeclaration node);
         void Visit(NativeFunctionDeclaration node);
         void Visit(ScriptDeclaration node);
         void Visit(GlobalBlockDeclaration node);
@@ -69,7 +69,7 @@
         TReturn Visit(EnumDeclaration node, TParam param);
         TReturn Visit(EnumMemberDeclaration node, TParam param);
         TReturn Visit(FunctionDeclaration node, TParam param);
-        TReturn Visit(FunctionPointerDeclaration node, TParam param);
+        TReturn Visit(FunctionPointerTypeDeclaration node, TParam param);
         TReturn Visit(NativeFunctionDeclaration node, TParam param);
         TReturn Visit(ScriptDeclaration node, TParam param);
         TReturn Visit(GlobalBlockDeclaration node, TParam param);
@@ -414,7 +414,7 @@
         public virtual TReturn Visit(EnumDeclaration node, TParam param) => DefaultVisit(node, param);
         public virtual TReturn Visit(EnumMemberDeclaration node, TParam param) => DefaultVisit(node, param);
         public virtual TReturn Visit(FunctionDeclaration node, TParam param) => DefaultVisit(node, param);
-        public virtual TReturn Visit(FunctionPointerDeclaration node, TParam param) => DefaultVisit(node, param);
+        public virtual TReturn Visit(FunctionPointerTypeDeclaration node, TParam param) => DefaultVisit(node, param);
         public virtual TReturn Visit(NativeFunctionDeclaration node, TParam param) => DefaultVisit(node, param);
         public virtual TReturn Visit(ScriptDeclaration node, TParam param) => DefaultVisit(node, param);
         public virtual TReturn Visit(GlobalBlockDeclaration node, TParam param) => DefaultVisit(node, param);
@@ -466,7 +466,7 @@
         public virtual void Visit(EnumDeclaration node) => DefaultVisit(node);
         public virtual void Visit(EnumMemberDeclaration node) => DefaultVisit(node);
         public virtual void Visit(FunctionDeclaration node) => DefaultVisit(node);
-        public virtual void Visit(FunctionPointerDeclaration node) => DefaultVisit(node);
+        public virtual void Visit(FunctionPointerTypeDeclaration node) => DefaultVisit(node);
         public virtual void Visit(NativeFunctionDeclaration node) => DefaultVisit(node);
         public virtual void Visit(ScriptDeclaration node) => DefaultVisit(node);
         public virtual void Visit(GlobalBlockDeclaration node) => DefaultVisit(node);

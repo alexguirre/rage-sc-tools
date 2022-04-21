@@ -162,8 +162,8 @@ public partial class ParserTests
     }
     private static void AssertFunctionPointerDeclaration(INode node, string name, Predicate<TypeName?> returnTypePredicate, Action<ImmutableArray<VarDeclaration>> parametersChecker)
     {
-        True(node is FunctionPointerDeclaration);
-        if (node is FunctionPointerDeclaration funcPtrDecl)
+        True(node is FunctionPointerTypeDeclaration);
+        if (node is FunctionPointerTypeDeclaration funcPtrDecl)
         {
             Equal(name, funcPtrDecl.Name);
             True(returnTypePredicate(funcPtrDecl.ReturnType));

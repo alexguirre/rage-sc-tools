@@ -284,7 +284,7 @@ public class ParserNew
 
     public bool IsPossibleFunctionPointerDeclaration()
         => Peek(0).Kind is TokenKind.FUNCPTR or TokenKind.PROCPTR;
-    public FunctionPointerDeclaration ParseFunctionPointerDeclaration()
+    public FunctionPointerTypeDeclaration ParseFunctionPointerDeclaration()
     {
         Token procOrFuncPtrKeyword;
         if (!ExpectEither(TokenKind.FUNCPTR, TokenKind.PROCPTR, out procOrFuncPtrKeyword))
