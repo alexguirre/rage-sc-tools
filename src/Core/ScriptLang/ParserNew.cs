@@ -77,6 +77,10 @@ public class ParserNew
             {
                 decls.Add(ParseEnumDeclaration());
             }
+            else if (IsPossibleStructDeclaration())
+            {
+                decls.Add(ParseStructDeclaration());
+            }
             else if (IsPossibleFunctionDeclaration())
             {
                 decls.Add(ParseFunctionDeclaration());
