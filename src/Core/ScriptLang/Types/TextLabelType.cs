@@ -12,6 +12,7 @@ public sealed record TextLabelType(int Length) : TypeInfo
     public override ImmutableArray<FieldInfo> Fields => ImmutableArray<FieldInfo>.Empty;
     public int Length { get; init; } = IsValidLength(Length) ? Length : throw new ArgumentException("Invalid length", nameof(Length));
 
+    public override string ToPrettyString() => GetTypeNameForLength(Length);
     public override TReturn Accept<TReturn>(ITypeVisitor<TReturn> visitor) => visitor.Visit(this);
 
     public static ImmutableArray<TextLabelType> All { get; }

@@ -21,6 +21,7 @@ public sealed record HandleType(HandleKind Kind) : TypeInfo
     public override int SizeOf => 1;
     public override ImmutableArray<FieldInfo> Fields => ImmutableArray<FieldInfo>.Empty;
 
+    public override string ToPrettyString() => KindToTypeName(Kind);
     public override TReturn Accept<TReturn>(ITypeVisitor<TReturn> visitor) => visitor.Visit(this);
 
     public static ImmutableArray<HandleType> All { get; } = Enum.GetValues<HandleKind>().Select(h => new HandleType(h)).ToImmutableArray();

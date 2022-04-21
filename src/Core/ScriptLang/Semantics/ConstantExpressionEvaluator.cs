@@ -62,7 +62,7 @@ internal static class ConstantExpressionEvaluator
                 },
                 _ => null,
             };
-            return result ?? throw new InvalidOperationException($"Unary operator '{node.Operator}' is not supported on type '{value.Type.GetType().Name}'");
+            return result ?? throw new InvalidOperationException($"Unary operator '{node.Operator}' is not supported on type '{value.Type.ToPrettyString()}'");
         }
 
         public override ConstantValue Visit(BinaryExpression node, SemanticsAnalyzer param)
@@ -139,7 +139,7 @@ internal static class ConstantExpressionEvaluator
                 _ => null,
             };
 
-            return result ?? throw new InvalidOperationException($"Binary operator '{node.Operator}' is not supported on types '{lhs.Type.GetType().Name}' and '{rhs.Type.GetType().Name}'");
+            return result ?? throw new InvalidOperationException($"Binary operator '{node.Operator}' is not supported on types '{lhs.Type.ToPrettyString()}' and '{rhs.Type.ToPrettyString()}'");
 
             static ConstantValue Int(int value) => ConstantValue.Int(value);
             static ConstantValue Float(float value) => ConstantValue.Float(value);

@@ -491,7 +491,7 @@ public sealed class SemanticsAnalyzer : Visitor
     internal void ExpectedLabelError(string name, SourceRange location)
             => Error(ErrorCode.SemanticExpectedLabel, $"Expected a label, but found '{name}'", location);
     internal void CannotConvertTypeError(TypeInfo source, TypeInfo destination, SourceRange location)
-        => Error(ErrorCode.SemanticCannotConvertType, $"Cannot convert type '{source.GetType().Name}' to '{destination.GetType().Name}'", location);
+        => Error(ErrorCode.SemanticCannotConvertType, $"Cannot convert type '{source.ToPrettyString()}' to '{destination.ToPrettyString()}'", location);
     internal void ConstantWithoutInitializerError(VarDeclaration constVarDecl)
         => Error(ErrorCode.SemanticConstantWithoutInitializer, $"Constant '{constVarDecl.Name}' requires an initializer", constVarDecl.NameToken.Location);
     internal void InitializerExpressionIsNotConstantError(VarDeclaration constVarDecl)
@@ -504,7 +504,7 @@ public sealed class SemanticsAnalyzer : Visitor
             VarArrayDeclarator a => constVarDecl.Type.Location.Merge(a.Location),
             _ => constVarDecl.Type.Location,
         };
-        Error(ErrorCode.SemanticTypeNotAllowedInConstant, $"Type '{type}' is not allowed in constants", loc);
+        Error(ErrorCode.SemanticTypeNotAllowedInConstant, $"Type '{type.ToPrettyString()}' is not allowed in constants", loc);
     }
     #endregion Errors
 }

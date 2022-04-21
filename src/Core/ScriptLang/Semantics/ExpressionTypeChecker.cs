@@ -301,19 +301,19 @@
 
         private static TypeInfo UnaryOperatorNotSupportedError(SemanticsAnalyzer s, UnaryExpression node, TypeInfo type)
         {
-            Error(s, ErrorCode.SemanticBadUnaryOp, $"Unary operator '{node.Operator}' not supported on type '{type}'", node.Location);
+            Error(s, ErrorCode.SemanticBadUnaryOp, $"Unary operator '{node.Operator}' not supported on type '{type.ToPrettyString()}'", node.Location);
             return ErrorType;
         }
 
         private static TypeInfo BinaryOperatorNotSupportedError(SemanticsAnalyzer s, BinaryExpression node, (TypeInfo LHS, TypeInfo RHS) typePair)
         {
-            Error(s, ErrorCode.SemanticBadBinaryOp, $"Binary operator '{node.Operator}' not supported on types '{typePair.LHS}' and '{typePair.RHS}'", node.Location);
+            Error(s, ErrorCode.SemanticBadBinaryOp, $"Binary operator '{node.Operator}' not supported on types '{typePair.LHS.ToPrettyString()}' and '{typePair.RHS.ToPrettyString()}'", node.Location);
             return ErrorType;
         }
 
         private static TypeInfo UnknownFieldError(SemanticsAnalyzer s, FieldAccessExpression node, TypeInfo type)
         {
-            Error(s, ErrorCode.SemanticUnknownField, $"'{type}' does not contain a field named '{node.FieldName}'", node.FieldNameToken.Location);
+            Error(s, ErrorCode.SemanticUnknownField, $"'{type.ToPrettyString()}' does not contain a field named '{node.FieldName}'", node.FieldNameToken.Location);
             return ErrorType;
         }
 
