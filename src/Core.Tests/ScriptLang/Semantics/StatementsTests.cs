@@ -209,4 +209,135 @@ public class StatementsTests : SemanticsTestsBase
         True(s.Diagnostics.HasErrors);
         CheckError(ErrorCode.SemanticCannotConvertType, (3, 23), (3, 23), s.Diagnostics);
     }
+
+    [Fact]
+    public void GotoWithTargetToItselfIsResolvedCorrectly()
+    {
+        var (s, ast) = AnalyzeAndAst(
+            @$"PROC foo()
+                label:
+                    GOTO label
+              ENDPROC"
+        );
+
+        False(s.Diagnostics.HasErrors);
+        var @goto = (GotoStatement)((FunctionDeclaration)ast.Declarations[0]).Body[0];
+        NotNull(@goto.Label);
+        Equal("label", @goto.Label!.Name);
+        Equal("label", @goto.TargetLabel);
+        Same(@goto, @goto.Semantics.Target);
+    }
+
+    [Fact]
+    public void GotoWithTargetBeforeIsResolvedCorrectly()
+    {
+        var (s, ast) = AnalyzeAndAst(
+            @$"PROC foo()
+                label:
+                    IF TRUE
+                    ENDIF
+
+                    GOTO label
+              ENDPROC"
+        );
+
+        False(s.Diagnostics.HasErrors);
+        var @if = (IfStatement)((FunctionDeclaration)ast.Declarations[0]).Body[0];
+        var @goto = (GotoStatement)((FunctionDeclaration)ast.Declarations[0]).Body[1];
+        NotNull(@if.Label);
+        Equal("label", @if.Label!.Name);
+        Null(@goto.Label);
+        Equal("label", @goto.TargetLabel);
+        Same(@if, @goto.Semantics.Target);
+    }
+
+    [Fact]
+    public void GotoWithTargetAfterIsResolvedCorrectly()
+    {
+        var (s, ast) = AnalyzeAndAst(
+            @$"PROC foo()
+                    GOTO label
+
+                label:
+                    IF TRUE
+                    ENDIF
+              ENDPROC"
+        );
+
+        False(s.Diagnostics.HasErrors);
+        var @goto = (GotoStatement)((FunctionDeclaration)ast.Declarations[0]).Body[0];
+        var @if = (IfStatement)((FunctionDeclaration)ast.Declarations[0]).Body[1];
+        NotNull(@if.Label);
+        Equal("label", @if.Label!.Name);
+        Null(@goto.Label);
+        Equal("label", @goto.TargetLabel);
+        Same(@if, @goto.Semantics.Target);
+    }
+
+    [Fact]
+    public void GotoWithTargetEmptyStatementIsResolvedCorrectly()
+    {
+        var (s, ast) = AnalyzeAndAst(
+            @$"PROC foo()
+                    GOTO label
+                    GOTO nestedLabel
+
+                    IF TRUE
+                    nestedLabel:
+                    ENDIF
+
+                label:
+              ENDPROC"
+        );
+
+        False(s.Diagnostics.HasErrors);
+        var @goto = (GotoStatement)((FunctionDeclaration)ast.Declarations[0]).Body[0];
+        var gotoNested = (GotoStatement)((FunctionDeclaration)ast.Declarations[0]).Body[1];
+        var emptyStmt = (EmptyStatement)((FunctionDeclaration)ast.Declarations[0]).Body[^1];
+        var nestedEmptyStmt = (EmptyStatement)((IfStatement)((FunctionDeclaration)ast.Declarations[0]).Body[2]).Then[0];
+
+        NotNull(emptyStmt.Label);
+        Equal("label", emptyStmt.Label!.Name);
+
+        NotNull(nestedEmptyStmt.Label);
+        Equal("nestedLabel", nestedEmptyStmt.Label!.Name);
+
+        Null(@goto.Label);
+        Equal("label", @goto.TargetLabel);
+        Same(emptyStmt, @goto.Semantics.Target);
+
+        Null(gotoNested.Label);
+        Equal("nestedLabel", gotoNested.TargetLabel);
+        Same(nestedEmptyStmt, gotoNested.Semantics.Target);
+    }
+
+    [Fact]
+    public void GotoWithUndefinedLabel()
+    {
+        var (s, _) = AnalyzeAndAst(
+            @$"PROC foo()
+                    GOTO label
+              ENDPROC"
+        );
+
+        True(s.Diagnostics.HasErrors);
+        CheckError(ErrorCode.SemanticUndefinedLabel, (2, 26), (2, 30), s.Diagnostics);
+    }
+
+    [Fact]
+    public void GotoCannotTargetLabelInDifferentFunction()
+    {
+        var (s, _) = AnalyzeAndAst(
+            @$"PROC bar()
+                 label:
+              ENDPROC
+
+              PROC foo()
+                    GOTO label
+              ENDPROC"
+        );
+
+        True(s.Diagnostics.HasErrors);
+        CheckError(ErrorCode.SemanticUndefinedLabel, (6, 26), (6, 30), s.Diagnostics);
+    }
 }

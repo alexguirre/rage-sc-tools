@@ -336,7 +336,7 @@ public sealed class SemanticsAnalyzer : Visitor
         {
             foreach (var @goto in gotosToResolve)
             {
-                if (labels.Find(@goto.TargetLabel, out var targetLabel))
+                if (GetLabel(@goto.TargetLabelToken, out var targetLabel))
                 {
                     @goto.Semantics = @goto.Semantics with { Target = targetLabel };
                 }
@@ -488,8 +488,6 @@ public sealed class SemanticsAnalyzer : Visitor
         => Error(ErrorCode.SemanticLabelAlreadyDefined, $"Label '{declaration.Name}' is already defined", declaration.NameToken.Location);
     internal void UndefinedLabelError(string name, SourceRange location)
         => Error(ErrorCode.SemanticUndefinedLabel, $"Label '{name}' is undefined", location);
-    internal void ExpectedLabelError(string name, SourceRange location)
-            => Error(ErrorCode.SemanticExpectedLabel, $"Expected a label, but found '{name}'", location);
     internal void CannotConvertTypeError(TypeInfo source, TypeInfo destination, SourceRange location)
         => Error(ErrorCode.SemanticCannotConvertType, $"Cannot convert type '{source.ToPrettyString()}' to '{destination.ToPrettyString()}'", location);
     internal void ConstantWithoutInitializerError(VarDeclaration constVarDecl)

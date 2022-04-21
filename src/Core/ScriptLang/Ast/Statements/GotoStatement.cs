@@ -7,7 +7,8 @@ public record struct GotoStatementSemantics(IStatement? Target);
 
 public sealed class GotoStatement : BaseStatement, ISemanticNode<GotoStatementSemantics>
 {
-    public string TargetLabel => Tokens[1].Lexeme.ToString();
+    public Token TargetLabelToken => Tokens[1];
+    public string TargetLabel => TargetLabelToken.Lexeme.ToString();
     public GotoStatementSemantics Semantics { get; set; }
 
     public GotoStatement(Token gotoToken, Token targetLabelIdentifierToken, Label? label)
