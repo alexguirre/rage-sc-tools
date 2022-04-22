@@ -48,6 +48,8 @@ public class ParserNew
 
         bool isInConstVarDeclaration = false;
 
+        Accept(TokenKind.EOS, out _); // ignore empty lines at the beginning
+
         while (!IsAtEOF)
         {
             if (Accept(TokenKind.CONST, out _))

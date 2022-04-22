@@ -1,24 +1,32 @@
-﻿namespace ScTools.ScriptLang.CodeGen
+﻿namespace ScTools.ScriptLang.CodeGen;
+
+using System.Collections.Generic;
+
+using ScTools.GameFiles;
+using ScTools.ScriptAssembly;
+
+public sealed class StringsTable
 {
-    using System.Collections.Generic;
+    private readonly SegmentBuilder segmentBuilder = new(Assembler.GetAddressingUnitByteSize(Assembler.Segment.String), isPaged: true);
+    private readonly Dictionary<string, int> stringToOffset = new();
 
-    using ScTools.ScriptAssembly;
+    public int ByteLength => segmentBuilder.Length;
+    public ScriptPageArray<byte> ToPages() => segmentBuilder.ToPages<byte>();
 
-    public sealed class StringsTable
+    public int GetOffsetOf(string str)
     {
-        private readonly SegmentBuilder segmentBuilder = new(Assembler.GetAddressingUnitByteSize(Assembler.Segment.String), isPaged: true);
+        TryAdd(str);
+        return stringToOffset[str];
+    }
 
-        public IDictionary<string, int> StringToID { get; } = new Dictionary<string, int>();
-        public int Count => StringToID.Count;
-        public int this[string str] => StringToID[str];
-
-        public void Add(string str)
+    public bool TryAdd(string str)
+    {
+        if (stringToOffset.TryAdd(str, segmentBuilder.Length))
         {
-            if (!StringToID.ContainsKey(str))
-            {
-                StringToID.Add(str, segmentBuilder.Length);
-                segmentBuilder.String(str);
-            }
+            segmentBuilder.String(str);
+            return true;
         }
+
+        return false;
     }
 }

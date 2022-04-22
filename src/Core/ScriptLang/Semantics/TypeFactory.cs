@@ -53,8 +53,14 @@ internal sealed class TypeFactory : EmptyVisitor<TypeInfo, SemanticsAnalyzer>
         {
             if (node.Semantics.DeclaredType is null)
             {
-                var fields = node.Fields.Select(f => new FieldInfo(f.Accept(this, s), f.Name));
-                node.Semantics = node.Semantics with { DeclaredType = new StructType(node.Name, fields.ToImmutableArray()) };
+                var offset = 0;
+                var fields = node.Fields.Select(f =>
+                {
+                    var field = new FieldInfo(f.Accept(this, s), f.Name, offset);
+                    offset += field.Type.SizeOf;
+                    return field;
+                }).ToImmutableArray();
+                node.Semantics = node.Semantics with { DeclaredType = new StructType(node.Name, fields) };
             }
 
             return node.Semantics.DeclaredType;

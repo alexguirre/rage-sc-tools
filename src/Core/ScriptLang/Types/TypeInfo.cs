@@ -2,6 +2,7 @@
 
 using ScTools.ScriptLang.Ast.Declarations;
 
+using System;
 using System.Collections.Immutable;
 using System.Linq;
 
@@ -15,7 +16,7 @@ public abstract record TypeInfo
     public abstract TReturn Accept<TReturn>(ITypeVisitor<TReturn> visitor);
 }
 
-public sealed record FieldInfo(TypeInfo Type, string Name);
+public sealed record FieldInfo(TypeInfo Type, string Name, int Offset);
 
 public sealed record ErrorType : TypeInfo
 {
@@ -83,9 +84,9 @@ public sealed record VectorType : TypeInfo
 {
     public override int SizeOf => 3;
     public override ImmutableArray<FieldInfo> Fields { get; } = ImmutableArray.Create(
-        new FieldInfo(FloatType.Instance, "x"),
-        new FieldInfo(FloatType.Instance, "y"),
-        new FieldInfo(FloatType.Instance, "z"));
+        new FieldInfo(FloatType.Instance, "x", 0),
+        new FieldInfo(FloatType.Instance, "y", 1),
+        new FieldInfo(FloatType.Instance, "z", 2));
 
     public override string ToPrettyString() => "VECTOR";
     public override TReturn Accept<TReturn>(ITypeVisitor<TReturn> visitor) => visitor.Visit(this);

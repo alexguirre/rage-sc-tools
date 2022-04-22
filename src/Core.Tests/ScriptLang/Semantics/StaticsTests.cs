@@ -187,8 +187,19 @@ public class StaticsTests : SemanticsTestsBase
         );
 
         False(s.Diagnostics.HasErrors);
-        AssertStaticWithInitializer(s, "foo", IntType.Instance, 1);
         AssertStaticWithInitializer(s, "bar", IntType.Instance, 1);
+    }
+
+    [Fact]
+    public void CanInitializeTextLabelToString()
+    {
+        var s = Analyze(
+            @$"CONST STRING foo = 'hello'
+               TEXT_LABEL_63 bar = foo"
+        );
+
+        False(s.Diagnostics.HasErrors);
+        AssertStaticWithInitializer(s, "bar", StringType.Instance, "hello");
     }
 
     [Fact]

@@ -2,13 +2,13 @@
 
 internal static class Rules
 {
-    //public static TypeInfo PromoteBinaryOperands(TypeInfo lhs, TypeInfo rhs)
-    //{
-    //    if (lhs is FloatType || rhs is FloatType)
-    //    {
-    //        return FloatType.Instance;
-    //    }
-    //}
+    public static bool IsDefaultInitialized(this TypeInfo type)
+        => type switch
+        {
+            StructType structTy => true, // TODO: structTy.Declaration.Fields.Any(f => f.Initializer is not null || IsDefaultInitialized(f.Type));
+            ArrayType => true,
+            _ => false,
+        };
 
     public static bool IsPromotableTo(this TypeInfo source, TypeInfo destination)
         => source == destination || source switch

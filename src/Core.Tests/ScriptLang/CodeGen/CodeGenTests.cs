@@ -1,10 +1,13 @@
 ﻿namespace ScTools.Tests.ScriptLang.CodeGen
 {
     using System.IO;
+    using System.Linq;
 
     using ScTools.ScriptAssembly;
     using ScTools.ScriptLang;
+    using ScTools.ScriptLang.Ast.Declarations;
     using ScTools.ScriptLang.CodeGen;
+    using ScTools.ScriptLang.Semantics;
     //using ScTools.ScriptLang.Semantics;
 
     using Xunit;
@@ -3702,41 +3705,32 @@
 
         private static void CompileRaw(string source, string expectedAssembly, NativeDB? nativeDB = null)
         {
-            throw new System.NotImplementedException();
             nativeDB ??= NativeDB.Empty;
 
-            using var sourceReader = new StringReader(source);
             var d = new DiagnosticsReport();
-            //var p = new Parser(sourceReader, "test.sc");
-            //p.Parse(d);
-            //var ast = new ScTools.ScriptLang.Ast.Program(SourceRange.Unknown);
-            //var globalSymbols = GlobalSymbolTableBuilder.Build(ast, d);
-            //IdentificationVisitor.Visit(ast, d, globalSymbols, nativeDB);
-            //TypeChecker.Check(ast, d, globalSymbols);
+            var l = new Lexer("codegen_tests.sc", source, d);
+            var p = new ParserNew(l, d);
+            var s = new SemanticsAnalyzer(d);
 
+            var u = p.ParseCompilationUnit();
+            Assert.False(d.HasErrors);
+            u.Accept(s);
             Assert.False(d.HasErrors);
 
-            using var sink = new StringWriter();
-            //new CodeGenerator(sink, ast, globalSymbols, d, nativeDB).Generate();
-            var s = sink.ToString();
-
+            var c = new ScriptCompiler(u.Declarations.OfType<ScriptDeclaration>().Single());
+            var compiledScript = c.Compile();
             Assert.False(d.HasErrors);
-
-            using var sourceAssemblyReader = new StringReader(s);
-            var sourceAssembler = Assembler.Assemble(sourceAssemblyReader, "test.scasm", nativeDB, options: new() { IncludeFunctionNames = true });
-
-            Assert.False(sourceAssembler.Diagnostics.HasErrors);
 
             using var expectedAssemblyReader = new StringReader(expectedAssembly);
             var expectedAssembler = Assembler.Assemble(expectedAssemblyReader, "test_expected.scasm", nativeDB, options: new() { IncludeFunctionNames = true });
 
             using StringWriter sourceDumpWriter = new(), expectedDumpWriter = new();
-            new Dumper(sourceAssembler.OutputScript).Dump(sourceDumpWriter, true, true, true, true, true);
+            new Dumper(compiledScript).Dump(sourceDumpWriter, true, true, true, true, true);
             new Dumper(expectedAssembler.OutputScript).Dump(expectedDumpWriter, true, true, true, true, true);
 
             string sourceDump = sourceDumpWriter.ToString(), expectedDump = expectedDumpWriter.ToString();
 
-            Util.AssertScriptsAreEqual(sourceAssembler.OutputScript, expectedAssembler.OutputScript);
+            Util.AssertScriptsAreEqual(compiledScript, expectedAssembler.OutputScript);
         }
     }
 }

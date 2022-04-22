@@ -1,130 +1,80 @@
-﻿#if false
-namespace ScTools.ScriptLang.CodeGen
+﻿namespace ScTools.ScriptLang.CodeGen;
+
+using System;
+
+using ScTools.ScriptLang.Ast;
+using ScTools.ScriptLang.Ast.Declarations;
+using ScTools.ScriptLang.Ast.Expressions;
+using ScTools.ScriptLang.Types;
+
+/// <summary>
+/// Emits code to push the value of expressions.
+/// </summary>
+internal sealed class ValueEmitter : Visitor
 {
-    using System.Diagnostics;
+    private readonly CodeEmitter _C;
 
-    using ScTools.ScriptAssembly;
-    using ScTools.ScriptLang.Ast;
-    using ScTools.ScriptLang.Ast.Declarations;
-    using ScTools.ScriptLang.Ast.Expressions;
+    public ValueEmitter(CodeEmitter codeEmitter) => _C = codeEmitter;
 
-    /// <summary>
-    /// Emits code to push the value of expressions.
-    /// </summary>
-    public sealed class ValueEmitter : EmptyVisitor
+    public override void Visit(IntLiteralExpression node) => _C.EmitPushInt(node.Value);
+    public override void Visit(FloatLiteralExpression node) => _C.EmitPushFloat(node.Value);
+    public override void Visit(BoolLiteralExpression node) => _C.EmitPushBool(node.Value);
+    public override void Visit(NullExpression node) => _C.EmitPushNull();
+    public override void Visit(StringLiteralExpression node) => _C.EmitPushString(node.Value);
+
+    public override void Visit(VectorExpression node)
     {
-        public CodeGenerator CG { get; }
+        node.X.Accept(this);
+        node.Y.Accept(this);
+        node.Z.Accept(this);
+    }
 
-        public ValueEmitter(CodeGenerator cg) => CG = cg;
+    public override void Visit(FieldAccessExpression node)
+    {
+        _C.EmitLoadFrom(node);
+    }
 
-        public override Void Visit(BinaryExpression node, Void param)
+    public override void Visit(IndexingExpression node)
+    {
+        _C.EmitLoadFrom(node);
+    }
+
+    public override void Visit(InvocationExpression node)
+    {
+        throw new NotImplementedException(nameof(InvocationExpression));
+        //node.Callee.Type!.CGInvocation(CG, node);
+    }
+
+    public override void Visit(UnaryExpression node)
+    {
+        throw new NotImplementedException(nameof(UnaryExpression));
+        //node.SubExpression.Type!.CGUnaryOperation(CG, node);
+    }
+
+    public override void Visit(BinaryExpression node)
+    {
+        throw new NotImplementedException(nameof(BinaryExpression));
+    }
+
+    public override void Visit(NameExpression node)
+    {
+        if (node.Semantics.ValueKind.Is(ValueKind.Addressable))
         {
-            node.LHS.Type!.CGBinaryOperation(CG, node);
-            return default;
+            _C.EmitLoadFrom(node);
         }
-
-        public override Void Visit(BoolLiteralExpression node, Void param)
+        else
         {
-            CG.EmitPushConstInt(node.Value ? 1 : 0);
-            return default;
-        }
-
-        public override Void Visit(FieldAccessExpression node, Void param)
-        {
-            CG.EmitLoadFrom(node);
-            return default;
-        }
-
-        public override Void Visit(FloatLiteralExpression node, Void param)
-        {
-            CG.EmitPushConstFloat(node.Value);
-            return default;
-        }
-
-        public override Void Visit(IndexingExpression node, Void param)
-        {
-            CG.EmitLoadFrom(node);
-            return default;
-        }
-
-        public override Void Visit(IntLiteralExpression node, Void param)
-        {
-            CG.EmitPushConstInt(node.Value);
-            return default;
-        }
-
-        public override Void Visit(InvocationExpression node, Void param)
-        {
-            node.Callee.Type!.CGInvocation(CG, node);
-            return default;
-        }
-
-        public override Void Visit(NullExpression node, Void param)
-        {
-            CG.EmitPushConstInt(0);
-            return default;
-        }
-
-        public override Void Visit(SizeOfExpression node, Void param)
-        {
-            CG.EmitPushConstInt(node.SubExpression.Type!.SizeOf);
-            return default;
-        }
-
-        public override Void Visit(StringLiteralExpression node, Void param)
-        {
-            if (node.Value is null)
+            switch (node.Semantics.Declaration)
             {
-                CG.EmitPushConstInt(0);
+                case FunctionDeclaration func:
+                    _C.EmitFunctionAddress(func);
+                    break;
+                case IValueDeclaration { Semantics.ConstantValue: not null } val:
+                    _C.EmitPushConst(val.Semantics.ConstantValue);
+                    break;
+                default:
+                    throw new NotImplementedException($"Unsupported declaration");
             }
-            else
-            {
-                CG.EmitPushConstInt(CG.Strings[node.Value]);
-                CG.Emit(Opcode.STRING);
-            }
-            return default;
-        }
-
-        public override Void Visit(UnaryExpression node, Void param)
-        {
-            node.SubExpression.Type!.CGUnaryOperation(CG, node);
-            return default;
-        }
-
-        public override Void Visit(NameExpression node, Void param)
-        {
-            if (node.Semantics.IsLValue)
-            {
-                CG.EmitLoadFrom(node);
-            }
-            else
-            {
-                switch (node.Semantics.Declaration)
-                {
-                    case FuncDeclaration { Prototype: { Kind: FuncKind.UserDefined } } func:
-                        CG.Emit(Opcode.PUSH_CONST_U24, func.Name);
-                        break;
-                    case VarDeclaration { Kind: VarKind.Constant } var:
-                        CG.EmitValue(var.Initializer!);
-                        break;
-                    // FIXME
-                    //case EnumMemberDeclaration enumMember:
-                    //    CG.EmitPushConstInt(enumMember.Value);
-                    //    break;
-                    default: throw new System.NotImplementedException();
-                }
-            }
-
-            return default;
-        }
-
-        public override Void Visit(VectorExpression node, Void param)
-        {
-            node.X.Accept(this, param);
-            node.Y.Accept(this, param);
-            node.Z.Accept(this, param);
-            return default;
         }
     }
 }
-#endif

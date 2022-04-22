@@ -7,12 +7,15 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 
-public sealed class ScriptDeclaration : BaseNode, IDeclaration
+public record struct ScriptDeclarationSemantics(List<VarDeclaration>? UsedStatics);
+
+public sealed class ScriptDeclaration : BaseNode, IDeclaration, ISemanticNode<ScriptDeclarationSemantics>
 {
     public Token NameToken => Tokens[1];
     public string Name => NameToken.Lexeme.ToString();
     public ImmutableArray<VarDeclaration> Parameters { get; }
     public ImmutableArray<IStatement> Body { get; }
+    public ScriptDeclarationSemantics Semantics { get; set; }
 
     public ScriptDeclaration(Token scriptKeyword, Token nameIdentifier, Token paramsOpenParen, Token paramsCloseParen, Token endscriptKeyword,
                              IEnumerable<VarDeclaration> parameters, IEnumerable<IStatement> body)

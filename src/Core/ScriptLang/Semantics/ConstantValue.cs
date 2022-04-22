@@ -15,6 +15,30 @@ public abstract record ConstantValue
     public abstract string? StringValue { get; }
     public abstract (float X, float Y, float Z) VectorValue { get; }
 
+    public void Match(
+        Action caseNull,
+        Action<int> caseInt,
+        Action<float> caseFloat,
+        Action<bool> caseBool,
+        Action<string> caseString,
+        Action<float, float, float> caseVector)
+    {
+        switch (Type)
+        {
+            case NullType: caseNull(); break;
+            case IntType: caseInt(IntValue); break;
+            case FloatType: caseFloat(FloatValue); break;
+            case BoolType: caseBool(BoolValue); break;
+            case StringType: caseString(StringValue!); break;
+            case VectorType:
+                var (x, y, z) = VectorValue;
+                caseVector(x, y, z);
+                break;
+
+            default: Debug.Assert(false, $"Unsupported type '{Type.ToPrettyString()}'"); break;
+        }
+    }
+
     public static ConstantValue Null => ConstantValueNull.Instance;
     public static ConstantValue Int(int value) => new ConstantValueInt(value);
     public static ConstantValue Float(float value) => new ConstantValueFloat(value);

@@ -45,6 +45,43 @@ public partial class ParserTests
         }
 
         [Fact]
+        public void CompilationUnitCanStartWithEmptyLines()
+        {
+            var p = ParserFor(
+                @"
+                  /*empty*/
+
+                  USING 'hello.sch'
+
+                  SCRIPT bar
+                  ENDSCRIPT"
+            );
+
+            var u = p.ParseCompilationUnit();
+            Assert(u.Usings[0], n => n is UsingDirective { Path: "hello.sch" });
+
+            AssertScriptDeclaration(u.Declarations[0], "bar",
+                @params => Empty(@params),
+                body => Empty(body));
+
+            NoErrorsAndIsAtEOF(p);
+        }
+
+        [Fact]
+        public void EmptyCompilationUnit()
+        {
+            var p = ParserFor(
+                @""
+            );
+
+            var u = p.ParseCompilationUnit();
+            Empty(u.Usings);
+            Empty(u.Declarations);
+
+            NoErrorsAndIsAtEOF(p);
+        }
+
+        [Fact]
         public void StaticVars()
         {
             var p = ParserFor(

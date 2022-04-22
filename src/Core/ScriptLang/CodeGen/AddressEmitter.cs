@@ -1,9 +1,9 @@
-﻿#if false
-namespace ScTools.ScriptLang.CodeGen
+﻿namespace ScTools.ScriptLang.CodeGen
 {
+    using System;
     using System.Diagnostics;
+    using System.Linq;
 
-    using ScTools.ScriptAssembly;
     using ScTools.ScriptLang.Ast;
     using ScTools.ScriptLang.Ast.Declarations;
     using ScTools.ScriptLang.Ast.Expressions;
@@ -11,103 +11,30 @@ namespace ScTools.ScriptLang.CodeGen
     /// <summary>
     /// Emits code to push the address of lvalue expressions.
     /// </summary>
-    public sealed class AddressEmitter : EmptyVisitor
+    internal sealed class AddressEmitter : Visitor
     {
-        public CodeGenerator CG { get; }
+        private readonly CodeEmitter _C;
 
-        public AddressEmitter(CodeGenerator cg) => CG = cg;
+        public AddressEmitter(CodeEmitter codeEmitter) => _C = codeEmitter;
 
-        public override Void Visit(FieldAccessExpression node, Void param)
+        public override void Visit(NameExpression node)
         {
-            node.SubExpression.Type!.CGFieldAddress(CG, node);
-            return default;
+            Debug.Assert(node.Semantics.Declaration is VarDeclaration); // VarDeclaration are the only declarations that can be lvalues
+            var varDecl = (VarDeclaration)node.Semantics.Declaration!;
+            _C.EmitVarAddress(varDecl);
         }
 
-        public override Void Visit(IndexingExpression node, Void param)
+        public override void Visit(FieldAccessExpression node)
         {
-            node.Array.Type!.CGArrayItemAddress(CG, node);
-            return default;
+            var field = node.Semantics.Field;
+            Debug.Assert(field is not null);
+            _C.EmitAddress(node.SubExpression);
+            _C.EmitOffset(field.Offset);
         }
 
-        public override Void Visit(NameExpression node, Void param)
+        public override void Visit(IndexingExpression node)
         {
-            var varDecl = (VarDeclaration)node.Semantics.Declaration!; // VarDeclaration are the only declarations that can be lvalues
-
-            switch (varDecl.Kind)
-            {
-                case VarKind.Constant: Debug.Assert(false, "Cannot get address of constant var"); break;
-
-                case VarKind.Global:
-                    switch (varDecl.Address)
-                    {
-                        case >= 0 and <= 0x0000FFFF:
-                            CG.Emit(Opcode.GLOBAL_U16, varDecl.Address);
-                            break;
-
-                        case >= 0 and <= 0x00FFFFFF:
-                            CG.Emit(Opcode.GLOBAL_U24, varDecl.Address);
-                            break;
-
-                        default: Debug.Assert(false, "Global var address too big"); break;
-                    }
-                    break;
-
-                case VarKind.Static or VarKind.ScriptParameter:
-                    switch (varDecl.Address)
-                    {
-                        case >= 0 and <= 0x000000FF:
-                            CG.Emit(Opcode.STATIC_U8, varDecl.Address);
-                            break;
-
-                        case >= 0 and <= 0x0000FFFF:
-                            CG.Emit(Opcode.STATIC_U16, varDecl.Address);
-                            break;
-
-                        default: Debug.Assert(false, "Static var address too big"); break;
-                    }
-                    break;
-
-                case VarKind.Parameter:
-                    if (varDecl.IsReference)
-                    {
-                        // parameter passed by reference, the address is its value
-                        switch (varDecl.Address)
-                        {
-                            case >= 0 and <= 0x000000FF:
-                                CG.Emit(Opcode.LOCAL_U8_LOAD, varDecl.Address);
-                                break;
-
-                            case >= 0 and <= 0x0000FFFF:
-                                CG.Emit(Opcode.LOCAL_U8_LOAD, varDecl.Address);
-                                break;
-
-                            default: Debug.Assert(false, "Local var address too big"); break;
-                        }
-                    }
-                    else
-                    {
-                        // parameter passed by value, treat it as a local variable
-                        goto case VarKind.Local;
-                    }
-                    break;
-                case VarKind.Local:
-                    switch (varDecl.Address)
-                    {
-                        case >= 0 and <= 0x000000FF:
-                            CG.Emit(Opcode.LOCAL_U8, varDecl.Address);
-                            break;
-
-                        case >= 0 and <= 0x0000FFFF:
-                            CG.Emit(Opcode.LOCAL_U16, varDecl.Address);
-                            break;
-
-                        default: Debug.Assert(false, "Local var address too big"); break;
-                    }
-                    break;
-            }
-
-            return default;
+            _C.EmitArrayIndexing(node);
         }
     }
 }
-#endif

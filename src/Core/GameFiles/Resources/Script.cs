@@ -38,16 +38,16 @@
         public long Unknown_78h { get; set; }
 
         // reference data
-        public ScriptPageArray<byte> CodePages { get; set; }
-        public ScriptValue[] Statics { get; set; }
-        public ScriptPageArray<ScriptValue> GlobalsPages { get; set; }
-        public ulong[] Natives { get; set; }
-        public string Name { get; set; }
-        public ScriptPageArray<byte> StringsPages { get; set; }
+        public ScriptPageArray<byte>? CodePages { get; set; }
+        public ScriptValue[]? Statics { get; set; }
+        public ScriptPageArray<ScriptValue>? GlobalsPages { get; set; }
+        public ulong[]? Natives { get; set; }
+        public string? Name { get; set; }
+        public ScriptPageArray<byte>? StringsPages { get; set; }
 
-        private ResourceSystemStructBlock<ScriptValue> staticsBlock;
-        private ResourceSystemStructBlock<ulong> nativesBlock;
-        private string_r nameBlock;
+        private ResourceSystemStructBlock<ScriptValue>? staticsBlock;
+        private ResourceSystemStructBlock<ulong>? nativesBlock;
+        private string_r? nameBlock;
 
         public uint GlobalsLength
         {

@@ -196,7 +196,7 @@
             var field = type.Fields.SingleOrDefault(f => ParserNew.CaseInsensitiveComparer.Equals(f.Name, node.FieldName));
             if (field is not null)
             {
-                node.Semantics = new(field.Type, node.SubExpression.ValueKind);
+                node.Semantics = new(field.Type, node.SubExpression.ValueKind, field);
                 return field.Type;
             }
 
