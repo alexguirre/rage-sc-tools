@@ -33,9 +33,9 @@ public sealed class CodeEmitter
     private readonly List<VarDeclaration> statics = new();
     private readonly Dictionary<VarDeclaration, int> staticsOffsets = new();
 
-    private record struct FunctionInfo(byte ArgCount, TypeInfo ReturnType);
-    private FunctionInfo? currentFunctionInfo = null;
+    private byte currentFunctionArgCount;
     private int currentFunctionFrameSize = 0;
+    private TypeInfo? currentFunctionReturnType = null;
     private readonly Dictionary<VarDeclaration, int> currentFunctionAllocatedLocals = new();
 
     public StringsTable Strings { get; } = new();
@@ -393,6 +393,7 @@ public sealed class CodeEmitter
 
     private void EmitFunctionCommon(string name, ImmutableArray<VarDeclaration> parameters, ImmutableArray<IStatement> body, TypeInfo returnType)
     {
+        currentFunctionReturnType = returnType;
         Debug.Assert(returnType.SizeOf <= byte.MaxValue, $"Return type too big (sizeof: {returnType.SizeOf})");
 
         currentFunctionFrameSize = 0;
@@ -410,7 +411,7 @@ public sealed class CodeEmitter
             argCount += paramSize;
         }
         Debug.Assert(argCount <= byte.MaxValue, $"Too many parameters (argCount: {argCount})");
-        currentFunctionInfo = new((byte)argCount, returnType);
+        currentFunctionArgCount = (byte)argCount;
 
         // allocate space required by the engine to store the return address and caller frame address
         AllocateFrameSpace(2);
@@ -438,9 +439,8 @@ public sealed class CodeEmitter
 
     public void EmitEpilogue()
     {
-        Debug.Assert(currentFunctionInfo is not null);
-        var (argCount, returnType) = currentFunctionInfo.Value;
-        EmitLeave(argCount, (byte)returnType.SizeOf);
+        Debug.Assert(currentFunctionReturnType is not null);
+        EmitLeave(currentFunctionArgCount, (byte)currentFunctionReturnType.SizeOf);
     }
 
     public int AllocateFrameSpace(int size)

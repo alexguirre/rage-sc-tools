@@ -100,7 +100,7 @@ public class LocalVarsTests : CodeGenTestsBase
     }
 
     [Fact]
-    public void TestStructDefaultInitializer()
+    public void StructWithDefaultInitializer()
     {
         CompileScript(
         scriptSource: @"
@@ -164,7 +164,7 @@ public class LocalVarsTests : CodeGenTestsBase
     }
 
     [Fact]
-    public void TestStructWithArraysDefaultInitializer()
+    public void StructWithArraysDefaultInitializer()
     {
         CompileScript(
         scriptSource: @"
@@ -223,7 +223,7 @@ public class LocalVarsTests : CodeGenTestsBase
     }
 
     [Fact]
-    public void TestArrayOfStructsDefaultInitializer()
+    public void ArrayOfStructsWithDefaultInitializer()
     {
         // Test a array of structs with a default initializer found in the game scripts
         // In the b2215 decompiled scripts, it is default initialized as follows:
@@ -328,7 +328,7 @@ public class LocalVarsTests : CodeGenTestsBase
     }
 
     [Fact]
-    public void TestStructWithInnerStructDefaultInitializer()
+    public void StructWithInnerStructWithDefaultInitializer()
     {
         // Test a fairly complex struct found in the game scripts
         // In the b2215 decompiled scripts, it is default initialized as follows:
