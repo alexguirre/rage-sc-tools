@@ -33,68 +33,68 @@ public class StaticsTests : SemanticsTestsBase
     }
 
     [Theory]
-    [InlineData("1", 1)]
-    [InlineData("NULL", 0)]
-    [InlineData("`foo` - 1", 0x238678DD - 1)]
-    [InlineData("(1 + 2 * 3) & 0xFE", (1 + 2 * 3) & 0xFE)]
-    public void IntInitializerExpressionIsEvaluated(string initializerExpr, int expected)
+    [InlineData("1", 1, typeof(IntType))]
+    [InlineData("NULL", 0, typeof(NullType))]
+    [InlineData("`foo` - 1", 0x238678DD - 1, typeof(IntType))]
+    [InlineData("(1 + 2 * 3) & 0xFE", (1 + 2 * 3) & 0xFE, typeof(IntType))]
+    public void IntInitializerExpressionIsEvaluated(string initializerExpr, int expected, Type expectedConstantType)
     {
         var s = Analyze(
             @$"INT foo = {initializerExpr}"
         );
 
         False(s.Diagnostics.HasErrors);
-        AssertStaticWithInitializer(s, "foo", IntType.Instance, expected);
+        AssertStaticWithInitializer(s, "foo", IntType.Instance, expected, (TypeInfo)Activator.CreateInstance(expectedConstantType)!);
     }
 
     [Theory]
-    [InlineData("1.5", 1.5f)]
-    [InlineData("1", 1.0f)]
-    [InlineData("NULL", 0.0f)]
-    [InlineData("1.0 + 2.0 * 3.0", 1.0f + 2.0f * 3.0f)]
-    [InlineData("1 + 2 * 3", (float)(1 + 2 * 3))] // INT expression is promoted to FLOAT
-    public void FloatInitializerExpressionIsEvaluated(string initializerExpr, float expected)
+    [InlineData("1.5", 1.5f, typeof(FloatType))]
+    [InlineData("1", 1.0f, typeof(IntType))]
+    [InlineData("NULL", 0.0f, typeof(NullType))]
+    [InlineData("1.0 + 2.0 * 3.0", 1.0f + 2.0f * 3.0f, typeof(FloatType))]
+    [InlineData("1 + 2 * 3", (float)(1 + 2 * 3), typeof(IntType))] // INT expression is promoted to FLOAT
+    public void FloatInitializerExpressionIsEvaluated(string initializerExpr, float expected, Type expectedConstantType)
     {
         var s = Analyze(
             @$"FLOAT foo = {initializerExpr}"
         );
 
         False(s.Diagnostics.HasErrors);
-        AssertStaticWithInitializer(s, "foo", FloatType.Instance, expected);
+        AssertStaticWithInitializer(s, "foo", FloatType.Instance, expected, (TypeInfo)Activator.CreateInstance(expectedConstantType)!);
     }
 
     [Theory]
-    [InlineData("TRUE", true)]
-    [InlineData("FALSE", false)]
-    [InlineData("NULL", false)]
-    [InlineData("1", true)]
-    [InlineData("0", false)]
-    [InlineData("1+1", true)]
-    [InlineData("TRUE AND FALSE", false)]
-    [InlineData("1 == 0 OR TRUE AND 1", true)]
-    public void BoolInitializerExpressionIsEvaluated(string initializerExpr, bool expected)
+    [InlineData("TRUE", true, typeof(BoolType))]
+    [InlineData("FALSE", false, typeof(BoolType))]
+    [InlineData("NULL", false, typeof(NullType))]
+    [InlineData("1", true, typeof(IntType))]
+    [InlineData("0", false, typeof(IntType))]
+    [InlineData("1+1", true, typeof(IntType))]
+    [InlineData("TRUE AND FALSE", false, typeof(BoolType))]
+    [InlineData("1 == 0 OR TRUE AND 1", true, typeof(BoolType))]
+    public void BoolInitializerExpressionIsEvaluated(string initializerExpr, bool expected, Type expectedConstantType)
     {
         var s = Analyze(
             @$"BOOL foo = {initializerExpr}"
         );
 
         False(s.Diagnostics.HasErrors);
-        AssertStaticWithInitializer(s, "foo", BoolType.Instance, expected);
+        AssertStaticWithInitializer(s, "foo", BoolType.Instance, expected, (TypeInfo)Activator.CreateInstance(expectedConstantType)!);
     }
 
     [Theory]
-    [InlineData("'hello'", "hello")]
-    [InlineData("''", "")]
-    [InlineData("'a\\nb'", "a\nb")]
-    [InlineData("NULL", null)]
-    public void StringInitializerExpressionIsEvaluated(string initializerExpr, string expected)
+    [InlineData("'hello'", "hello", typeof(StringType))]
+    [InlineData("''", "", typeof(StringType))]
+    [InlineData("'a\\nb'", "a\nb", typeof(StringType))]
+    [InlineData("NULL", null, typeof(NullType))]
+    public void StringInitializerExpressionIsEvaluated(string initializerExpr, string? expected, Type expectedConstantType)
     {
         var s = Analyze(
             @$"STRING foo = {initializerExpr}"
         );
 
         False(s.Diagnostics.HasErrors);
-        AssertStaticWithInitializer(s, "foo", StringType.Instance, expected);
+        AssertStaticWithInitializer(s, "foo", StringType.Instance, expected, (TypeInfo)Activator.CreateInstance(expectedConstantType)!);
     }
 
     [Theory]
@@ -126,7 +126,7 @@ public class StaticsTests : SemanticsTestsBase
 
     [Theory]
     [MemberData(nameof(GetAllHandleTypes))]
-    public void HandleTypesWithInitializerAreAllowed(HandleType handleType)
+    public void HandleTypesWithNullInitializerAreAllowed(HandleType handleType)
     {
         var s = Analyze(
             @$"{HandleType.KindToTypeName(handleType.Kind)} foo = NULL"
@@ -199,7 +199,7 @@ public class StaticsTests : SemanticsTestsBase
         );
 
         False(s.Diagnostics.HasErrors);
-        AssertStaticWithInitializer(s, "bar", StringType.Instance, "hello");
+        AssertStaticWithInitializer(s, "bar", new TextLabelType(64), "hello", StringType.Instance);
     }
 
     [Fact]
@@ -244,12 +244,13 @@ public class StaticsTests : SemanticsTestsBase
         );
 
         False(s.Diagnostics.HasErrors);
-        AssertStatic(s, "foo", new FunctionType(VoidType.Instance, ImmutableArray<TypeInfo>.Empty));
+        AssertStatic(s, "foo", new FunctionType(VoidType.Instance, ImmutableArray<ParameterInfo>.Empty));
     }
 
     [Fact]
     public void CannotInitializeFunctionPointer()
     {
+        // TODO: should this be allowed? function addresses are constant after all
         var s = Analyze(
             @$"PROCPTR FOOHANDLER()
 
@@ -265,11 +266,12 @@ public class StaticsTests : SemanticsTestsBase
     [Fact]
     public void ReferencesAreNotAllowed()
     {
+        // This is now detected in the parser phase
         var s = Analyze(
-            @$"CONST INT& foo"
+            @$"INT& foo"
         );
 
-        CheckError(ErrorCode.SemanticTypeNotAllowedInConstant, (1, 7), (1, 10), s.Diagnostics);
+        CheckError(ErrorCode.ParserReferenceNotAllowed, (1, 4), (1, 4), s.Diagnostics);
     }
 
     [Fact]
@@ -347,6 +349,7 @@ public class StaticsTests : SemanticsTestsBase
                 case float v: Equal(v, constVar.Semantics.ConstantValue!.FloatValue); break;
                 case bool v: Equal(v, constVar.Semantics.ConstantValue!.BoolValue); break;
                 case string v: Equal(v, constVar.Semantics.ConstantValue!.StringValue); break;
+                case null: Null(constVar.Semantics.ConstantValue!.StringValue); break;
                 default: throw new NotImplementedException();
             }
         }

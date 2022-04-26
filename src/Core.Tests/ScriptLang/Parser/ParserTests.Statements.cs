@@ -690,11 +690,10 @@ public partial class ParserTests
         }
 
         [Fact]
-        public void VarDeclarationStatementWithRefType()
+        public void VarDeclarationStatementCannotBeReference()
         {
             var p = ParserFor(
-                @"INT &hello
-                  label: FLOAT &foo, &bar"
+                @"INT &hello"
             );
 
             Assert(p.ParseStatement(), n => n is VarDeclaration
@@ -704,21 +703,9 @@ public partial class ParserTests
                 Name: "hello", Declarator: VarRefDeclarator { Name: "hello" },
                 Initializer: null, Kind: VarKind.Local
             });
-            Assert(p.ParseStatement(), n => n is VarDeclaration
-            {
-                Label: Label { Name: "label" },
-                Type: TypeName { Name: "FLOAT" },
-                Name: "foo", Declarator: VarRefDeclarator { Name: "foo" },
-                Initializer: null, Kind: VarKind.Local
-            });
-            Assert(p.ParseStatement(), n => n is VarDeclaration
-            {
-                Label: null,
-                Type: TypeName { Name: "FLOAT" },
-                Name: "bar", Declarator: VarRefDeclarator { Name: "bar" },
-                Initializer: null, Kind: VarKind.Local
-            });
-            NoErrorsAndIsAtEOF(p);
+
+            CheckError(ErrorCode.ParserReferenceNotAllowed, (1, 5), (1, 5), p.Diagnostics);
+            True(p.IsAtEOF);
         }
 
         [Fact]

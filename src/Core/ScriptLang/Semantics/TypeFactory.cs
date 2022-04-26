@@ -38,7 +38,7 @@ internal sealed class TypeFactory : EmptyVisitor<TypeInfo, SemanticsAnalyzer>
         {
             if (node.Semantics.DeclaredType is null)
             {
-                var enumTy = new EnumType(node.Name);
+                var enumTy = new EnumType(node);
                 node.Members.ForEach(m => m.Semantics = m.Semantics with { ValueType = enumTy });
                 node.Semantics = node.Semantics with { DeclaredType = enumTy };
             }
@@ -60,7 +60,7 @@ internal sealed class TypeFactory : EmptyVisitor<TypeInfo, SemanticsAnalyzer>
                     offset += field.Type.SizeOf;
                     return field;
                 }).ToImmutableArray();
-                node.Semantics = node.Semantics with { DeclaredType = new StructType(node.Name, fields) };
+                node.Semantics = node.Semantics with { DeclaredType = new StructType(node, fields) };
             }
 
             return node.Semantics.DeclaredType;
@@ -116,7 +116,7 @@ internal sealed class TypeFactory : EmptyVisitor<TypeInfo, SemanticsAnalyzer>
         private FunctionType MakeFunctionType(TypeName? returnType, ImmutableArray<VarDeclaration> parameters, SemanticsAnalyzer s)
         {
             var returnTy = returnType?.Accept(this, s) ?? VoidType.Instance;
-            var parametersTy = parameters.Select(p => p.Accept(this, s));
+            var parametersTy = parameters.Select(p => new ParameterInfo(p.Accept(this, s), p.IsReference));
             return new FunctionType(returnTy, parametersTy.ToImmutableArray());
         }
     }
@@ -134,7 +134,7 @@ internal sealed class TypeFactory : EmptyVisitor<TypeInfo, SemanticsAnalyzer>
             => param.Var.Type.Accept(declarationVisitor, param.S);
 
         public override TypeInfo Visit(VarRefDeclarator node, (VarDeclaration Var, SemanticsAnalyzer S) param)
-            => new RefType(param.Var.Type.Accept(declarationVisitor, param.S));
+            => param.Var.Type.Accept(declarationVisitor, param.S);
 
         public override TypeInfo Visit(VarArrayDeclarator node, (VarDeclaration Var, SemanticsAnalyzer S) param)
         {

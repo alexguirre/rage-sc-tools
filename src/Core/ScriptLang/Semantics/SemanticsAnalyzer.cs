@@ -24,6 +24,8 @@ public sealed class SemanticsAnalyzer : Visitor
     private readonly SymbolTable<IStatement> labels = new();
     private readonly TypeRegistry typeRegistry = new();
     private EnumMemberDeclaration? previousEnumMember = null;
+    private StructDeclaration? currentStructDeclaration = null;
+    private TypeInfo? currentFunctionReturnType = null;
     private readonly Stack<IBreakableStatement> breakableStatements = new();
     private readonly Stack<ILoopStatement> loopStatements = new();
     private readonly List<GotoStatement> gotosToResolve = new();
@@ -38,12 +40,8 @@ public sealed class SemanticsAnalyzer : Visitor
 
     public override void Visit(CompilationUnit node)
     {
-        // TODO: what to do with the USINGs
-
         node.Declarations.ForEach(decl => decl.Accept(this));
     }
-
-    public override void Visit(UsingDirective node) => throw new InvalidOperationException();
 
     public override void Visit(EnumDeclaration node)
     {
@@ -93,20 +91,24 @@ public sealed class SemanticsAnalyzer : Visitor
     {
         AddSymbol(node);
 
+        currentFunctionReturnType = VoidType.Instance;
         EnterFunctionScope();
         node.Parameters.ForEach(p => p.Accept(this));
         VisitBody(node.Body);
         ExitFunctionScope();
+        currentFunctionReturnType = null;
     }
 
     public override void Visit(FunctionDeclaration node)
     {
         AddSymbol(node);
 
+        currentFunctionReturnType = ((FunctionType)node.Semantics.ValueType!).Return;
         EnterFunctionScope();
         node.Parameters.ForEach(p => p.Accept(this));
         VisitBody(node.Body);
         ExitFunctionScope();
+        currentFunctionReturnType = null;
     }
 
     public override void Visit(FunctionPointerTypeDeclaration node)
@@ -134,11 +136,13 @@ public sealed class SemanticsAnalyzer : Visitor
 
     public override void Visit(StructDeclaration node)
     {
-        AddSymbol(node);
+        currentStructDeclaration = node;
+        EnterScope();
+        node.Fields.ForEach(f => f.Accept(this));
+        ExitScope();
+        currentStructDeclaration = null;
 
-        // TODO: check no reference in fields
-        // TODO: type-check field initializer (in Visit(VarDeclaration) probably)
-        // TODO: ensure field initializer is constant
+        AddSymbol(node);
     }
 
     public override void Visit(VarDeclaration node)
@@ -150,11 +154,10 @@ public sealed class SemanticsAnalyzer : Visitor
         // TODO: local variables
         // TODO: parameters
         // TODO: script parameters
-        // TODO: struct fields
 
         if (node.Kind is VarKind.Constant)
         {
-            if (varType is not (IntType or FloatType or BoolType or StringType or VectorType or EnumType))
+            if (!varType.IsError && varType is not (IntType or FloatType or BoolType or StringType or VectorType or EnumType))
             {
                 TypeNotAllowedInConstantError(node, varType);
             }
@@ -187,6 +190,56 @@ public sealed class SemanticsAnalyzer : Visitor
 
                 node.Semantics = node.Semantics with { ConstantValue = value };
             }
+        }
+        else if (node.Kind is VarKind.Static)
+        {
+            var initializerType = node.Initializer?.Accept(exprTypeChecker, this) ?? ErrorType.Instance;
+
+            ConstantValue? value = null;
+            if (!varType.IsError && !initializerType.IsError)
+            {
+                Debug.Assert(node.Initializer is not null);
+                if (!node.Initializer.ValueKind.Is(ValueKind.Constant))
+                {
+                    InitializerExpressionIsNotConstantError(node);
+                }
+                else if (varType.IsAssignableFrom(initializerType))
+                {
+                    value = ConstantExpressionEvaluator.Eval(node.Initializer, this);
+                }
+                else
+                {
+                    CannotConvertTypeError(initializerType, varType, node.Initializer.Location);
+                }
+            }
+
+            node.Semantics = node.Semantics with { ConstantValue = value };
+        }
+        else if(node.Kind is VarKind.Field)
+        {
+            Debug.Assert(currentStructDeclaration is not null);
+
+            var initializerType = node.Initializer?.Accept(exprTypeChecker, this) ?? ErrorType.Instance;
+
+            ConstantValue? value = null;
+            if (!varType.IsError && !initializerType.IsError)
+            {
+                Debug.Assert(node.Initializer is not null);
+                if (!node.Initializer.ValueKind.Is(ValueKind.Constant))
+                {
+                    InitializerExpressionIsNotConstantError(node);
+                }
+                else if (varType.IsAssignableFrom(initializerType))
+                {
+                    value = ConstantExpressionEvaluator.Eval(node.Initializer, this);
+                }
+                else
+                {
+                    CannotConvertTypeError(initializerType, varType, node.Initializer.Location);
+                }
+            }
+
+            node.Semantics = node.Semantics with { ConstantValue = value };
         }
 
         AddSymbol(node);
@@ -260,8 +313,34 @@ public sealed class SemanticsAnalyzer : Visitor
 
     public override void Visit(ReturnStatement node)
     {
-        throw new System.NotImplementedException();
-        // TODO: type-check return type
+        Debug.Assert(currentFunctionReturnType is not null);
+
+        if (node.Expression is not null)
+        {
+            // returning some value
+
+            if (currentFunctionReturnType is VoidType)
+            {
+                ValueReturnedFromProcedureError(node);
+            }
+            else
+            {
+                var exprTy = node.Expression.Accept(exprTypeChecker, this);
+                if (!exprTy.IsError && !currentFunctionReturnType.IsAssignableFrom(exprTy, node.Expression.ValueKind))
+                {
+                    CannotConvertTypeError(exprTy, currentFunctionReturnType, node.Expression.Location);
+                }
+            }
+        }
+        else
+        {
+            // return without value
+
+            if (currentFunctionReturnType is not VoidType)
+            {
+                ExpectedValueInReturnError(currentFunctionReturnType, node);
+            }
+        }
     }
 
     public override void Visit(SwitchStatement node)
@@ -504,5 +583,9 @@ public sealed class SemanticsAnalyzer : Visitor
         };
         Error(ErrorCode.SemanticTypeNotAllowedInConstant, $"Type '{type.ToPrettyString()}' is not allowed in constants", loc);
     }
+    internal void ExpectedValueInReturnError(TypeInfo returnType, ReturnStatement returnStmt)
+        => Error(ErrorCode.SemanticExpectedValueInReturn, $"Expected value of type '{returnType.ToPrettyString()}' in RETURN", returnStmt.Location);
+    internal void ValueReturnedFromProcedureError(ReturnStatement returnStmt)
+        => Error(ErrorCode.SemanticValueReturnedFromProcedure, $"Cannot return values from procedures", returnStmt.Expression!.Location);
     #endregion Errors
 }

@@ -1,11 +1,51 @@
-﻿namespace ScTools.ScriptLang.Types;
+﻿using System.Linq;
+
+namespace ScTools.ScriptLang.Types;
 
 internal static class Rules
 {
+    /// <summary>
+    /// Gets whether <paramref name="type"/> can be passed between script threads safely.
+    /// <para>
+    /// Unsafe types:
+    /// <list type="bullet">
+    /// <item>
+    ///     <term>Function Pointers</term>
+    ///     <description>
+    ///         Function pointers are stored as an address specific to the script program,
+    ///         so in script threads with different program they will point to completely
+    ///         different code.
+    ///     </description>
+    /// </item>
+    /// <item>
+    ///     <term>STRING</term>
+    ///     <description>
+    ///         STRINGs are stored as a native memory address, normally from memory owned by
+    ///         the script program. When the owning script program is unloaded, the memory
+    ///         will be freed.
+    ///         Instead, TEXT_LABELs can be used.
+    ///     </description>
+    /// </item>
+    /// <item>
+    ///     <term>Structs or arrays containing any other unsafe type</term>
+    /// </item>
+    /// </list>
+    /// </para>
+    /// </summary>
+    public static bool IsCrossScriptThreadSafe(TypeInfo type)
+        => type switch
+        {
+            FunctionType or StringType => false,
+            StructType structTy => structTy.Fields.All(f => IsCrossScriptThreadSafe(f.Type)),
+            ArrayType arrayTy => IsCrossScriptThreadSafe(arrayTy.Item),
+            _ => true,
+        };
+
     public static bool IsDefaultInitialized(this TypeInfo type)
         => type switch
         {
-            StructType structTy => true, // TODO: structTy.Declaration.Fields.Any(f => f.Initializer is not null || IsDefaultInitialized(f.Type));
+            StructType structTy => structTy.Declaration.Fields.Zip(structTy.Fields)
+                                    .Any(t => t.First.Initializer is not null || IsDefaultInitialized(t.Second.Type)),
             ArrayType => true,
             _ => false,
         };
@@ -40,9 +80,9 @@ internal static class Rules
         // TYPE& <- TYPE&
         // TYPE& <- TYPE if lvalue
         // ANY& <- any if lvalue
-        public bool Visit(RefType destination)
-            => destination == Source || 
-                SourceKind.Is(ValueKind.Addressable) && (destination.Pointee is AnyType || destination.Pointee == Source);
+        //public bool Visit(RefType destination)
+        //    => destination == Source || 
+        //        SourceKind.Is(ValueKind.Addressable) && (destination.Pointee is AnyType || destination.Pointee == Source);
         public bool Visit(ArrayType destination) => false;
         // INT <- INT | NULL
         public bool Visit(IntType destination) => Source is IntType or NullType;
@@ -61,13 +101,13 @@ internal static class Rules
         public bool Visit(EnumType destination) => destination == Source;
         // STRUCT <- STRUCT
         public bool Visit(StructType destination) => destination == Source;
-        // ENTITY_INDEX <- ENTITY_INDEX | PED_INDEX | VEHICLE_INDEX | OBJECT_INDEX
-        // HANDLE <- HANDLE
+        // ENTITY_INDEX <- ENTITY_INDEX | PED_INDEX | VEHICLE_INDEX | OBJECT_INDEX | NULL
+        // HANDLE <- HANDLE | NULL
         public bool Visit(HandleType destination)
         {
             if (Source is not HandleType srcHandle)
             {
-                return false;
+                return Source is NullType;
             }
 
             if (destination.Kind is HandleKind.EntityIndex)

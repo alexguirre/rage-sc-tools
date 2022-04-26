@@ -19,6 +19,7 @@
         ParserExpressionAsStatement = 0x1005,
         ParserUsingAfterDeclaration = 0x1006,
         ParserVarInitializerNotAllowed = 0x1007,
+        ParserReferenceNotAllowed = 0x1008,
 
         // Semantic errors 0x2000 - 0x2FFF
         SemanticSymbolAlreadyDefined = 0x2000,
@@ -34,5 +35,7 @@
         SemanticUnknownField = 0x200A,
         SemanticScriptNameNotAllowedInExpression = 0x200B,
         SemanticCannotConvertType = 0x200C,
+        SemanticExpectedValueInReturn = 0x200D,
+        SemanticValueReturnedFromProcedure = 0x200E,
     }
 }

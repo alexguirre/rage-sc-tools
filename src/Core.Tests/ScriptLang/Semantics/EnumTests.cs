@@ -130,7 +130,7 @@ public class EnumTests : SemanticsTestsBase
     [Fact]
     public void EnumNameAlreadyDefined()
     {
-        var s = Analyze(
+        var (s, ast) = AnalyzeAndAst(
             @"INT foo
               ENUM foo
                 A
@@ -141,7 +141,7 @@ public class EnumTests : SemanticsTestsBase
 
         False(s.GetTypeSymbolUnchecked("foo", out _));
 
-        AssertEnum(s, "A", new EnumType("foo"), 0);
+        AssertEnum(s, "A", new EnumType((EnumDeclaration)ast.Declarations[1]), 0);
     }
 
     [Fact]

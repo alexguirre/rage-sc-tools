@@ -59,7 +59,7 @@ public class ParserNew
 
             if (isInConstVarDeclaration || IsPossibleVarDeclaration())
             {
-                decls.Add(ParseVarDeclaration(isInConstVarDeclaration ? VarKind.Constant : VarKind.Static, allowMultipleDeclarations: true, allowInitializer: true));
+                decls.Add(ParseVarDeclaration(isInConstVarDeclaration ? VarKind.Constant : VarKind.Static, allowMultipleDeclarations: true, allowInitializer: true, allowReferences: false));
                 if (!isInsideCommaSeparatedVarDeclaration)
                 {
                     isInConstVarDeclaration = false;
@@ -175,7 +175,7 @@ public class ParserNew
         var fields = new List<VarDeclaration>();
         while (Peek(0).Kind is not TokenKind.ENDSTRUCT)
         {
-            fields.Add(ParseVarDeclaration(VarKind.Field, allowMultipleDeclarations: true, allowInitializer: true));
+            fields.Add(ParseVarDeclaration(VarKind.Field, allowMultipleDeclarations: true, allowInitializer: true, allowReferences: false));
 
             if (!isInsideCommaSeparatedVarDeclaration)
             {
@@ -201,7 +201,7 @@ public class ParserNew
         var vars = new List<VarDeclaration>();
         while (Peek(0).Kind is not TokenKind.ENDGLOBAL)
         {
-            vars.Add(ParseVarDeclaration(VarKind.Global, allowMultipleDeclarations: true, allowInitializer: true));
+            vars.Add(ParseVarDeclaration(VarKind.Global, allowMultipleDeclarations: true, allowInitializer: true, allowReferences: false));
 
             if (!isInsideCommaSeparatedVarDeclaration)
             {
@@ -357,7 +357,7 @@ public class ParserNew
                 @params = new();
                 do
                 {
-                    @params.Add(ParseVarDeclaration(isScriptParameterList ? VarKind.ScriptParameter : VarKind.Parameter, allowMultipleDeclarations: false, allowInitializer: false));
+                    @params.Add(ParseVarDeclaration(isScriptParameterList ? VarKind.ScriptParameter : VarKind.Parameter, allowMultipleDeclarations: false, allowInitializer: false, allowReferences: !isScriptParameterList));
                 } while (Accept(TokenKind.Comma, out _));
             }
         }
@@ -431,7 +431,7 @@ public class ParserNew
 
         if (IsPossibleVarDeclaration())
         {
-            stmt = ParseVarDeclaration(VarKind.Local, allowMultipleDeclarations: true, allowInitializer: true).WithLabel(label);
+            stmt = ParseVarDeclaration(VarKind.Local, allowMultipleDeclarations: true, allowInitializer: true, allowReferences: false).WithLabel(label);
         }
         else if (IsPossibleExpression() &&
                  !IsPossibleLabel()) // in case of sequential labels, avoid parsing the second label identifier as an expression
@@ -891,7 +891,7 @@ public class ParserNew
     private bool IsPossibleVarDeclaration()
         => isInsideCommaSeparatedVarDeclaration ||
            Peek(0).Kind is TokenKind.Identifier && Peek(1).Kind is TokenKind.Identifier or TokenKind.Ampersand;
-    private VarDeclaration ParseVarDeclaration(VarKind varKind, bool allowMultipleDeclarations, bool allowInitializer)
+    private VarDeclaration ParseVarDeclaration(VarKind varKind, bool allowMultipleDeclarations, bool allowInitializer, bool allowReferences)
     {
         // TODO: parse var initializers
         Token typeIdent;
@@ -900,12 +900,12 @@ public class ParserNew
         {
             // continue comma-separated var declarations
             typeIdent = commaSeparatedVarDeclarationTypeIdentifier;
-            decl = ParseDeclarator();
+            decl = ParseDeclarator(allowReferences);
         }
         else
         {
             ExpectOrMissing(TokenKind.Identifier, out typeIdent, MissingIdentifier);
-            decl = ParseDeclarator();
+            decl = ParseDeclarator(allowReferences);
         }
 
         IExpression? initializerExpr = null;
@@ -932,7 +932,7 @@ public class ParserNew
 
         return new(new(typeIdent), decl, varKind, initializerExpr);
 
-        IVarDeclarator ParseDeclarator()
+        IVarDeclarator ParseDeclarator(bool allowReferences)
         {
             /*  declarator
                 : identifier arrayLength?     #simpleDeclarator
@@ -957,6 +957,11 @@ public class ParserNew
             }
             else if (Accept(TokenKind.Ampersand, out var ampersandToken))
             {
+                if (!allowReferences)
+                {
+                    ReferenceNotAllowedError(ampersandToken);
+                }
+
                 ExpectOrMissing(TokenKind.Identifier, out identifier, MissingIdentifier);
                 return new VarRefDeclarator(ampersandToken, identifier);
             }
@@ -1063,6 +1068,9 @@ public class ParserNew
 
     private void VarInitializerNotAllowedError(Token equalsToken, IExpression initializer)
         => Error(ErrorCode.ParserVarInitializerNotAllowed, $"Variable initializer is not allowed in this context", equalsToken.Location.Merge(initializer.Location));
+
+    private void ReferenceNotAllowedError(Token ampersandToken)
+        => Error(ErrorCode.ParserReferenceNotAllowed, $"References are not allowed in this context", ampersandToken.Location);
 
     private Token Peek(int offset)
     {

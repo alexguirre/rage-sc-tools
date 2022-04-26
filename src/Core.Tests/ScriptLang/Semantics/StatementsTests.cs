@@ -340,4 +340,116 @@ public class StatementsTests : SemanticsTestsBase
         True(s.Diagnostics.HasErrors);
         CheckError(ErrorCode.SemanticUndefinedLabel, (6, 26), (6, 30), s.Diagnostics);
     }
+
+    [Fact]
+    public void CanReturnValueWithSameType()
+    {
+        var (s, _) = AnalyzeAndAst(
+            @"FUNC INT BAR()
+                RETURN 10
+            ENDFUNC"
+        );
+
+        False(s.Diagnostics.HasErrors);
+    }
+
+    [Fact]
+    public void CanReturnValueWithPromotableType()
+    {
+        var (s, _) = AnalyzeAndAst(
+            @"FUNC BOOL BAR()
+                RETURN 10
+            ENDFUNC"
+        );
+
+        False(s.Diagnostics.HasErrors);
+    }
+
+    [Fact]
+    public void CanReturnReferenceWithSameType()
+    {
+        var (s, _) = AnalyzeAndAst(
+            @"FUNC INT BAR(INT& a)
+                RETURN a
+            ENDFUNC"
+        );
+
+        False(s.Diagnostics.HasErrors);
+    }
+
+    [Fact]
+    public void CanReturnReferenceWithPromotableType()
+    {
+        var (s, _) = AnalyzeAndAst(
+            @"FUNC BOOL BAR(INT& a)
+                RETURN a
+            ENDFUNC"
+        );
+
+        False(s.Diagnostics.HasErrors);
+    }
+
+    [Fact]
+    public void CannotReturnMismatchedTypes()
+    {
+        var (s, _) = AnalyzeAndAst(
+            @"FUNC INT BAR()
+                RETURN 'hello'
+            ENDFUNC"
+        );
+
+        True(s.Diagnostics.HasErrors);
+        CheckError(ErrorCode.SemanticCannotConvertType, (2, 24), (2, 30), s.Diagnostics);
+    }
+
+    [Fact]
+    public void CannotReturnReferenceWithDifferentType()
+    {
+        var (s, _) = AnalyzeAndAst(
+            @"FUNC STRING BAR(INT& a)
+                RETURN a
+            ENDFUNC"
+        );
+
+        True(s.Diagnostics.HasErrors);
+        CheckError(ErrorCode.SemanticCannotConvertType, (2, 24), (2, 24), s.Diagnostics);
+    }
+
+    [Fact]
+    public void CannotReturnWithoutValueInsideFunction()
+    {
+        var (s, _) = AnalyzeAndAst(
+            @"FUNC INT BAR()
+                RETURN
+            ENDFUNC"
+        );
+
+        True(s.Diagnostics.HasErrors);
+        CheckError(ErrorCode.SemanticExpectedValueInReturn, (2, 17), (2, 22), s.Diagnostics);
+    }
+
+    [Fact]
+    public void CanReturnWithoutValueInsideProcedure()
+    {
+        var (s, _) = AnalyzeAndAst(
+            @"PROC BAR()
+                RETURN
+            ENDPROC"
+        );
+
+        False(s.Diagnostics.HasErrors);
+    }
+
+    [Fact]
+    public void CannotReturnWithValueInsideProcedure()
+    {
+        var (s, _) = AnalyzeAndAst(
+            @"PROC BAR()
+                RETURN 123
+            ENDPROC"
+        );
+
+        True(s.Diagnostics.HasErrors);
+        CheckError(ErrorCode.SemanticValueReturnedFromProcedure, (2, 24), (2, 26), s.Diagnostics);
+    }
 }

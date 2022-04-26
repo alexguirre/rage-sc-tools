@@ -241,11 +241,12 @@ public class ConstantsTests : SemanticsTestsBase
     [Fact]
     public void ReferencesAreNotAllowed()
     {
+        // This is now detected in the parser phase
         var s = Analyze(
             @$"CONST INT& foo"
         );
 
-        CheckError(ErrorCode.SemanticTypeNotAllowedInConstant, (1, 7), (1, 10), s.Diagnostics);
+        CheckError(ErrorCode.ParserReferenceNotAllowed, (1, 10), (1, 10), s.Diagnostics);
     }
 
     [Fact]

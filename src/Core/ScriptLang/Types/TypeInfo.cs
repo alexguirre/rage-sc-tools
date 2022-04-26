@@ -3,9 +3,13 @@
 using ScTools.ScriptLang.Ast.Declarations;
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
+[DebuggerDisplay("{ToPrettyString(),nq}")]
 public abstract record TypeInfo
 {
     public abstract int SizeOf { get; }
@@ -83,52 +87,53 @@ public sealed record AnyType : PrimitiveType<AnyType>
 public sealed record VectorType : TypeInfo
 {
     public override int SizeOf => 3;
-    public override ImmutableArray<FieldInfo> Fields { get; } = ImmutableArray.Create(
-        new FieldInfo(FloatType.Instance, "x", 0),
-        new FieldInfo(FloatType.Instance, "y", 1),
-        new FieldInfo(FloatType.Instance, "z", 2));
+    public override ImmutableArray<FieldInfo> Fields => fields;
 
     public override string ToPrettyString() => "VECTOR";
     public override TReturn Accept<TReturn>(ITypeVisitor<TReturn> visitor) => visitor.Visit(this);
 
     public static VectorType Instance { get; } = new();
+
+    private static readonly ImmutableArray<FieldInfo> fields = ImmutableArray.Create(
+        new FieldInfo(FloatType.Instance, "x", 0),
+        new FieldInfo(FloatType.Instance, "y", 1),
+        new FieldInfo(FloatType.Instance, "z", 2));
 }
 
-public sealed record EnumType(string Name) : TypeInfo
+public sealed record EnumType(EnumDeclaration Declaration) : TypeInfo
 {
     public override int SizeOf { get; } = 1;
     public override ImmutableArray<FieldInfo> Fields => ImmutableArray<FieldInfo>.Empty;
 
-    public override string ToPrettyString() => Name;
+    public override string ToPrettyString() => Declaration.Name;
     public override TReturn Accept<TReturn>(ITypeVisitor<TReturn> visitor) => visitor.Visit(this);
 }
 
-public sealed record StructType(string Name, ImmutableArray<FieldInfo> Fields) : TypeInfo
+public record StructType(StructDeclaration Declaration, ImmutableArray<FieldInfo> Fields) : TypeInfo
 {
     public override int SizeOf { get; } = Fields.Sum(f => f.Type.SizeOf);
-    public override ImmutableArray<FieldInfo> Fields { get; } = Fields;
+    private ImmutableArrayWithSequenceEquality<FieldInfo> FieldsBacking { get; } = new(Fields);
+    public override ImmutableArray<FieldInfo> Fields => FieldsBacking.Array;
 
-    public override string ToPrettyString() => Name;
+    public override string ToPrettyString() => Declaration.Name;
     public override TReturn Accept<TReturn>(ITypeVisitor<TReturn> visitor) => visitor.Visit(this);
 }
 
-public sealed record FunctionType(TypeInfo Return, ImmutableArray<TypeInfo> Parameters) : TypeInfo
+public record FunctionType(TypeInfo Return, ImmutableArray<ParameterInfo> Parameters) : TypeInfo
 {
     public override int SizeOf => 1;
     public override ImmutableArray<FieldInfo> Fields => ImmutableArray<FieldInfo>.Empty;
+    private ImmutableArrayWithSequenceEquality<ParameterInfo> ParametersBacking { get; } = new(Parameters);
+    public ImmutableArray<ParameterInfo> Parameters => ParametersBacking.Array;
 
     public override string ToPrettyString()
         => $"{(Return is VoidType ? "PROC" : $"FUNC {Return.ToPrettyString()}")}({string.Join(", ", Parameters.Select(p => p.ToPrettyString()))})";
     public override TReturn Accept<TReturn>(ITypeVisitor<TReturn> visitor) => visitor.Visit(this);
 }
 
-public sealed record RefType(TypeInfo Pointee) : TypeInfo
+public sealed record ParameterInfo(TypeInfo Type, bool IsReference)
 {
-    public override int SizeOf => 1;
-    public override ImmutableArray<FieldInfo> Fields => ImmutableArray<FieldInfo>.Empty;
-
-    public override string ToPrettyString() => $"{Pointee.ToPrettyString()}&";
-    public override TReturn Accept<TReturn>(ITypeVisitor<TReturn> visitor) => visitor.Visit(this);
+    public string ToPrettyString() => Type.ToPrettyString() + (IsReference ? "&" : "");
 }
 
 public sealed record ArrayType(TypeInfo Item, int Length) : TypeInfo
@@ -164,4 +169,29 @@ public sealed record TypeNameType(ITypeDeclaration TypeDeclaration) : TypeInfo
 
     public override string ToPrettyString() => TypeDeclaration.Name;
     public override TReturn Accept<TReturn>(ITypeVisitor<TReturn> visitor) => visitor.Visit(this);
+}
+
+/// <summary>
+/// Wrapper for <see cref="ImmutableArray{T}"/> that implements value equality instead of reference equality.
+/// Different arrays with equal items are considered equal
+/// </summary>
+/// <typeparam name="T"></typeparam>
+internal readonly struct ImmutableArrayWithSequenceEquality<T> : IEquatable<ImmutableArrayWithSequenceEquality<T>>
+{
+    public readonly ImmutableArray<T> Array;
+
+    public ImmutableArrayWithSequenceEquality(ImmutableArray<T> array) => Array = array;
+
+    public override bool Equals([NotNullWhen(true)] object? obj)
+        => obj is ImmutableArrayWithSequenceEquality<T> other && Equals(other);
+
+    public bool Equals(ImmutableArrayWithSequenceEquality<T> other)
+        => Array.SequenceEqual(other.Array);
+
+    public override int GetHashCode()
+    {
+        var hc = new HashCode();
+        Array.ForEach(i => hc.Add(i));
+        return hc.ToHashCode();
+    }
 }

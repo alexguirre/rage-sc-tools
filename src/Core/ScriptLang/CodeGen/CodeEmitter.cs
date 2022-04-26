@@ -24,7 +24,9 @@ public sealed class CodeEmitter
     //private readonly PatternOptimizer optimizer;
     private const bool IncludeFunctionNames = true;
 
-    private readonly SegmentBuilder codeSegment = new(sizeof(byte), isPaged: true);
+    //private readonly SegmentBuilder codeSegment = new(sizeof(byte), isPaged: true);
+    private readonly List<byte> codeBuffer = new(capacity: (int)Script.MaxPageLength);
+    private readonly List<int> codeInstructionOffsets = new(capacity: (int)Script.MaxPageLength / 4);
     private readonly List<byte> instructionBuffer = new();
 
     private readonly HashSet<FunctionDeclaration> usedFunctions = new();
@@ -47,7 +49,7 @@ public sealed class CodeEmitter
         addressEmitter = new(this);
     }
 
-    public ScriptPageArray<byte> ToCodePages() => codeSegment.ToPages<byte>();
+    public ScriptPageArray<byte> ToCodePages() => throw new NotImplementedException(nameof(ToCodePages));//codeSegment.ToPages<byte>();
 
     #region Byte Emitters
     private void EmitBytes(ReadOnlySpan<byte> bytes)
@@ -99,49 +101,55 @@ public sealed class CodeEmitter
         instructionBuffer.Clear();
     }
 
-    private record struct FlushResult(int InstructionOffset, int InstructionLength);
+    private record struct FlushResult(int InstructionIndex, int InstructionLength);
 
     /// <summary>
     /// Writes the current instruction buffer to the segment.
     /// </summary>
     private FlushResult Flush()
     {
-        int offset = (int)(codeSegment.Length & (Script.MaxPageLength - 1));
+        //int offset = (int)(codeSegment.Length & (Script.MaxPageLength - 1));
 
-        Opcode opcode = (Opcode)instructionBuffer[0];
+        //Opcode opcode = (Opcode)instructionBuffer[0];
 
-        // At page boundary a NOP may be required for the interpreter to switch to the next page,
-        // the interpreter only does this with control flow instructions and NOP
-        // If the NOP is needed, skip 1 byte at the end of the page
-        bool needsNopAtBoundary = !opcode.IsControlFlow() &&
-                                  opcode != Opcode.NOP;
+        //// At page boundary a NOP may be required for the interpreter to switch to the next page,
+        //// the interpreter only does this with control flow instructions and NOP
+        //// If the NOP is needed, skip 1 byte at the end of the page
+        //bool needsNopAtBoundary = !opcode.IsControlFlow() &&
+        //                          opcode != Opcode.NOP;
 
-        if (offset + instructionBuffer.Count > (Script.MaxPageLength - (needsNopAtBoundary ? 1u : 0))) // the instruction doesn't fit in the current page
-        {
-            var bytesUntilNextPage = (int)Script.MaxPageLength - offset; // padding needed to skip to the next page
-            var requiredNops = bytesUntilNextPage;
+        //if (offset + instructionBuffer.Count > (Script.MaxPageLength - (needsNopAtBoundary ? 1u : 0))) // the instruction doesn't fit in the current page
+        //{
+        //    var bytesUntilNextPage = (int)Script.MaxPageLength - offset; // padding needed to skip to the next page
+        //    var requiredNops = bytesUntilNextPage;
 
-            const int JumpInstructionSize = 3;
-            if (bytesUntilNextPage > JumpInstructionSize)
-            {
-                // if there is enough space for a J instruction, add it to jump to the next page
-                short relIP = (short)(Script.MaxPageLength - (offset + JumpInstructionSize)); // get how many bytes until the next page
-                codeSegment.Byte((byte)Opcode.J);
-                codeSegment.Byte((byte)(relIP & 0xFF));
-                codeSegment.Byte((byte)(relIP >> 8));
-                requiredNops -= JumpInstructionSize;
-            }
+        //    const int JumpInstructionSize = 3;
+        //    if (bytesUntilNextPage > JumpInstructionSize)
+        //    {
+        //        // if there is enough space for a J instruction, add it to jump to the next page
+        //        short relIP = (short)(Script.MaxPageLength - (offset + JumpInstructionSize)); // get how many bytes until the next page
+        //        codeSegment.Byte((byte)Opcode.J);
+        //        codeSegment.Byte((byte)(relIP & 0xFF));
+        //        codeSegment.Byte((byte)(relIP >> 8));
+        //        requiredNops -= JumpInstructionSize;
+        //    }
 
-            // NOP what is left of the current page
-            codeSegment.Bytes(new byte[requiredNops]);
-        }
+        //    // NOP what is left of the current page
+        //    codeSegment.Bytes(new byte[requiredNops]);
+        //}
 
-        var instOffset = codeSegment.Length;
+        //var instOffset = codeSegment.Length;
+        //var instLength = instructionBuffer.Count;
+        //codeSegment.Bytes(CollectionsMarshal.AsSpan(instructionBuffer));
+        //Drop();
+
+        var instIndex = codeInstructionOffsets.Count;
         var instLength = instructionBuffer.Count;
-        codeSegment.Bytes(CollectionsMarshal.AsSpan(instructionBuffer));
+        codeInstructionOffsets.Add(codeBuffer.Count);
+        codeBuffer.AddRange(instructionBuffer);
         Drop();
 
-        return new(instOffset, instLength);
+        return new(instIndex, instLength);
     }
     #endregion Byte Emitters
 
@@ -330,7 +338,7 @@ public sealed class CodeEmitter
         if (IncludeFunctionNames && name is not null)
         {
             var nameBytes = Encoding.UTF8.GetBytes(name).AsSpan();
-            nameBytes = nameBytes.Slice(0, Math.Min(nameBytes.Length, byte.MaxValue - 1)); // limit length to 255 bytes (including null terminators)
+            nameBytes = nameBytes[..Math.Min(nameBytes.Length, byte.MaxValue - 1)]; // limit length to 255 bytes (including null terminators)
             EmitU8((byte)(nameBytes.Length + 1));
             EmitBytes(nameBytes);
             EmitU8(0); // null terminator
@@ -429,8 +437,8 @@ public sealed class CodeEmitter
         }
 
         // backfill frame size
-        var code = codeSegment.RawDataBuffer;
-        var frameSizeOperandOffset = enter.InstructionOffset + 2;
+        var code = CollectionsMarshal.AsSpan(codeBuffer);
+        var frameSizeOperandOffset = codeInstructionOffsets[enter.InstructionIndex] + 2;
         var frameSizeSpan = code[frameSizeOperandOffset..(frameSizeOperandOffset + 2)];
         Debug.Assert(frameSizeSpan[0] == 0 && frameSizeSpan[1] == 0);
         frameSizeSpan[0] = (byte)(currentFunctionFrameSize & 0xFF);
@@ -494,25 +502,25 @@ public sealed class CodeEmitter
     public void EmitJump(string label)
     {
         var res = EmitJ(0);
-        ReferenceLabel(label, res.InstructionOffset + 1, LabelReferenceKind.Relative, isFunctionLabel: false);
+        ReferenceLabel(label, codeInstructionOffsets[res.InstructionIndex] + 1, LabelReferenceKind.Relative, isFunctionLabel: false);
     }
     public void EmitJumpIfZero(string label)
     {
         var res = EmitJZ(0);
-        ReferenceLabel(label, res.InstructionOffset + 1, LabelReferenceKind.Relative, isFunctionLabel: false);
+        ReferenceLabel(label, codeInstructionOffsets[res.InstructionIndex] + 1, LabelReferenceKind.Relative, isFunctionLabel: false);
     }
 
     public void EmitCall(FunctionDeclaration function)
     {
         var res = EmitCall(0);
-        ReferenceLabel(function.Name, res.InstructionOffset + 1, LabelReferenceKind.Absolute, isFunctionLabel: true);
+        ReferenceLabel(function.Name, codeInstructionOffsets[res.InstructionIndex] + 1, LabelReferenceKind.Absolute, isFunctionLabel: true);
         OnFunctionFound(function);
     }
 
     public void EmitFunctionAddress(FunctionDeclaration function)
     {
         var res = EmitPushConstU24(0);
-        ReferenceLabel(function.Name, res.InstructionOffset + 1, LabelReferenceKind.Absolute, isFunctionLabel: true);
+        ReferenceLabel(function.Name, codeInstructionOffsets[res.InstructionIndex] + 1, LabelReferenceKind.Absolute, isFunctionLabel: true);
         OnFunctionFound(function);
     }
 
@@ -527,7 +535,7 @@ public sealed class CodeEmitter
         for (int i = 0; i < cases.Length; i++)
         {
             var @case = cases[i];
-            var valueAddress = res.InstructionOffset + 1 + i * 6;
+            var valueAddress = codeInstructionOffsets[res.InstructionIndex] + 1 + i * 6;
             // TODO: fill value from @case.Value
             var labelRelativeOffsetAddress = valueAddress + 4;
             ReferenceLabel(@case.Semantics.Label!, labelRelativeOffsetAddress, LabelReferenceKind.Relative, isFunctionLabel: false);
@@ -682,22 +690,22 @@ public sealed class CodeEmitter
     }
     private void EmitParameterAddress(VarDeclaration declaration)
     {
-        if (declaration.Semantics.ValueType is RefType)
+        if (declaration.IsReference)
         {
-            throw new NotImplementedException(nameof(EmitParameterAddress) + " for references");
             // parameter passed by reference, the address is its value
-            //    switch (varDecl.Address)
-            //    {
-            //        case >= 0 and <= 0x000000FF:
-            //            CG.Emit(Opcode.LOCAL_U8_LOAD, varDecl.Address);
-            //            break;
+            var paramAddress = currentFunctionAllocatedLocals[declaration];
+            switch (paramAddress)
+            {
+                case >= byte.MinValue and <= byte.MaxValue:
+                    EmitLocalU8Load((byte)paramAddress);
+                    break;
 
-            //        case >= 0 and <= 0x0000FFFF:
-            //            CG.Emit(Opcode.LOCAL_U8_LOAD, varDecl.Address);
-            //            break;
+                case >= ushort.MinValue and <= ushort.MaxValue:
+                    EmitLocalU16Load((ushort)paramAddress);
+                    break;
 
-            //        default: Debug.Assert(false, "Local var address too big"); break;
-            //    }
+                default: Debug.Assert(false, "Parameter address too big"); break;
+            }
         }
         else
         {
@@ -896,7 +904,7 @@ public sealed class CodeEmitter
     {
         var labels = isFunctionLabel ? functionLabels : localLabels;
 
-        var labelAddress = codeSegment.Length;
+        var labelAddress = codeBuffer.Count;
         if (labels.TryGetValue(name, out var info))
         {
             // the label already appeared before
@@ -922,6 +930,7 @@ public sealed class CodeEmitter
         }
     }
 
+    // TODO: operandAddress to instruction index + operand offset?
     private void ReferenceLabel(string label, int operandAddress, LabelReferenceKind kind, bool isFunctionLabel)
     {
         var labels = isFunctionLabel ? functionLabels : localLabels;
@@ -950,7 +959,7 @@ public sealed class CodeEmitter
 
     private void BackfillLabel(int labelAddress, LabelReference reference)
     {
-        var code = codeSegment.RawDataBuffer;
+        var code = CollectionsMarshal.AsSpan(codeBuffer);
         switch (reference.Kind)
         {
             case LabelReferenceKind.Absolute:

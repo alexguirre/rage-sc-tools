@@ -48,12 +48,14 @@ public sealed class VarDeclaration : BaseValueDeclaration, IStatement
     public TypeName Type => (TypeName)Children[0];
     public IVarDeclarator Declarator => (IVarDeclarator)Children[1];
     public VarKind Kind { get; }
+    public bool IsReference { get; }
     public IExpression? Initializer { get; }
 
     public VarDeclaration(TypeName type, IVarDeclarator declarator, VarKind kind, IExpression? initializer = null, Label? label = null)
         : base(OfTokens(), OfChildren(type, declarator).AppendIfNotNull(initializer).AppendIfNotNull(label))
     {
         Kind = kind;
+        IsReference = declarator is VarRefDeclarator;
         Initializer = initializer;
         Label = label;
     }
