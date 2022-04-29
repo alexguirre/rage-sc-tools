@@ -63,26 +63,21 @@ internal static class Rules
             _ => false,
         };
 
-    public static bool IsAssignableFrom(this TypeInfo destination, TypeInfo source, ValueKind sourceValueKind = 0)
-        => source is ErrorType || destination.Accept(new IsAssignableFromVisitor(source, sourceValueKind));
-    public static bool IsAssignableTo(this TypeInfo source, TypeInfo destination, ValueKind sourceValueKind = 0)
-        => destination.IsAssignableFrom(source, sourceValueKind);
+    public static bool IsRefAssignableFrom(this TypeInfo destination, TypeInfo source)
+        => source is ErrorType || destination == source || destination is AnyType;
+    public static bool IsAssignableFrom(this TypeInfo destination, TypeInfo source)
+        => source is ErrorType || destination.Accept(new IsAssignableFromVisitor(source));
+    public static bool IsAssignableTo(this TypeInfo source, TypeInfo destination)
+        => destination.IsAssignableFrom(source);
 
     private sealed class IsAssignableFromVisitor : ITypeVisitor<bool>
     {
         public TypeInfo Source { get; }
-        public ValueKind SourceKind { get; }
 
-        public IsAssignableFromVisitor(TypeInfo source, ValueKind sourceKind) => (Source, SourceKind) = (source, sourceKind);
+        public IsAssignableFromVisitor(TypeInfo source) => Source = source;
 
         public bool Visit(ErrorType destination) => true;
         public bool Visit(VoidType destination) => false;
-        // TYPE& <- TYPE&
-        // TYPE& <- TYPE if lvalue
-        // ANY& <- any if lvalue
-        //public bool Visit(RefType destination)
-        //    => destination == Source || 
-        //        SourceKind.Is(ValueKind.Addressable) && (destination.Pointee is AnyType || destination.Pointee == Source);
         public bool Visit(ArrayType destination) => false;
         // INT <- INT | NULL
         public bool Visit(IntType destination) => Source is IntType or NullType;
@@ -90,8 +85,8 @@ internal static class Rules
         public bool Visit(FloatType destination) => Source is FloatType or IntType or NullType;
         // BOOL <- BOOL | INT | NULL
         public bool Visit(BoolType destination) => Source is BoolType or IntType or NullType;
-        // STRING <- STRING | NULL | TEXT_LABEL if lvalue
-        public bool Visit(StringType destination) => Source is StringType or NullType || (Source is TextLabelType && SourceKind.Is(ValueKind.Addressable));
+        // STRING <- STRING | NULL
+        public bool Visit(StringType destination) => Source is StringType or NullType; // TODO: should be able to assign TEXT_LABELs vars to STRING types
         // ANY <- any type with size 1
         public bool Visit(AnyType destination) => Source.SizeOf == 1;
         public bool Visit(NullType destination) => false;

@@ -5,6 +5,7 @@ using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.Ast.Errors;
 using ScTools.ScriptLang.Ast.Expressions;
 using ScTools.ScriptLang.Ast.Statements;
+using ScTools.ScriptLang.BuiltIns;
 using ScTools.ScriptLang.Types;
 
 using System;
@@ -36,6 +37,8 @@ public sealed class SemanticsAnalyzer : Visitor
     {
         Diagnostics = diagnostics;
         typeFactory = new(this);
+
+        Intrinsics.All.ForEach(AddSymbol);
     }
 
     public override void Visit(CompilationUnit node)
@@ -143,6 +146,11 @@ public sealed class SemanticsAnalyzer : Visitor
         currentStructDeclaration = null;
 
         AddSymbol(node);
+    }
+
+    public override void Visit(InvocationExpression node)
+    {
+        node.Accept(exprTypeChecker, this);
     }
 
     public override void Visit(VarDeclaration node)
@@ -288,7 +296,7 @@ public sealed class SemanticsAnalyzer : Visitor
     public override void Visit(IfStatement node)
     {
         var conditionType = node.Condition.Accept(exprTypeChecker, this);
-        if (!conditionType.IsError && !BoolType.Instance.IsAssignableFrom(conditionType, node.Condition.ValueKind))
+        if (!conditionType.IsError && !BoolType.Instance.IsAssignableFrom(conditionType))
         {
             CannotConvertTypeError(conditionType, BoolType.Instance, node.Condition.Location);
         }
@@ -326,7 +334,7 @@ public sealed class SemanticsAnalyzer : Visitor
             else
             {
                 var exprTy = node.Expression.Accept(exprTypeChecker, this);
-                if (!exprTy.IsError && !currentFunctionReturnType.IsAssignableFrom(exprTy, node.Expression.ValueKind))
+                if (!exprTy.IsError && !currentFunctionReturnType.IsAssignableFrom(exprTy))
                 {
                     CannotConvertTypeError(exprTy, currentFunctionReturnType, node.Expression.Location);
                 }
@@ -373,7 +381,7 @@ public sealed class SemanticsAnalyzer : Visitor
     public override void Visit(WhileStatement node)
     {
         var conditionType = node.Condition.Accept(exprTypeChecker, this);
-        if (!conditionType.IsError && !BoolType.Instance.IsAssignableFrom(conditionType, node.Condition.ValueKind))
+        if (!conditionType.IsError && !BoolType.Instance.IsAssignableFrom(conditionType))
         {
             CannotConvertTypeError(conditionType, BoolType.Instance, node.Condition.Location);
         }

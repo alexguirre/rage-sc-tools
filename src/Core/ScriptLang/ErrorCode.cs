@@ -37,5 +37,12 @@
         SemanticCannotConvertType = 0x200C,
         SemanticExpectedValueInReturn = 0x200D,
         SemanticValueReturnedFromProcedure = 0x200E,
+        SemanticTypeNotCallable = 0x200F,
+        SemanticMismatchedArgumentCount = 0x2010,
+        SemanticArgCannotPassType = 0x2011,
+        SemanticArgCannotPassRefType = 0x2012,
+        SemanticArgCannotPassNonLValueToRefParam = 0x2013,
+        SemanticArgNotAnEnum = 0x2014,
+        SemanticArgNotAnEnumType = 0x2015,
     }
 }

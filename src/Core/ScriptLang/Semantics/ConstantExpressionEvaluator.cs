@@ -3,6 +3,7 @@
 using ScTools.ScriptLang.Ast;
 using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.Ast.Expressions;
+using ScTools.ScriptLang.BuiltIns;
 using ScTools.ScriptLang.Types;
 
 using System;
@@ -17,10 +18,12 @@ internal static class ConstantExpressionEvaluator
     /// <param name="symbols"></param>
     /// <returns></returns>
     public static ConstantValue Eval(IExpression expression, SemanticsAnalyzer semantics)
-        => expression.Accept(new Evaluator(), semantics);
+        => expression.Accept(Evaluator.Instance, semantics);
 
     private sealed class Evaluator : EmptyVisitor<ConstantValue, SemanticsAnalyzer>
     {
+        public static readonly Evaluator Instance = new Evaluator();
+
         public override ConstantValue Visit(NullExpression node, SemanticsAnalyzer param)
             => ConstantValue.Null;
         public override ConstantValue Visit(IntLiteralExpression node, SemanticsAnalyzer param)
@@ -173,8 +176,14 @@ internal static class ConstantExpressionEvaluator
         public override ConstantValue Visit(InvocationExpression node, SemanticsAnalyzer param)
         {
             // TODO: ConstantExpressionEvaluator handle intrinsics calls
-
-            return base.Visit(node, param);
+            if (node.Callee is NameExpression { Semantics.Declaration: IIntrinsicDeclaration intrinsic })
+            {
+                return intrinsic.ConstantEval(node, param);
+            }
+            else
+            {
+                throw new ArgumentException($"Callee is not an intrinsic, cannot be constant evaluated", nameof(node));
+            }
         }
 
         public override ConstantValue Visit(NameExpression node, SemanticsAnalyzer s)

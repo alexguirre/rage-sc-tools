@@ -13,6 +13,8 @@ public sealed class InvocationExpression : BaseExpression, IStatement
     public Label? Label { get; }
     public IExpression Callee => (IExpression)Children[0];
     public ImmutableArray<IExpression> Arguments { get; }
+    public Token OpenParen => Tokens[0];
+    public Token CloseParen => Tokens[1];
 
     public InvocationExpression(Token openParen, Token closeParen, IExpression callee, IEnumerable<IExpression> arguments, Label? label = null)
         : base(OfTokens(openParen, closeParen), OfChildren(callee).Concat(arguments).AppendIfNotNull(label))

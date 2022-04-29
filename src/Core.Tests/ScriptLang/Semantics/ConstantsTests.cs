@@ -30,6 +30,7 @@ public class ConstantsTests : SemanticsTestsBase
     [InlineData("(1 + 2 * 3) & 0xFE", (1 + 2 * 3) & 0xFE)]
     [InlineData("123 ^ 456", 123 ^ 456)]
     [InlineData("123 | 456", 123 | 456)]
+    [InlineData("F2I(2.5)", 2)]
     public void IntInitializerExpressionIsEvaluated(string initializerExpr, int expected)
     {
         var s = Analyze(
@@ -47,6 +48,7 @@ public class ConstantsTests : SemanticsTestsBase
     [InlineData("1.0 + 2.0 * 3.0", 1.0f + 2.0f * 3.0f)]
     [InlineData("1 + 2 * 3", (float)(1 + 2 * 3))] // INT expression is promoted to FLOAT
     [InlineData("1 + 2.0 * 3", 1 + 2.0f * 3)]
+    [InlineData("I2F(2)", 2.0f)]
     public void FloatInitializerExpressionIsEvaluated(string initializerExpr, float expected)
     {
         var s = Analyze(
@@ -78,6 +80,9 @@ public class ConstantsTests : SemanticsTestsBase
     [InlineData("123.5 <= 123.5", true)]
     [InlineData("TRUE == TRUE", true)]
     [InlineData("TRUE <> FALSE", true)]
+    [InlineData("IS_BIT_SET(1, 0)", true)]
+    [InlineData("IS_BIT_SET(2, 1)", true)]
+    [InlineData("IS_BIT_SET(2, 0)", false)]
     public void BoolInitializerExpressionIsEvaluated(string initializerExpr, bool expected)
     {
         var s = Analyze(
@@ -108,6 +113,7 @@ public class ConstantsTests : SemanticsTestsBase
     [InlineData("<<0,0,0>>", 0.0f, 0.0f, 0.0f)]
     [InlineData("<<1.0,2.0,3.0>> + <<2.0,2.0,2.0>> * <<3.0,3.0,3.0>>", 7.0f, 8.0f, 9.0f)]
     [InlineData("<<1,2,3>> + <<2,2,2>> * <<3,3,3>>", 7.0f, 8.0f, 9.0f)]
+    [InlineData("F2V(1.0)", 1.0f, 1.0f, 1.0f)]
     public void VectorInitializerExpressionIsEvaluated(string initializerExpr, float expectedX, float expectedY, float expectedZ)
     {
         var s = Analyze(
@@ -129,7 +135,7 @@ public class ConstantsTests : SemanticsTestsBase
                CONST INT bar = foo()"
         );
 
-        CheckError(ErrorCode.SemanticInitializerExpressionIsNotConstant, (5, 26), (5, 30), s.Diagnostics);
+        CheckError(ErrorCode.SemanticInitializerExpressionIsNotConstant, (5, 32), (5, 36), s.Diagnostics);
     }
 
     [Fact]

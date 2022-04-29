@@ -131,6 +131,8 @@
         PUSH_CONST_F5 = 0x7C,
         PUSH_CONST_F6 = 0x7D,
         PUSH_CONST_F7 = 0x7E,
+        // TODO: document and support IS_BIT_SET opcode (IBITTEST?), added in b2612
+        IS_BIT_SET = 0x7F,
     }
 
     public static class OpcodeExtensions
