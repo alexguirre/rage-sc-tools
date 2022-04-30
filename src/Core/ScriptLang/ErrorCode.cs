@@ -44,5 +44,6 @@
         SemanticArgCannotPassNonLValueToRefParam = 0x2013,
         SemanticArgNotAnEnum = 0x2014,
         SemanticArgNotAnEnumType = 0x2015,
+        SemanticArgNotAnArray = 0x2016,
     }
 }

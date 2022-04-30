@@ -38,6 +38,31 @@ public sealed class SemanticsAnalyzer : Visitor
         Diagnostics = diagnostics;
         typeFactory = new(this);
 
+        RegisterBuiltIns();
+    }
+
+    private void RegisterBuiltIns()
+    {
+        RegisterBuiltInTypes();
+        RegisterIntrinsics();
+    }
+
+    private void RegisterBuiltInTypes()
+    {
+        AddSymbol(new BuiltInTypeDeclaration("ANY", AnyType.Instance));
+        AddSymbol(new BuiltInTypeDeclaration("INT", IntType.Instance));
+        AddSymbol(new BuiltInTypeDeclaration("FLOAT", FloatType.Instance));
+        AddSymbol(new BuiltInTypeDeclaration("BOOL", BoolType.Instance));
+        AddSymbol(new BuiltInTypeDeclaration("STRING", StringType.Instance));
+        AddSymbol(new BuiltInTypeDeclaration("VECTOR", VectorType.Instance));
+
+        HandleType.All.ForEach(h => AddSymbol(new BuiltInTypeDeclaration(HandleType.KindToTypeName(h.Kind), h)));
+
+        TextLabelType.All.ForEach(tl => AddSymbol(new BuiltInTypeDeclaration(TextLabelType.GetTypeNameForLength(tl.Length), tl)));
+    }
+
+    private void RegisterIntrinsics()
+    {
         Intrinsics.All.ForEach(AddSymbol);
     }
 

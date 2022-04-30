@@ -2,9 +2,11 @@
 
 using ScTools.ScriptLang;
 using ScTools.ScriptLang.Ast;
+using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.Semantics;
 using ScTools.ScriptLang.Types;
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -43,5 +45,45 @@ public abstract class SemanticsTestsBase
         var s = new SemanticsAnalyzer(p.Diagnostics);
         u.Accept(s);
         return (s, u);
+    }
+
+    protected static void AssertConst<T>(SemanticsAnalyzer s, string varName, TypeInfo expectedType, T expectedValue)
+    {
+        True(s.GetSymbolUnchecked(varName, out var declaration));
+        True(declaration is VarDeclaration);
+        if (declaration is VarDeclaration constVar)
+        {
+            Equal(VarKind.Constant, constVar.Kind);
+            NotNull(constVar.Initializer);
+            Equal(expectedType, constVar.Semantics.ValueType);
+            NotNull(constVar.Semantics.ConstantValue);
+            switch (expectedValue)
+            {
+                case int v: Equal(v, constVar.Semantics.ConstantValue!.IntValue); break;
+                case float v: Equal(v, constVar.Semantics.ConstantValue!.FloatValue); break;
+                case bool v: Equal(v, constVar.Semantics.ConstantValue!.BoolValue); break;
+                case string v: Equal(v, constVar.Semantics.ConstantValue!.StringValue); break;
+                case null: Null(constVar.Semantics.ConstantValue!.StringValue); break;
+                default: throw new NotImplementedException();
+            }
+        }
+    }
+
+    protected static void AssertConstVec(SemanticsAnalyzer s, string varName, float expectedX, float expectedY, float expectedZ)
+    {
+        True(s.GetSymbolUnchecked(varName, out var declaration));
+        True(declaration is VarDeclaration);
+        if (declaration is VarDeclaration constVar)
+        {
+            Equal(VarKind.Constant, constVar.Kind);
+            NotNull(constVar.Initializer);
+            Equal(VectorType.Instance, constVar.Semantics.ValueType);
+            NotNull(constVar.Semantics.ConstantValue);
+            Equal(VectorType.Instance, constVar.Semantics.ConstantValue!.Type);
+            var (x, y, z) = constVar.Semantics.ConstantValue!.VectorValue;
+            Equal(expectedX, x);
+            Equal(expectedY, y);
+            Equal(expectedZ, z);
+        }
     }
 }

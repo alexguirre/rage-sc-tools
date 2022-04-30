@@ -13,6 +13,7 @@
 
         void Visit(UsingDirective node);
 
+        void Visit(BuiltInTypeDeclaration node);
         void Visit(EnumDeclaration node);
         void Visit(EnumMemberDeclaration node);
         void Visit(FunctionDeclaration node);
@@ -66,6 +67,7 @@
 
         TReturn Visit(UsingDirective node, TParam param);
 
+        TReturn Visit(BuiltInTypeDeclaration node, TParam param);
         TReturn Visit(EnumDeclaration node, TParam param);
         TReturn Visit(EnumMemberDeclaration node, TParam param);
         TReturn Visit(FunctionDeclaration node, TParam param);
@@ -411,6 +413,7 @@
 
         public virtual TReturn Visit(CompilationUnit node, TParam param) => DefaultVisit(node, param);
         public virtual TReturn Visit(UsingDirective node, TParam param) => DefaultVisit(node, param);
+        public virtual TReturn Visit(BuiltInTypeDeclaration node, TParam param) => DefaultVisit(node, param);
         public virtual TReturn Visit(EnumDeclaration node, TParam param) => DefaultVisit(node, param);
         public virtual TReturn Visit(EnumMemberDeclaration node, TParam param) => DefaultVisit(node, param);
         public virtual TReturn Visit(FunctionDeclaration node, TParam param) => DefaultVisit(node, param);
@@ -463,6 +466,7 @@
 
         public virtual void Visit(CompilationUnit node) => DefaultVisit(node);
         public virtual void Visit(UsingDirective node) => DefaultVisit(node);
+        public virtual void Visit(BuiltInTypeDeclaration node) => DefaultVisit(node);
         public virtual void Visit(EnumDeclaration node) => DefaultVisit(node);
         public virtual void Visit(EnumMemberDeclaration node) => DefaultVisit(node);
         public virtual void Visit(FunctionDeclaration node) => DefaultVisit(node);

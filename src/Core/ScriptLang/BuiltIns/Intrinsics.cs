@@ -13,8 +13,6 @@ using System.Linq;
 
 // TODO: implement intrinsics
 // APPEND (TEXT_LABEL_n, STRING|INT) -> VOID
-// COUNT_OF (ARRAY) -> INT
-// SIZE_OF (expression|TYPENAME) -> INT
 // ENUM_TO_STRING (ENUM) -> STRING
 // HASH_ENUM_TO_INT_INDEX (HASH_ENUM) -> INT
 // INT_INDEX_TO_HASH_ENUM (ENUNNAME, INT) -> HASH_ENUM
@@ -34,7 +32,13 @@ public static partial class Intrinsics
     public static IIntrinsicDeclaration I2F { get; } = new IntrinsicI2F();
     public static IIntrinsicDeclaration F2I { get; } = new IntrinsicF2I();
     public static IIntrinsicDeclaration F2V { get; } = new IntrinsicF2V();
-    
+
+    // Type Utilities
+    public static IIntrinsicDeclaration SIZE_OF { get; } = new IntrinsicSIZE_OF();
+
+    // Array Utilities
+    public static IIntrinsicDeclaration COUNT_OF { get; } = new IntrinsicCOUNT_OF();
+
     // Enum Utilities
     public static IIntrinsicDeclaration ENUM_TO_INT { get; } = new IntrinsicENUM_TO_INT();
     public static IIntrinsicDeclaration INT_TO_ENUM { get; } = new IntrinsicINT_TO_ENUM();
@@ -45,6 +49,8 @@ public static partial class Intrinsics
 
     public static ImmutableArray<IIntrinsicDeclaration> All { get; } = ImmutableArray.Create(
         I2F, F2I, F2V,
+        SIZE_OF,
+        COUNT_OF,
         ENUM_TO_INT, INT_TO_ENUM,
         IS_BIT_SET);
 

@@ -43,7 +43,7 @@ public static partial class Intrinsics
             {
                 if (argTypes[0] is TypeNameType { TypeDeclaration: EnumDeclaration enumDecl })
                 {
-                    returnType = new EnumType(enumDecl);
+                    returnType = enumDecl.Semantics.DeclaredType!;
                 }
                 else
                 {

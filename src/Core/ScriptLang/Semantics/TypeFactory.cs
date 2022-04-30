@@ -6,6 +6,7 @@ using ScTools.ScriptLang.Types;
 
 using System;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 
 internal sealed class TypeFactory : EmptyVisitor<TypeInfo, SemanticsAnalyzer>
@@ -33,6 +34,9 @@ internal sealed class TypeFactory : EmptyVisitor<TypeInfo, SemanticsAnalyzer>
         {
             varDeclaratorVisitor = new(this);
         }
+
+        public override TypeInfo Visit(BuiltInTypeDeclaration node, SemanticsAnalyzer param)
+            => node.BuiltInType;
 
         public override TypeInfo Visit(EnumDeclaration node, SemanticsAnalyzer s)
         {
@@ -139,8 +143,9 @@ internal sealed class TypeFactory : EmptyVisitor<TypeInfo, SemanticsAnalyzer>
         public override TypeInfo Visit(VarArrayDeclarator node, (VarDeclaration Var, SemanticsAnalyzer S) param)
         {
             var itemType = param.Var.Type.Accept(declarationVisitor, param.S);
-            // TODO: evaluate length expression of arrays
-            var arrayType = node.Lengths.Reverse().Aggregate(itemType, (ty, lengthExpr) => new ArrayType(ty, 999));
+            // TODO: check that the length expression is constant
+            Debug.Assert(node.Lengths.All(l => l is not null), "Incomplete array types are not supported for now");
+            var arrayType = node.Lengths.Reverse().Aggregate(itemType, (ty, lengthExpr) => new ArrayType(ty, ConstantExpressionEvaluator.Eval(lengthExpr!, param.S).IntValue));
             return arrayType;
         }
     }

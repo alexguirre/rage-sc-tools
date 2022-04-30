@@ -406,5 +406,7 @@ public sealed class ExpressionTypeChecker : EmptyVisitor<TypeInfo, SemanticsAnal
         => Error(s, ErrorCode.SemanticArgNotAnEnum, $"Argument {argIndex + 1}: type '{argType.ToPrettyString()}' is not an ENUM value", arg.Location);
     internal static void ArgNotAnEnumTypeError(SemanticsAnalyzer s, int argIndex, IExpression arg)
         => Error(s, ErrorCode.SemanticArgNotAnEnumType, $"Argument {argIndex + 1}: expected ENUM type name", arg.Location);
+    internal static void ArgNotAnArrayError(SemanticsAnalyzer s, int argIndex, IExpression arg, TypeInfo argType)
+        => Error(s, ErrorCode.SemanticArgNotAnArray, $"Argument {argIndex + 1}: type '{argType.ToPrettyString()}' is not an array", arg.Location);
     #endregion Errors
 }

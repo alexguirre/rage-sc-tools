@@ -277,44 +277,4 @@ public class ConstantsTests : SemanticsTestsBase
 
         CheckError(ErrorCode.SemanticTypeNotAllowedInConstant, (1, 7), (1, 13 + arraySize.Length), s.Diagnostics);
     }
-
-    private static void AssertConst<T>(SemanticsAnalyzer s, string varName, TypeInfo expectedType, T expectedValue)
-    {
-        True(s.GetSymbolUnchecked(varName, out var declaration));
-        True(declaration is VarDeclaration);
-        if (declaration is VarDeclaration constVar)
-        {
-            Equal(VarKind.Constant, constVar.Kind);
-            NotNull(constVar.Initializer);
-            Equal(expectedType, constVar.Semantics.ValueType);
-            NotNull(constVar.Semantics.ConstantValue);
-            switch (expectedValue)
-            {
-                case int v: Equal(v, constVar.Semantics.ConstantValue!.IntValue); break;
-                case float v: Equal(v, constVar.Semantics.ConstantValue!.FloatValue); break;
-                case bool v: Equal(v, constVar.Semantics.ConstantValue!.BoolValue); break;
-                case string v: Equal(v, constVar.Semantics.ConstantValue!.StringValue); break;
-                case null: Null(constVar.Semantics.ConstantValue!.StringValue); break;
-                default: throw new NotImplementedException();
-            }
-        }
-    }
-
-    private static void AssertConstVec(SemanticsAnalyzer s, string varName, float expectedX, float expectedY, float expectedZ)
-    {
-        True(s.GetSymbolUnchecked(varName, out var declaration));
-        True(declaration is VarDeclaration);
-        if (declaration is VarDeclaration constVar)
-        {
-            Equal(VarKind.Constant, constVar.Kind);
-            NotNull(constVar.Initializer);
-            Equal(VectorType.Instance, constVar.Semantics.ValueType);
-            NotNull(constVar.Semantics.ConstantValue);
-            Equal(VectorType.Instance, constVar.Semantics.ConstantValue!.Type);
-            var (x, y, z) = constVar.Semantics.ConstantValue!.VectorValue;
-            Equal(expectedX, x);
-            Equal(expectedY, y);
-            Equal(expectedZ, z);
-        }
-    }
 }
