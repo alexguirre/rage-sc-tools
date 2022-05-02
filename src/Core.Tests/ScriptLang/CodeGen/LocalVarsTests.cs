@@ -28,21 +28,11 @@ public class LocalVarsTests : CodeGenTestsBase
         expectedAssembly: @"
             ENTER 0, 4
             PUSH_CONST_U8 10
-            LOCAL_U8 2
-            STORE
-            PUSH_CONST_S16 300
-            LOCAL_U8 3
-            STORE
-            LEAVE 0, 0
-        "
-        /* optimized expectedAssembly: @"
-            ENTER 0, 4
-            PUSH_CONST_U8 10
             LOCAL_U8_STORE 2
             PUSH_CONST_S16 300
             LOCAL_U8_STORE 3
             LEAVE 0, 0
-        "*/);
+        ");
     }
 
     [Fact]
@@ -56,29 +46,6 @@ public class LocalVarsTests : CodeGenTestsBase
             STRING s4 = 'hello world'
         ",
         expectedAssembly: @"
-            ENTER 0, 6
-            PUSH_CONST_0
-            LOCAL_U8 2
-            STORE
-            PUSH_CONST_0
-            STRING
-            LOCAL_U8 3
-            STORE
-            PUSH_CONST_U8 strTest
-            STRING
-            LOCAL_U8 4
-            STORE
-            PUSH_CONST_0
-            STRING
-            LOCAL_U8 5
-            STORE
-            LEAVE 0, 0
-
-            .string
-            strHelloWorld: .str 'hello world'
-            strTest: .str 'test'
-        "
-        /* optimized expectedAssembly: @"
             ENTER 0, 6
             PUSH_CONST_0
             LOCAL_U8_STORE 2
@@ -96,7 +63,7 @@ public class LocalVarsTests : CodeGenTestsBase
             .string
             strHelloWorld: .str 'hello world'
             strTest: .str 'test'
-        "*/);
+        ");
     }
 
     [Fact]
@@ -350,6 +317,25 @@ public class LocalVarsTests : CodeGenTestsBase
             DATA d
         ",
         declarationsSource: @"
+            STRUCT INNER_INNER_DATA
+                INT n[5]
+            ENDSTRUCT
+
+            STRUCT INNER_DATA1
+                INT n1
+                INT n2
+                INNER_INNER_DATA n3
+            ENDSTRUCT
+
+            STRUCT INNER_DATA2
+                INT arr1[4]
+                INT arr2[4]
+                INT arr3[5]
+                INT arr4[4]
+                INT n1 = -1
+                INT n2 = -1
+            ENDSTRUCT
+
             STRUCT DATA
                 INT f_0[4]
                 INT f_5, f_6, f_7, f_8, f_9, f_10, f_11, f_12, f_13, f_14, f_15, f_16, f_17, f_18, f_19, f_20
@@ -365,25 +351,6 @@ public class LocalVarsTests : CodeGenTestsBase
                 INT f_109[4]
                 INT f_114, f_115, f_116, f_117, f_118, f_119, f_120, f_121, f_122, f_123, f_124, f_125, f_126, f_127
                 INT f_128, f_129, f_130, f_131, f_132, f_133, f_134, f_135, f_136, f_137, f_138, f_139, f_140
-            ENDSTRUCT
-
-            STRUCT INNER_DATA1
-                INT n1
-                INT n2
-                INNER_INNER_DATA n3
-            ENDSTRUCT
-
-            STRUCT INNER_INNER_DATA
-                INT n[5]
-            ENDSTRUCT
-
-            STRUCT INNER_DATA2
-                INT arr1[4]
-                INT arr2[4]
-                INT arr3[5]
-                INT arr4[4]
-                INT n1 = -1
-                INT n2 = -1
             ENDSTRUCT
         ",
         expectedAssembly: @"
@@ -469,6 +436,110 @@ public class LocalVarsTests : CodeGenTestsBase
                 STORE_REV
                 DROP
                 ; end fields of DATA
+            DROP
+            LEAVE 0, 0
+        ");
+    }
+
+    [Fact]
+    public void StringFieldWithInitializer()
+    {
+        CompileScript(
+        scriptSource: @"
+            DATA d
+        ",
+        declarationsSource: @"
+            STRUCT DATA
+                STRING a = 'hello'
+                STRING b = NULL
+            ENDSTRUCT
+        ",
+        expectedAssembly: @"
+            ENTER 0, 4
+            LOCAL_U8 2
+
+            ; init field a
+            DUP
+            PUSH_CONST_0
+            STRING
+            STORE_REV
+            DROP
+
+            ; init field b
+            DUP
+            IOFFSET_U8 1
+            PUSH_CONST_0
+            STORE_REV
+            DROP
+
+            DROP
+            LEAVE 0, 0
+
+            .string
+            strHello: .str 'hello'
+        ");
+    }
+
+    [Fact]
+    public void TextLabelFieldWithInitializer()
+    {
+        // TODO: decide support of text label fields with initializers
+        // note, there is not STORE_REV-like for TEXT_LABEL_ASSIGN/COPY (i.e. destination address is last in the stack instead of first),
+        // so probably not possible to follow the pattern of the other initializers
+        CompileScript(
+        scriptSource: @"
+            DATA d
+        ",
+        declarationsSource: @"
+            STRUCT DATA
+                TEXT_LABEL_15 a = 'hello'
+            ENDSTRUCT
+        ",
+        // TODO: expected assembly of text label initializer codegen
+        expectedAssembly: @"
+            ENTER 0, 4
+            LOCAL_U8 2
+
+            ; init field a
+
+            DROP
+            LEAVE 0, 0
+
+            .string
+            strHello: .str 'hello'
+        ");
+    }
+
+    [Fact]
+    public void VectorFieldWithInitializer()
+    {
+        CompileScript(
+        scriptSource: @"
+            DATA d
+        ",
+        declarationsSource: @"
+            STRUCT DATA
+                VECTOR a = <<1.0, 2.0, 3.0>>
+            ENDSTRUCT
+        ",
+        expectedAssembly: @"
+            ENTER 0, 5
+            LOCAL_U8 2
+
+            ; init field a
+            DUP
+                DUP
+                PUSH_CONST_F1 ; x
+                STORE_REV
+                IOFFSET_U8 1  ; y
+                PUSH_CONST_F2
+                STORE_REV
+                IOFFSET_U8 1  ; z
+                PUSH_CONST_F3
+                STORE_REV
+                DROP
+            DROP
+
             DROP
             LEAVE 0, 0
         ");

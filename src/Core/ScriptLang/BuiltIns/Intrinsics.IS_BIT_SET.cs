@@ -1,6 +1,7 @@
 ﻿namespace ScTools.ScriptLang.BuiltIns;
 
 using ScTools.ScriptLang.Ast.Expressions;
+using ScTools.ScriptLang.CodeGen;
 using ScTools.ScriptLang.Semantics;
 using ScTools.ScriptLang.Types;
 
@@ -32,5 +33,8 @@ public static partial class Intrinsics
             var position = ConstantExpressionEvaluator.Eval(node.Arguments[1], semantics).IntValue;
             return ConstantValue.Bool((value & (1 << position)) != 0);
         }
+
+        public override void CodeGen(InvocationExpression node, CodeEmitter codeEmitter)
+            => throw new System.NotImplementedException();
     }
 }

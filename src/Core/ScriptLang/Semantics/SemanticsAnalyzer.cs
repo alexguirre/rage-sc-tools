@@ -183,99 +183,97 @@ public sealed class SemanticsAnalyzer : Visitor
         var varType = typeFactory.GetFrom(node);
 
         // TODO: global variables
-        // TODO: static variables
         // TODO: local variables
-        // TODO: parameters
-        // TODO: script parameters
 
-        if (node.Kind is VarKind.Constant)
+        switch (node.Kind)
         {
-            if (!varType.IsError && varType is not (IntType or FloatType or BoolType or StringType or VectorType or EnumType))
-            {
-                TypeNotAllowedInConstantError(node, varType);
-            }
-            else
-            {
-                if (node.Initializer is null)
+            case VarKind.Constant:
+                if (!varType.IsError && varType is not (IntType or FloatType or BoolType or StringType or VectorType or EnumType))
                 {
-                    ConstantWithoutInitializerError(node);
-                }
-
-                var initializerType = node.Initializer?.Accept(exprTypeChecker, this) ?? ErrorType.Instance;
-
-                ConstantValue? value = null;
-                if (!varType.IsError && !initializerType.IsError)
-                {
-                    Debug.Assert(node.Initializer is not null);
-                    if (!node.Initializer.ValueKind.Is(ValueKind.Constant))
-                    {
-                        InitializerExpressionIsNotConstantError(node);
-                    }
-                    else if (varType.IsAssignableFrom(initializerType))
-                    {
-                        value = ConstantExpressionEvaluator.Eval(node.Initializer, this);
-                    }
-                    else
-                    {
-                        CannotConvertTypeError(initializerType, varType, node.Initializer.Location);
-                    }
-                }
-
-                node.Semantics = node.Semantics with { ConstantValue = value };
-            }
-        }
-        else if (node.Kind is VarKind.Static)
-        {
-            var initializerType = node.Initializer?.Accept(exprTypeChecker, this) ?? ErrorType.Instance;
-
-            ConstantValue? value = null;
-            if (!varType.IsError && !initializerType.IsError)
-            {
-                Debug.Assert(node.Initializer is not null);
-                if (!node.Initializer.ValueKind.Is(ValueKind.Constant))
-                {
-                    InitializerExpressionIsNotConstantError(node);
-                }
-                else if (varType.IsAssignableFrom(initializerType))
-                {
-                    value = ConstantExpressionEvaluator.Eval(node.Initializer, this);
+                    TypeNotAllowedInConstantError(node, varType);
                 }
                 else
                 {
-                    CannotConvertTypeError(initializerType, varType, node.Initializer.Location);
-                }
-            }
+                    if (node.Initializer is null)
+                    {
+                        ConstantWithoutInitializerError(node);
+                    }
 
-            node.Semantics = node.Semantics with { ConstantValue = value };
-        }
-        else if(node.Kind is VarKind.Field)
-        {
-            Debug.Assert(currentStructDeclaration is not null);
-
-            var initializerType = node.Initializer?.Accept(exprTypeChecker, this) ?? ErrorType.Instance;
-
-            ConstantValue? value = null;
-            if (!varType.IsError && !initializerType.IsError)
-            {
-                Debug.Assert(node.Initializer is not null);
-                if (!node.Initializer.ValueKind.Is(ValueKind.Constant))
-                {
-                    InitializerExpressionIsNotConstantError(node);
+                    CheckConstantInitializer(this, node);
                 }
-                else if (varType.IsAssignableFrom(initializerType))
-                {
-                    value = ConstantExpressionEvaluator.Eval(node.Initializer, this);
-                }
-                else
-                {
-                    CannotConvertTypeError(initializerType, varType, node.Initializer.Location);
-                }
-            }
-
-            node.Semantics = node.Semantics with { ConstantValue = value };
+                break;
+            case VarKind.Static:
+                CheckConstantInitializer(this, node);
+                break;
+            case VarKind.Field:
+                Debug.Assert(currentStructDeclaration is not null);
+                CheckConstantInitializer(this, node);
+                break;
+            case VarKind.Local:
+                CheckRuntimeInitializer(this, node);
+                break;
+            case VarKind.Parameter or VarKind.ScriptParameter:
+                // parameters are not allowed initializers (error in parser phase), don't need to check the initializer
+                // TODO: check if script parameter types are safe to use?
+                break;
+            default:
+                throw new NotImplementedException($"Var kind '{node.Kind}' is not supported");
         }
 
         AddSymbol(node);
+
+
+        static void CheckConstantInitializer(SemanticsAnalyzer s, VarDeclaration node)
+        {
+            var varType = node.Semantics.ValueType;
+            Debug.Assert(varType is not null);
+            var initializerType = node.Initializer?.Accept(s.exprTypeChecker, s) ?? ErrorType.Instance;
+
+            ConstantValue? value = null;
+            if (!varType.IsError && !initializerType.IsError)
+            {
+                Debug.Assert(node.Initializer is not null);
+                if (!node.Initializer.ValueKind.Is(ValueKind.Constant))
+                {
+                    s.InitializerExpressionIsNotConstantError(node);
+                }
+                else if (varType.IsAssignableFrom(initializerType))
+                {
+                    value = ConstantExpressionEvaluator.Eval(node.Initializer, s);
+                }
+                else
+                {
+                    s.CannotConvertTypeError(initializerType, varType, node.Initializer.Location);
+                }
+            }
+
+            node.Semantics = node.Semantics with { ConstantValue = value };
+        }
+
+        static void CheckRuntimeInitializer(SemanticsAnalyzer s, VarDeclaration node)
+        {
+            var varType = node.Semantics.ValueType;
+            Debug.Assert(varType is not null);
+            var initializerType = node.Initializer?.Accept(s.exprTypeChecker, s) ?? ErrorType.Instance;
+
+            if (!varType.IsError && !initializerType.IsError)
+            {
+                Debug.Assert(node.Initializer is not null);
+                if (varType.IsAssignableFrom(initializerType))
+                {
+                    //if (node.Initializer.ValueKind.Is(ValueKind.Constant))
+                    //{
+                    //    _ = ConstantExpressionEvaluator.Eval(node.Initializer, s);
+                    //}
+                }
+                else
+                {
+                    s.CannotConvertTypeError(initializerType, varType, node.Initializer.Location);
+                }
+            }
+
+            node.Semantics = node.Semantics with { ConstantValue = null };
+        }
     }
 
     public override void Visit(AssignmentStatement node)

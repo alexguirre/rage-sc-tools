@@ -1,6 +1,7 @@
 ﻿namespace ScTools.ScriptLang.BuiltIns;
 
 using ScTools.ScriptLang.Ast.Expressions;
+using ScTools.ScriptLang.CodeGen;
 using ScTools.ScriptLang.Semantics;
 using ScTools.ScriptLang.Types;
 
@@ -41,14 +42,19 @@ public static partial class Intrinsics
         }
 
         public override ConstantValue ConstantEval(InvocationExpression node, SemanticsAnalyzer semantics)
+            => ConstantValue.Int(GetTypeFromArgument(node).SizeOf);
+
+        public override void CodeGen(InvocationExpression node, CodeEmitter c)
+            => c.EmitPushInt(GetTypeFromArgument(node).SizeOf);
+
+        private static TypeInfo GetTypeFromArgument(InvocationExpression node)
         {
             TypeInfo type = node.Arguments[0].Type!;
             if (type is TypeNameType typeName)
             {
                 type = typeName.TypeDeclaration.Semantics.DeclaredType!;
             }
-
-            return ConstantValue.Int(type.SizeOf);
+            return type;
         }
     }
 }

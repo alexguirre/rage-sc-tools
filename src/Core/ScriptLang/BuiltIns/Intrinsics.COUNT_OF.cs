@@ -1,6 +1,7 @@
 ﻿namespace ScTools.ScriptLang.BuiltIns;
 
 using ScTools.ScriptLang.Ast.Expressions;
+using ScTools.ScriptLang.CodeGen;
 using ScTools.ScriptLang.Semantics;
 using ScTools.ScriptLang.Types;
 
@@ -51,6 +52,12 @@ public static partial class Intrinsics
         {
             var arrType = (ArrayType)node.Arguments[0].Type!;
             return ConstantValue.Int(arrType.Length);
+        }
+
+        public override void CodeGen(InvocationExpression node, CodeEmitter c)
+        {
+            var arrType = (ArrayType)node.Arguments[0].Type!;
+            c.EmitPushInt(arrType.Length);
         }
     }
 }

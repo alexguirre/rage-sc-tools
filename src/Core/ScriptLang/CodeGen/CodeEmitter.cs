@@ -16,17 +16,206 @@ using ScTools.ScriptLang.Ast.Statements;
 using ScTools.ScriptLang.Semantics;
 using ScTools.ScriptLang.Types;
 
-public sealed class CodeEmitter
+public sealed partial class CodeEmitter
 {
+    private enum LabelReferenceKind { Relative, Absolute }
+    private record struct LabelReference(InstructionReference Instruction, int OperandOffset, LabelReferenceKind Kind);
+    private record struct LabelInfo(InstructionReference? Instruction, List<LabelReference> UnresolvedReferences);
+
+    private record struct InstructionInfo(int Offset, int Length);
+    private sealed class InstructionReference
+    {
+        public int Index { get; set; }
+    }
+
+    private sealed class CodeBuffer
+    {
+        private readonly List<byte> buffer = new(capacity: (int)Script.MaxPageLength);
+        private readonly List<InstructionInfo> instructions = new(capacity: (int)Script.MaxPageLength / 4);
+        private readonly List<InstructionReference> references = new(capacity: (int)Script.MaxPageLength / 4);
+
+        public int NumberOfInstructions => instructions.Count;
+        public InstructionReference GetRef(int instructionIndex) => references[instructionIndex];
+        public bool IsEmpty(InstructionReference instruction) => instructions[instruction.Index].Length == 0;
+        public Opcode GetOpcode(InstructionReference instruction) => (Opcode)buffer[instructions[instruction.Index].Offset];
+        public byte GetByte(InstructionReference instruction, int offset) => buffer[instructions[instruction.Index].Offset + offset];
+        public List<byte> GetBytes(InstructionReference instruction)
+        {
+            var (instOffset, instLength) = instructions[instruction.Index];
+            return buffer.GetRange(instOffset, instLength);
+        }
+
+        private InstructionReference InsertInstruction(int index, List<byte> instructionBytes)
+        {
+            var instOffset = buffer.Count;
+            var instLength = instructionBytes.Count;
+            var instRef = new InstructionReference { Index = index };
+            instructions.Insert(index, new(instOffset, instLength));
+            references.Insert(index, instRef);
+            buffer.AddRange(instructionBytes);
+            UpdateReferences(start: instRef.Index + 1);
+            return instRef;
+        }
+
+        public InstructionReference InsertBefore(InstructionReference instruction, List<byte> instructionBytes)
+            => InsertInstruction(instruction.Index, instructionBytes);
+
+        public InstructionReference InsertAfter(InstructionReference instruction, List<byte> instructionBytes)
+            => InsertInstruction(instruction.Index + 1, instructionBytes);
+
+        public InstructionReference Append(List<byte> instructionBytes)
+            => InsertInstruction(instructions.Count, instructionBytes);
+
+        public void Update(InstructionReference instruction, List<byte> newInstructionBytes)
+        {
+            var (instOffset, instLength) = instructions[instruction.Index];
+            var newInstLength = newInstructionBytes.Count;
+            if (newInstLength <= instLength)
+            {
+                // can be updated in-place
+                for (int i = 0; i < newInstructionBytes.Count; i++)
+                {
+                    buffer[instOffset + i] = newInstructionBytes[i];
+                }
+                instructions[instruction.Index] = new(instOffset, newInstLength);
+            }
+            else
+            {
+                // append bytes to the end
+                var newInstOffset = buffer.Count;
+                instructions[instruction.Index] = new(newInstOffset, newInstLength);
+                buffer.AddRange(newInstructionBytes);
+            }
+        }
+
+        public void Remove(InstructionReference instruction)
+        {
+            instructions[instruction.Index] = instructions[instruction.Index] with { Length = 0 };
+        }
+
+        private void UpdateReferences(int start = 0)
+        {
+            for (int i = start; i < references.Count; i++)
+            {
+                references[i].Index = i;
+            }
+        }
+
+        public ScriptPageArray<byte> ToCodePages(List<LabelInfo> labels)
+        {
+            var segment = new SegmentBuilder(sizeof(byte), isPaged: true);
+            var codeBuffer = CollectionsMarshal.AsSpan(buffer);
+            var finalInstructions = new List<InstructionInfo>(capacity: instructions.Count);
+
+            foreach (var (instOffset, instLength) in instructions)
+            {
+                if (instLength == 0)
+                {
+                    finalInstructions.Add(new(segment.Length, 0));
+                    continue;
+                }
+
+                int offset = (int)(segment.Length & (Script.MaxPageLength - 1));
+
+                var instructionBuffer = codeBuffer.Slice(instOffset, instLength);
+                Opcode opcode = (Opcode)instructionBuffer[0];
+
+                // At page boundary a NOP may be required for the interpreter to switch to the next page,
+                // the interpreter only does this with control flow instructions and NOP
+                // If the NOP is needed, skip 1 byte at the end of the page
+                bool needsNopAtBoundary = !opcode.IsControlFlow() &&
+                                          opcode != Opcode.NOP;
+
+                if (offset + instructionBuffer.Length > (Script.MaxPageLength - (needsNopAtBoundary ? 1u : 0))) // the instruction doesn't fit in the current page
+                {
+                    var bytesUntilNextPage = (int)Script.MaxPageLength - offset; // padding needed to skip to the next page
+                    var requiredNops = bytesUntilNextPage;
+
+                    const int JumpInstructionSize = 3;
+                    if (bytesUntilNextPage > JumpInstructionSize)
+                    {
+                        // if there is enough space for a J instruction, add it to jump to the next page
+                        short relIP = (short)(Script.MaxPageLength - (offset + JumpInstructionSize)); // get how many bytes until the next page
+                        segment.Byte((byte)Opcode.J);
+                        segment.Byte((byte)(relIP & 0xFF));
+                        segment.Byte((byte)(relIP >> 8));
+                        requiredNops -= JumpInstructionSize;
+                    }
+
+                    // NOP what is left of the current page
+                    segment.Bytes(new byte[requiredNops]);
+                }
+
+                var finalInstOffset = segment.Length;
+                var finalInstLength = instructionBuffer.Length;
+                finalInstructions.Add(new(finalInstOffset, finalInstLength));
+                segment.Bytes(instructionBuffer);
+            }
+
+            BackfillLabels(labels, segment.RawDataBuffer, finalInstructions);
+
+            return segment.ToPages<byte>();
+        }
+
+        private static void BackfillLabels(List<LabelInfo> labels, Span<byte> codeBuffer, List<InstructionInfo> instructions)
+        {
+            foreach (var label in labels)
+            {
+                foreach (var reference in label.UnresolvedReferences)
+                {
+                    BackfillLabel(label, reference, codeBuffer, instructions);
+                }
+            }
+        }
+
+        private static void BackfillLabel(LabelInfo label, LabelReference reference, Span<byte> codeBuffer, List<InstructionInfo> instructions)
+        {
+            Debug.Assert(label.Instruction is not null, "All labels must have been resolved");
+
+            var (labelOffset, _) = instructions[label.Instruction.Index];
+            var (instOffset, instLength) = instructions[reference.Instruction.Index];
+            Debug.Assert(reference.OperandOffset < instLength, "Operand offset out of instruction bounds");
+
+            var instructionBuffer = codeBuffer.Slice(instOffset, instLength);
+            switch (reference.Kind)
+            {
+                case LabelReferenceKind.Absolute:
+                    var destU24 = instructionBuffer[reference.OperandOffset..(reference.OperandOffset + 3)];
+                    Debug.Assert(destU24[0] == 0 && destU24[1] == 0 && destU24[2] == 0);
+                    destU24[0] = (byte)(labelOffset & 0xFF);
+                    destU24[1] = (byte)((labelOffset >> 8) & 0xFF);
+                    destU24[2] = (byte)((labelOffset >> 16) & 0xFF);
+                    return;
+                case LabelReferenceKind.Relative:
+                    var destS16 = instructionBuffer[reference.OperandOffset..(reference.OperandOffset + 2)];
+                    Debug.Assert(destS16[0] == 0 && destS16[1] == 0);
+                    var relOffset = AbsoluteAddressToOperandRelativeOffset(labelOffset, instOffset + reference.OperandOffset);
+                    destS16[0] = (byte)(relOffset & 0xFF);
+                    destS16[1] = (byte)(relOffset >> 8);
+                    return;
+            }
+        }
+
+        private static short AbsoluteAddressToOperandRelativeOffset(int absoluteAddress, int operandAddress)
+        {
+            var relOffset = absoluteAddress - (operandAddress + 2);
+            if (relOffset < short.MinValue || relOffset > short.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(absoluteAddress), "Address is too far");
+            }
+
+            return (short)relOffset;
+        }
+    }
+
     private readonly StatementEmitter stmtEmitter;
     private readonly ValueEmitter valueEmitter;
     private readonly AddressEmitter addressEmitter;
     //private readonly PatternOptimizer optimizer;
     private const bool IncludeFunctionNames = true;
 
-    //private readonly SegmentBuilder codeSegment = new(sizeof(byte), isPaged: true);
-    private readonly List<byte> codeBuffer = new(capacity: (int)Script.MaxPageLength);
-    private readonly List<int> codeInstructionOffsets = new(capacity: (int)Script.MaxPageLength / 4);
+    private readonly CodeBuffer codeBuffer = new();
+    private InstructionReference? instructionToUpdateInNextFlush = null;
     private readonly List<byte> instructionBuffer = new();
 
     private readonly HashSet<FunctionDeclaration> usedFunctions = new();
@@ -34,6 +223,10 @@ public sealed class CodeEmitter
     private readonly HashSet<VarDeclaration> usedStatics = new();
     private readonly List<VarDeclaration> statics = new();
     private readonly Dictionary<VarDeclaration, int> staticsOffsets = new();
+
+    private readonly List<LabelInfo> labels = new();
+    private readonly Dictionary<string, int> functionLabelNameToIndex = new(ParserNew.CaseInsensitiveComparer);
+    private readonly Dictionary<string, int> localLabelNameToIndex = new(ParserNew.CaseInsensitiveComparer);
 
     private byte currentFunctionArgCount;
     private int currentFunctionFrameSize = 0;
@@ -49,7 +242,7 @@ public sealed class CodeEmitter
         addressEmitter = new(this);
     }
 
-    public ScriptPageArray<byte> ToCodePages() => throw new NotImplementedException(nameof(ToCodePages));//codeSegment.ToPages<byte>();
+    public ScriptPageArray<byte> ToCodePages() => codeBuffer.ToCodePages(labels);
 
     #region Byte Emitters
     private void EmitBytes(ReadOnlySpan<byte> bytes)
@@ -101,78 +294,55 @@ public sealed class CodeEmitter
         instructionBuffer.Clear();
     }
 
-    private record struct FlushResult(int InstructionIndex, int InstructionLength);
+
 
     /// <summary>
     /// Writes the current instruction buffer to the segment.
     /// </summary>
-    private FlushResult Flush()
+    private InstructionReference Flush()
     {
-        //int offset = (int)(codeSegment.Length & (Script.MaxPageLength - 1));
+        InstructionReference instRef;
+        if (instructionToUpdateInNextFlush is null)
+        {
+            instRef = codeBuffer.Append(instructionBuffer);
+        }
+        else
+        {
+            codeBuffer.Update(instructionToUpdateInNextFlush, instructionBuffer);
+            instRef = instructionToUpdateInNextFlush;
+            instructionToUpdateInNextFlush = null;
+        }
 
-        //Opcode opcode = (Opcode)instructionBuffer[0];
-
-        //// At page boundary a NOP may be required for the interpreter to switch to the next page,
-        //// the interpreter only does this with control flow instructions and NOP
-        //// If the NOP is needed, skip 1 byte at the end of the page
-        //bool needsNopAtBoundary = !opcode.IsControlFlow() &&
-        //                          opcode != Opcode.NOP;
-
-        //if (offset + instructionBuffer.Count > (Script.MaxPageLength - (needsNopAtBoundary ? 1u : 0))) // the instruction doesn't fit in the current page
-        //{
-        //    var bytesUntilNextPage = (int)Script.MaxPageLength - offset; // padding needed to skip to the next page
-        //    var requiredNops = bytesUntilNextPage;
-
-        //    const int JumpInstructionSize = 3;
-        //    if (bytesUntilNextPage > JumpInstructionSize)
-        //    {
-        //        // if there is enough space for a J instruction, add it to jump to the next page
-        //        short relIP = (short)(Script.MaxPageLength - (offset + JumpInstructionSize)); // get how many bytes until the next page
-        //        codeSegment.Byte((byte)Opcode.J);
-        //        codeSegment.Byte((byte)(relIP & 0xFF));
-        //        codeSegment.Byte((byte)(relIP >> 8));
-        //        requiredNops -= JumpInstructionSize;
-        //    }
-
-        //    // NOP what is left of the current page
-        //    codeSegment.Bytes(new byte[requiredNops]);
-        //}
-
-        //var instOffset = codeSegment.Length;
-        //var instLength = instructionBuffer.Count;
-        //codeSegment.Bytes(CollectionsMarshal.AsSpan(instructionBuffer));
-        //Drop();
-
-        var instIndex = codeInstructionOffsets.Count;
-        var instLength = instructionBuffer.Count;
-        codeInstructionOffsets.Add(codeBuffer.Count);
-        codeBuffer.AddRange(instructionBuffer);
         Drop();
-
-        return new(instIndex, instLength);
+        return instRef;
     }
     #endregion Byte Emitters
 
     #region Instruction Emitters
-    private FlushResult EmitInst(Opcode opcode)
+    /// <summary>
+    /// Emits an instruction of length 0. Used as label marker.
+    /// </summary>
+    private InstructionReference EmitLabelMarker()
+        => Flush();
+    private InstructionReference EmitInst(Opcode opcode)
     {
         EmitOpcode(opcode);
         return Flush();
     }
-    private FlushResult EmitInstU8(Opcode opcode, byte operand)
+    private InstructionReference EmitInstU8(Opcode opcode, byte operand)
     {
         EmitOpcode(opcode);
         EmitU8(operand);
         return Flush();
     }
-    private FlushResult EmitInstU8U8(Opcode opcode, byte operand1, byte operand2)
+    private InstructionReference EmitInstU8U8(Opcode opcode, byte operand1, byte operand2)
     {
         EmitOpcode(opcode);
         EmitU8(operand1);
         EmitU8(operand2);
         return Flush();
     }
-    private FlushResult EmitInstU8U8U8(Opcode opcode, byte operand1, byte operand2, byte operand3)
+    private InstructionReference EmitInstU8U8U8(Opcode opcode, byte operand1, byte operand2, byte operand3)
     {
         EmitOpcode(opcode);
         EmitU8(operand1);
@@ -180,148 +350,148 @@ public sealed class CodeEmitter
         EmitU8(operand3);
         return Flush();
     }
-    private FlushResult EmitInstS16(Opcode opcode, short operand)
+    private InstructionReference EmitInstS16(Opcode opcode, short operand)
     {
         EmitOpcode(opcode);
         EmitS16(operand);
         return Flush();
     }
-    private FlushResult EmitInstU16(Opcode opcode, ushort operand)
+    private InstructionReference EmitInstU16(Opcode opcode, ushort operand)
     {
         EmitOpcode(opcode);
         EmitU16(operand);
         return Flush();
     }
-    private FlushResult EmitInstU24(Opcode opcode, uint operand)
+    private InstructionReference EmitInstU24(Opcode opcode, uint operand)
     {
         EmitOpcode(opcode);
         EmitU24(operand);
         return Flush();
     }
-    private FlushResult EmitInstU32(Opcode opcode, uint operand)
+    private InstructionReference EmitInstU32(Opcode opcode, uint operand)
     {
         EmitOpcode(opcode);
         EmitU32(operand);
         return Flush();
     }
-    private FlushResult EmitInstF32(Opcode opcode, float operand)
+    private InstructionReference EmitInstF32(Opcode opcode, float operand)
     {
         EmitOpcode(opcode);
         EmitF32(operand);
         return Flush();
     }
 
-    private FlushResult EmitNop() => EmitInst(Opcode.NOP);
-    private FlushResult EmitIAdd() => EmitInst(Opcode.IADD);
-    private FlushResult EmitIAddU8(byte value) => EmitInstU8(Opcode.IADD_U8, value);
-    private FlushResult EmitIAddS16(short value) => EmitInstS16(Opcode.IADD_S16, value);
-    private FlushResult EmitISub() => EmitInst(Opcode.ISUB);
-    private FlushResult EmitIMul() => EmitInst(Opcode.IMUL);
-    private FlushResult EmitIMulU8(byte value) => EmitInstU8(Opcode.IMUL_U8, value);
-    private FlushResult EmitIMulS16(short value) => EmitInstS16(Opcode.IMUL_S16, value);
-    private FlushResult EmitIDiv() => EmitInst(Opcode.IDIV);
-    private FlushResult EmitIMod() => EmitInst(Opcode.IMOD);
-    private FlushResult EmitINot() => EmitInst(Opcode.INOT);
-    private FlushResult EmitINeg() => EmitInst(Opcode.INEG);
-    private FlushResult EmitIEq() => EmitInst(Opcode.IEQ);
-    private FlushResult EmitINe() => EmitInst(Opcode.INE);
-    private FlushResult EmitIGt() => EmitInst(Opcode.IGT);
-    private FlushResult EmitIGe() => EmitInst(Opcode.IGE);
-    private FlushResult EmitILt() => EmitInst(Opcode.ILT);
-    private FlushResult EmitILe() => EmitInst(Opcode.ILE);
-    private FlushResult EmitFAdd() => EmitInst(Opcode.FADD);
-    private FlushResult EmitFSub() => EmitInst(Opcode.FSUB);
-    private FlushResult EmitFMul() => EmitInst(Opcode.FMUL);
-    private FlushResult EmitFDiv() => EmitInst(Opcode.FDIV);
-    private FlushResult EmitFMod() => EmitInst(Opcode.FMOD);
-    private FlushResult EmitFNeg() => EmitInst(Opcode.FNEG);
-    private FlushResult EmitFEq() => EmitInst(Opcode.FEQ);
-    private FlushResult EmitFNe() => EmitInst(Opcode.FNE);
-    private FlushResult EmitFGt() => EmitInst(Opcode.FGT);
-    private FlushResult EmitFGe() => EmitInst(Opcode.FGE);
-    private FlushResult EmitFLt() => EmitInst(Opcode.FLT);
-    private FlushResult EmitFLe() => EmitInst(Opcode.FLE);
-    private FlushResult EmitVAdd() => EmitInst(Opcode.VADD);
-    private FlushResult EmitVSub() => EmitInst(Opcode.VSUB);
-    private FlushResult EmitVMul() => EmitInst(Opcode.VMUL);
-    private FlushResult EmitVDiv() => EmitInst(Opcode.VDIV);
-    private FlushResult EmitIAnd() => EmitInst(Opcode.IAND);
-    private FlushResult EmitIOr() => EmitInst(Opcode.IOR);
-    private FlushResult EmitIXor() => EmitInst(Opcode.IXOR);
-    private FlushResult EmitI2F() => EmitInst(Opcode.I2F);
-    private FlushResult EmitF2I() => EmitInst(Opcode.F2I);
-    private FlushResult EmitF2V() => EmitInst(Opcode.F2V);
-    private FlushResult EmitDup() => EmitInst(Opcode.DUP);
-    private FlushResult EmitDrop() => EmitInst(Opcode.DROP);
-    private FlushResult EmitLoad() => EmitInst(Opcode.LOAD);
-    private FlushResult EmitLoadN() => EmitInst(Opcode.LOAD_N);
-    private FlushResult EmitStore() => EmitInst(Opcode.STORE);
-    private FlushResult EmitStoreN() => EmitInst(Opcode.STORE_N);
-    private FlushResult EmitStoreRev() => EmitInst(Opcode.STORE_REV);
-    private FlushResult EmitString() => EmitInst(Opcode.STRING);
-    private FlushResult EmitStringHash() => EmitInst(Opcode.STRINGHASH);
-    private FlushResult EmitPushConstM1() => EmitInst(Opcode.PUSH_CONST_M1);
-    private FlushResult EmitPushConst0() => EmitInst(Opcode.PUSH_CONST_0);
-    private FlushResult EmitPushConst1() => EmitInst(Opcode.PUSH_CONST_1);
-    private FlushResult EmitPushConst2() => EmitInst(Opcode.PUSH_CONST_2);
-    private FlushResult EmitPushConst3() => EmitInst(Opcode.PUSH_CONST_3);
-    private FlushResult EmitPushConst4() => EmitInst(Opcode.PUSH_CONST_4);
-    private FlushResult EmitPushConst5() => EmitInst(Opcode.PUSH_CONST_5);
-    private FlushResult EmitPushConst6() => EmitInst(Opcode.PUSH_CONST_6);
-    private FlushResult EmitPushConst7() => EmitInst(Opcode.PUSH_CONST_7);
-    private FlushResult EmitPushConstFM1() => EmitInst(Opcode.PUSH_CONST_FM1);
-    private FlushResult EmitPushConstF0() => EmitInst(Opcode.PUSH_CONST_F0);
-    private FlushResult EmitPushConstF1() => EmitInst(Opcode.PUSH_CONST_F1);
-    private FlushResult EmitPushConstF2() => EmitInst(Opcode.PUSH_CONST_F2);
-    private FlushResult EmitPushConstF3() => EmitInst(Opcode.PUSH_CONST_F3);
-    private FlushResult EmitPushConstF4() => EmitInst(Opcode.PUSH_CONST_F4);
-    private FlushResult EmitPushConstF5() => EmitInst(Opcode.PUSH_CONST_F5);
-    private FlushResult EmitPushConstF6() => EmitInst(Opcode.PUSH_CONST_F6);
-    private FlushResult EmitPushConstF7() => EmitInst(Opcode.PUSH_CONST_F7);
-    private FlushResult EmitPushConstU8(byte value) => EmitInstU8(Opcode.PUSH_CONST_U8, value);
-    private FlushResult EmitPushConstU8U8(byte value1, byte value2) => EmitInstU8U8(Opcode.PUSH_CONST_U8_U8, value1, value2);
-    private FlushResult EmitPushConstU8U8U8(byte value1, byte value2, byte value3) => EmitInstU8U8U8(Opcode.PUSH_CONST_U8_U8_U8, value1, value2, value3);
-    private FlushResult EmitPushConstS16(short value) => EmitInstS16(Opcode.PUSH_CONST_S16, value);
-    private FlushResult EmitPushConstU24(uint value) => EmitInstU24(Opcode.PUSH_CONST_U24, value);
-    private FlushResult EmitPushConstU32(uint value) => EmitInstU32(Opcode.PUSH_CONST_U32, value);
-    private FlushResult EmitPushConstF(float value) => EmitInstF32(Opcode.PUSH_CONST_F, value);
-    private FlushResult EmitArrayU8(byte itemSize) => EmitInstU8(Opcode.ARRAY_U8, itemSize);
-    private FlushResult EmitArrayU8Load(byte itemSize) => EmitInstU8(Opcode.ARRAY_U8_LOAD, itemSize);
-    private FlushResult EmitArrayU8Store(byte itemSize) => EmitInstU8(Opcode.ARRAY_U8_STORE, itemSize);
-    private FlushResult EmitArrayU16(ushort itemSize) => EmitInstU16(Opcode.ARRAY_U16, itemSize);
-    private FlushResult EmitArrayU16Load(ushort itemSize) => EmitInstU16(Opcode.ARRAY_U16_LOAD, itemSize);
-    private FlushResult EmitArrayU16Store(ushort itemSize) => EmitInstU16(Opcode.ARRAY_U16_STORE, itemSize);
-    private FlushResult EmitLocalU8(byte frameOffset) => EmitInstU8(Opcode.LOCAL_U8, frameOffset);
-    private FlushResult EmitLocalU8Load(byte frameOffset) => EmitInstU8(Opcode.LOCAL_U8_LOAD, frameOffset);
-    private FlushResult EmitLocalU8Store(byte frameOffset) => EmitInstU8(Opcode.LOCAL_U8_STORE, frameOffset);
-    private FlushResult EmitLocalU16(ushort frameOffset) => EmitInstU16(Opcode.LOCAL_U16, frameOffset);
-    private FlushResult EmitLocalU16Load(ushort frameOffset) => EmitInstU16(Opcode.LOCAL_U16_LOAD, frameOffset);
-    private FlushResult EmitLocalU16Store(ushort frameOffset) => EmitInstU16(Opcode.LOCAL_U16_STORE, frameOffset);
-    private FlushResult EmitStaticU8(byte staticOffset) => EmitInstU8(Opcode.STATIC_U8, staticOffset);
-    private FlushResult EmitStaticU8Load(byte staticOffset) => EmitInstU8(Opcode.STATIC_U8_LOAD, staticOffset);
-    private FlushResult EmitStaticU8Store(byte staticOffset) => EmitInstU8(Opcode.STATIC_U8_STORE, staticOffset);
-    private FlushResult EmitStaticU16(ushort staticOffset) => EmitInstU16(Opcode.STATIC_U16, staticOffset);
-    private FlushResult EmitStaticU16Load(ushort staticOffset) => EmitInstU16(Opcode.STATIC_U16_LOAD, staticOffset);
-    private FlushResult EmitStaticU16Store(ushort staticOffset) => EmitInstU16(Opcode.STATIC_U16_STORE, staticOffset);
-    private FlushResult EmitGlobalU16(ushort globalOffset) => EmitInstU16(Opcode.GLOBAL_U16, globalOffset);
-    private FlushResult EmitGlobalU16Load(ushort globalOffset) => EmitInstU16(Opcode.GLOBAL_U16_LOAD, globalOffset);
-    private FlushResult EmitGlobalU16Store(ushort globalOffset) => EmitInstU16(Opcode.GLOBAL_U16_STORE, globalOffset);
-    private FlushResult EmitGlobalU24(uint globalOffset) => EmitInstU24(Opcode.GLOBAL_U24, globalOffset);
-    private FlushResult EmitGlobalU24Load(uint globalOffset) => EmitInstU24(Opcode.GLOBAL_U24_LOAD, globalOffset);
-    private FlushResult EmitGlobalU24Store(uint globalOffset) => EmitInstU24(Opcode.GLOBAL_U24_STORE, globalOffset);
-    private FlushResult EmitIOffset() => EmitInst(Opcode.IOFFSET);
-    private FlushResult EmitIOffsetU8(byte offset) => EmitInstU8(Opcode.IOFFSET_U8, offset);
-    private FlushResult EmitIOffsetU8Load(byte offset) => EmitInstU8(Opcode.IOFFSET_U8_LOAD, offset);
-    private FlushResult EmitIOffsetU8Store(byte offset) => EmitInstU8(Opcode.IOFFSET_U8_STORE, offset);
-    private FlushResult EmitIOffsetS16(short offset) => EmitInstS16(Opcode.IOFFSET_S16, offset);
-    private FlushResult EmitIOffsetS16Load(short offset) => EmitInstS16(Opcode.IOFFSET_S16_LOAD, offset);
-    private FlushResult EmitIOffsetS16Store(short offset) => EmitInstS16(Opcode.IOFFSET_S16_STORE, offset);
-    private FlushResult EmitTextLabelAssignString(byte textLabelLength) => EmitInstU8(Opcode.TEXT_LABEL_ASSIGN_STRING, textLabelLength);
-    private FlushResult EmitTextLabelAssignInt(byte textLabelLength) => EmitInstU8(Opcode.TEXT_LABEL_ASSIGN_INT, textLabelLength);
-    private FlushResult EmitTextLabelAppendString(byte textLabelLength) => EmitInstU8(Opcode.TEXT_LABEL_APPEND_STRING, textLabelLength);
-    private FlushResult EmitTextLabelAppendInt(byte textLabelLength) => EmitInstU8(Opcode.TEXT_LABEL_APPEND_INT, textLabelLength);
-    private FlushResult EmitTextLabelCopy() => EmitInst(Opcode.TEXT_LABEL_COPY);
-    private FlushResult EmitNative(byte argCount, byte returnCount, ushort nativeIndex)
+    private InstructionReference EmitNop() => EmitInst(Opcode.NOP);
+    private InstructionReference EmitIAdd() => EmitInst(Opcode.IADD);
+    private InstructionReference EmitIAddU8(byte value) => EmitInstU8(Opcode.IADD_U8, value);
+    private InstructionReference EmitIAddS16(short value) => EmitInstS16(Opcode.IADD_S16, value);
+    private InstructionReference EmitISub() => EmitInst(Opcode.ISUB);
+    private InstructionReference EmitIMul() => EmitInst(Opcode.IMUL);
+    private InstructionReference EmitIMulU8(byte value) => EmitInstU8(Opcode.IMUL_U8, value);
+    private InstructionReference EmitIMulS16(short value) => EmitInstS16(Opcode.IMUL_S16, value);
+    private InstructionReference EmitIDiv() => EmitInst(Opcode.IDIV);
+    private InstructionReference EmitIMod() => EmitInst(Opcode.IMOD);
+    private InstructionReference EmitINot() => EmitInst(Opcode.INOT);
+    private InstructionReference EmitINeg() => EmitInst(Opcode.INEG);
+    private InstructionReference EmitIEq() => EmitInst(Opcode.IEQ);
+    private InstructionReference EmitINe() => EmitInst(Opcode.INE);
+    private InstructionReference EmitIGt() => EmitInst(Opcode.IGT);
+    private InstructionReference EmitIGe() => EmitInst(Opcode.IGE);
+    private InstructionReference EmitILt() => EmitInst(Opcode.ILT);
+    private InstructionReference EmitILe() => EmitInst(Opcode.ILE);
+    private InstructionReference EmitFAdd() => EmitInst(Opcode.FADD);
+    private InstructionReference EmitFSub() => EmitInst(Opcode.FSUB);
+    private InstructionReference EmitFMul() => EmitInst(Opcode.FMUL);
+    private InstructionReference EmitFDiv() => EmitInst(Opcode.FDIV);
+    private InstructionReference EmitFMod() => EmitInst(Opcode.FMOD);
+    private InstructionReference EmitFNeg() => EmitInst(Opcode.FNEG);
+    private InstructionReference EmitFEq() => EmitInst(Opcode.FEQ);
+    private InstructionReference EmitFNe() => EmitInst(Opcode.FNE);
+    private InstructionReference EmitFGt() => EmitInst(Opcode.FGT);
+    private InstructionReference EmitFGe() => EmitInst(Opcode.FGE);
+    private InstructionReference EmitFLt() => EmitInst(Opcode.FLT);
+    private InstructionReference EmitFLe() => EmitInst(Opcode.FLE);
+    private InstructionReference EmitVAdd() => EmitInst(Opcode.VADD);
+    private InstructionReference EmitVSub() => EmitInst(Opcode.VSUB);
+    private InstructionReference EmitVMul() => EmitInst(Opcode.VMUL);
+    private InstructionReference EmitVDiv() => EmitInst(Opcode.VDIV);
+    private InstructionReference EmitIAnd() => EmitInst(Opcode.IAND);
+    private InstructionReference EmitIOr() => EmitInst(Opcode.IOR);
+    private InstructionReference EmitIXor() => EmitInst(Opcode.IXOR);
+    private InstructionReference EmitI2F() => EmitInst(Opcode.I2F);
+    private InstructionReference EmitF2I() => EmitInst(Opcode.F2I);
+    private InstructionReference EmitF2V() => EmitInst(Opcode.F2V);
+    private InstructionReference EmitDup() => EmitInst(Opcode.DUP);
+    private InstructionReference EmitDrop() => EmitInst(Opcode.DROP);
+    private InstructionReference EmitLoad() => EmitInst(Opcode.LOAD);
+    private InstructionReference EmitLoadN() => EmitInst(Opcode.LOAD_N);
+    private InstructionReference EmitStore() => EmitInst(Opcode.STORE);
+    private InstructionReference EmitStoreN() => EmitInst(Opcode.STORE_N);
+    private InstructionReference EmitStoreRev() => EmitInst(Opcode.STORE_REV);
+    private InstructionReference EmitString() => EmitInst(Opcode.STRING);
+    private InstructionReference EmitStringHash() => EmitInst(Opcode.STRINGHASH);
+    private InstructionReference EmitPushConstM1() => EmitInst(Opcode.PUSH_CONST_M1);
+    private InstructionReference EmitPushConst0() => EmitInst(Opcode.PUSH_CONST_0);
+    private InstructionReference EmitPushConst1() => EmitInst(Opcode.PUSH_CONST_1);
+    private InstructionReference EmitPushConst2() => EmitInst(Opcode.PUSH_CONST_2);
+    private InstructionReference EmitPushConst3() => EmitInst(Opcode.PUSH_CONST_3);
+    private InstructionReference EmitPushConst4() => EmitInst(Opcode.PUSH_CONST_4);
+    private InstructionReference EmitPushConst5() => EmitInst(Opcode.PUSH_CONST_5);
+    private InstructionReference EmitPushConst6() => EmitInst(Opcode.PUSH_CONST_6);
+    private InstructionReference EmitPushConst7() => EmitInst(Opcode.PUSH_CONST_7);
+    private InstructionReference EmitPushConstFM1() => EmitInst(Opcode.PUSH_CONST_FM1);
+    private InstructionReference EmitPushConstF0() => EmitInst(Opcode.PUSH_CONST_F0);
+    private InstructionReference EmitPushConstF1() => EmitInst(Opcode.PUSH_CONST_F1);
+    private InstructionReference EmitPushConstF2() => EmitInst(Opcode.PUSH_CONST_F2);
+    private InstructionReference EmitPushConstF3() => EmitInst(Opcode.PUSH_CONST_F3);
+    private InstructionReference EmitPushConstF4() => EmitInst(Opcode.PUSH_CONST_F4);
+    private InstructionReference EmitPushConstF5() => EmitInst(Opcode.PUSH_CONST_F5);
+    private InstructionReference EmitPushConstF6() => EmitInst(Opcode.PUSH_CONST_F6);
+    private InstructionReference EmitPushConstF7() => EmitInst(Opcode.PUSH_CONST_F7);
+    private InstructionReference EmitPushConstU8(byte value) => EmitInstU8(Opcode.PUSH_CONST_U8, value);
+    private InstructionReference EmitPushConstU8U8(byte value1, byte value2) => EmitInstU8U8(Opcode.PUSH_CONST_U8_U8, value1, value2);
+    private InstructionReference EmitPushConstU8U8U8(byte value1, byte value2, byte value3) => EmitInstU8U8U8(Opcode.PUSH_CONST_U8_U8_U8, value1, value2, value3);
+    private InstructionReference EmitPushConstS16(short value) => EmitInstS16(Opcode.PUSH_CONST_S16, value);
+    private InstructionReference EmitPushConstU24(uint value) => EmitInstU24(Opcode.PUSH_CONST_U24, value);
+    private InstructionReference EmitPushConstU32(uint value) => EmitInstU32(Opcode.PUSH_CONST_U32, value);
+    private InstructionReference EmitPushConstF(float value) => EmitInstF32(Opcode.PUSH_CONST_F, value);
+    private InstructionReference EmitArrayU8(byte itemSize) => EmitInstU8(Opcode.ARRAY_U8, itemSize);
+    private InstructionReference EmitArrayU8Load(byte itemSize) => EmitInstU8(Opcode.ARRAY_U8_LOAD, itemSize);
+    private InstructionReference EmitArrayU8Store(byte itemSize) => EmitInstU8(Opcode.ARRAY_U8_STORE, itemSize);
+    private InstructionReference EmitArrayU16(ushort itemSize) => EmitInstU16(Opcode.ARRAY_U16, itemSize);
+    private InstructionReference EmitArrayU16Load(ushort itemSize) => EmitInstU16(Opcode.ARRAY_U16_LOAD, itemSize);
+    private InstructionReference EmitArrayU16Store(ushort itemSize) => EmitInstU16(Opcode.ARRAY_U16_STORE, itemSize);
+    private InstructionReference EmitLocalU8(byte frameOffset) => EmitInstU8(Opcode.LOCAL_U8, frameOffset);
+    private InstructionReference EmitLocalU8Load(byte frameOffset) => EmitInstU8(Opcode.LOCAL_U8_LOAD, frameOffset);
+    private InstructionReference EmitLocalU8Store(byte frameOffset) => EmitInstU8(Opcode.LOCAL_U8_STORE, frameOffset);
+    private InstructionReference EmitLocalU16(ushort frameOffset) => EmitInstU16(Opcode.LOCAL_U16, frameOffset);
+    private InstructionReference EmitLocalU16Load(ushort frameOffset) => EmitInstU16(Opcode.LOCAL_U16_LOAD, frameOffset);
+    private InstructionReference EmitLocalU16Store(ushort frameOffset) => EmitInstU16(Opcode.LOCAL_U16_STORE, frameOffset);
+    private InstructionReference EmitStaticU8(byte staticOffset) => EmitInstU8(Opcode.STATIC_U8, staticOffset);
+    private InstructionReference EmitStaticU8Load(byte staticOffset) => EmitInstU8(Opcode.STATIC_U8_LOAD, staticOffset);
+    private InstructionReference EmitStaticU8Store(byte staticOffset) => EmitInstU8(Opcode.STATIC_U8_STORE, staticOffset);
+    private InstructionReference EmitStaticU16(ushort staticOffset) => EmitInstU16(Opcode.STATIC_U16, staticOffset);
+    private InstructionReference EmitStaticU16Load(ushort staticOffset) => EmitInstU16(Opcode.STATIC_U16_LOAD, staticOffset);
+    private InstructionReference EmitStaticU16Store(ushort staticOffset) => EmitInstU16(Opcode.STATIC_U16_STORE, staticOffset);
+    private InstructionReference EmitGlobalU16(ushort globalOffset) => EmitInstU16(Opcode.GLOBAL_U16, globalOffset);
+    private InstructionReference EmitGlobalU16Load(ushort globalOffset) => EmitInstU16(Opcode.GLOBAL_U16_LOAD, globalOffset);
+    private InstructionReference EmitGlobalU16Store(ushort globalOffset) => EmitInstU16(Opcode.GLOBAL_U16_STORE, globalOffset);
+    private InstructionReference EmitGlobalU24(uint globalOffset) => EmitInstU24(Opcode.GLOBAL_U24, globalOffset);
+    private InstructionReference EmitGlobalU24Load(uint globalOffset) => EmitInstU24(Opcode.GLOBAL_U24_LOAD, globalOffset);
+    private InstructionReference EmitGlobalU24Store(uint globalOffset) => EmitInstU24(Opcode.GLOBAL_U24_STORE, globalOffset);
+    private InstructionReference EmitIOffset() => EmitInst(Opcode.IOFFSET);
+    private InstructionReference EmitIOffsetU8(byte offset) => EmitInstU8(Opcode.IOFFSET_U8, offset);
+    private InstructionReference EmitIOffsetU8Load(byte offset) => EmitInstU8(Opcode.IOFFSET_U8_LOAD, offset);
+    private InstructionReference EmitIOffsetU8Store(byte offset) => EmitInstU8(Opcode.IOFFSET_U8_STORE, offset);
+    private InstructionReference EmitIOffsetS16(short offset) => EmitInstS16(Opcode.IOFFSET_S16, offset);
+    private InstructionReference EmitIOffsetS16Load(short offset) => EmitInstS16(Opcode.IOFFSET_S16_LOAD, offset);
+    private InstructionReference EmitIOffsetS16Store(short offset) => EmitInstS16(Opcode.IOFFSET_S16_STORE, offset);
+    private InstructionReference EmitTextLabelAssignString(byte textLabelLength) => EmitInstU8(Opcode.TEXT_LABEL_ASSIGN_STRING, textLabelLength);
+    private InstructionReference EmitTextLabelAssignInt(byte textLabelLength) => EmitInstU8(Opcode.TEXT_LABEL_ASSIGN_INT, textLabelLength);
+    private InstructionReference EmitTextLabelAppendString(byte textLabelLength) => EmitInstU8(Opcode.TEXT_LABEL_APPEND_STRING, textLabelLength);
+    private InstructionReference EmitTextLabelAppendInt(byte textLabelLength) => EmitInstU8(Opcode.TEXT_LABEL_APPEND_INT, textLabelLength);
+    private InstructionReference EmitTextLabelCopy() => EmitInst(Opcode.TEXT_LABEL_COPY);
+    private InstructionReference EmitNative(byte argCount, byte returnCount, ushort nativeIndex)
     {
         Debug.Assert((argCount & 0x3F) == argCount); // arg count max bits 6
         Debug.Assert((returnCount & 0x3) == returnCount); // arg count max bits 2
@@ -330,7 +500,7 @@ public sealed class CodeEmitter
             operand2: (byte)((nativeIndex >> 8) & 0xFF),
             operand3: (byte)(nativeIndex & 0xFF));
     }
-    private FlushResult EmitEnter(byte argCount, ushort frameSize, string? name)
+    private InstructionReference EmitEnter(byte argCount, ushort frameSize, string? name)
     {
         EmitOpcode(Opcode.ENTER);
         EmitU8(argCount);
@@ -349,18 +519,18 @@ public sealed class CodeEmitter
         }
         return Flush();
     }
-    private FlushResult EmitLeave(byte argCount, byte returnCount) => EmitInstU8U8(Opcode.LEAVE, argCount, returnCount);
-    private FlushResult EmitJ(short relativeOffset) => EmitInstS16(Opcode.J, relativeOffset);
-    private FlushResult EmitJZ(short relativeOffset) => EmitInstS16(Opcode.JZ, relativeOffset);
-    private FlushResult EmitIEqJZ(short relativeOffset) => EmitInstS16(Opcode.IEQ_JZ, relativeOffset);
-    private FlushResult EmitINeJZ(short relativeOffset) => EmitInstS16(Opcode.INE_JZ, relativeOffset);
-    private FlushResult EmitIGtJZ(short relativeOffset) => EmitInstS16(Opcode.IGT_JZ, relativeOffset);
-    private FlushResult EmitIGeJZ(short relativeOffset) => EmitInstS16(Opcode.IGE_JZ, relativeOffset);
-    private FlushResult EmitILtJZ(short relativeOffset) => EmitInstS16(Opcode.ILT_JZ, relativeOffset);
-    private FlushResult EmitILeJZ(short relativeOffset) => EmitInstS16(Opcode.ILE_JZ, relativeOffset);
-    private FlushResult EmitCall(uint functionOffset) => EmitInstU24(Opcode.CALL, functionOffset);
-    private FlushResult EmitCallIndirect() => EmitInst(Opcode.CALLINDIRECT);
-    private FlushResult EmitSwitch(byte numCases) // cases will be backfilled later
+    private InstructionReference EmitLeave(byte argCount, byte returnCount) => EmitInstU8U8(Opcode.LEAVE, argCount, returnCount);
+    private InstructionReference EmitJ(short relativeOffset) => EmitInstS16(Opcode.J, relativeOffset);
+    private InstructionReference EmitJZ(short relativeOffset) => EmitInstS16(Opcode.JZ, relativeOffset);
+    private InstructionReference EmitIEqJZ(short relativeOffset) => EmitInstS16(Opcode.IEQ_JZ, relativeOffset);
+    private InstructionReference EmitINeJZ(short relativeOffset) => EmitInstS16(Opcode.INE_JZ, relativeOffset);
+    private InstructionReference EmitIGtJZ(short relativeOffset) => EmitInstS16(Opcode.IGT_JZ, relativeOffset);
+    private InstructionReference EmitIGeJZ(short relativeOffset) => EmitInstS16(Opcode.IGE_JZ, relativeOffset);
+    private InstructionReference EmitILtJZ(short relativeOffset) => EmitInstS16(Opcode.ILT_JZ, relativeOffset);
+    private InstructionReference EmitILeJZ(short relativeOffset) => EmitInstS16(Opcode.ILE_JZ, relativeOffset);
+    private InstructionReference EmitCall(uint functionOffset) => EmitInstU24(Opcode.CALL, functionOffset);
+    private InstructionReference EmitCallIndirect() => EmitInst(Opcode.CALLINDIRECT);
+    private InstructionReference EmitSwitch(byte numCases) // cases will be backfilled later
     {
         EmitOpcode(Opcode.SWITCH);
         EmitU8(numCases);
@@ -371,8 +541,8 @@ public sealed class CodeEmitter
         }
         return Flush();
     }
-    private FlushResult EmitCatch() => EmitInst(Opcode.CATCH);
-    private FlushResult EmitThrow() => EmitInst(Opcode.THROW);
+    private InstructionReference EmitCatch() => EmitInst(Opcode.CATCH);
+    private InstructionReference EmitThrow() => EmitInst(Opcode.THROW);
     #endregion Instruction Emitters
 
     #region Public High-Level Emitters
@@ -385,6 +555,8 @@ public sealed class CodeEmitter
         {
             EmitFunction(function);
         }
+
+        new PatternOptimizer().Optimize(codeBuffer);
     }
 
     public void EmitScriptEntryPoint(ScriptDeclaration script)
@@ -406,7 +578,7 @@ public sealed class CodeEmitter
 
         currentFunctionFrameSize = 0;
         currentFunctionAllocatedLocals.Clear();
-        localLabels.Clear();
+        localLabelNameToIndex.Clear();
 
         // allocate space for parameters
         var argCount = 0;
@@ -424,7 +596,7 @@ public sealed class CodeEmitter
         // allocate space required by the engine to store the return address and caller frame address
         AllocateFrameSpace(2);
 
-        // prologue
+        // prologue (frame size is not yet known, it is update after emitting the function code)
         var enter = EmitEnter((byte)argCount, frameSize: 0, name);
 
         // body
@@ -436,13 +608,9 @@ public sealed class CodeEmitter
             EmitEpilogue();
         }
 
-        // backfill frame size
-        var code = CollectionsMarshal.AsSpan(codeBuffer);
-        var frameSizeOperandOffset = codeInstructionOffsets[enter.InstructionIndex] + 2;
-        var frameSizeSpan = code[frameSizeOperandOffset..(frameSizeOperandOffset + 2)];
-        Debug.Assert(frameSizeSpan[0] == 0 && frameSizeSpan[1] == 0);
-        frameSizeSpan[0] = (byte)(currentFunctionFrameSize & 0xFF);
-        frameSizeSpan[1] = (byte)(currentFunctionFrameSize >> 8);
+        // update frame size in ENTER instruction
+        instructionToUpdateInNextFlush = enter;
+        EmitEnter((byte)argCount, (ushort)currentFunctionFrameSize, name);
     }
 
     public void EmitEpilogue()
@@ -501,26 +669,26 @@ public sealed class CodeEmitter
 
     public void EmitJump(string label)
     {
-        var res = EmitJ(0);
-        ReferenceLabel(label, codeInstructionOffsets[res.InstructionIndex] + 1, LabelReferenceKind.Relative, isFunctionLabel: false);
+        var inst = EmitJ(0);
+        ReferenceLabel(label, inst, 1, LabelReferenceKind.Relative, isFunctionLabel: false);
     }
     public void EmitJumpIfZero(string label)
     {
-        var res = EmitJZ(0);
-        ReferenceLabel(label, codeInstructionOffsets[res.InstructionIndex] + 1, LabelReferenceKind.Relative, isFunctionLabel: false);
+        var inst = EmitJZ(0);
+        ReferenceLabel(label, inst, 1, LabelReferenceKind.Relative, isFunctionLabel: false);
     }
 
     public void EmitCall(FunctionDeclaration function)
     {
-        var res = EmitCall(0);
-        ReferenceLabel(function.Name, codeInstructionOffsets[res.InstructionIndex] + 1, LabelReferenceKind.Absolute, isFunctionLabel: true);
+        var inst = EmitCall(0);
+        ReferenceLabel(function.Name, inst, 1, LabelReferenceKind.Absolute, isFunctionLabel: true);
         OnFunctionFound(function);
     }
 
     public void EmitFunctionAddress(FunctionDeclaration function)
     {
-        var res = EmitPushConstU24(0);
-        ReferenceLabel(function.Name, codeInstructionOffsets[res.InstructionIndex] + 1, LabelReferenceKind.Absolute, isFunctionLabel: true);
+        var inst = EmitPushConstU24(0);
+        ReferenceLabel(function.Name, inst, 1, LabelReferenceKind.Absolute, isFunctionLabel: true);
         OnFunctionFound(function);
     }
 
@@ -531,14 +699,14 @@ public sealed class CodeEmitter
         throw new NotImplementedException(nameof(EmitSwitch));
         var cases = valueCases.ToArray();
         Debug.Assert(cases.Length <= byte.MaxValue, $"Too many SWITCH cases (numCases: {cases.Length})");
-        var res = EmitSwitch((byte)cases.Length);
+        var inst = EmitSwitch((byte)cases.Length);
         for (int i = 0; i < cases.Length; i++)
         {
             var @case = cases[i];
-            var valueAddress = codeInstructionOffsets[res.InstructionIndex] + 1 + i * 6;
+            var valueOffset = 1 + i * 6;
             // TODO: fill value from @case.Value
-            var labelRelativeOffsetAddress = valueAddress + 4;
-            ReferenceLabel(@case.Semantics.Label!, labelRelativeOffsetAddress, LabelReferenceKind.Relative, isFunctionLabel: false);
+            var labelOffset = valueOffset + 4;
+            ReferenceLabel(@case.Semantics.Label!, inst, labelOffset, LabelReferenceKind.Relative, isFunctionLabel: false);
         }
     }
 
@@ -622,6 +790,10 @@ public sealed class CodeEmitter
     {
         switch (offset)
         {
+            case 0:
+                // offset doesn't change, don't need to emit anything
+                break;
+
             case >= byte.MinValue and <= byte.MaxValue:
                 EmitIOffsetU8((byte)offset);
                 break;
@@ -753,47 +925,48 @@ public sealed class CodeEmitter
 
     private void EmitDefaultInitStruct(StructType structTy)
     {
-        throw new NotImplementedException(nameof(EmitDefaultInitStruct));
-        foreach (var field in structTy.Fields)
+        foreach (var (field, fieldDecl) in structTy.Fields.Zip(structTy.Declaration.Fields))
         {
-            var hasInitializer = false; // TODO: get initializer from struct field field.Initializer is not null;
-            if (hasInitializer/* || TypeHelper.IsDefaultInitialized(field.Type)*/)
+            var hasInitializer = fieldDecl.Initializer is not null && !(fieldDecl.Initializer.Type?.IsError ?? true);
+            if (hasInitializer || field.Type.IsDefaultInitialized())
             {
                 EmitDup(); // duplicate struct address
-                //if (field.Offset != 0)
-                {
-                    //EmitOffset(field.Offset); // advance to field offset
-                }
+                EmitOffset(field.Offset); // advance to field offset
 
                 // initialize field
                 if (hasInitializer)
                 {
+                    var initValue = fieldDecl.Semantics.ConstantValue;
+                    Debug.Assert(initValue is not null);
                     switch (field.Type)
                     {
-                        case IntType:
-                            //EmitPushInt(ExpressionEvaluator.EvalInt(field.Initializer!, CG.Symbols));
+                        case IntType or FloatType or BoolType or StringType:
+                            EmitPushConst(initValue);
                             EmitStoreRev();
                             break;
-                        case FloatType:
-                            // TODO: game scripts use PUSH_CONST_U32 to default initialize FLOAT fields, should we change it?
-                            //EmitPushFloat(ExpressionEvaluator.EvalFloat(field.Initializer!, CG.Symbols));
-                            EmitStoreRev();
+                        case VectorType:
+                            var (x, y, z) = initValue.VectorValue;
+                            EmitDup(); // duplicate VECTOR address
+                            EmitPushFloat(x);
+                            EmitStoreRev(); // store X
+                            EmitOffset(1); // advance to Y offset
+                            EmitPushFloat(y);
+                            EmitStoreRev(); // store Y
+                            EmitOffset(1); // advance to Z offset
+                            EmitPushFloat(z);
+                            EmitStoreRev(); // store Z
+                            EmitDrop();
                             break;
-                        case BoolType:
-                            //EmitPushBool(ExpressionEvaluator.EvalBool(field.Initializer!, CG.Symbols) ? 1 : 0);
-                            EmitStoreRev();
+
+                        default:
+                            Debug.Assert(false, "No other type is supported as constant");
                             break;
-                        // TODO: should VECTOR or STRING fields be allowed to be default initialized? it doesn't seem to happen in the game scripts
-                        //case StructType sTy when BuiltInTypes.IsVectorType(sTy):
-                        //    DefaultInitVector(field.Initializer!);
-                        //    break;
-                        default: throw new System.NotImplementedException();
                     }
                 }
                 else
                 {
-                    //Debug.Assert(TypeHelper.IsDefaultInitialized(field.Type));
-                    //EmitDefaultInitNoPushAddress(field.Type);
+                    Debug.Assert(field.Type.IsDefaultInitialized());
+                    EmitDefaultInitNoPushAddress(field.Type);
                 }
 
                 EmitDrop(); // drop duplicated address
@@ -803,24 +976,27 @@ public sealed class CodeEmitter
 
     private void EmitDefaultInitArray(ArrayType arrayTy)
     {
-        throw new NotImplementedException(nameof(EmitDefaultInitArray));
         // write array size
         EmitPushInt(arrayTy.Length);
         EmitStoreRev();
 
-        //if (TypeHelper.IsDefaultInitialized(arrayTy.ItemType))
+        if (arrayTy.Item.IsDefaultInitialized())
         {
             EmitDup(); // duplicate array address
             EmitOffset(1); // advance duplicated address to the first item (skip array size)
             var itemSize = arrayTy.Item.SizeOf;
             for (int i = 0; i < arrayTy.Length; i++)
             {
-                //EmitDefaultInitNoPushAddress(arrayTy.Item); // initialize item
+                EmitDefaultInitNoPushAddress(arrayTy.Item); // initialize item
                 EmitOffset(itemSize); // advance to the next item
             }
             EmitDrop(); // drop duplicated address
         }
     }
+
+    public void EmitCastIntToFloat() => EmitI2F();
+    public void EmitCastFloatToInt() => EmitF2I();
+    public void EmitCastFloatToVector() => EmitF2V();
 
     public void EmitPushString(string value)
     {
@@ -897,106 +1073,42 @@ public sealed class CodeEmitter
     }
     #endregion Public High-Level Emitters
 
-    private readonly Dictionary<string, LabelInfo> functionLabels = new(ParserNew.CaseInsensitiveComparer);
-    private readonly Dictionary<string, LabelInfo> localLabels = new(ParserNew.CaseInsensitiveComparer);
-
     public void Label(string name, bool isFunctionLabel = false)
     {
-        var labels = isFunctionLabel ? functionLabels : localLabels;
+        var nameToIndex = isFunctionLabel ? functionLabelNameToIndex : localLabelNameToIndex;
 
-        var labelAddress = codeBuffer.Count;
-        if (labels.TryGetValue(name, out var info))
+        var labelInstRef = EmitLabelMarker();
+        if (nameToIndex.TryGetValue(name, out var idx))
         {
-            // the label already appeared before
-            if (info.UnresolvedReferences is not null)
-            {
-                // backfill label references
-                foreach (var reference in info.UnresolvedReferences)
-                {
-                    BackfillLabel(labelAddress, reference);
-                }
-                labels[name] = new(Address: labelAddress, UnresolvedReferences: null);
-            }
-            else
+            if (labels[idx].Instruction is not null)
             {
                 // the label appeared before and the references are already resolved, so this is a re-definition
                 Debug.Assert(false, $"Label name '{name}' is repeated");
             }
+
+            labels[idx] = labels[idx] with { Instruction = labelInstRef };
         }
         else
         {
-            // no references to backfill
-            labels.Add(name, new(Address: labelAddress, UnresolvedReferences: null));
+            nameToIndex.Add(name, labels.Count);
+            labels.Add(new(Instruction: labelInstRef, UnresolvedReferences: new()));
         }
     }
 
-    // TODO: operandAddress to instruction index + operand offset?
-    private void ReferenceLabel(string label, int operandAddress, LabelReferenceKind kind, bool isFunctionLabel)
+    private void ReferenceLabel(string label, InstructionReference instruction, int operandOffset, LabelReferenceKind kind, bool isFunctionLabel)
     {
-        var labels = isFunctionLabel ? functionLabels : localLabels;
+        var nameToIndex = isFunctionLabel ? functionLabelNameToIndex : localLabelNameToIndex;
 
-        if (labels.TryGetValue(label, out var info))
+        if (nameToIndex.TryGetValue(label, out var idx))
         {
-            if (info.IsResolved)
-            {
-                // the label address is known
-                Debug.Assert(info.Address.HasValue);
-                BackfillLabel(info.Address.Value, new(operandAddress, kind));
-            }
-            else
-            {
-                // the label address is unknown
-                Debug.Assert(info.UnresolvedReferences is not null);
-                info.UnresolvedReferences.Add(new(operandAddress, kind));
-            }
+            labels[idx].UnresolvedReferences.Add(new(instruction, operandOffset, kind));
         }
         else
         {
             // first time this label is referenced
-            labels[label] = new(Address: null, UnresolvedReferences: new() { new(operandAddress, kind) });
+            nameToIndex.Add(label, labels.Count);
+            labels.Add(new(Instruction: null, UnresolvedReferences: new() { new(instruction, operandOffset, kind) }));
         }
-    }
-
-    private void BackfillLabel(int labelAddress, LabelReference reference)
-    {
-        var code = CollectionsMarshal.AsSpan(codeBuffer);
-        switch (reference.Kind)
-        {
-            case LabelReferenceKind.Absolute:
-                var destU24 = code[reference.OperandAddress..(reference.OperandAddress + 3)];
-                Debug.Assert(destU24[0] == 0 && destU24[1] == 0 && destU24[2] == 0);
-                destU24[0] = (byte)(labelAddress & 0xFF);
-                destU24[1] = (byte)((labelAddress >> 8) & 0xFF);
-                destU24[2] = (byte)((labelAddress >> 16) & 0xFF);
-                return;
-            case LabelReferenceKind.Relative:
-                var destS16 = code[reference.OperandAddress..(reference.OperandAddress + 2)];
-                Debug.Assert(destS16[0] == 0 && destS16[1] == 0);
-                var relOffset = AbsoluteAddressToOperandRelativeOffset(labelAddress, reference.OperandAddress);
-                destS16[0] = (byte)(relOffset & 0xFF);
-                destS16[1] = (byte)(relOffset >> 8);
-                return;
-        }
-    }
-
-    private short AbsoluteAddressToOperandRelativeOffset(int absoluteAddress, int operandAddress)
-    {
-        var relOffset = absoluteAddress - (operandAddress + 2);
-        if (relOffset < short.MinValue || relOffset > short.MaxValue)
-        {
-            throw new ArgumentOutOfRangeException($"Address is too far", nameof(absoluteAddress));
-        }
-
-        return (short)relOffset;
-        //dest[0] = (byte)(relOffset & 0xFF);
-        //dest[1] = (byte)((relOffset >> 8) & 0xFF);
-    }
-
-    private enum LabelReferenceKind { Relative, Absolute }
-    private record struct LabelReference(int OperandAddress, LabelReferenceKind Kind);
-    private record struct LabelInfo(int? Address, List<LabelReference>? UnresolvedReferences)
-    {
-        public bool IsResolved => Address != null;
     }
 
     private void OnFunctionFound(FunctionDeclaration function)

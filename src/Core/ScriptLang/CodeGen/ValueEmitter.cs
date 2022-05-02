@@ -1,10 +1,14 @@
 ﻿namespace ScTools.ScriptLang.CodeGen;
 
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 
 using ScTools.ScriptLang.Ast;
 using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.Ast.Expressions;
+using ScTools.ScriptLang.BuiltIns;
 using ScTools.ScriptLang.Types;
 
 /// <summary>
@@ -41,8 +45,41 @@ internal sealed class ValueEmitter : Visitor
 
     public override void Visit(InvocationExpression node)
     {
-        throw new NotImplementedException(nameof(InvocationExpression));
-        //node.Callee.Type!.CGInvocation(CG, node);
+        if (node.Callee is NameExpression { Semantics.Declaration: IIntrinsicDeclaration intrinsic })
+        {
+            intrinsic.CodeGen(node, _C);
+        }
+        else if (node.Callee is NameExpression { Semantics.Declaration: FunctionDeclaration funcDecl })
+        {
+            EmitArgs(_C, funcDecl.Parameters, node.Arguments);
+            _C.EmitCall(funcDecl);
+        }
+        else
+        {
+            // TODO: invocation of function pointers and natives
+            throw new NotImplementedException(nameof(InvocationExpression) + " for function pointers and natives");
+        }
+
+        static void EmitArgs(CodeEmitter c, IEnumerable<VarDeclaration> parameters, IEnumerable<IExpression> arguments)
+        {
+            foreach (var (p, a) in parameters.Zip(arguments))
+            {
+                EmitArg(c, p, a);
+            }
+        }
+
+        static void EmitArg(CodeEmitter c, VarDeclaration param, IExpression arg)
+        {
+            if (param.IsReference || (param.Semantics.ValueType is StringType && arg.Type is TextLabelType))
+            {
+                Debug.Assert(arg.ValueKind.Is(ValueKind.Addressable));
+                c.EmitAddress(arg);
+            }
+            else
+            {
+                c.EmitValue(arg);
+            }
+        }
     }
 
     public override void Visit(UnaryExpression node)

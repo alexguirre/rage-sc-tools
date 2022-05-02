@@ -3,6 +3,7 @@
 using ScTools.ScriptLang.Ast;
 using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.Ast.Expressions;
+using ScTools.ScriptLang.CodeGen;
 using ScTools.ScriptLang.Semantics;
 using ScTools.ScriptLang.Types;
 
@@ -16,6 +17,7 @@ using System.Linq;
 // ENUM_TO_STRING (ENUM) -> STRING
 // HASH_ENUM_TO_INT_INDEX (HASH_ENUM) -> INT
 // INT_INDEX_TO_HASH_ENUM (ENUNNAME, INT) -> HASH_ENUM
+// NATIVE_TO_INT (handle types?) -> INT
 
 public interface IIntrinsicDeclaration : IDeclaration
 {
@@ -24,6 +26,10 @@ public interface IIntrinsicDeclaration : IDeclaration
     /// Evaluates the invocation at compile-time. Can be assumed that <see cref="InvocationTypeCheck"/> was successful.
     /// </summary>
     ConstantValue ConstantEval(InvocationExpression node, SemanticsAnalyzer semantics);
+    /// <summary>
+    /// Generates the code for the invocation. Can be assumed that <see cref="InvocationTypeCheck"/> was successful.
+    /// </summary>
+    void CodeGen(InvocationExpression node, CodeEmitter codeEmitter);
 }
 
 public static partial class Intrinsics
@@ -73,6 +79,7 @@ public static partial class Intrinsics
 
         public abstract ExpressionSemantics InvocationTypeCheck(InvocationExpression node, SemanticsAnalyzer semantics, ExpressionTypeChecker expressionTypeChecker);
         public abstract ConstantValue ConstantEval(InvocationExpression node, SemanticsAnalyzer semantics);
+        public abstract void CodeGen(InvocationExpression node, CodeEmitter codeEmitter);
     }
 
     private abstract class BaseFunctionLikeIntrinsic : BaseIntrinsic
