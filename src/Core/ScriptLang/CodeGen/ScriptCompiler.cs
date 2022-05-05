@@ -35,8 +35,8 @@
             //OutputScript.GlobalsPages = globalSegmentBuilder.Length != 0 ? globalSegmentBuilder.ToPages<ScriptValue>() : null;
             //OutputScript.GlobalsLength = OutputScript.GlobalsPages?.Length ?? 0;
 
-            result.Statics = Array.Empty<ScriptValue>();
-            result.StaticsCount = 0;
+            result.Statics = codeEmitter.GetStaticSegment();
+            result.StaticsCount = (uint)(result.Statics?.Length ?? 0);
             result.ArgsCount = 0;
 
             result.Natives = Array.Empty<ulong>();

@@ -57,7 +57,7 @@ public static partial class Intrinsics
                 ExpressionTypeChecker.ArgCannotPassTypeError(semantics, 1, args[1], argTypes[1], IntType.Instance);
             }
 
-            return new(returnType, ValueKind.RValue | (args[0].ValueKind & args[1].ValueKind & ValueKind.Constant));
+            return new(returnType, ValueKind.RValue | (args[0].ValueKind & args[1].ValueKind & ValueKind.Constant), ArgumentKind.None);
         }
 
         public override ConstantValue ConstantEval(InvocationExpression node, SemanticsAnalyzer semantics)

@@ -45,7 +45,7 @@ public static partial class Intrinsics
             }
 
             // TODO: when incomplete array types are supported COUNT_OF won't always be constant
-            return new(IntType.Instance, ValueKind.RValue | ValueKind.Constant);
+            return new(IntType.Instance, ValueKind.RValue | ValueKind.Constant, ArgumentKind.None);
         }
 
         public override ConstantValue ConstantEval(InvocationExpression node, SemanticsAnalyzer semantics)

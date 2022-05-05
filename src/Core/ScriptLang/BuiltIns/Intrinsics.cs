@@ -126,6 +126,8 @@ public static partial class Intrinsics
                     {
                         ExpressionTypeChecker.ArgCannotPassNonLValueToRefParamError(semantics, i, arg);
                     }
+
+                    arg.Semantics = arg.Semantics with { ArgumentKind = ArgumentKind.ByRef };
                 }
                 else if (paramType is ArrayType)
                 {
@@ -137,6 +139,8 @@ public static partial class Intrinsics
                         ExpressionTypeChecker.ArgCannotPassTypeError(semantics, i, arg, argType, paramType);
                     }
                     // TODO: check 'incomplete' array
+
+                    arg.Semantics = arg.Semantics with { ArgumentKind = ArgumentKind.ByRef };
                 }
                 else
                 {
@@ -145,12 +149,14 @@ public static partial class Intrinsics
                     {
                         ExpressionTypeChecker.ArgCannotPassTypeError(semantics, i, arg, argType, paramType);
                     }
+
+                    arg.Semantics = arg.Semantics with { ArgumentKind = ArgumentKind.ByValue };
                 }
 
                 constantFlag &= arg.ValueKind;
             }
 
-            return new(Type.Return, ValueKind.RValue | constantFlag);
+            return new(Type.Return, ValueKind.RValue | constantFlag, ArgumentKind.None);
         }
     }
 }

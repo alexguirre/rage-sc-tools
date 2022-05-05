@@ -4,7 +4,7 @@ using ScTools.ScriptLang.Types;
 
 using System.Diagnostics;
 
-public record struct FieldAccessExpressionSemantics(TypeInfo? Type, ValueKind ValueKind, FieldInfo? Field);
+public record struct FieldAccessExpressionSemantics(TypeInfo? Type, ValueKind ValueKind, ArgumentKind ArgumentKind, FieldInfo? Field);
 
 public sealed class FieldAccessExpression : BaseExpression
 {
@@ -15,10 +15,10 @@ public sealed class FieldAccessExpression : BaseExpression
     public string FieldName => FieldNameToken.Lexeme.ToString();
     public new FieldAccessExpressionSemantics Semantics
     {
-        get => new(base.Semantics.Type, base.Semantics.ValueKind, semanticsField);
+        get => new(base.Semantics.Type, base.Semantics.ValueKind, base.Semantics.ArgumentKind, semanticsField);
         set
         {
-            base.Semantics = new(value.Type, value.ValueKind);
+            base.Semantics = new(value.Type, value.ValueKind, value.ArgumentKind);
             semanticsField = value.Field;
         }
     }

@@ -15,6 +15,62 @@ using static Xunit.Assert;
 
 public class IntrinsicsTests : CodeGenTestsBase
 {
+    [Fact]
+    public void F2V()
+    {
+        CompileScript(
+        scriptSource: @"
+                VECTOR v = F2V(1.0)
+            ",
+        expectedAssembly: @"
+                ENTER 0, 5
+
+                PUSH_CONST_F1
+                F2V
+                PUSH_CONST_3
+                LOCAL_U8 2
+                STORE_N
+
+                LEAVE 0, 0
+            ");
+    }
+
+    [Fact]
+    public void F2I()
+    {
+        CompileScript(
+        scriptSource: @"
+                INT i = F2I(1.0)
+            ",
+        expectedAssembly: @"
+                ENTER 0, 3
+
+                PUSH_CONST_F1
+                F2I
+                LOCAL_U8_STORE 2
+
+                LEAVE 0, 0
+            ");
+    }
+
+    [Fact]
+    public void I2F()
+    {
+        CompileScript(
+        scriptSource: @"
+                FLOAT f = I2F(1)
+            ",
+        expectedAssembly: @"
+                ENTER 0, 3
+
+                PUSH_CONST_1
+                I2F
+                LOCAL_U8_STORE 2
+
+                LEAVE 0, 0
+            ");
+    }
+
     [Theory]
     [InlineData("INT", 1)]
     [InlineData("FLOAT", 1)]
@@ -117,7 +173,7 @@ public class IntrinsicsTests : CodeGenTestsBase
     [InlineData("8", 8)]
     [InlineData("1+2", 3)]
     [InlineData("1+2*3", 7)]
-    public void CountOf(string lengthExpr, int expectedLength)
+    public void CountOfWithArrayOfKnownSize(string lengthExpr, int expectedLength)
     {
         CompileScript(
         scriptSource: @$"
@@ -138,5 +194,63 @@ public class IntrinsicsTests : CodeGenTestsBase
             LOCAL_U8_STORE {2 + 1 + expectedLength}
             LEAVE 0, 0
         ");
+    }
+
+    [Fact]
+    public void CountOfWithArrayReferences()
+    {
+        CompileScript(
+        scriptSource: @"
+                INT array[10]
+                INT i = COUNT_OF(array)
+                TEST1(array)
+                TEST2(array)
+            ",
+        declarationsSource: @"
+                PROC TEST1(INT array[])
+                    INT i = COUNT_OF(array)
+                ENDPROC
+                PROC TEST2(INT array[10])
+                    INT i = COUNT_OF(array)
+                ENDPROC
+            ",
+        expectedAssembly: @"
+                ENTER 0, 14
+                ; array initializer
+                LOCAL_U8 2
+                PUSH_CONST_U8 10
+                STORE_REV
+                DROP
+
+                ; INT i = COUNT_OF(array)
+                PUSH_CONST_U8 10
+                LOCAL_U8_STORE 13
+
+                LOCAL_U8 2
+                CALL TEST1
+
+                LOCAL_U8 2
+                CALL TEST2
+                LEAVE 0, 0
+
+            TEST1:
+                ENTER 1, 4
+
+                ; INT i = COUNT_OF(array)
+                LOCAL_U8_LOAD 0
+                LOAD
+                LOCAL_U8_STORE 3
+
+                LEAVE 1, 0
+
+            TEST2:
+                ENTER 1, 4
+
+                ; INT i = COUNT_OF(array)
+                PUSH_CONST_U8 10
+                LOCAL_U8_STORE 3
+
+                LEAVE 1, 0
+            ");
     }
 }

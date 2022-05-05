@@ -133,7 +133,9 @@ public record FunctionType(TypeInfo Return, ImmutableArray<ParameterInfo> Parame
 
 public sealed record ParameterInfo(TypeInfo Type, bool IsReference)
 {
-    public string ToPrettyString() => Type.ToPrettyString() + (IsReference ? "&" : "");
+    public bool IsReference { get; } = IsReference || Type is ArrayType;
+    public int SizeOf => IsReference ? 1 : Type.SizeOf;
+    public string ToPrettyString() => Type.ToPrettyString() + (IsReference && Type is not ArrayType ? "&" : "");
 }
 
 public sealed record ArrayType(TypeInfo Item, int Length) : TypeInfo

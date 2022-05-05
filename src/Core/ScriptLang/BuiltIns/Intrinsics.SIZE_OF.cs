@@ -38,7 +38,7 @@ public static partial class Intrinsics
                 ExpressionTypeChecker.MismatchedArgumentCountError(semantics, ParameterCount, node);
             }
 
-            return new(IntType.Instance, ValueKind.RValue | ValueKind.Constant);
+            return new(IntType.Instance, ValueKind.RValue | ValueKind.Constant, ArgumentKind.None);
         }
 
         public override ConstantValue ConstantEval(InvocationExpression node, SemanticsAnalyzer semantics)

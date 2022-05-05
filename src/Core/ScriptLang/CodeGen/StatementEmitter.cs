@@ -25,7 +25,7 @@ internal sealed class StatementEmitter : Visitor
         _C.EmitValue(source);
         _C.EmitStoreAt(destination);
     }
-    private void EmitAssignment(VarDeclaration destination, IExpression source)
+    public void EmitAssignment(VarDeclaration destination, IExpression source)
     {
         // TODO: handle special cases in assignment
         _C.EmitValue(source);
@@ -36,7 +36,7 @@ internal sealed class StatementEmitter : Visitor
     {
         Debug.Assert(node.Kind is VarKind.Local);
 
-        _C.AllocateFrameSpaceForVar(node);
+        _C.AllocateFrameSpaceForLocal(node);
 
         if (node.Initializer is null && node.Semantics.ValueType!.IsDefaultInitialized())
         {

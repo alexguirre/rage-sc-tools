@@ -51,41 +51,62 @@ internal sealed class ValueEmitter : Visitor
         }
         else if (node.Callee is NameExpression { Semantics.Declaration: FunctionDeclaration funcDecl })
         {
-            EmitArgs(_C, funcDecl.Parameters, node.Arguments);
+            EmitArgs(_C, node);
             _C.EmitCall(funcDecl);
+        }
+        else if (node.Callee is NameExpression { Semantics.Declaration: NativeFunctionDeclaration nativeDecl })
+        {
+            EmitArgs(_C, node);
+            _C.EmitNativeCall(nativeDecl);
         }
         else
         {
-            // TODO: invocation of function pointers and natives
-            throw new NotImplementedException(nameof(InvocationExpression) + " for function pointers and natives");
+            EmitArgs(_C, node);
+            _C.EmitValue(node.Callee);
+            _C.EmitIndirectCall();
         }
 
-        static void EmitArgs(CodeEmitter c, IEnumerable<VarDeclaration> parameters, IEnumerable<IExpression> arguments)
+        static void EmitArgs(CodeEmitter c, InvocationExpression invocation)
         {
+            var parameters = ((FunctionType)invocation.Callee.Type!).Parameters;
+            var arguments = invocation.Arguments;
             foreach (var (p, a) in parameters.Zip(arguments))
             {
                 EmitArg(c, p, a);
             }
         }
 
-        static void EmitArg(CodeEmitter c, VarDeclaration param, IExpression arg)
+        static void EmitArg(CodeEmitter c, ParameterInfo param, IExpression arg)
         {
-            if (param.IsReference || (param.Semantics.ValueType is StringType && arg.Type is TextLabelType))
+            if (arg.ArgumentKind is ArgumentKind.ByRef)
             {
+                // pass by reference
                 Debug.Assert(arg.ValueKind.Is(ValueKind.Addressable));
                 c.EmitAddress(arg);
             }
+            else if(arg.ArgumentKind is ArgumentKind.ByValue)
+            {
+                // pass by value
+                c.EmitValue(arg);
+            }
             else
             {
-                c.EmitValue(arg);
+                Debug.Assert(false, "No semantic analysis on the arg?");
             }
         }
     }
 
     public override void Visit(UnaryExpression node)
     {
-        throw new NotImplementedException(nameof(UnaryExpression));
-        //node.SubExpression.Type!.CGUnaryOperation(CG, node);
+        if (node.Operator is UnaryOperator.LogicalNot)
+        {
+            _C.EmitValue(node.SubExpression);
+            //_C.EmitNOT();
+        }
+        else
+        {
+            throw new NotImplementedException(nameof(UnaryExpression));
+        }
     }
 
     public override void Visit(BinaryExpression node)

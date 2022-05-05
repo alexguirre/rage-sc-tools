@@ -4,7 +4,7 @@ using ScTools.ScriptLang.Types;
 
 using System.Collections.Generic;
 
-public record struct ExpressionSemantics(TypeInfo? Type, ValueKind ValueKind);
+public record struct ExpressionSemantics(TypeInfo? Type, ValueKind ValueKind, ArgumentKind ArgumentKind);
 
 public interface IExpression : ISemanticNode<ExpressionSemantics>
 {
@@ -14,6 +14,7 @@ public interface IExpression : ISemanticNode<ExpressionSemantics>
     /// </summary>
     public sealed TypeInfo? Type => Semantics.Type;
     public sealed ValueKind ValueKind => Semantics.ValueKind;
+    public sealed ArgumentKind ArgumentKind => Semantics.ArgumentKind;
 }
 
 public interface ILiteralExpression : IExpression

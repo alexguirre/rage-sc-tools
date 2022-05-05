@@ -203,7 +203,7 @@ public sealed class SemanticsAnalyzer : Visitor
                 }
                 break;
             case VarKind.Static:
-                CheckConstantInitializer(this, node);
+                CheckRuntimeInitializer(this, node);
                 break;
             case VarKind.Field:
                 Debug.Assert(currentStructDeclaration is not null);
@@ -259,14 +259,7 @@ public sealed class SemanticsAnalyzer : Visitor
             if (!varType.IsError && !initializerType.IsError)
             {
                 Debug.Assert(node.Initializer is not null);
-                if (varType.IsAssignableFrom(initializerType))
-                {
-                    //if (node.Initializer.ValueKind.Is(ValueKind.Constant))
-                    //{
-                    //    _ = ConstantExpressionEvaluator.Eval(node.Initializer, s);
-                    //}
-                }
-                else
+                if (!varType.IsAssignableFrom(initializerType))
                 {
                     s.CannotConvertTypeError(initializerType, varType, node.Initializer.Location);
                 }

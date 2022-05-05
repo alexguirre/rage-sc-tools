@@ -44,7 +44,7 @@ public static partial class Intrinsics
                 ExpressionTypeChecker.ArgNotAnEnumError(semantics, 0, args[0], argTypes[0]);
             }
 
-            return new(IntType.Instance, ValueKind.RValue | (args[0].ValueKind & ValueKind.Constant));
+            return new(IntType.Instance, ValueKind.RValue | (args[0].ValueKind & ValueKind.Constant), ArgumentKind.None);
         }
 
         public override ConstantValue ConstantEval(InvocationExpression node, SemanticsAnalyzer semantics)

@@ -21,7 +21,7 @@ public sealed class ExpressionTypeChecker : EmptyVisitor<TypeInfo, SemanticsAnal
 
     private static TypeInfo Literal(IExpression node, TypeInfo type)
     {
-        node.Semantics = new(Type: type, ValueKind: ValueKind.Constant | ValueKind.RValue);
+        node.Semantics = new(Type: type, ValueKind: ValueKind.Constant | ValueKind.RValue, ArgumentKind.None);
         return type;
     }
 
@@ -63,7 +63,7 @@ public sealed class ExpressionTypeChecker : EmptyVisitor<TypeInfo, SemanticsAnal
 
             if (!result.IsError)
             {
-                node.Semantics = new(result, ValueKind.RValue | (node.SubExpression.ValueKind & ValueKind.Constant));
+                node.Semantics = new(result, ValueKind.RValue | (node.SubExpression.ValueKind & ValueKind.Constant), ArgumentKind.None);
             }
             return result;
         }
@@ -180,7 +180,7 @@ public sealed class ExpressionTypeChecker : EmptyVisitor<TypeInfo, SemanticsAnal
         {
             if (!type.IsError)
             {
-                node.Semantics = new(type, ValueKind.RValue | (node.LHS.ValueKind & node.RHS.ValueKind & ValueKind.Constant));
+                node.Semantics = new(type, ValueKind.RValue | (node.LHS.ValueKind & node.RHS.ValueKind & ValueKind.Constant), ArgumentKind.None);
             }
             return type;
         }
@@ -197,7 +197,7 @@ public sealed class ExpressionTypeChecker : EmptyVisitor<TypeInfo, SemanticsAnal
         var field = type.Fields.SingleOrDefault(f => ParserNew.CaseInsensitiveComparer.Equals(f.Name, node.FieldName));
         if (field is not null)
         {
-            node.Semantics = new(field.Type, node.SubExpression.ValueKind, field);
+            node.Semantics = new(field.Type, node.SubExpression.ValueKind, ArgumentKind.None, field);
             return field.Type;
         }
 
@@ -267,6 +267,8 @@ public sealed class ExpressionTypeChecker : EmptyVisitor<TypeInfo, SemanticsAnal
                     {
                         ArgCannotPassNonLValueToRefParamError(s, i, arg);
                     }
+
+                    arg.Semantics = arg.Semantics with { ArgumentKind = ArgumentKind.ByRef };
                 }
                 else if (paramType is ArrayType)
                 {
@@ -278,6 +280,8 @@ public sealed class ExpressionTypeChecker : EmptyVisitor<TypeInfo, SemanticsAnal
                         ArgCannotPassTypeError(s, i, arg, argType, paramType);
                     }
                     // TODO: check 'incomplete' array
+
+                    arg.Semantics = arg.Semantics with { ArgumentKind = ArgumentKind.ByRef };
                 }
                 else
                 {
@@ -286,10 +290,12 @@ public sealed class ExpressionTypeChecker : EmptyVisitor<TypeInfo, SemanticsAnal
                     {
                         ArgCannotPassTypeError(s, i, arg, argType, paramType);
                     }
+
+                    arg.Semantics = arg.Semantics with { ArgumentKind = ArgumentKind.ByValue };
                 }
             }
 
-            result = new(funcType.Return, ValueKind.RValue);
+            result = new(funcType.Return, ValueKind.RValue, ArgumentKind.None);
         }
 
         node.Semantics = result;
@@ -305,7 +311,7 @@ public sealed class ExpressionTypeChecker : EmptyVisitor<TypeInfo, SemanticsAnal
 
         if (decl is ScriptDeclaration)
         {
-            node.Semantics = new(null, 0, decl);
+            node.Semantics = new(null, 0, ArgumentKind.None, decl);
             return ScriptNameNotAllowedInExpressionError(s, node);
         }
 
@@ -317,7 +323,7 @@ public sealed class ExpressionTypeChecker : EmptyVisitor<TypeInfo, SemanticsAnal
             _ => throw new ArgumentException($"Unknown declaration with name '{node.Name}'", nameof(node)),
         };
 
-        node.Semantics = new(type, valueKind, decl);
+        node.Semantics = new(type, valueKind, ArgumentKind.None, decl);
         return type ?? ErrorType;
 
         static ValueKind ValueKindOfDeclaration(IValueDeclaration valueDecl)
@@ -349,7 +355,8 @@ public sealed class ExpressionTypeChecker : EmptyVisitor<TypeInfo, SemanticsAnal
 
         node.Semantics = new(
             VectorType.Instance,
-            ValueKind.RValue | (node.X.ValueKind & node.Y.ValueKind & node.Z.ValueKind & ValueKind.Constant));
+            ValueKind.RValue | (node.X.ValueKind & node.Y.ValueKind & node.Z.ValueKind & ValueKind.Constant),
+            ArgumentKind.None);
 
         return VectorType.Instance;
 
