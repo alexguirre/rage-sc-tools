@@ -88,6 +88,6 @@ namespace ScTools.ScriptLang
                 .GetFields(BindingFlags.Public | BindingFlags.Static)
                 .Where(f => f.IsLiteral && !f.IsInitOnly && f.Name.StartsWith("K_")) // get all constants that start with 'K_' (prefix used for keywords in the grammar)
                 .Select(f => f.Name[2..]) // remove prefix 'K_'
-                .ToHashSet(ParserNew.CaseInsensitiveComparer);
+                .ToHashSet(Parser.CaseInsensitiveComparer);
     }
 }

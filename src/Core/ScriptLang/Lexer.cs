@@ -481,10 +481,10 @@ public sealed class Lexer : IEnumerable<Token>
     private static bool IsKeyword(string str)
         => Keywords.Contains(str);
     private static bool IsNullLiteral(string str)
-        => ParserNew.CaseInsensitiveComparer.Equals(str, "NULL");
+        => Parser.CaseInsensitiveComparer.Equals(str, "NULL");
     private static bool IsBooleanLiteral(string str)
-        => ParserNew.CaseInsensitiveComparer.Equals(str, "TRUE") ||
-           ParserNew.CaseInsensitiveComparer.Equals(str, "FALSE");
+        => Parser.CaseInsensitiveComparer.Equals(str, "TRUE") ||
+           Parser.CaseInsensitiveComparer.Equals(str, "FALSE");
 
     private const char EOF = char.MaxValue;
 
@@ -504,5 +504,5 @@ public sealed class Lexer : IEnumerable<Token>
 
     private static readonly HashSet<string> Keywords =
         new(Enum.GetValues<TokenKind>().Where(t => t.IsKeyword()).Select(t => t.ToString()),
-            ParserNew.CaseInsensitiveComparer);
+            Parser.CaseInsensitiveComparer);
 }

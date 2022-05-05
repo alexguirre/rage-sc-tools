@@ -28,7 +28,7 @@ public abstract class SemanticsTestsBase
     protected static SourceRange MakeSourceRange((int Line, int Column) start, (int Line, int Column) end)
         => new((start.Line, start.Column, TestFileName), (end.Line, end.Column, TestFileName));
 
-    protected static ParserNew ParserFor(string source)
+    protected static Parser ParserFor(string source)
     {
         var lexer = new Lexer(TestFileName, source, new DiagnosticsReport());
         return new(lexer, lexer.Diagnostics);

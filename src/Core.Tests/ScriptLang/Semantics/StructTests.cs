@@ -107,7 +107,7 @@ public class StructTests : SemanticsTestsBase
 
     private static void AssertField(StructDeclaration structDecl, string fieldName, TypeInfo expectedFieldType, ConstantValue? expectedInitializerValue = null)
     {
-        var field = Single(structDecl.Fields, f => ParserNew.CaseInsensitiveComparer.Equals(f.Name, fieldName));
+        var field = Single(structDecl.Fields, f => Parser.CaseInsensitiveComparer.Equals(f.Name, fieldName));
         Equal(VarKind.Field, field.Kind);
         Equal(expectedFieldType, field.Semantics.ValueType);
         Equal(expectedInitializerValue, field.Semantics.ConstantValue);

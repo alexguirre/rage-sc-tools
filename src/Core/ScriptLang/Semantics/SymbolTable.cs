@@ -15,7 +15,7 @@ internal sealed class SymbolTable<T> where T : notnull
         PushScope(); // push root scope
     }
 
-    public void PushScope() => scopes.Push(new(ParserNew.CaseInsensitiveComparer));
+    public void PushScope() => scopes.Push(new(Parser.CaseInsensitiveComparer));
     public void PopScope()
     {
         if (scopes.Count > 1)

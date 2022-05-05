@@ -68,7 +68,7 @@ public abstract class CodeGenTestsBase
 
         var d = new DiagnosticsReport();
         var l = new Lexer("codegen_tests.sc", source, d);
-        var p = new ParserNew(l, d);
+        var p = new Parser(l, d);
         var s = new SemanticsAnalyzer(d);
 
         var u = p.ParseCompilationUnit();

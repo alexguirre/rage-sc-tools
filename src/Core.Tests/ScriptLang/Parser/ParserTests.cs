@@ -16,7 +16,7 @@ using static Xunit.Assert;
 
 public partial class ParserTests
 {
-    private static void NoErrorsAndIsAtEOF(ParserNew p)
+    private static void NoErrorsAndIsAtEOF(Parser p)
     {
         False(p.Diagnostics.HasErrors);
         False(p.Diagnostics.HasWarnings);
@@ -27,7 +27,7 @@ public partial class ParserTests
         False(node is IError);
         True(predicate(node));
     }
-    private static void AssertParseExpression(ParserNew p, Predicate<IExpression> predicate)
+    private static void AssertParseExpression(Parser p, Predicate<IExpression> predicate)
     {
         True(p.IsPossibleExpression());
         var expr = p.ParseExpression();
@@ -197,7 +197,7 @@ public partial class ParserTests
     private static SourceRange MakeSourceRange((int Line, int Column) start, (int Line, int Column) end)
         => new((start.Line, start.Column, TestFileName), (end.Line, end.Column, TestFileName));
 
-    private static ParserNew ParserFor(string source)
+    private static Parser ParserFor(string source)
     {
         var lexer = new Lexer(TestFileName, source, new DiagnosticsReport());
         return new(lexer, lexer.Diagnostics);

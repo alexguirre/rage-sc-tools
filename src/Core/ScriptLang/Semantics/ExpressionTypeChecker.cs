@@ -194,7 +194,7 @@ public sealed class ExpressionTypeChecker : EmptyVisitor<TypeInfo, SemanticsAnal
             return ErrorType;
         }
 
-        var field = type.Fields.SingleOrDefault(f => ParserNew.CaseInsensitiveComparer.Equals(f.Name, node.FieldName));
+        var field = type.Fields.SingleOrDefault(f => Parser.CaseInsensitiveComparer.Equals(f.Name, node.FieldName));
         if (field is not null)
         {
             node.Semantics = new(field.Type, node.SubExpression.ValueKind, ArgumentKind.None, field);

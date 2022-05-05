@@ -33,7 +33,7 @@ public partial class ParserTests
             );
 
             True(p.IsPossibleUsingDirective());
-            Assert(p.ParseUsingDirective(), n => n is UsingDirective { Path: ParserNew.MissingUsingPathLexeme });
+            Assert(p.ParseUsingDirective(), n => n is UsingDirective { Path: Parser.MissingUsingPathLexeme });
             // TODO: this SourceRange should probably be the last correct token location
             CheckError(ErrorCode.ParserUnexpectedToken, (0, 0), (0, 0), p.Diagnostics);
             True(p.IsAtEOF);
@@ -90,7 +90,7 @@ public partial class ParserTests
             );
 
             True(p.IsPossibleEnumDeclaration());
-            AssertEnumDeclaration(p.ParseEnumDeclaration(), ParserNew.MissingIdentifierLexeme,
+            AssertEnumDeclaration(p.ParseEnumDeclaration(), Parser.MissingIdentifierLexeme,
                 members => Empty(members));
 
             CheckError(ErrorCode.ParserUnexpectedToken, (1, 5), (1, 5), p.Diagnostics);
@@ -185,7 +185,7 @@ public partial class ParserTests
             );
 
             True(p.IsPossibleStructDeclaration());
-            AssertStructDeclaration(p.ParseStructDeclaration(), ParserNew.MissingIdentifierLexeme,
+            AssertStructDeclaration(p.ParseStructDeclaration(), Parser.MissingIdentifierLexeme,
                 fields => Empty(fields));
 
             CheckError(ErrorCode.ParserUnexpectedToken, (1, 7), (1, 7), p.Diagnostics);
@@ -341,7 +341,7 @@ public partial class ParserTests
             );
 
             True(p.IsPossibleScriptDeclaration());
-            AssertScriptDeclaration(p.ParseScriptDeclaration(), ParserNew.MissingIdentifierLexeme,
+            AssertScriptDeclaration(p.ParseScriptDeclaration(), Parser.MissingIdentifierLexeme,
                 @params => Empty(@params),
                 body => Empty(body));
             CheckError(ErrorCode.ParserUnexpectedToken, (1, 7), (1, 7), p.Diagnostics);
@@ -587,7 +587,7 @@ public partial class ParserTests
             );
 
             True(p.IsPossibleFunctionDeclaration());
-            AssertFunctionDeclaration(p.ParseFunctionDeclaration(), ParserNew.MissingIdentifierLexeme,
+            AssertFunctionDeclaration(p.ParseFunctionDeclaration(), Parser.MissingIdentifierLexeme,
                 retTy => retTy is null,
                 @params => Collection(@params,
                     _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
@@ -605,7 +605,7 @@ public partial class ParserTests
             );
 
             True(p.IsPossibleFunctionDeclaration());
-            AssertFunctionDeclaration(p.ParseFunctionDeclaration(), ParserNew.MissingIdentifierLexeme,
+            AssertFunctionDeclaration(p.ParseFunctionDeclaration(), Parser.MissingIdentifierLexeme,
                 retTy => retTy is TypeName { Name: "BOOL" },
                 @params => Empty(@params),
                 body => Empty(body));
@@ -621,8 +621,8 @@ public partial class ParserTests
             );
 
             True(p.IsPossibleFunctionDeclaration());
-            AssertFunctionDeclaration(p.ParseFunctionDeclaration(), ParserNew.MissingIdentifierLexeme,
-                retTy => retTy is TypeName { Name: ParserNew.MissingIdentifierLexeme },
+            AssertFunctionDeclaration(p.ParseFunctionDeclaration(), Parser.MissingIdentifierLexeme,
+                retTy => retTy is TypeName { Name: Parser.MissingIdentifierLexeme },
                 @params => Empty(@params),
                 body => Empty(body));
             CheckError(ErrorCode.ParserUnexpectedToken, (1, 5), (1, 5), p.Diagnostics, 2);

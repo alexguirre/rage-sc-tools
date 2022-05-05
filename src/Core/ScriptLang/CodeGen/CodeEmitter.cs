@@ -40,8 +40,8 @@ public sealed partial class CodeEmitter
     private readonly Dictionary<VarDeclaration, int> scriptParamsOffsets = new();
 
     private readonly List<LabelInfo> labels = new();
-    private readonly Dictionary<string, int> functionLabelNameToIndex = new(ParserNew.CaseInsensitiveComparer);
-    private readonly Dictionary<string, int> localLabelNameToIndex = new(ParserNew.CaseInsensitiveComparer);
+    private readonly Dictionary<string, int> functionLabelNameToIndex = new(Parser.CaseInsensitiveComparer);
+    private readonly Dictionary<string, int> localLabelNameToIndex = new(Parser.CaseInsensitiveComparer);
 
     private byte currentFunctionArgCount;
     private int currentFunctionFrameSize = 0;
