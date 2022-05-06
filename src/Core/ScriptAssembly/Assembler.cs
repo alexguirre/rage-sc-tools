@@ -10,7 +10,7 @@ namespace ScTools.ScriptAssembly
 
     using Antlr4.Runtime;
 
-    using ScTools.GameFiles;
+    using ScTools.GameFiles.Five;
     using ScTools.ScriptAssembly.Grammar;
 
     public readonly struct AssemblerOptions

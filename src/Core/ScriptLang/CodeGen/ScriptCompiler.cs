@@ -1,6 +1,6 @@
 ﻿namespace ScTools.ScriptLang.CodeGen
 {
-    using ScTools.GameFiles;
+    using ScTools.GameFiles.Five;
     using ScTools.ScriptLang.Ast;
     using ScTools.ScriptLang.Ast.Declarations;
 

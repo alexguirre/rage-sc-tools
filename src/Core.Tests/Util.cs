@@ -17,14 +17,14 @@
             return Assembler.Assemble(r, path);
         }
 
-        public static string Disassemble(GameFiles.Script sc)
+        public static string Disassemble(GameFiles.Five.Script sc)
         {
             using var w = new StringWriter();
             Disassembler.Disassemble(w, sc);
             return w.ToString();
         }
 
-        public static string Dump(GameFiles.Script sc)
+        public static string Dump(GameFiles.Five.Script sc)
         {
             var d = new Dumper(sc);
             using var s = new StringWriter();
@@ -32,7 +32,7 @@
             return s.ToString();
         }
 
-        public static void AssertScriptsAreEqual(GameFiles.Script sc1, GameFiles.Script sc2)
+        public static void AssertScriptsAreEqual(GameFiles.Five.Script sc1, GameFiles.Five.Script sc2)
         {
             static void FailIf(bool condition, string message) => Assert.False(condition, message);
             static string S(string str) => str;

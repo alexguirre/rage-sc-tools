@@ -4,7 +4,7 @@
     using System.IO;
     using System.Text;
     using System.Runtime.CompilerServices;
-    using ScTools.GameFiles;
+    using ScTools.GameFiles.Five;
     using ScTools.ScriptAssembly;
 
     public class Dumper

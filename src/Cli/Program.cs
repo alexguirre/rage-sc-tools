@@ -9,7 +9,7 @@
     using System.Threading;
     using System.Diagnostics;
     using CodeWalker.GameFiles;
-    using ScTools.GameFiles;
+    using ScTools.GameFiles.Five;
     using System.Threading.Tasks;
     using System.Linq;
     using ScTools.ScriptAssembly;

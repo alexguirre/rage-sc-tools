@@ -1,4 +1,4 @@
-﻿namespace ScTools.GameFiles
+﻿namespace ScTools.GameFiles.Five
 {
     using System.IO;
     using System;
@@ -8,6 +8,10 @@
     public class YscFile : GameFile, PackedFile
     {
         public const GameFileType FileType = (GameFileType)27;
+        /// <summary>
+        /// v10: release version
+        /// v11: IS_BIT_SET native replaced with IBITTEST opcode, since b2612
+        /// </summary>
         public const int FileVersion = 10;
 
         public Script Script { get; set; }

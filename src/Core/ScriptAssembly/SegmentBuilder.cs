@@ -5,7 +5,7 @@
     using System.Runtime.InteropServices;
     using System.Text;
 
-    using ScTools.GameFiles;
+    using ScTools.GameFiles.Five;
 
     public class SegmentBuilder : IDisposable
     {

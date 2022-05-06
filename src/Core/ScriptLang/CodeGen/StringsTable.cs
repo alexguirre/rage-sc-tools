@@ -2,7 +2,7 @@
 
 using System.Collections.Generic;
 
-using ScTools.GameFiles;
+using ScTools.GameFiles.Five;
 using ScTools.ScriptAssembly;
 
 public sealed class StringsTable

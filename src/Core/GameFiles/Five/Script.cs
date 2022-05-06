@@ -1,4 +1,4 @@
-﻿namespace ScTools.GameFiles
+﻿namespace ScTools.GameFiles.Five
 {
     using System;
     using System.Collections.Generic;

@@ -9,7 +9,7 @@ namespace ScTools.ScriptAssembly
     using System.Linq;
     using System.Diagnostics;
 
-    using ScTools.GameFiles;
+    using ScTools.GameFiles.Five;
 
     public class Disassembler
     {

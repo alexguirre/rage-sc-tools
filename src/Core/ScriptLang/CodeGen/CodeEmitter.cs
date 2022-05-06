@@ -6,7 +6,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 
-using ScTools.GameFiles;
+using ScTools.GameFiles.Five;
 using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.Ast.Expressions;
 using ScTools.ScriptLang.Ast.Statements;

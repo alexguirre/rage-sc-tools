@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-using ScTools.GameFiles;
+using ScTools.GameFiles.Five;
 using ScTools.ScriptAssembly;
 
 public partial class CodeEmitter
