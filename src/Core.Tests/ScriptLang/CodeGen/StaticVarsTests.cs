@@ -53,7 +53,33 @@ public class StaticVarsTests : CodeGenTestsBase
     [Fact]
     public void StaticWithNonConstantInitializerIsAllowed()
     {
-        // TODO: StaticWithNonConstantInitializerIsAllowed
+        CompileScript(
+        scriptSource: @"
+            ",
+        declarationsSource: @"
+                FUNC INT FOO()
+                    RETURN 123
+                ENDFUNC
+
+                INT n = FOO()
+            ",
+        expectedAssembly: @"
+                ENTER 0, 2
+                ; static initialization
+                ; n = FOO()
+                CALL FOO
+                STATIC_U8_STORE n
+
+                LEAVE 0, 0
+
+            FOO:
+                ENTER 0, 2
+                PUSH_CONST_U8 123
+                LEAVE 0, 1
+
+                .static
+            n:  .int 0
+            ");
     }
 
     [Fact]
@@ -354,7 +380,7 @@ public class StaticVarsTests : CodeGenTestsBase
         CompileRaw(
         source: @"
                 SCRIPT test(VECTOR v, FLOAT a)
-                    FLOAT f = v.x + v.y + v.z + a
+                    FLOAT f = a
                 ENDSCRIPT
             ",
         expectedAssembly: @"
@@ -362,15 +388,7 @@ public class StaticVarsTests : CodeGenTestsBase
             .code
             SCRIPT:
                 ENTER 0, 3
-                STATIC_U8_LOAD v
-                STATIC_U8 v
-                IOFFSET_U8_LOAD 1
-                FADD
-                STATIC_U8 v
-                IOFFSET_U8_LOAD 2
-                FADD
                 STATIC_U8_LOAD a
-                FADD
                 LOCAL_U8_STORE 2
                 LEAVE 0, 0
 
@@ -387,7 +405,7 @@ public class StaticVarsTests : CodeGenTestsBase
         source: @"
                 FLOAT a
                 SCRIPT test(VECTOR v)
-                    FLOAT f = v.x + v.y + v.z + a
+                    FLOAT f = v.x
                 ENDSCRIPT
             ",
         expectedAssembly: @"
@@ -396,14 +414,6 @@ public class StaticVarsTests : CodeGenTestsBase
             SCRIPT:
                 ENTER 0, 3
                 STATIC_U8_LOAD v
-                STATIC_U8 v
-                IOFFSET_U8_LOAD 1
-                FADD
-                STATIC_U8 v
-                IOFFSET_U8_LOAD 2
-                FADD
-                STATIC_U8_LOAD a
-                FADD
                 LOCAL_U8_STORE 2
                 LEAVE 0, 0
 
@@ -424,7 +434,7 @@ public class StaticVarsTests : CodeGenTestsBase
                 ENDSTRUCT
 
                 SCRIPT test(ARGS args)
-                    INT i = args.a + args.b + args.c
+                    INT i = args.a
                 ENDSCRIPT
             ",
         expectedAssembly: @"
@@ -433,12 +443,6 @@ public class StaticVarsTests : CodeGenTestsBase
             SCRIPT:
                 ENTER 0, 3
                 STATIC_U8_LOAD args
-                STATIC_U8 args
-                IOFFSET_U8_LOAD 1
-                IADD
-                STATIC_U8 args
-                IOFFSET_U8_LOAD 2
-                IADD
                 LOCAL_U8_STORE 2
                 LEAVE 0, 0
 

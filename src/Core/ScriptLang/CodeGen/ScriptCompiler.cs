@@ -8,26 +8,38 @@
     using System.Collections.Generic;
     using System.Diagnostics;
 
-    internal sealed class ScriptCompiler
+    internal static class ScriptCompiler
     {
-        private readonly ScriptDeclaration script;
-        private readonly CodeEmitter codeEmitter = new();
-
-        public ScriptCompiler(ScriptDeclaration script)
+        public static Script[] Compile(CompilationUnit compilationUnit)
         {
-            this.script = script;
+            var scripts = new List<Script>();
+            var staticAllocator = new VarAllocator();
+            foreach (var decl in compilationUnit.Declarations)
+            {
+                if (decl is VarDeclaration { Kind: VarKind.Static } staticVar)
+                {
+                    staticAllocator.Allocate(staticVar);
+                }
+                else if (decl is ScriptDeclaration scriptDecl)
+                {
+                    scripts.Add(CompileScript(scriptDecl, staticAllocator));
+                }
+            }
+
+            return scripts.ToArray();
         }
 
-        public Script Compile()
+        private static Script CompileScript(ScriptDeclaration scriptDecl, VarAllocator statics)
         {
             var result = new Script()
             {
-                Name = script.Name,
-                NameHash = script.Name.ToLowercaseHash(),
+                Name = scriptDecl.Name,
+                NameHash = scriptDecl.Name.ToLowercaseHash(),
                 Hash = 0, // TODO: include a way to set the hash in the SCRIPT declaration
             };
 
-            codeEmitter.EmitScript(script);
+            var codeEmitter = new CodeEmitter(statics);
+            codeEmitter.EmitScript(scriptDecl);
 
             result.CodePages = codeEmitter.ToCodePages();
             result.CodeLength = result.CodePages?.Length ?? 0;
@@ -35,9 +47,9 @@
             //OutputScript.GlobalsPages = globalSegmentBuilder.Length != 0 ? globalSegmentBuilder.ToPages<ScriptValue>() : null;
             //OutputScript.GlobalsLength = OutputScript.GlobalsPages?.Length ?? 0;
 
-            result.Statics = codeEmitter.GetStaticSegment();
+            result.Statics = codeEmitter.GetStaticSegment(out var argsCount);
             result.StaticsCount = (uint)(result.Statics?.Length ?? 0);
-            result.ArgsCount = 0;
+            result.ArgsCount = (uint)argsCount;
 
             result.Natives = Array.Empty<ulong>();
             result.NativesCount = 0;

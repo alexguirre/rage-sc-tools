@@ -2777,9 +2777,9 @@
             u.Accept(s);
             Assert.False(d.HasErrors);
 
-            var c = new ScriptCompiler(u.Declarations.OfType<ScriptDeclaration>().Single());
-            var compiledScript = c.Compile();
+            var compiledScripts = ScriptCompiler.Compile(u);
             Assert.False(d.HasErrors);
+            var compiledScript = Assert.Single(compiledScripts);
 
             using var expectedAssemblyReader = new StringReader(expectedAssembly);
             var expectedAssembler = Assembler.Assemble(expectedAssemblyReader, "test_expected.scasm", nativeDB, options: new() { IncludeFunctionNames = true });

@@ -30,28 +30,22 @@ public sealed partial class CodeEmitter
     private readonly HashSet<FunctionDeclaration> usedFunctions = new();
     private readonly Queue<FunctionDeclaration> functionsToCompile = new();
 
-    private readonly HashSet<VarDeclaration> usedStatics = new();
-    private readonly List<VarDeclaration> staticsInFirstUseOrder = new();
-    private int staticsSize = 0;
-    private readonly Dictionary<VarDeclaration, int> staticsOffsets = new();
-
-    private readonly List<VarDeclaration> scriptParams = new();
-    private int scriptParamsSize = 0;
-    private readonly Dictionary<VarDeclaration, int> scriptParamsOffsets = new();
+    private readonly VarAllocator statics;
+    private int numScriptParams = 0;
 
     private readonly List<LabelInfo> labels = new();
     private readonly Dictionary<string, int> functionLabelNameToIndex = new(Parser.CaseInsensitiveComparer);
     private readonly Dictionary<string, int> localLabelNameToIndex = new(Parser.CaseInsensitiveComparer);
 
     private byte currentFunctionArgCount;
-    private int currentFunctionFrameSize = 0;
+    private readonly VarAllocator currentFunctionFrame = new();
     private TypeInfo? currentFunctionReturnType = null;
-    private readonly Dictionary<VarDeclaration, int> currentFunctionAllocatedLocals = new();
 
     public StringsTable Strings { get; } = new();
 
-    public CodeEmitter()
+    public CodeEmitter(VarAllocator statics)
     {
+        this.statics = new(statics);
         codeBuffer = new();
         instEmitter = new(new InstructionEmitter.AppendFlushStrategy(codeBuffer));
 
@@ -62,21 +56,22 @@ public sealed partial class CodeEmitter
 
     public ScriptPageArray<byte> ToCodePages() => codeBuffer.ToCodePages(labels);
 
-    public ScriptValue[] GetStaticSegment()
+    public ScriptValue[] GetStaticSegment(out int numScriptParams)
     {
-        var statics = new ScriptValue[staticsSize + scriptParamsSize];
+        var staticsBuffer = new ScriptValue[statics.AllocatedSize];
 
-        foreach (var s in staticsInFirstUseOrder.Concat(scriptParams))
+        foreach (var s in statics)
         {
             var type = s.Semantics.ValueType!;
             if (type.IsDefaultInitialized())
             {
-                var offset = s.Kind is VarKind.Static ? staticsOffsets[s] : scriptParamsOffsets[s];
-                StaticDefaultInit(statics.AsSpan(offset, type.SizeOf), type);
+                var offset = statics.OffsetOf(s);
+                StaticDefaultInit(staticsBuffer.AsSpan(offset, type.SizeOf), type);
             }
         }
 
-        return statics;
+        numScriptParams = this.numScriptParams;
+        return staticsBuffer;
     }
 
     public void EmitScript(ScriptDeclaration script)
@@ -88,73 +83,54 @@ public sealed partial class CodeEmitter
             EmitFunction(function);
         }
 
-        InsertStaticInitializers();
-
         new PatternOptimizer().Optimize(codeBuffer);
-    }
-
-    private void InsertStaticInitializers()
-    {
-        var oldFlushStrategy = instEmitter.FlushStrategy;
-        var insertLoc = codeBuffer.GetRef(0);
-        instEmitter.FlushStrategy = new InstructionEmitter.InsertAfterFlushStrategy(codeBuffer, insertLoc);
-
-        foreach (var s in staticsInFirstUseOrder)
-        {
-            if (s.Initializer is not null)
-            {
-                stmtEmitter.EmitAssignment(s, s.Initializer);
-            }
-        }
-
-        instEmitter.FlushStrategy = oldFlushStrategy;
     }
 
     public void EmitScriptEntryPoint(ScriptDeclaration script)
     {
-        EmitFunctionCommon("SCRIPT", script.Parameters, script.Body, VoidType.Instance);
+        var staticsWithoutScriptParamsSize = statics.AllocatedSize;
+        script.Parameters.ForEach(p => statics.Allocate(p));
+        numScriptParams = statics.AllocatedSize - staticsWithoutScriptParamsSize;
 
-        foreach (var scriptParam in script.Parameters)
-        {
-            scriptParams.Add(scriptParam);
-            // allocate space for static var
-            var size = scriptParam.Semantics.ValueType!.SizeOf;
-            var address = staticsSize + scriptParamsSize;
-            scriptParamsSize += size;
-            scriptParamsOffsets.Add(scriptParam, address);
-        }
+        EmitFunctionCommon("SCRIPT", script.Parameters, script.Body, VoidType.Instance, isScriptEntryPoint: true);
     }
 
     public void EmitFunction(FunctionDeclaration function)
     {
         Label(function.Name, isFunctionLabel: true);
-        EmitFunctionCommon(function.Name, function.Parameters, function.Body, ((FunctionType)function.Semantics.ValueType!).Return);
+        EmitFunctionCommon(function.Name, function.Parameters, function.Body, ((FunctionType)function.Semantics.ValueType!).Return, isScriptEntryPoint: false);
     }
 
-    private void EmitFunctionCommon(string name, ImmutableArray<VarDeclaration> parameters, ImmutableArray<IStatement> body, TypeInfo returnType)
+    private void EmitFunctionCommon(string name, ImmutableArray<VarDeclaration> parameters, ImmutableArray<IStatement> body, TypeInfo returnType, bool isScriptEntryPoint)
     {
         currentFunctionReturnType = returnType;
         Debug.Assert(returnType.SizeOf <= byte.MaxValue, $"Return type too big (sizeof: {returnType.SizeOf})");
 
-        currentFunctionFrameSize = 0;
-        currentFunctionAllocatedLocals.Clear();
+        currentFunctionFrame.Clear();
         localLabelNameToIndex.Clear();
 
-        // allocate space for parameters
-        foreach (var p in parameters)
+        if (!isScriptEntryPoint)
         {
-            if (p.Kind is VarKind.ScriptParameter) continue; // ScriptParameters are stored as static variables
-
-            AllocateFrameSpaceForParameter(p);
+            // allocate space for parameters
+            foreach (var p in parameters)
+            {
+                AllocateFrameSpaceForLocal(p);
+            }
         }
-        Debug.Assert(currentFunctionFrameSize <= byte.MaxValue, $"Too many parameters (argCount: {currentFunctionFrameSize})");
-        currentFunctionArgCount = (byte)currentFunctionFrameSize;
+        Debug.Assert(currentFunctionFrame.AllocatedSize <= byte.MaxValue, $"Too many parameters (argCount: {currentFunctionFrame.AllocatedSize})");
+        currentFunctionArgCount = (byte)currentFunctionFrame.AllocatedSize;
 
         // allocate space required by the engine to store the return address and caller frame address
         AllocateFrameSpace(2);
 
         // prologue (frame size is not yet known, it is updated after emitting the function code)
         var enter = instEmitter.EmitEnter(currentFunctionArgCount, frameSize: 0, name);
+
+        if (isScriptEntryPoint)
+        {
+            EmitStaticInitializers();
+            // TODO: EmitGlobalInitializers()
+        }
 
         // body
         EmitStatementBlock(body);
@@ -166,10 +142,22 @@ public sealed partial class CodeEmitter
         }
 
         // update frame size in ENTER instruction
+        Debug.Assert(currentFunctionFrame.AllocatedSize <= ushort.MaxValue, $"Function frame size is too big");
         var oldFlushStrategy = instEmitter.FlushStrategy;
         instEmitter.FlushStrategy = new InstructionEmitter.UpdateFlushStrategy(codeBuffer, enter);
-        instEmitter.EmitEnter(currentFunctionArgCount, (ushort)currentFunctionFrameSize, name);
+        instEmitter.EmitEnter(currentFunctionArgCount, (ushort)currentFunctionFrame.AllocatedSize, name);
         instEmitter.FlushStrategy = oldFlushStrategy;
+    }
+
+    private void EmitStaticInitializers()
+    {
+        foreach (var s in statics)
+        {
+            if (s.Initializer is not null)
+            {
+                stmtEmitter.EmitAssignment(s, s.Initializer);
+            }
+        }
     }
 
     public void EmitEpilogue()
@@ -178,43 +166,8 @@ public sealed partial class CodeEmitter
         instEmitter.EmitLeave(currentFunctionArgCount, (byte)currentFunctionReturnType.SizeOf);
     }
 
-    public int AllocateFrameSpace(int size)
-    {
-        var offset = currentFunctionFrameSize;
-        currentFunctionFrameSize += size;
-        Debug.Assert(currentFunctionFrameSize <= ushort.MaxValue, $"Function frame size is too big");
-        return offset;
-    }
-    private int AllocateFrameSpaceForParameter(VarDeclaration varDecl)
-    {
-        Debug.Assert(varDecl.Kind is VarKind.Parameter);
-
-        if (currentFunctionAllocatedLocals.ContainsKey(varDecl))
-        {
-            throw new ArgumentException($"Var '{varDecl.Name}' is already allocated", nameof(varDecl));
-        }
-
-        var type = varDecl.Semantics.ValueType!;
-        var isReference = varDecl.IsReference || type is ArrayType;
-        var size = isReference ? 1 : type.SizeOf;
-        var offset = AllocateFrameSpace(size);
-        currentFunctionAllocatedLocals.Add(varDecl, offset);
-        return offset;
-    }
-    public int AllocateFrameSpaceForLocal(VarDeclaration varDecl)
-    {
-        Debug.Assert(varDecl.Kind is VarKind.Local);
-
-        if (currentFunctionAllocatedLocals.ContainsKey(varDecl))
-        {
-            throw new ArgumentException($"Var '{varDecl.Name}' is already allocated", nameof(varDecl));
-        }
-
-        var size = varDecl.Semantics.ValueType!.SizeOf;
-        var offset = AllocateFrameSpace(size);
-        currentFunctionAllocatedLocals.Add(varDecl, offset);
-        return offset;
-    }
+    public int AllocateFrameSpace(int size) => currentFunctionFrame.Allocate(size);
+    public int AllocateFrameSpaceForLocal(VarDeclaration varDecl) => currentFunctionFrame.Allocate(varDecl);
 
     public void EmitStatementBlock(ImmutableArray<IStatement> statements)
     {
@@ -416,20 +369,7 @@ public sealed partial class CodeEmitter
     }
     private void EmitStaticAddress(VarDeclaration declaration)
     {
-        int address;
-        if (usedStatics.Add(declaration))
-        {
-            staticsInFirstUseOrder.Add(declaration);
-            // allocate space for static var
-            var size = declaration.Semantics.ValueType!.SizeOf;
-            address = staticsSize;
-            staticsSize += size;
-            staticsOffsets.Add(declaration, address);
-        }
-        else
-        {
-            address = staticsOffsets[declaration];
-        }
+        int address = statics.OffsetOf(declaration);
 
         switch (address)
         {
@@ -444,15 +384,10 @@ public sealed partial class CodeEmitter
             default: Debug.Assert(false, "Static var address too big"); break;
         }
     }
-    private void EmitScriptParameterAddress(VarDeclaration declaration)
-    {
-        // TODO: EmitScriptParameterAddress
-        // script parameters are stored after statics, so their address needs to be backfilled after we know all the statics included in the script
-        throw new NotImplementedException(nameof(EmitScriptParameterAddress));
-    }
+    private void EmitScriptParameterAddress(VarDeclaration declaration) => EmitStaticAddress(declaration);
     private void EmitLocalAddress(VarDeclaration declaration)
     {
-        var address = currentFunctionAllocatedLocals[declaration];
+        var address = currentFunctionFrame.OffsetOf(declaration);
         switch (address)
         {
             case >= byte.MinValue and <= byte.MaxValue:
@@ -471,7 +406,7 @@ public sealed partial class CodeEmitter
         if (declaration.IsReference)
         {
             // parameter passed by reference, the address is its value
-            var paramAddress = currentFunctionAllocatedLocals[declaration];
+            var paramAddress = currentFunctionFrame.OffsetOf(declaration);
             switch (paramAddress)
             {
                 case >= byte.MinValue and <= byte.MaxValue:
