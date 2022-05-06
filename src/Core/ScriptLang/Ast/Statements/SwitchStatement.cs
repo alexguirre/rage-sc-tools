@@ -29,7 +29,7 @@ public sealed class SwitchStatement : BaseStatement, IBreakableStatement
         $@"{nameof(SwitchStatement)} {{ {nameof(Expression)} = {Expression.DebuggerDisplay}, {nameof(Cases)} = [{string.Join(", ", Cases.Select(a => a.DebuggerDisplay))}] }}";
 }
 
-public record struct SwitchCaseSemantics(string? Label);
+public record struct SwitchCaseSemantics(string? Label, int? Value);
 
 public abstract class SwitchCase : BaseNode, ISemanticNode<SwitchCaseSemantics>
 {

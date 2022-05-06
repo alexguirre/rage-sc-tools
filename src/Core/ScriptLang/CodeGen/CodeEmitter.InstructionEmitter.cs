@@ -340,13 +340,14 @@ public partial class CodeEmitter
         public InstructionReference EmitILeJZ(short relativeOffset) => EmitInstS16(Opcode.ILE_JZ, relativeOffset);
         public InstructionReference EmitCall(uint functionOffset) => EmitInstU24(Opcode.CALL, functionOffset);
         public InstructionReference EmitCallIndirect() => EmitInst(Opcode.CALLINDIRECT);
-        public InstructionReference EmitSwitch(byte numCases) // cases will be backfilled later
+        public InstructionReference EmitSwitch(uint[] cases) // cases will be backfilled later
         {
+            Debug.Assert(cases.Length <= byte.MaxValue, $"Too many SWITCH cases (numCases: {cases.Length})");
             EmitOpcode(Opcode.SWITCH);
-            EmitU8(numCases);
-            for (int i = 0; i < numCases; i++)
+            EmitU8((byte)cases.Length);
+            for (int i = 0; i < cases.Length; i++)
             {
-                EmitU32(0); // value
+                EmitU32(cases[i]); // value
                 EmitS16(0); // label relative offset
             }
             return Flush();

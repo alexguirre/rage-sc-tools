@@ -253,4 +253,62 @@ public class IntrinsicsTests : CodeGenTestsBase
                 LEAVE 1, 0
             ");
     }
+
+    [Fact]
+    public void EnumToString()
+    {
+        CompileScript(
+        scriptSource: @"
+                MYENUM e = B
+                STRING s = ENUM_TO_STRING(e)
+            ",
+        declarationsSource: @"
+                ENUM MYENUM
+                    A, B, C
+                ENDENUM
+            ",
+        expectedAssembly: @"
+                ENTER 0, 4
+
+                ; MYENUM e = B
+                PUSH_CONST_1
+                LOCAL_U8_STORE 2
+                ; STRING s = ENUM_TO_STRING(e)
+                LOCAL_U8_LOAD 2
+                CALL __MYENUM_ENUM_TO_STRING
+                LOCAL_U8_STORE 3
+
+                LEAVE 0, 0
+
+            __MYENUM_ENUM_TO_STRING:
+                ENTER 1, 3
+
+                LOCAL_U8_LOAD 0
+                SWITCH 0:case0, 1:case1, 2:case2
+                J default
+            case0:
+                PUSH_CONST_0 ; strMYENUM_A
+                STRING
+                LEAVE 1, 1
+            case1:
+                PUSH_CONST_2 ; strMYENUM_B
+                STRING
+                LEAVE 1, 1
+            case2:
+                PUSH_CONST_4 ; strMYENUM_C
+                STRING
+                LEAVE 1, 1
+            default:
+                PUSH_CONST_6 ; strENUM_NOT_FOUND
+                STRING
+                LEAVE 1, 1
+
+
+                .string
+            strMYENUM_A:        .str 'A'
+            strMYENUM_B:        .str 'B'
+            strMYENUM_C:        .str 'C'
+            strENUM_NOT_FOUND:  .str 'ENUM_NOT_FOUND'
+            ");
+    }
 }

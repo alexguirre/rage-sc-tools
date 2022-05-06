@@ -110,4 +110,23 @@ public class IntrinsicsTests : SemanticsTestsBase
         False(s.Diagnostics.HasErrors);
         AssertConst(s, "foo", IntType.Instance, expectedLength);
     }
+
+    [Theory]
+    [InlineData("ENUM_TO_STRING(A)", "A")]
+    [InlineData("ENUM_TO_STRING(B)", "B")]
+    [InlineData("ENUM_TO_STRING(C)", "C")]
+    [InlineData("ENUM_TO_STRING(INT_TO_ENUM(MYENUM, -1))", "ENUM_NOT_FOUND")]
+    public void EnumToStringConstant(string initializer, string expectedString)
+    {
+        var s = Analyze(@$"
+                ENUM MYENUM
+                    A, B, C
+                ENDENUM
+
+                CONST STRING MYSTR = {initializer}
+            ");
+
+        False(s.Diagnostics.HasErrors);
+        AssertConst(s, "MYSTR", StringType.Instance, expectedString);
+    }
 }

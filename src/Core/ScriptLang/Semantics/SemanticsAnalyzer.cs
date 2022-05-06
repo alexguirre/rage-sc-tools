@@ -183,7 +183,6 @@ public sealed class SemanticsAnalyzer : Visitor
         var varType = typeFactory.GetFrom(node);
 
         // TODO: global variables
-        // TODO: local variables
 
         switch (node.Kind)
         {

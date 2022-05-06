@@ -237,15 +237,12 @@ public sealed partial class CodeEmitter
 
     public void EmitSwitch(IEnumerable<ValueSwitchCase> valueCases)
     {
-        throw new NotImplementedException(nameof(EmitSwitch));
-        var cases = valueCases.ToArray();
-        Debug.Assert(cases.Length <= byte.MaxValue, $"Too many SWITCH cases (numCases: {cases.Length})");
-        var inst = instEmitter.EmitSwitch((byte)cases.Length);
+        var cases = valueCases.OrderBy(c => c.Semantics.Value!.Value).ToArray();
+        var inst = instEmitter.EmitSwitch(cases.Select(c => unchecked((uint)c.Semantics.Value!.Value)).ToArray());
         for (int i = 0; i < cases.Length; i++)
         {
             var @case = cases[i];
-            var valueOffset = 1 + i * 6;
-            // TODO: fill value from @case.Value
+            var valueOffset = 2 + i * 6;
             var labelOffset = valueOffset + 4;
             ReferenceLabel(@case.Semantics.Label!, inst, labelOffset, LabelReferenceKind.Relative, isFunctionLabel: false);
         }
