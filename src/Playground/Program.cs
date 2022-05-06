@@ -14,7 +14,6 @@
     using ScTools.ScriptAssembly;
     using ScTools.ScriptLang;
     using ScTools.ScriptLang.CodeGen;
-    using ScTools.ScriptLang.Grammar;
     //using ScTools.ScriptLang.Semantics;
 
     internal static class Program

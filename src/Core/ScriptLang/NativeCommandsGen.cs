@@ -37,14 +37,14 @@ namespace ScTools.ScriptLang
         /// If the <paramref name="name"/> is disallowed (i.e. is a keyword), add a suffix so it no longer collides.
         /// </summary>
         private static string SafeSymbol(string name)
-            => Keywords.Contains(name) ? (name + "_") : name;
+            => Lexer.Keywords.Contains(name) ? (name + "_") : name;
 
-        private static string? TypeToScriptType(string type, bool returnType)
+        private static string? TypeToScriptType(string type, bool isReturnType)
             => type switch
             {
                 "void" => null,
                 "Any" => "ANY",
-                "Any*" when returnType => "INT",
+                "Any*" when isReturnType => "INT",
                 "Any*" => "ANY&",
                 "BOOL" => "BOOL",
                 "BOOL*" => "BOOL&",
@@ -79,15 +79,8 @@ namespace ScTools.ScriptLang
                 "FireId*" => "INT&",
                 "Interior" => "INT",
                 "Interior*" => "INT&",
-                "char*" => "ANY&", // TODO: only allow TEXT_LABEL somehow
+                "char*" => "TEXT_LABEL_n",
                 _ => throw new InvalidOperationException($"Cannot convert type '{type}'"),
             };
-
-        private static readonly HashSet<string> Keywords = 
-            typeof(Grammar.ScLangLexer)
-                .GetFields(BindingFlags.Public | BindingFlags.Static)
-                .Where(f => f.IsLiteral && !f.IsInitOnly && f.Name.StartsWith("K_")) // get all constants that start with 'K_' (prefix used for keywords in the grammar)
-                .Select(f => f.Name[2..]) // remove prefix 'K_'
-                .ToHashSet(Parser.CaseInsensitiveComparer);
     }
 }

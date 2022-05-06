@@ -502,7 +502,7 @@ public sealed class Lexer : IEnumerable<Token>
     private static bool IsHexadecimalDigit(char c)
         => c is (>= '0' and <= '9') or (>= 'A' and <= 'F') or (>= 'a' and <= 'f');
 
-    private static readonly HashSet<string> Keywords =
+    internal static readonly HashSet<string> Keywords =
         new(Enum.GetValues<TokenKind>().Where(t => t.IsKeyword()).Select(t => t.ToString()),
             Parser.CaseInsensitiveComparer);
 }
