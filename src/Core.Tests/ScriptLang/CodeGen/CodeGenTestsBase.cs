@@ -84,8 +84,8 @@ public abstract class CodeGenTestsBase
         var expectedAssembler = Assembler.Assemble(expectedAssemblyReader, "test_expected.scasm", nativeDB, options: new() { IncludeFunctionNames = true });
 
         using StringWriter sourceDumpWriter = new(), expectedDumpWriter = new();
-        new Dumper(compiledScript).Dump(sourceDumpWriter, true, true, true, true, true);
-        new Dumper(expectedAssembler.OutputScript).Dump(expectedDumpWriter, true, true, true, true, true);
+        Dumper.Dump(compiledScript, sourceDumpWriter, true, true, true, true, true);
+        Dumper.Dump(expectedAssembler.OutputScript, expectedDumpWriter, true, true, true, true, true);
 
         string sourceDump = sourceDumpWriter.ToString(), expectedDump = expectedDumpWriter.ToString();
 

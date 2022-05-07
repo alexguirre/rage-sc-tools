@@ -502,7 +502,7 @@
                 {
                     OutputFile("original_disassembly.txt", originalDisassembly);
                     using var originalDumpWriter = new StringWriter();
-                    new Dumper(originalScript).Dump(originalDumpWriter, true, true, true, true, true);
+                    Dumper.Dump(originalScript, originalDumpWriter, true, true, true, true, true);
                     OutputFile("original_dump.txt", originalDumpWriter.ToString());
                 }
 
@@ -542,7 +542,7 @@
                 {
                     OutputFile("new_disassembly.txt", newDisassembly);
                     using var newDumpWriter = new StringWriter();
-                    new Dumper(newScript).Dump(newDumpWriter, true, true, true, true, true);
+                    Dumper.Dump(newScript, newDumpWriter, true, true, true, true, true);
                     OutputFile("new_dump.txt", newDumpWriter.ToString());
                 }
 
@@ -660,8 +660,8 @@
                     _ => new StreamWriter(Path.Combine(o.Output.FullName, Path.ChangeExtension(inputFile.Name, "txt")))
                 };
 
-                new Dumper(sc).Dump(w, showMetadata: !o.NoMetadata, showDisassembly: !o.NoDisassembly,
-                                    showOffsets: !o.NoOffsets, showBytes: !o.NoBytes, showInstructions: !o.NoInstructions);
+                Dumper.Dump(sc, w, showMetadata: !o.NoMetadata, showDisassembly: !o.NoDisassembly,
+                            showOffsets: !o.NoOffsets, showBytes: !o.NoBytes, showInstructions: !o.NoInstructions);
             });
         }
 

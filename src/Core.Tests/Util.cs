@@ -26,9 +26,8 @@
 
         public static string Dump(GameFiles.Five.Script sc)
         {
-            var d = new Dumper(sc);
             using var s = new StringWriter();
-            d.Dump(s, true, true, true, true, true);
+            Dumper.Dump(sc, s, true, true, true, true, true);
             return s.ToString();
         }
 
