@@ -1,4 +1,4 @@
-﻿namespace ScTools.GameFiles.NY;
+﻿namespace ScTools.GameFiles.Payne;
 
 using System;
 using System.IO;
@@ -10,9 +10,10 @@ using CodeWalker.GameFiles;
 
 public class Script
 {
-    public const uint MagicUnencrypted = 0x0D524353,         // "SCR\x0D"
-                      MagicEncrypted = 0x0E726373,           // "scr\x0E"
-                      MagicEncryptedCompressed = 0x0E726353; // "Scr\x0E"
+    public const uint MagicEncryptedV10 = 0x10726373,           // "scr\x10"
+                      MagicEncryptedCompressedV10 = 0x10726353, // "Scr\x10"
+                      MagicEncryptedV11 = 0x11726373,           // "scr\x11"
+                      MagicEncryptedCompressedV11 = 0x11726353; // "Scr\x11"
 
     public uint Magic { get; set; }
     public uint CodeLength { get; set; }
@@ -20,6 +21,7 @@ public class Script
     public uint GlobalsCount { get; set; }
     public uint ArgsCount { get; set; }
     public uint GlobalsSignature { get; set; }
+    public int Unknown_V11 { get; set; }
     public byte[]? Code { get; set; }
     public ScriptValue[]? Statics { get; set; }
     public ScriptValue[]? Globals { get; set; }
@@ -33,18 +35,24 @@ public class Script
         ArgsCount = reader.ReadUInt32();
         GlobalsSignature = reader.ReadUInt32();
 
+        if (Magic is MagicEncryptedV11 or MagicEncryptedCompressedV11)
+        {
+            Unknown_V11 = reader.ReadInt32();
+        }
+        else
+        {
+            Unknown_V11 = -1;
+        }
+
+        var compressedSize = reader.ReadUInt32();
         switch (Magic)
         {
-            case MagicUnencrypted:
+            case MagicEncryptedV10:
+            case MagicEncryptedV11:
                 {
-                    Code = reader.ReadBytes((int)CodeLength);
-                    Statics = BytesToScriptValues(reader.ReadBytes((int)(4 * StaticsCount)));
-                    Globals = BytesToScriptValues(reader.ReadBytes((int)(4 * GlobalsCount)));
-                }
-                break;
+                    if (compressedSize != 0)
+                    { }
 
-            case MagicEncrypted:
-                {
                     Code = reader.ReadBytes((int)CodeLength);
                     var statics = reader.ReadBytes((int)(4 * StaticsCount));
                     var globals = reader.ReadBytes((int)(4 * GlobalsCount));
@@ -56,9 +64,9 @@ public class Script
                 }
                 break;
 
-            case MagicEncryptedCompressed:
+            case MagicEncryptedCompressedV10:
+            case MagicEncryptedCompressedV11:
                 {
-                    var compressedSize = reader.ReadUInt32();
                     var compressed = reader.ReadBytes((int)compressedSize);
                     Decrypt(compressed);
 
@@ -97,18 +105,17 @@ public class Script
         writer.Write(ArgsCount);
         writer.Write(GlobalsSignature);
 
+        if (Magic is MagicEncryptedV11 or MagicEncryptedCompressedV11)
+        {
+            writer.Write(Unknown_V11);
+        }
+
         switch (Magic)
         {
-            case MagicUnencrypted:
+            case MagicEncryptedV10:
+            case MagicEncryptedV11:
                 {
-                    writer.Write(Code);
-                    writer.Write(ScriptValuesToBytes(Statics));
-                    writer.Write(ScriptValuesToBytes(Globals));
-                }
-                break;
-
-            case MagicEncrypted:
-                {
+                    writer.Write(0u); // compressedSize
                     var code = Code?.ToArray() ?? Array.Empty<byte>();
                     var statics = ScriptValuesToBytes(Statics);
                     var globals = ScriptValuesToBytes(Globals);
@@ -121,7 +128,8 @@ public class Script
                 }
                 break;
 
-            case MagicEncryptedCompressed:
+            case MagicEncryptedCompressedV10:
+            case MagicEncryptedCompressedV11:
                 {
                     using var compressedStream = new MemoryStream();
                     using (var zs = new ZLibStream(compressedStream, CompressionLevel.SmallestSize, leaveOpen: true))
