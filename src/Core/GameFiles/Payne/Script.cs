@@ -44,15 +44,11 @@ public class Script
             Unknown_V11 = 0xFFFFFFFF;
         }
 
-        var compressedSize = reader.ReadUInt32();
         switch (Magic)
         {
             case MagicEncryptedV10:
             case MagicEncryptedV11:
                 {
-                    if (compressedSize != 0)
-                    { }
-
                     Code = reader.ReadBytes((int)CodeLength);
                     var statics = reader.ReadBytes((int)(4 * StaticsCount));
                     var globals = reader.ReadBytes((int)(4 * GlobalsCount));
@@ -67,6 +63,7 @@ public class Script
             case MagicEncryptedCompressedV10:
             case MagicEncryptedCompressedV11:
                 {
+                    var compressedSize = reader.ReadUInt32();
                     var compressed = reader.ReadBytes((int)compressedSize);
                     Decrypt(compressed);
 
@@ -115,7 +112,6 @@ public class Script
             case MagicEncryptedV10:
             case MagicEncryptedV11:
                 {
-                    writer.Write(0u); // compressedSize
                     var code = Code?.ToArray() ?? Array.Empty<byte>();
                     var statics = ScriptValuesToBytes(Statics);
                     var globals = ScriptValuesToBytes(Globals);
