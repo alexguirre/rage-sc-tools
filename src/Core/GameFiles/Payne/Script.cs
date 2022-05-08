@@ -21,7 +21,7 @@ public class Script
     public uint GlobalsCount { get; set; }
     public uint ArgsCount { get; set; }
     public uint GlobalsSignature { get; set; }
-    public int Unknown_V11 { get; set; }
+    public uint Unknown_V11 { get; set; }
     public byte[]? Code { get; set; }
     public ScriptValue[]? Statics { get; set; }
     public ScriptValue[]? Globals { get; set; }
@@ -37,11 +37,11 @@ public class Script
 
         if (Magic is MagicEncryptedV11 or MagicEncryptedCompressedV11)
         {
-            Unknown_V11 = reader.ReadInt32();
+            Unknown_V11 = reader.ReadUInt32();
         }
         else
         {
-            Unknown_V11 = -1;
+            Unknown_V11 = 0xFFFFFFFF;
         }
 
         var compressedSize = reader.ReadUInt32();
