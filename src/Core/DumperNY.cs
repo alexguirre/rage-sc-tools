@@ -3,11 +3,9 @@
 using System;
 using System.IO;
 using System.Text;
-using System.Runtime.CompilerServices;
+using System.Buffers.Binary;
 using ScTools.GameFiles.NY;
 using ScTools.ScriptAssembly;
-using System.Runtime.InteropServices;
-using System.Buffers.Binary;
 
 public class DumperNY
 {
@@ -101,6 +99,12 @@ public class DumperNY
     {
         var inst = sc.Code.AsSpan((int)ip, (int)SizeOf(sc, ip));
         var opcode = (OpcodeNY)inst[0];
+
+        if (opcode.IsInvalid())
+        {
+            sb.Append($"<invalid opcode {opcode:X2}>");
+            return;
+        }
 
         sb.Append(opcode.Mnemonic());
 

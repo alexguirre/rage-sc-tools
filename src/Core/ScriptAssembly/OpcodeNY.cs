@@ -1,10 +1,7 @@
 ﻿namespace ScTools.ScriptAssembly
 {
-    using System;
-
     public enum OpcodeNY : byte
     {
-        NOP = 0x00,
         IADD = 0x01,
         ISUB = 0x02,
         IMUL = 0x03,
@@ -83,7 +80,7 @@
         _XPROTECT_LOAD = 0x4C,
         _XPROTECT_STORE = 0x4D,
         _XPROTECT_REF = 0x4E,
-        EXIT = 0x4F,
+
         PUSH_CONST_M16 = 0x50,
         PUSH_CONST_M15 = 0x51,
         PUSH_CONST_M14 = 0x52,
@@ -264,8 +261,9 @@
 
     public static class OpcodeNYExtensions
     {
-        public const int NumberOfOpcodes = 256;
-
+        public static bool IsInvalid(this OpcodeNY opcode)
+            => opcode is < OpcodeNY.IADD or (> OpcodeNY._XPROTECT_REF and < OpcodeNY.PUSH_CONST_M16);
+        
         public static bool IsJump(this OpcodeNY opcode)
             => opcode is OpcodeNY.J or OpcodeNY.JZ or OpcodeNY.JNZ;
 
@@ -300,19 +298,5 @@
 
                 _ => 1,
             };
-
-        ///// <returns>
-        ///// The number of operands required by <see cref="opcode"/>; or, <c>-1</c> if it accepts a variable number of operands (i.e. <paramref name="opcode"/> is <see cref="Opcode.SWITCH"/>).
-        ///// </returns>
-        //public static int NumberOfOperands(this OpcodeNY opcode)
-        //    => (int)opcode < NumberOfOpcodes ? NumberOfOperandsTable[(int)opcode] : throw new ArgumentException($"Unknown opcode '{opcode}'", nameof(opcode));
-
-        //private static readonly sbyte[] NumberOfOperandsTable = new sbyte[NumberOfOpcodes]
-        //{
-        //    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-        //    0,0,0,0,0,1,2,3,1,1,0,0,3,2,2,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,0,
-        //    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-        //    1,1,-1,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-        //};
     }
 }
