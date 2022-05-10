@@ -1,10 +1,10 @@
-﻿namespace ScTools.Tests.ScriptLang
+﻿namespace ScTools.Tests.ScriptAssembly
 {
     using System;
     using System.IO;
     using System.Linq;
 
-    using ScTools.ScriptLang;
+    using ScTools.ScriptAssembly;
 
     using Xunit;
     using static Xunit.Assert;
@@ -27,12 +27,12 @@
         [Fact]
         public void Symbols()
         {
-            var (tokens, diag) = Lex(".,()[]=+-*/%&^|+=-=*=/=%=&=^=|=< > <= >= == <> <<  >>:");
+            var (tokens, diag) = Lex(".,():");
 
             False(diag.HasErrors);
             False(diag.HasWarnings);
 
-            Equal(33, tokens.Length);
+            Equal(6, tokens.Length);
 
             int checkTokenIndex = 0;
             (int Line, int Column) checkStart, checkEnd;
@@ -45,46 +45,11 @@
                 checkStart = (checkEnd.Line, checkEnd.Column + 1);
                 checkTokenIndex++;
             };
-            var checkSkip = (int charsToSkip) => checkStart = (checkStart.Line, checkStart.Column + charsToSkip);
 
             check(TokenKind.Dot, ".");
             check(TokenKind.Comma, ",");
             check(TokenKind.OpenParen, "(");
             check(TokenKind.CloseParen, ")");
-            check(TokenKind.OpenBracket, "[");
-            check(TokenKind.CloseBracket, "]");
-            check(TokenKind.Equals, "=");
-            check(TokenKind.Plus, "+");
-            check(TokenKind.Minus, "-");
-            check(TokenKind.Asterisk, "*");
-            check(TokenKind.Slash, "/");
-            check(TokenKind.Percent, "%");
-            check(TokenKind.Ampersand, "&");
-            check(TokenKind.Caret, "^");
-            check(TokenKind.Bar, "|");
-            check(TokenKind.PlusEquals, "+=");
-            check(TokenKind.MinusEquals, "-=");
-            check(TokenKind.AsteriskEquals, "*=");
-            check(TokenKind.SlashEquals, "/=");
-            check(TokenKind.PercentEquals, "%=");
-            check(TokenKind.AmpersandEquals, "&=");
-            check(TokenKind.CaretEquals, "^=");
-            check(TokenKind.BarEquals, "|=");
-            check(TokenKind.LessThan, "<");
-            checkSkip(1);
-            check(TokenKind.GreaterThan, ">");
-            checkSkip(1);
-            check(TokenKind.LessThanEquals, "<=");
-            checkSkip(1);
-            check(TokenKind.GreaterThanEquals, ">=");
-            checkSkip(1);
-            check(TokenKind.EqualsEquals, "==");
-            checkSkip(1);
-            check(TokenKind.LessThanGreaterThan, "<>");
-            checkSkip(1);
-            check(TokenKind.LessThanLessThan, "<<");
-            checkSkip(2);
-            check(TokenKind.GreaterThanGreaterThan, ">>");
             check(TokenKind.Colon, ":");
 
             TokenIsEOF(tokens.Last());
@@ -195,31 +160,6 @@
         }
 
         [Fact]
-        public void Keywords()
-        {
-            foreach (var tokenKind in Enum.GetValues<TokenKind>())
-            {
-                if (!tokenKind.IsKeyword())
-                    continue;
-
-                var keyword = tokenKind.ToString();
-                var keywordUp = keyword.ToUpperInvariant();
-                var keywordLo = keyword.ToLowerInvariant();
-
-                var (tokens, diag) = Lex($"{keywordUp} {keywordLo}");
-
-                False(diag.HasErrors);
-                False(diag.HasWarnings);
-
-                Equal(3, tokens.Length);
-
-                TokenEqual(tokenKind, keywordUp, (1, 1), (1, keywordUp.Length), tokens[0]);
-                TokenEqual(tokenKind, keywordLo, (1, keywordUp.Length + 2), (1, keywordUp.Length + 1 + keywordLo.Length), tokens[1]);
-                TokenIsEOF(tokens.Last());
-            }
-        }
-
-        [Fact]
         public void Identifiers()
         {
             var (tokens, diag) = Lex("my_var  _otherVar123 f");
@@ -284,32 +224,27 @@
             TokenIsEOF(tokens.Last());
         }
 
-        [Fact]
+        [Fact(Skip = "Hex numbers with sign cannot be parsed yet")] // TODO: fix IntegerLiteralWithPlusMinus
         public void IntegerLiteralWithPlusMinus()
         {
-            // TODO: should the plus/minus be part of the literal?
-            // plus/minus with integers are tokenized independently
+            // plus/minus sign is included with integer
             var (tokens, diag) = Lex("+9 -9 +0x1 -0x1");
 
             False(diag.HasErrors);
             False(diag.HasWarnings);
 
-            Equal(9, tokens.Length);
+            Equal(5, tokens.Length);
 
-            TokenEqual(TokenKind.Plus, "+", (1, 1), (1, 1), tokens[0]);
-            TokenEqual(TokenKind.Integer, "9", (1, 2), (1, 2), tokens[1]);
-            TokenEqual(TokenKind.Minus, "-", (1, 4), (1, 4), tokens[2]);
-            TokenEqual(TokenKind.Integer, "9", (1, 5), (1, 5), tokens[3]);
-            TokenEqual(TokenKind.Plus, "+", (1, 7), (1, 7), tokens[4]);
-            TokenEqual(TokenKind.Integer, "0x1", (1, 8), (1, 10), tokens[5]);
-            TokenEqual(TokenKind.Minus, "-", (1, 12), (1, 12), tokens[6]);
-            TokenEqual(TokenKind.Integer, "0x1", (1, 13), (1, 15), tokens[7]);
+            TokenEqual(TokenKind.Integer, "+9", (1, 1), (1, 2), tokens[0]);
+            TokenEqual(TokenKind.Integer, "-9", (1, 4), (1, 5), tokens[1]);
+            TokenEqual(TokenKind.Integer, "+0x1", (1, 7), (1, 10), tokens[2]);
+            TokenEqual(TokenKind.Integer, "-0x1", (1, 12), (1, 15), tokens[3]);
             TokenIsEOF(tokens.Last());
 
-            //Equal(9, tokens[0].GetIntLiteral());
-            //Equal(-9, tokens[1].GetIntLiteral());
-            //Equal(1, tokens[2].GetIntLiteral());
-            //Equal(-1, tokens[3].GetIntLiteral());
+            Equal(9, tokens[0].GetIntLiteral());
+            Equal(-9, tokens[1].GetIntLiteral());
+            Equal(1, tokens[2].GetIntLiteral());
+            Equal(-1, tokens[3].GetIntLiteral());
         }
 
         [Fact]
@@ -330,28 +265,27 @@
             Equal(15.25f, tokens[1].GetFloatLiteral());
         }
 
-        //[Fact]
-        //public void FloatLiteralWithPlusMinus()
-        //{
-        // TODO: should the plus/minus be part of the literal?
-        //    var (tokens, diag) = Lex("+0.0 -0.0 +15.25 -15.25");
+        [Fact]
+        public void FloatLiteralWithPlusMinus()
+        {
+            var (tokens, diag) = Lex("+0.0 -0.0 +15.25 -15.25");
 
-        //    False(diag.HasErrors);
-        //    False(diag.HasWarnings);
+            False(diag.HasErrors);
+            False(diag.HasWarnings);
 
-        //    Equal(5, tokens.Length);
+            Equal(5, tokens.Length);
 
-        //    TokenEqual(TokenKind.Float, "+0.0", (1, 1), (1, 4), tokens[0]);
-        //    TokenEqual(TokenKind.Float, "-0.0", (1, 6), (1, 9), tokens[1]);
-        //    TokenEqual(TokenKind.Float, "+15.25", (1, 11), (1, 16), tokens[1]);
-        //    TokenEqual(TokenKind.Float, "-15.25", (1, 18), (1, 23), tokens[1]);
-        //    TokenIsEOF(tokens.Last());
+            TokenEqual(TokenKind.Float, "+0.0", (1, 1), (1, 4), tokens[0]);
+            TokenEqual(TokenKind.Float, "-0.0", (1, 6), (1, 9), tokens[1]);
+            TokenEqual(TokenKind.Float, "+15.25", (1, 11), (1, 16), tokens[2]);
+            TokenEqual(TokenKind.Float, "-15.25", (1, 18), (1, 23), tokens[3]);
+            TokenIsEOF(tokens.Last());
 
-        //    Equal(0.0f, tokens[0].GetFloatLiteral());
-        //    Equal(-0.0f, tokens[1].GetFloatLiteral());
-        //    Equal(15.25f, tokens[2].GetFloatLiteral());
-        //    Equal(-15.25f, tokens[3].GetFloatLiteral());
-        //}
+            Equal(0.0f, tokens[0].GetFloatLiteral());
+            Equal(-0.0f, tokens[1].GetFloatLiteral());
+            Equal(15.25f, tokens[2].GetFloatLiteral());
+            Equal(-15.25f, tokens[3].GetFloatLiteral());
+        }
 
         [Fact]
         public void FloatStartingWithDotLiteral()
@@ -455,54 +389,6 @@
             TokenEqual(TokenKind.Bad, ".8e", (1, 9), (1, 11), tokens[2]);
             TokenEqual(TokenKind.Bad, "1e+", (1, 13), (1, 15), tokens[3]);
             TokenEqual(TokenKind.Bad, "1e-", (1, 17), (1, 19), tokens[4]);
-            TokenIsEOF(tokens.Last());
-        }
-
-        [Fact]
-        public void BoolTrueLiteral()
-        {
-            var (tokens, diag) = Lex("TRUE TrUe true");
-
-            False(diag.HasErrors);
-            False(diag.HasWarnings);
-
-            Equal(4, tokens.Length);
-
-            TokenEqual(TokenKind.Boolean, "TRUE", (1, 1), (1, 4), tokens[0]);
-            TokenEqual(TokenKind.Boolean, "TrUe", (1, 6), (1, 9), tokens[1]);
-            TokenEqual(TokenKind.Boolean, "true", (1, 11), (1, 14), tokens[2]);
-            TokenIsEOF(tokens.Last());
-        }
-
-        [Fact]
-        public void BoolFalseLiteral()
-        {
-            var (tokens, diag) = Lex("FALSE FaLsE false");
-
-            False(diag.HasErrors);
-            False(diag.HasWarnings);
-
-            Equal(4, tokens.Length);
-
-            TokenEqual(TokenKind.Boolean, "FALSE", (1, 1), (1, 5), tokens[0]);
-            TokenEqual(TokenKind.Boolean, "FaLsE", (1, 7), (1, 11), tokens[1]);
-            TokenEqual(TokenKind.Boolean, "false", (1, 13), (1, 17), tokens[2]);
-            TokenIsEOF(tokens.Last());
-        }
-
-        [Fact]
-        public void NullLiteral()
-        {
-            var (tokens, diag) = Lex("NULL NuLl null");
-
-            False(diag.HasErrors);
-            False(diag.HasWarnings);
-
-            Equal(4, tokens.Length);
-
-            TokenEqual(TokenKind.Null, "NULL", (1, 1), (1, 4), tokens[0]);
-            TokenEqual(TokenKind.Null, "NuLl", (1, 6), (1, 9), tokens[1]);
-            TokenEqual(TokenKind.Null, "null", (1, 11), (1, 14), tokens[2]);
             TokenIsEOF(tokens.Last());
         }
 

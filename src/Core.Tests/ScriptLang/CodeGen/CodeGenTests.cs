@@ -3,7 +3,6 @@
     using System.IO;
     using System.Linq;
 
-    using ScTools.ScriptAssembly;
     using ScTools.ScriptLang;
     using ScTools.ScriptLang.Ast.Declarations;
     using ScTools.ScriptLang.CodeGen;
@@ -2782,7 +2781,7 @@
             var compiledScript = Assert.Single(compiledScripts);
 
             using var expectedAssemblyReader = new StringReader(expectedAssembly);
-            var expectedAssembler = Assembler.Assemble(expectedAssemblyReader, "test_expected.scasm", nativeDB, options: new() { IncludeFunctionNames = true });
+            var expectedAssembler = ScTools.ScriptAssembly.Assembler.Assemble(expectedAssemblyReader, "test_expected.scasm", nativeDB, options: new() { IncludeFunctionNames = true });
 
             using StringWriter sourceDumpWriter = new(), expectedDumpWriter = new();
             Dumper.Dump(compiledScript, sourceDumpWriter, true, true, true, true, true);

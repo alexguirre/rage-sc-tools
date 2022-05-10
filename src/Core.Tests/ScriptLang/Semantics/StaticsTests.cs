@@ -39,6 +39,7 @@ public class StaticsTests : SemanticsTestsBase
     [InlineData("(1 + 2 * 3) & 0xFE", (1 + 2 * 3) & 0xFE, typeof(IntType))]
     public void IntInitializerExpressionIsEvaluated(string initializerExpr, int expected, Type expectedConstantType)
     {
+        // TODO: static initializers are no longer constant-evaluated
         var s = Analyze(
             @$"INT foo = {initializerExpr}"
         );
@@ -55,6 +56,7 @@ public class StaticsTests : SemanticsTestsBase
     [InlineData("1 + 2 * 3", (float)(1 + 2 * 3), typeof(IntType))] // INT expression is promoted to FLOAT
     public void FloatInitializerExpressionIsEvaluated(string initializerExpr, float expected, Type expectedConstantType)
     {
+        // TODO: static initializers are no longer constant-evaluated
         var s = Analyze(
             @$"FLOAT foo = {initializerExpr}"
         );
@@ -74,6 +76,7 @@ public class StaticsTests : SemanticsTestsBase
     [InlineData("1 == 0 OR TRUE AND 1", true, typeof(BoolType))]
     public void BoolInitializerExpressionIsEvaluated(string initializerExpr, bool expected, Type expectedConstantType)
     {
+        // TODO: static initializers are no longer constant-evaluated
         var s = Analyze(
             @$"BOOL foo = {initializerExpr}"
         );
@@ -89,6 +92,7 @@ public class StaticsTests : SemanticsTestsBase
     [InlineData("NULL", null, typeof(NullType))]
     public void StringInitializerExpressionIsEvaluated(string initializerExpr, string? expected, Type expectedConstantType)
     {
+        // TODO: static initializers are no longer constant-evaluated
         var s = Analyze(
             @$"STRING foo = {initializerExpr}"
         );
@@ -104,6 +108,7 @@ public class StaticsTests : SemanticsTestsBase
     [InlineData("<<1,2,3>> + <<2,2,2>> * <<3,3,3>>", 7.0f, 8.0f, 9.0f)]
     public void VectorInitializerExpressionIsEvaluated(string initializerExpr, float expectedX, float expectedY, float expectedZ)
     {
+        // TODO: static initializers are no longer constant-evaluated
         var s = Analyze(
             @$"VECTOR foo = {initializerExpr}"
         );
@@ -231,6 +236,7 @@ public class StaticsTests : SemanticsTestsBase
 
         False(s.Diagnostics.HasErrors);
         True(s.GetTypeSymbolUnchecked("MYENUM", out var enumTy));
+        // TODO: static initializers are no longer constant-evaluated
         AssertStaticWithInitializer(s, "foo", enumTy!, 1, IntType.Instance);
     }
 
@@ -248,9 +254,8 @@ public class StaticsTests : SemanticsTestsBase
     }
 
     [Fact]
-    public void CannotInitializeFunctionPointer()
+    public void FunctionPointersAreAllowed()
     {
-        // TODO: should this be allowed? function addresses are constant after all
         var s = Analyze(
             @$"PROCPTR FOOHANDLER()
 
@@ -260,7 +265,7 @@ public class StaticsTests : SemanticsTestsBase
                FOOHANDLER foo = CUSTOM_HANDLER"
         );
 
-        CheckError(ErrorCode.SemanticInitializerExpressionIsNotConstant, (6, 33), (6, 46), s.Diagnostics);
+        False(s.Diagnostics.HasErrors);
     }
 
     [Fact]
@@ -282,6 +287,7 @@ public class StaticsTests : SemanticsTestsBase
         );
 
         False(s.Diagnostics.HasErrors);
+        // TODO: static initializers are no longer constant-evaluated
         AssertStaticWithInitializer(s, "foo", AnyType.Instance, 1, IntType.Instance);
     }
 

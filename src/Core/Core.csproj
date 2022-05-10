@@ -17,7 +17,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Antlr4.Runtime.Standard" Version="4.8.0" />
     <PackageReference Include="SharpDX.Mathematics" Version="4.2.0" />
   </ItemGroup>
 
@@ -26,20 +25,5 @@
       <HintPath>..\..\dependencies\CodeWalker.Core.dll</HintPath>
     </Reference>
   </ItemGroup>
-
-  <Target Name="GenerateAsmGrammar" BeforeTargets="BeforeBuild;BeforeRebuild" Inputs="ScriptAssembly/Grammar/ScAsm.g4" Outputs="ScriptAssembly/Grammar/Generated/ScAsmParser.cs">
-    <Exec Command="java -jar ../../tools/antlr-4.8-complete.jar -o ScriptAssembly/Grammar/Generated/ -package ScTools.ScriptAssembly.Grammar -no-visitor -listener -Dlanguage=CSharp ScriptAssembly/Grammar/ScAsm.g4" />
-    <ItemGroup>
-        <Compile Remove="ScriptAssembly/Grammar/Generated/*.cs" /> <!-- Needed in case the files already existed, to avoid "Duplicate 'Compile' items were included..." error -->
-        <Compile Include="ScriptAssembly/Grammar/Generated/*.cs" />
-    </ItemGroup>
-  </Target>
-
-  <Target Name="CleanAsmGrammar" BeforeTargets="BeforeClean">
-    <ItemGroup>
-      <GrammarFilesToDelete Include="ScriptAssembly/Grammar/Generated/*.*" />
-    </ItemGroup>
-    <Delete Files="@(GrammarFilesToDelete)" />
-  </Target>
   
 </Project>

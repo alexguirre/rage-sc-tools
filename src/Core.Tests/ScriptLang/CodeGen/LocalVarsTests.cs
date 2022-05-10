@@ -444,6 +444,7 @@ public class LocalVarsTests : CodeGenTestsBase
     [Fact]
     public void StringFieldWithInitializer()
     {
+        // TODO: change StringFieldWithInitializer test, R*'s compiler doesn't seem to support string initializers
         CompileScript(
         scriptSource: @"
             DATA d

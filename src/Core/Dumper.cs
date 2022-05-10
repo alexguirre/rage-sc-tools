@@ -17,7 +17,7 @@ public class Dumper
         if (showMetadata)
         {
             w.WriteLine("Name = {0} (0x{1:X8})", sc.Name, sc.NameHash);
-            w.WriteLine("Hash = 0x{0:X8}", sc.Hash);
+            w.WriteLine("Hash = 0x{0:X8}", sc.GlobalsSignature);
             w.WriteLine("Statics Count = {0}", sc.StaticsCount);
             if (sc.Statics != null)
             {

@@ -18,7 +18,7 @@
 
         // structure data
         public ulong CodePagesPointer { get; set; }
-        public uint Hash { get; set; }
+        public uint GlobalsSignature { get; set; }
         public uint CodeLength { get; set; }
         public uint ArgsCount { get; set; }
         public uint StaticsCount { get; set; }
@@ -67,7 +67,7 @@
 
             // read structure data
             CodePagesPointer = reader.ReadUInt64();
-            Hash = reader.ReadUInt32();
+            GlobalsSignature = reader.ReadUInt32();
             CodeLength = reader.ReadUInt32();
             ArgsCount = reader.ReadUInt32();
             StaticsCount = reader.ReadUInt32();
@@ -114,7 +114,7 @@
 
             // write structure data
             writer.Write(CodePagesPointer);
-            writer.Write(Hash);
+            writer.Write(GlobalsSignature);
             writer.Write(CodeLength);
             writer.Write(ArgsCount);
             writer.Write(StaticsCount);

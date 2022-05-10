@@ -36,7 +36,7 @@
             static void FailIf(bool condition, string message) => Assert.False(condition, message);
             static string S(string str) => str;
 
-            FailIf(sc1.Hash != sc2.Hash, S("Hash is different"));
+            FailIf(sc1.GlobalsSignature != sc2.GlobalsSignature, S("Hash is different"));
             FailIf(sc1.Name != sc2.Name, S("Name is different"));
             FailIf(sc1.NameHash != sc2.NameHash, S("NameHash is different"));
             FailIf(sc1.NumRefs != sc2.NumRefs, S("NumRefs is different"));

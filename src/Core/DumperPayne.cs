@@ -107,6 +107,11 @@ public class DumperPayne
             return;
         }
 
+        if (opcode is OpcodePayne.CALLINDIRECT)
+        {
+            ;
+        }
+
         sb.Append(opcode.Mnemonic());
 
         switch (opcode)

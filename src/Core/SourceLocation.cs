@@ -3,9 +3,6 @@
     using System;
     using System.Diagnostics;
 
-    using Antlr4.Runtime;
-    using Antlr4.Runtime.Misc;
-
     /// <summary>
     /// Represents a position within a source file as line and column, 1-based.
     /// </summary>
@@ -96,12 +93,5 @@
 
         public static bool operator ==(SourceRange left, SourceRange right) => left.Equals(right);
         public static bool operator !=(SourceRange left, SourceRange right) => !left.Equals(right);
-
-        public static SourceRange FromTokens(string filePath, IToken start, IToken? stop)
-        {
-            stop ??= start;
-            return new SourceRange((start.Line, start.Column + 1, filePath),
-                                   (stop.Line, stop.Column + 1 + Interval.Of(stop.StartIndex, stop.StopIndex).Length, filePath));
-        }
     }
 }

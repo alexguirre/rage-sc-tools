@@ -548,7 +548,7 @@
 
                 var sc1 = originalScript;
                 var sc2 = newScript;
-                PrintIf(sc1.Hash != sc2.Hash, S("Hash is different"));
+                PrintIf(sc1.GlobalsSignature != sc2.GlobalsSignature, S("Hash is different"));
                 PrintIf(sc1.Name != sc2.Name, S("Name is different"));
                 PrintIf(sc1.NameHash != sc2.NameHash, S("NameHash is different"));
                 PrintIf(sc1.NumRefs != sc2.NumRefs, S("NumRefs is different"));

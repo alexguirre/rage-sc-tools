@@ -47,9 +47,9 @@ namespace ScTools.ScriptAssembly
             IdentifyStaticsLabels();
 
             w.WriteLine(".script_name {0}", sc.Name);
-            if (sc.Hash != 0)
+            if (sc.GlobalsSignature != 0)
             {
-                w.WriteLine(".script_hash 0x{0:X8}", sc.Hash);
+                w.WriteLine(".script_hash 0x{0:X8}", sc.GlobalsSignature);
             }
 
             WriteGlobalsSegment(w);

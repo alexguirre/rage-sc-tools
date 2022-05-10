@@ -2,15 +2,6 @@
   "version": 1,
   "dependencies": {
     "net6.0": {
-      "Antlr4.Runtime.Standard": {
-        "type": "Direct",
-        "requested": "[4.8.0, )",
-        "resolved": "4.8.0",
-        "contentHash": "90b8XFYaDKZkjEFae/GaazqXQTfINtZI1in+nCXGQGeGaajvCy1Ii2Va99H5ehULJRtDzNvFki4eXhwm3ymtag==",
-        "dependencies": {
-          "NETStandard.Library": "1.6.1"
-        }
-      },
       "SharpDX.Mathematics": {
         "type": "Direct",
         "requested": "[4.2.0, )",

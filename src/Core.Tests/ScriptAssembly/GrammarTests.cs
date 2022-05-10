@@ -226,7 +226,7 @@ _0x9614299DCB53E54B:    .native 0x9614299DCB53E54B
 
             var sc = asm.OutputScript;
             Assert.Equal("my_script", sc.Name);
-            Assert.Equal(0x1234ABCDu, sc.Hash);
+            Assert.Equal(0x1234ABCDu, sc.GlobalsSignature);
 
             // globals
             Assert.Equal(4u, sc.GlobalsLength);

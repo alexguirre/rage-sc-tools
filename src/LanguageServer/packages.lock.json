@@ -42,14 +42,6 @@
           "system.memory": "4.5.4"
         }
       },
-      "Antlr4.Runtime.Standard": {
-        "type": "Transitive",
-        "resolved": "4.8.0",
-        "contentHash": "90b8XFYaDKZkjEFae/GaazqXQTfINtZI1in+nCXGQGeGaajvCy1Ii2Va99H5ehULJRtDzNvFki4eXhwm3ymtag==",
-        "dependencies": {
-          "NETStandard.Library": "1.6.1"
-        }
-      },
       "MessagePack": {
         "type": "Transitive",
         "resolved": "2.1.194",
@@ -1078,7 +1070,6 @@
       "ScTools.Core": {
         "type": "Project",
         "dependencies": {
-          "Antlr4.Runtime.Standard": "4.8.0",
           "SharpDX.Mathematics": "4.2.0"
         }
       }

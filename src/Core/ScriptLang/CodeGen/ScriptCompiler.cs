@@ -35,7 +35,7 @@
             {
                 Name = scriptDecl.Name,
                 NameHash = scriptDecl.Name.ToLowercaseHash(),
-                Hash = 0, // TODO: include a way to set the hash in the SCRIPT declaration
+                GlobalsSignature = 0, // TODO: include a way to set the hash in the SCRIPT declaration
             };
 
             var codeEmitter = new CodeEmitter(statics);

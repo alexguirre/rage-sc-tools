@@ -8,10 +8,7 @@ namespace ScTools.ScriptAssembly
     using System.Linq;
     using System.Runtime.InteropServices;
 
-    using Antlr4.Runtime;
-
     using ScTools.GameFiles.Five;
-    using ScTools.ScriptAssembly.Grammar;
 
     public readonly struct AssemblerOptions
     {
@@ -64,21 +61,21 @@ namespace ScTools.ScriptAssembly
 
         private readonly List<Instruction> instructions = new();
 
-        public IAssemblySource AssemblySource { get; }
+        public Lexer Lexer { get; }
         public DiagnosticsReport Diagnostics { get; }
         public Script OutputScript { get; }
         public Dictionary<string, ConstantValue> Constants { get; }
         public Dictionary<string, Label> Labels { get; }
         public bool HasScriptName { get; private set; }
-        public bool HasScriptHash { get; private set; }
+        public bool HasGlobalsSignature { get; private set; }
         public bool HasGlobalBlock { get; private set; }
         public NativeDB? NativeDB { get; set; }
         public AssemblerOptions Options { get; set; }
 
-        public Assembler(IAssemblySource source)
+        public Assembler(Lexer lexer, DiagnosticsReport diagnostics)
         {
-            AssemblySource = source;
-            Diagnostics = new();
+            Lexer = lexer;
+            Diagnostics = diagnostics;
             OutputScript = new()
             {
                 Name = DefaultScriptName,
@@ -137,7 +134,8 @@ namespace ScTools.ScriptAssembly
         /// </summary>
         private void FirstPass()
         {
-            AssemblySource.Produce(Diagnostics, (_, line) => ProcessLine(line));
+            var parser = new Parser(Lexer, Diagnostics);
+            parser.ParseProgram().ForEach(ProcessLine);
             FixArgLabels();
         }
 
@@ -152,36 +150,32 @@ namespace ScTools.ScriptAssembly
             }
         }
 
-        private void ProcessLine(ScAsmParser.LineContext line)
+        private void ProcessLine(Parser.Line line)
         {
-            var label = line.label();
-            var directive = line.directive();
-            var instruction = line.instruction();
-
-            if (label is not null)
+            if (line.Label is not null)
             {
-                ProcessLabel(label);
+                ProcessLabel(line.Label);
             }
 
-            if (directive is not null)
+            if (line is Parser.Directive directive)
             {
                 ProcessDirective(directive);
             }
-            else if (instruction is not null)
+            else if (line is Parser.Instruction instruction)
             {
                 ProcessInstruction(instruction);
             }
         }
 
-        private void ProcessLabel(ScAsmParser.LabelContext label)
+        private void ProcessLabel(Parser.Label label)
         {
             if (CurrentSegment == Segment.None)
             {
-                Diagnostics.AddError($"Unexpected label outside any segment", Source(label));
+                Diagnostics.AddError($"Unexpected label outside any segment", label.Location);
                 return;
             }
 
-            var name = label.identifier().GetText();
+            var name = label.Name.Lexeme.ToString();
             var offset = CurrentSegmentBuilder.ByteLength / GetAddressingUnitByteSize(CurrentSegment);
 
             if (CurrentSegment == Segment.Global)
@@ -191,119 +185,231 @@ namespace ScTools.ScriptAssembly
 
             if (Constants.ContainsKey(name))
             {
-                Diagnostics.AddError($"Constant named '{name}' already defined", Source(label));
+                Diagnostics.AddError($"Constant named '{name}' already defined", label.Location);
             }
             else if (!Labels.TryAdd(name, new Label(CurrentSegment, offset)))
             {
-                Diagnostics.AddError($"Label '{name}' already defined", Source(label));
+                Diagnostics.AddError($"Label '{name}' already defined", label.Location);
             }
         }
 
-        private void ChangeSegment(ScAsmParser.DirectiveContext directive)
+        private void ChangeSegment(string segmentName, SourceRange location)
         {
-            CurrentSegment = directive switch
+            CurrentSegment = segmentName switch
             {
-                ScAsmParser.GlobalSegmentDirectiveContext => Segment.Global,
-                ScAsmParser.StaticSegmentDirectiveContext => Segment.Static,
-                ScAsmParser.ArgSegmentDirectiveContext => Segment.Arg,
-                ScAsmParser.StringSegmentDirectiveContext => Segment.String,
-                ScAsmParser.CodeSegmentDirectiveContext => Segment.Code,
-                ScAsmParser.IncludeSegmentDirectiveContext => Segment.Include,
+                "global" => Segment.Global,
+                "static" => Segment.Static,
+                "arg" => Segment.Arg,
+                "string" => Segment.String,
+                "code" => Segment.Code,
+                "include" => Segment.Include,
                 _ => throw new InvalidOperationException(),
             };
 
             if (CurrentSegment == Segment.Global && !HasGlobalBlock)
             {
-                Diagnostics.AddError($"Directive '.global_block' required before '.global' segment", Source(directive));
+                Diagnostics.AddError($"Directive '.global_block' required before '.global' segment", location);
             }
         }
 
-        private void ProcessDirective(ScAsmParser.DirectiveContext directive)
+        private void ProcessDirective(Parser.Directive directive)
         {
-            switch (directive)
+            var name = directive.Name.Lexeme.ToString().ToLowerInvariant();
+            switch (name)
             {
-                case ScAsmParser.GlobalSegmentDirectiveContext or
-                     ScAsmParser.StaticSegmentDirectiveContext or
-                     ScAsmParser.ArgSegmentDirectiveContext or
-                     ScAsmParser.StringSegmentDirectiveContext or
-                     ScAsmParser.CodeSegmentDirectiveContext or
-                     ScAsmParser.IncludeSegmentDirectiveContext:
-                    ChangeSegment(directive);
+                // segments
+                case "global":
+                case "static":
+                case "arg":
+                case "string":
+                case "code":
+                case "include":
+                    if (directive.Operands.Length != 0) { UnexpectedNumberOfOperandsError(directive, 0); }
+                    
+                    ChangeSegment(name, directive.Location);
                     break;
 
-                case ScAsmParser.ScriptNameDirectiveContext nameDirective:
+                case "script_name":
                     if (HasScriptName)
                     {
-                        Diagnostics.AddError($"Directive '.script_name' is repeated", Source(nameDirective));
+                        Diagnostics.AddError($"Directive '.script_name' is repeated", directive.Location);
                     }
                     else
                     {
-                        OutputScript.Name = nameDirective.identifier().GetText();
-                        OutputScript.NameHash = OutputScript.Name.ToLowercaseHash();
+                        var scriptName = Parser.MissingIdentifierLexeme;
+                        if (directive.Operands.Length != 1)
+                        {
+                            UnexpectedNumberOfOperandsError(directive, 1);
+                        }
+                        else if (directive.Operands[0] is not Parser.DirectiveOperandIdentifier ident)
+                        {
+                            ExpectedIdentifierError(directive.Operands[0]);
+                        }
+                        else
+                        {
+                            scriptName = ident.Name.Lexeme.ToString();
+                        }
+
+                        OutputScript.Name = scriptName;
+                        OutputScript.NameHash = scriptName.ToLowercaseHash();
                         HasScriptName = true;
                     }
                     break;
-                case ScAsmParser.ScriptHashDirectiveContext hashDirective:
-                    if (HasScriptHash)
+
+                case "globals_signature":
+                    if (HasGlobalsSignature)
                     {
-                        Diagnostics.AddError($"Directive '.script_hash' is repeated", Source(hashDirective));
+                        Diagnostics.AddError($"Directive '.globals_signature' is repeated", directive.Location);
                     }
                     else
                     {
-                        OutputScript.Hash = (uint)hashDirective.integer().GetText().ParseAsInt();
-                        HasScriptHash = true;
+                        var globalsSignature = 0u;
+                        if (directive.Operands.Length != 1)
+                        {
+                            UnexpectedNumberOfOperandsError(directive, 1);
+                        }
+                        else if (directive.Operands[0] is not Parser.DirectiveOperandInteger integer)
+                        {
+                            ExpectedIntegerError(directive.Operands[0]);
+                        }
+                        else
+                        {
+                            globalsSignature = unchecked((uint)integer.Integer.GetIntLiteral());
+                        }
+
+                        OutputScript.GlobalsSignature = globalsSignature;
+                        HasGlobalsSignature = true;
                     }
                     break;
-                case ScAsmParser.GlobalBlockDirectiveContext globalBlockDirective:
+                case "global_block":
                     if (HasGlobalBlock)
                     {
-                        Diagnostics.AddError($"Directive '.global_block' is repeated", Source(globalBlockDirective));
+                        Diagnostics.AddError($"Directive '.global_block' is repeated", directive.Location);
                     }
                     else
                     {
-                        OutputScript.GlobalsBlock = (uint)globalBlockDirective.integer().GetText().ParseAsInt();
+                        var globalsBlock = 0xFFFFFFFF;
+                        if (directive.Operands.Length != 1)
+                        {
+                            UnexpectedNumberOfOperandsError(directive, 1);
+                        }
+                        else if (directive.Operands[0] is not Parser.DirectiveOperandInteger integer)
+                        {
+                            ExpectedIntegerError(directive.Operands[0]);
+                        }
+                        else
+                        {
+                            globalsBlock = unchecked((uint)integer.Integer.GetIntLiteral());
+                        }
+
+                        OutputScript.GlobalsBlock = globalsBlock;
                         HasGlobalBlock = true;
                     }
                     break;
-                case ScAsmParser.ConstDirectiveContext constDirective:
-                    var constName = constDirective.identifier();
-                    var constNameStr = constName.GetText();
-                    var constInteger = constDirective.integer();
-                    var constFloat = constDirective.@float();
+                case "const":
+                    if (directive.Operands.Length != 2) { UnexpectedNumberOfOperandsError(directive, 2); }
 
-                    var constValue = constInteger != null ?
-                                        new ConstantValue(constInteger.GetText().ParseAsInt64()) :
-                                        new ConstantValue(constFloat.GetText().ParseAsFloat());
+                    var constName = Parser.MissingIdentifierLexeme;
+                    var constNameLocation = SourceRange.Unknown;
+                    if (directive.Operands.Length > 0)
+                    {
+                        if (directive.Operands[0] is Parser.DirectiveOperandIdentifier ident)
+                        {
+                            constName = ident.Name.Lexeme.ToString();
+                            constNameLocation = ident.Name.Location;
+                        }
+                        else
+                        {
+                            ExpectedIdentifierError(directive.Operands[0]);
+                        }
+                    }
 
-                    if (Labels.ContainsKey(constNameStr))
+                    var isInteger = true;
+                    var integerValue = 0L;
+                    var floatValue = 0.0f;
+                    if (directive.Operands.Length > 1)
                     {
-                        Diagnostics.AddError($"Label named '{constNameStr}' already defined", Source(constName));
+                        if (directive.Operands[1] is Parser.DirectiveOperandInteger integer)
+                        {
+                            isInteger = true;
+                            integerValue = integer.Integer.GetInt64Literal();
+                        }
+                        else if (directive.Operands[1] is Parser.DirectiveOperandFloat floatOp)
+                        {
+                            isInteger = false;
+                            floatValue = floatOp.Float.GetFloatLiteral();
+                        }
+                        else
+                        {
+                            ExpectedIntegerOrFloatError(directive.Operands[1]);
+                        }
                     }
-                    else if (!Constants.TryAdd(constNameStr, constValue))
+
+                    var constValue = isInteger ?
+                                        new ConstantValue(integerValue) :
+                                        new ConstantValue(floatValue);
+
+                    if (Labels.ContainsKey(constName))
                     {
-                        Diagnostics.AddError($"Constant '{constNameStr}' already defined", Source(constName));
+                        Diagnostics.AddError($"Label named '{constName}' already defined", constNameLocation);
+                    }
+                    else if (!Constants.TryAdd(constName, constValue))
+                    {
+                        Diagnostics.AddError($"Constant '{constName}' already defined", constNameLocation);
                     }
                     break;
-                case ScAsmParser.IntDirectiveContext intDirective:
-                    WriteIntFloatDirectiveOperands(intDirective.directiveOperandList(), isFloat: false, isInt64: false);
+                case "int":
+                    if (directive.Operands.Length == 0) { OneOrMoreOperandsRequiredError(directive); }
+                    WriteIntFloatDirectiveOperands(directive.Operands, isFloat: false, isInt64: false);
                     break;
-                case ScAsmParser.Int64DirectiveContext int64Directive:
-                    WriteIntFloatDirectiveOperands(int64Directive.directiveOperandList(), isFloat: false, isInt64: true);
+                case "int64":
+                    if (directive.Operands.Length == 0) { OneOrMoreOperandsRequiredError(directive); }
+                    WriteIntFloatDirectiveOperands(directive.Operands, isFloat: false, isInt64: true);
                     break;
-                case ScAsmParser.FloatDirectiveContext floatDirective:
-                    WriteIntFloatDirectiveOperands(floatDirective.directiveOperandList(), isFloat: true, isInt64: false);
+                case "float":
+                    if (directive.Operands.Length == 0) { OneOrMoreOperandsRequiredError(directive); }
+                    WriteIntFloatDirectiveOperands(directive.Operands, isFloat: true, isInt64: false);
                     break;
-                case ScAsmParser.StrDirectiveContext strDirective:
-                    CurrentSegmentBuilder.String(strDirective.@string().GetText()[1..^1].Unescape());
+                case "str":
+                    var strToAdd = "";
+                    if (directive.Operands.Length != 1)
+                    { 
+                        UnexpectedNumberOfOperandsError(directive, 1);
+                    }
+                    else if (directive.Operands[0] is not Parser.DirectiveOperandString str)
+                    {
+                        ExpectedStringError(directive.Operands[0]);
+                    }
+                    else
+                    {
+                        strToAdd = str.String.GetStringLiteral();
+                    }
+                    
+                    CurrentSegmentBuilder.String(strToAdd);
                     break;
-                case ScAsmParser.NativeDirectiveContext nativeDirective:
-                    var hash = nativeDirective.integer().GetText().ParseAsUInt64();
-                    if (NativeDB is not null)
+                case "native":
+                    var hash = 0UL;
+                    var hashLocation = SourceRange.Unknown;
+                    if (directive.Operands.Length != 1)
+                    {
+                        UnexpectedNumberOfOperandsError(directive, 1);
+                    }
+                    else if (directive.Operands[0] is not Parser.DirectiveOperandInteger nativeHash)
+                    {
+                        ExpectedIntegerError(directive.Operands[0]);
+                    }
+                    else
+                    {
+                        hash = unchecked((ulong)nativeHash.Integer.GetInt64Literal());
+                        hashLocation = nativeHash.Integer.Location;
+                    }
+
+                    if (NativeDB is not null && hash != 0)
                     {
                         var translatedHash = NativeDB.TranslateHash(hash, GameBuild.Latest);
                         if (translatedHash == 0)
                         {
-                            Diagnostics.AddWarning($"Unknown native hash '{hash:X16}'", Source(nativeDirective.integer()));
+                            Diagnostics.AddWarning($"Unknown native hash '{hash:X16}'", hashLocation);
                         }
                         else
                         {
@@ -313,27 +419,51 @@ namespace ScTools.ScriptAssembly
                     CurrentSegmentBuilder.UInt64(hash);
                     break;
             }
+
+            void ExpectedIdentifierError(Parser.DirectiveOperand operand)
+                => Diagnostics.AddError($"Expected identifier but found {OperandToTypeName(operand)}", operand.Location);
+            void ExpectedIntegerError(Parser.DirectiveOperand operand)
+                => Diagnostics.AddError($"Expected integer but found {OperandToTypeName(operand)}", operand.Location);
+            void ExpectedIntegerOrFloatError(Parser.DirectiveOperand operand)
+                => Diagnostics.AddError($"Expected integer or float but found {OperandToTypeName(operand)}", operand.Location);
+            void ExpectedStringError(Parser.DirectiveOperand operand)
+                => Diagnostics.AddError($"Expected string but found {OperandToTypeName(operand)}", operand.Location);
+            void UnexpectedNumberOfOperandsError(Parser.Directive directive, int expectedNumOperands)
+                => Diagnostics.AddError($"Expected {expectedNumOperands} operands for directive '.{directive.Name.Lexeme}' but found {directive.Operands.Length} operands", directive.Location);
+            void OneOrMoreOperandsRequiredError(Parser.Directive directive)
+                => Diagnostics.AddError($"Expected at least 1 operand for directive '.{directive.Name.Lexeme}' but found none", directive.Location);
+
+            static string OperandToTypeName(Parser.DirectiveOperand operand)
+                => operand switch
+                {
+                    Parser.DirectiveOperandIdentifier _ => "identifier",
+                    Parser.DirectiveOperandInteger _ => "integer",
+                    Parser.DirectiveOperandFloat _ => "float",
+                    Parser.DirectiveOperandString _ => "string",
+                    Parser.DirectiveOperandDup _ => "'dup' operator",
+                    _ => "unknown",
+                };
         }
 
-        private void ProcessInstruction(ScAsmParser.InstructionContext instruction)
+        private void ProcessInstruction(Parser.Instruction instruction)
         {
             if (CurrentSegment != Segment.Code)
             {
-                Diagnostics.AddError($"Unexpected instruction in non-code segment", Source(instruction));
+                Diagnostics.AddError($"Unexpected instruction in non-code segment", instruction.Location);
                 return;
             }
 
-            if (!Enum.TryParse<Opcode>(instruction.opcode().GetText(), out var opcode))
+            if (!Enum.TryParse<Opcode>(instruction.Opcode.Lexeme.Span, out var opcode))
             {
-                Diagnostics.AddError($"Unknown opcode '{instruction.opcode().GetText()}'", Source(instruction.opcode()));
+                Diagnostics.AddError($"Unknown opcode '{instruction.Opcode.Lexeme}'", instruction.Opcode.Location);
                 return;
             }
 
             var expectedNumOperands = opcode.NumberOfOperands();
-            var operands = instruction.operandList()?.operand() ?? Array.Empty<ScAsmParser.OperandContext>();
+            var operands = instruction.Operands;
             if (expectedNumOperands != -1 && operands.Length != expectedNumOperands)
             {
-                Diagnostics.AddError($"Expected {expectedNumOperands} operands for opcode {opcode} but found {operands.Length} operands", Source(instruction));
+                Diagnostics.AddError($"Expected {expectedNumOperands} operands for opcode {opcode} but found {operands.Length} operands", instruction.Location);
                 return;
             }
 
@@ -461,7 +591,7 @@ namespace ScTools.ScriptAssembly
             }
 
             var (offset, length) = codeBuilder.Flush();
-            instructions.Add(new(AssemblySource.FilePath, instruction, opcode, offset, length));
+            instructions.Add(new(instruction, opcode, offset, length));
         }
 
         private void AssembleInstruction(Instruction instruction)
@@ -492,40 +622,40 @@ namespace ScTools.ScriptAssembly
                 case Opcode.TEXT_LABEL_ASSIGN_INT:
                 case Opcode.TEXT_LABEL_APPEND_STRING:
                 case Opcode.TEXT_LABEL_APPEND_INT:
-                    OperandToU8(span[0..], operands[0]);
+                    OperandToU8(span[0..], operands[0].A);
                     break;
                 case Opcode.PUSH_CONST_U8_U8:
                 case Opcode.LEAVE:
-                    OperandToU8(span[0..], operands[0]);
-                    OperandToU8(span[1..], operands[1]);
+                    OperandToU8(span[0..], operands[0].A);
+                    OperandToU8(span[1..], operands[1].A);
                     break;
                 case Opcode.PUSH_CONST_U8_U8_U8:
-                    OperandToU8(span[0..], operands[0]);
-                    OperandToU8(span[1..], operands[1]);
-                    OperandToU8(span[2..], operands[2]);
+                    OperandToU8(span[0..], operands[0].A);
+                    OperandToU8(span[1..], operands[1].A);
+                    OperandToU8(span[2..], operands[2].A);
                     break;
                 case Opcode.PUSH_CONST_U32:
-                    OperandToU32(span[0..], operands[0]);
+                    OperandToU32(span[0..], operands[0].A);
                     break;
                 case Opcode.PUSH_CONST_F:
-                    OperandToF32(span[0..], operands[0]);
+                    OperandToF32(span[0..], operands[0].A);
                     break;
                 case Opcode.NATIVE:
-                    var argCount = ParseOperandToUInt(operands[0]);
-                    var returnCount = ParseOperandToUInt(operands[1]);
-                    var nativeIndex = ParseOperandToUInt(operands[2]);
+                    var argCount = ParseOperandToUInt(operands[0].A);
+                    var returnCount = ParseOperandToUInt(operands[1].A);
+                    var nativeIndex = ParseOperandToUInt(operands[2].A);
 
-                    CheckLossOfDataInUInt(argCount, maxBits: 6, Diagnostics, operands[0].Source);
-                    CheckLossOfDataInUInt(returnCount, maxBits: 2, Diagnostics, operands[1].Source);
-                    CheckLossOfDataInUInt(nativeIndex, maxBits: 16, Diagnostics, operands[2].Source);
+                    CheckLossOfDataInUInt(argCount, maxBits: 6, Diagnostics, operands[0].A.Location);
+                    CheckLossOfDataInUInt(returnCount, maxBits: 2, Diagnostics, operands[1].A.Location);
+                    CheckLossOfDataInUInt(nativeIndex, maxBits: 16, Diagnostics, operands[2].A.Location);
 
                     span[0] = (byte)((argCount & 0x3F) << 2 | (returnCount & 0x3));
                     span[1] = (byte)((nativeIndex >> 8) & 0xFF);
                     span[2] = (byte)(nativeIndex & 0xFF);
                     break;
                 case Opcode.ENTER:
-                    OperandToU8(span[0..], operands[0]);
-                    OperandToU16(span[1..], operands[1]);
+                    OperandToU8(span[0..], operands[0].A);
+                    OperandToU16(span[1..], operands[1].A);
                     // note: label name is already written in ProcessInstruction
                     break;
                 case Opcode.PUSH_CONST_S16:
@@ -534,7 +664,7 @@ namespace ScTools.ScriptAssembly
                 case Opcode.IOFFSET_S16:
                 case Opcode.IOFFSET_S16_LOAD:
                 case Opcode.IOFFSET_S16_STORE:
-                    OperandToS16(span[0..], operands[0]);
+                    OperandToS16(span[0..], operands[0].A);
                     break;
                 case Opcode.ARRAY_U16:
                 case Opcode.ARRAY_U16_LOAD:
@@ -548,7 +678,7 @@ namespace ScTools.ScriptAssembly
                 case Opcode.GLOBAL_U16:
                 case Opcode.GLOBAL_U16_LOAD:
                 case Opcode.GLOBAL_U16_STORE:
-                    OperandToU16(span[0..], operands[0]);
+                    OperandToU16(span[0..], operands[0].A);
                     break;
                 case Opcode.J:
                 case Opcode.JZ:
@@ -558,14 +688,14 @@ namespace ScTools.ScriptAssembly
                 case Opcode.IGE_JZ:
                 case Opcode.ILT_JZ:
                 case Opcode.ILE_JZ:
-                    OperandToRelativeLabelOffsetOrS16(span[0..], instruction.Offset + 1, operands[0]);
+                    OperandToRelativeLabelOffsetOrS16(span[0..], instruction.Offset + 1, operands[0].A);
                     break;
                 case Opcode.CALL:
                 case Opcode.GLOBAL_U24:
                 case Opcode.GLOBAL_U24_LOAD:
                 case Opcode.GLOBAL_U24_STORE:
                 case Opcode.PUSH_CONST_U24:
-                    OperandToU24(span[0..], operands[0]);
+                    OperandToU24(span[0..], operands[0].A);
                     break;
                 case Opcode.SWITCH:
                     if (operands.Length > byte.MaxValue)
@@ -579,15 +709,15 @@ namespace ScTools.ScriptAssembly
                         i < operands.Length;
                         i++, jumpToOperandOffset += 6, span = span[6..])
                     {
-                        if (operands[i].Type is InstructionOperandType.SwitchCase)
+                        if (operands[i].Type is Parser.InstructionOperandType.SwitchCase)
                         {
                             // TODO: warning if cases are repeated
-                            OperandToU32(span[0..], operands[i].SwitchCaseOperands[0]);
-                            OperandToRelativeLabelOffsetOrS16(span[4..], jumpToOperandOffset, operands[i].SwitchCaseOperands[1]);
+                            OperandToU32(span[0..], operands[i].A);
+                            OperandToRelativeLabelOffsetOrS16(span[4..], jumpToOperandOffset, operands[i].B);
                         }
                         else
                         {
-                            Diagnostics.AddError("Expected switch-case operand", operands[i].Source);
+                            Diagnostics.AddError("Expected switch-case operand", operands[i].Location);
                         }
                     }
                     break;
@@ -597,24 +727,21 @@ namespace ScTools.ScriptAssembly
         private Span<byte> GetInstructionSpan(Instruction instruction)
             => codeSegmentBuilder.RawDataBuffer.Slice(instruction.Offset, instruction.Length);
 
-        private ulong ParseOperandToUInt(InstructionOperand operand)
+        private ulong ParseOperandToUInt(Token operand)
         {
             long value = 0;
-            switch (operand.Type)
+            switch (operand.Kind)
             {
-                case InstructionOperandType.Integer:
-                    value = operand.Text.Span.ParseAsInt64();
+                case TokenKind.Integer:
+                    value = operand.GetInt64Literal();
                     break;
-                case InstructionOperandType.Float:
-                    var floatValue = operand.Text.Span.ParseAsFloat();
+                case TokenKind.Float:
+                    var floatValue = operand.GetFloatLiteral();
                     value = (long)Math.Truncate(floatValue);
-                    Diagnostics.AddWarning("Floating-point number truncated", operand.Source);
+                    Diagnostics.AddWarning("Floating-point number truncated", operand.Location);
                     break;
-                case InstructionOperandType.SwitchCase:
-                    Diagnostics.AddError("Unexpected switch-case operand", operand.Source);
-                    break;
-                case InstructionOperandType.Identifier:
-                    var name = operand.Text.ToString();
+                case TokenKind.Identifier:
+                    var name = operand.Lexeme.ToString();
                     if (Labels.TryGetValue(name, out var label))
                     {
                         value = label.Offset;
@@ -623,44 +750,41 @@ namespace ScTools.ScriptAssembly
                     {
                         if (constValue.DefinedAsFloat)
                         {
-                            Diagnostics.AddWarning("Floating-point number truncated", operand.Source);
+                            Diagnostics.AddWarning("Floating-point number truncated", operand.Location);
                         }
 
                         value = constValue.Integer;
                     }
                     else
                     {
-                        Diagnostics.AddError($"'{name}' is undefined", operand.Source);
+                        Diagnostics.AddError($"'{name}' is undefined", operand.Location);
                     }
                     break;
             }
 
             if (value < 0)
             {
-                Diagnostics.AddError("Found negative integer, expected unsigned integer", operand.Source);
+                Diagnostics.AddError("Found negative integer, expected unsigned integer", operand.Location);
             }
 
             return (ulong)value;
         }
 
-        private long ParseOperandToInt(InstructionOperand operand)
+        private long ParseOperandToInt(Token operand)
         {
             long value = 0;
-            switch (operand.Type)
+            switch (operand.Kind)
             {
-                case InstructionOperandType.Integer:
-                    value = operand.Text.Span.ParseAsInt64();
+                case TokenKind.Integer:
+                    value = operand.GetInt64Literal();
                     break;
-                case InstructionOperandType.Float:
-                    var floatValue = operand.Text.Span.ParseAsFloat();
+                case TokenKind.Float:
+                    var floatValue = operand.GetFloatLiteral();
                     value = (long)Math.Truncate(floatValue);
-                    Diagnostics.AddWarning("Floating-point number truncated", operand.Source);
+                    Diagnostics.AddWarning("Floating-point number truncated", operand.Location);
                     break;
-                case InstructionOperandType.SwitchCase:
-                    Diagnostics.AddError("Unexpected switch-case operand", operand.Source);
-                    break;
-                case InstructionOperandType.Identifier:
-                    var name = operand.Text.ToString();
+                case TokenKind.Identifier:
+                    var name = operand.Lexeme.ToString();
                     if (Labels.TryGetValue(name, out var label))
                     {
                         value = label.Offset;
@@ -669,14 +793,14 @@ namespace ScTools.ScriptAssembly
                     {
                         if (constValue.DefinedAsFloat)
                         {
-                            Diagnostics.AddWarning("Floating-point number truncated", operand.Source);
+                            Diagnostics.AddWarning("Floating-point number truncated", operand.Location);
                         }
 
                         value = constValue.Integer;
                     }
                     else
                     {
-                        Diagnostics.AddError($"'{name}' is undefined", operand.Source);
+                        Diagnostics.AddError($"'{name}' is undefined", operand.Location);
                     }
                     break;
             }
@@ -684,25 +808,22 @@ namespace ScTools.ScriptAssembly
             return value;
         }
 
-        private float ParseOperandToFloat(InstructionOperand operand)
+        private float ParseOperandToFloat(Token operand)
         {
             float value = 0;
-            switch (operand.Type)
+            switch (operand.Kind)
             {
-                case InstructionOperandType.Integer:
-                    value = operand.Text.Span.ParseAsFloat();
+                case TokenKind.Integer:
+                    value = operand.GetFloatLiteral();
                     break;
-                case InstructionOperandType.Float:
-                    value = operand.Text.Span.ParseAsFloat();
+                case TokenKind.Float:
+                    value = operand.GetFloatLiteral();
                     break;
-                case InstructionOperandType.SwitchCase:
-                    Diagnostics.AddError("Unexpected switch-case operand", operand.Source);
-                    break;
-                case InstructionOperandType.Identifier:
-                    var name = operand.Text.ToString();
+                case TokenKind.Identifier:
+                    var name = operand.Lexeme.ToString();
                     if (Labels.TryGetValue(name, out _))
                     {
-                        Diagnostics.AddError($"Expected floating-point number, cannot use label '{name}'", operand.Source);
+                        Diagnostics.AddError($"Expected floating-point number, cannot use label '{name}'", operand.Location);
                     }
                     else if (Constants.TryGetValue(name, out var constValue))
                     {
@@ -710,7 +831,7 @@ namespace ScTools.ScriptAssembly
                     }
                     else
                     {
-                        Diagnostics.AddError($"'{name}' is undefined", operand.Source);
+                        Diagnostics.AddError($"'{name}' is undefined", operand.Location);
                     }
                     break;
             }
@@ -718,17 +839,17 @@ namespace ScTools.ScriptAssembly
             return value;
         }
 
-        private void OperandToF32(Span<byte> dest, InstructionOperand operand)
+        private void OperandToF32(Span<byte> dest, Token operand)
         {
             var value = ParseOperandToFloat(operand);
 
             MemoryMarshal.Write(dest, ref value);
         }
 
-        private void OperandToU32(Span<byte> dest, InstructionOperand operand)
+        private void OperandToU32(Span<byte> dest, Token operand)
         {
             var value = ParseOperandToUInt(operand);
-            CheckLossOfDataInUInt(value, 32, Diagnostics, operand.Source);
+            CheckLossOfDataInUInt(value, 32, Diagnostics, operand.Location);
 
             dest[0] = (byte)(value & 0xFF);
             dest[1] = (byte)((value >> 8) & 0xFF);
@@ -736,49 +857,49 @@ namespace ScTools.ScriptAssembly
             dest[3] = (byte)((value >> 24) & 0xFF);
         }
 
-        private void OperandToU24(Span<byte> dest, InstructionOperand operand)
+        private void OperandToU24(Span<byte> dest, Token operand)
         {
             var value = ParseOperandToUInt(operand);
-            CheckLossOfDataInUInt(value, 24, Diagnostics, operand.Source);
+            CheckLossOfDataInUInt(value, 24, Diagnostics, operand.Location);
 
             dest[0] = (byte)(value & 0xFF);
             dest[1] = (byte)((value >> 8) & 0xFF);
             dest[2] = (byte)((value >> 16) & 0xFF);
         }
 
-        private void OperandToU16(Span<byte> dest, InstructionOperand operand)
+        private void OperandToU16(Span<byte> dest, Token operand)
         {
             var value = ParseOperandToUInt(operand);
-            CheckLossOfDataInUInt(value, 16, Diagnostics, operand.Source);
+            CheckLossOfDataInUInt(value, 16, Diagnostics, operand.Location);
 
             dest[0] = (byte)(value & 0xFF);
             dest[1] = (byte)((value >> 8) & 0xFF);
         }
 
-        private void OperandToU8(Span<byte> dest, InstructionOperand operand)
+        private void OperandToU8(Span<byte> dest, Token operand)
         {
             var value = ParseOperandToUInt(operand);
-            CheckLossOfDataInUInt(value, 8, Diagnostics, operand.Source);
+            CheckLossOfDataInUInt(value, 8, Diagnostics, operand.Location);
 
             dest[0] = (byte)(value & 0xFF);
         }
 
-        private void OperandToS16(Span<byte> dest, InstructionOperand operand)
+        private void OperandToS16(Span<byte> dest, Token operand)
         {
             var value = ParseOperandToInt(operand);
-            CheckLossOfDataInInt(value, 16, Diagnostics, operand.Source);
+            CheckLossOfDataInInt(value, 16, Diagnostics, operand.Location);
 
             dest[0] = (byte)(value & 0xFF);
             dest[1] = (byte)((value >> 8) & 0xFF);
         }
 
-        private void OperandToRelativeLabelOffsetOrS16(Span<byte> dest, int operandOffset, InstructionOperand operand)
+        private void OperandToRelativeLabelOffsetOrS16(Span<byte> dest, int operandOffset, Token operand)
         {
-            if (operand.Type is InstructionOperandType.Identifier && Labels.TryGetValue(operand.Text.ToString(), out var label))
+            if (operand.Kind is TokenKind.Identifier && Labels.TryGetValue(operand.Lexeme.ToString(), out var label))
             {
                 if (label.Segment != Segment.Code)
                 {
-                    Diagnostics.AddError($"Cannot jump to label '{operand.Text.ToString()}' outside code segment", operand.Source);
+                    Diagnostics.AddError($"Cannot jump to label '{operand.Lexeme}' outside code segment", operand.Location);
                     return;
                 }
 
@@ -786,7 +907,7 @@ namespace ScTools.ScriptAssembly
                 var relOffset = absOffset - (operandOffset + 2);
                 if (relOffset < short.MinValue || relOffset > short.MaxValue)
                 {
-                    Diagnostics.AddError($"Label '{operand.Text.ToString()}' is too far", operand.Source);
+                    Diagnostics.AddError($"Label '{operand.Lexeme}' is too far", operand.Location);
                     return;
                 }
 
@@ -820,14 +941,14 @@ namespace ScTools.ScriptAssembly
             }
         }
 
-        private void WriteIntFloatDirectiveOperands(ScAsmParser.DirectiveOperandListContext operandList, bool isFloat, bool isInt64)
+        private void WriteIntFloatDirectiveOperands(ImmutableArray<Parser.DirectiveOperand> operandList, bool isFloat, bool isInt64)
         {
-            foreach (var operand in operandList.directiveOperand())
+            foreach (var operand in operandList)
             {
                 switch (operand)
                 {
-                    case ScAsmParser.IdentifierDirectiveOperandContext identifierOperand:
-                        if (TryGetConstant(identifierOperand.identifier(), out var constValue))
+                    case Parser.DirectiveOperandIdentifier identifierOperand:
+                        if (TryGetConstant(identifierOperand.Name, out var constValue))
                         {
                             if (isFloat)
                             {
@@ -846,8 +967,8 @@ namespace ScTools.ScriptAssembly
                             }
                         }
                         break;
-                    case ScAsmParser.IntegerDirectiveOperandContext integerOperand:
-                        var intValue = integerOperand.integer().GetText().ParseAsInt64();
+                    case Parser.DirectiveOperandInteger integerOperand:
+                        var intValue = integerOperand.Integer.GetInt64Literal();
                         if (isFloat)
                         {
                             CurrentSegmentBuilder.Float(intValue);
@@ -864,8 +985,8 @@ namespace ScTools.ScriptAssembly
                             }
                         }
                         break;
-                    case ScAsmParser.FloatDirectiveOperandContext floatOperand:
-                        var floatValue = floatOperand.@float().GetText().ParseAsFloat();
+                    case Parser.DirectiveOperandFloat floatOperand:
+                        var floatValue = floatOperand.Float.GetFloatLiteral();
                         if (isFloat)
                         {
                             CurrentSegmentBuilder.Float(floatValue);
@@ -882,50 +1003,36 @@ namespace ScTools.ScriptAssembly
                             }
                         }
                         break;
-                    case ScAsmParser.DupDirectiveOperandContext dupOperand:
+                    case Parser.DirectiveOperandDup dupOperand:
                         long count = 0;
-                        if (dupOperand.identifier() != null && TryGetConstant(dupOperand.identifier(), out var countConst))
+                        if (dupOperand.Count.Kind is TokenKind.Identifier && TryGetConstant(dupOperand.Count, out var countConst))
                         {
                             count = countConst.Integer;
                         }
-                        else if (dupOperand.integer() != null)
+                        else if (dupOperand.Count.Kind is TokenKind.Integer)
                         {
-                            count = dupOperand.integer().GetText().ParseAsInt64();
+                            count = dupOperand.Count.GetInt64Literal();
                         }
 
                         for (long i = 0; i < count; i++)
                         {
-                            WriteIntFloatDirectiveOperands(dupOperand.directiveOperandList(), isFloat, isInt64);
+                            WriteIntFloatDirectiveOperands(dupOperand.InnerOperands, isFloat, isInt64);
                         }
                         break;
                 }
             }
         }
 
-        private bool TryGetConstant(ScAsmParser.IdentifierContext identifier, out ConstantValue value)
+        private bool TryGetConstant(Token identifier, out ConstantValue value)
         {
-            var name = identifier.GetText();
+            var name = identifier.Lexeme.ToString();
             if (Constants.TryGetValue(name, out value))
             {
                 return true;
             }
             else
             {
-                Diagnostics.AddError($"Undefined constant '{name}'", Source(identifier));
-                return false;
-            }
-        }
-
-        private bool TryGetLabel(ScAsmParser.IdentifierContext identifier, out Label value)
-        {
-            var name = identifier.GetText();
-            if (Labels.TryGetValue(name, out value))
-            {
-                return true;
-            }
-            else
-            {
-                Diagnostics.AddError($"Undefined label '{name}'", Source(identifier));
+                Diagnostics.AddError($"Undefined constant '{name}'", identifier.Location);
                 return false;
             }
         }
@@ -942,10 +1049,7 @@ namespace ScTools.ScriptAssembly
                 Labels[name] = new Label(label.Segment, label.Offset + staticSegmentLength);
             }
         }
-
-        private SourceRange Source(ParserRuleContext context) => Source(AssemblySource.FilePath, context);
-        private static SourceRange Source(string filePath, ParserRuleContext context) => SourceRange.FromTokens(filePath, context.Start, context.Stop);
-
+    
         private static (ScriptValue[] Statics, uint StaticsCount, uint ArgsCount) SegmentToStaticsArray(SegmentBuilder staticSegment, SegmentBuilder argSegment)
         {
             var statics = MemoryMarshal.Cast<byte, ScriptValue>(staticSegment.RawDataBuffer);
@@ -969,7 +1073,8 @@ namespace ScTools.ScriptAssembly
 
         public static Assembler Assemble(TextReader input, string filePath = "tmp.sc", NativeDB? nativeDB = null, AssemblerOptions options = default)
         {
-            var a = new Assembler(new TextAssemblySource(input, filePath)) { NativeDB = nativeDB, Options = options };
+            var d = new DiagnosticsReport();
+            var a = new Assembler(new Lexer(filePath, input.ReadToEnd(), d), d) { NativeDB = nativeDB, Options = options };
             a.Assemble();
             return a;
         }
@@ -996,68 +1101,16 @@ namespace ScTools.ScriptAssembly
 
         public readonly struct Instruction
         {
-            public ImmutableArray<InstructionOperand> Operands { get; }
+            public ImmutableArray<Parser.InstructionOperand> Operands { get; }
             public SourceRange Source { get; }
             public Opcode Opcode { get; }
             public int Offset { get; }
             public int Length { get; }
 
-            public Instruction(string filePath, ScAsmParser.InstructionContext context, Opcode opcode, int offset, int length)
+            public Instruction(Parser.Instruction instruction, Opcode opcode, int offset, int length)
             {
-                (Source, Opcode, Offset, Length) = (Source(filePath, context), opcode, offset, length);
-
-                var operands = context.operandList()?.operand() ?? Array.Empty<ScAsmParser.OperandContext>();
-                var operandsBuilder = ImmutableArray.CreateBuilder<InstructionOperand>(operands.Length);
-                foreach (var operand in operands)
-                {
-                    operandsBuilder.Add(CreateOperand(filePath, operand));
-                }
-                Operands = operandsBuilder.MoveToImmutable();
-
-
-                static InstructionOperand CreateOperand(string filePath, ScAsmParser.OperandContext operand)
-                {
-                    var start = (LightToken)operand.Start;
-                    var stop = (LightToken)operand.Stop;
-                    var switchCaseOperands = operand is ScAsmParser.SwitchCaseOperandContext switchCase ?
-                                          new[] { CreateOperand(filePath, switchCase.value), CreateOperand(filePath, switchCase.jumpTo) } :
-                                          Array.Empty<InstructionOperand>();
-
-                    return new(
-                        operand switch
-                        {
-                            ScAsmParser.IntegerOperandContext => InstructionOperandType.Integer,
-                            ScAsmParser.FloatOperandContext => InstructionOperandType.Float,
-                            ScAsmParser.SwitchCaseOperandContext => InstructionOperandType.SwitchCase,
-                            ScAsmParser.IdentifierOperandContext => InstructionOperandType.Identifier,
-                            _ => throw new InvalidOperationException(),
-                        },
-                        ((LightInputStream)start.InputStream).GetTextMemory(start.StartIndex, stop.StopIndex),
-                        Source(filePath, operand),
-                        switchCaseOperands
-                    );
-                }
-            }
-        }
-
-        public enum InstructionOperandType
-        {
-            Integer, Float, SwitchCase, Identifier
-        }
-
-        public readonly struct InstructionOperand
-        {
-            public InstructionOperandType Type { get; }
-            public ReadOnlyMemory<char> Text { get; }
-            public SourceRange Source { get; }
-            public InstructionOperand[] SwitchCaseOperands { get; } // cannot use ImmutableArray here, causes TypeLoadException due to recursive static ctor calls
-
-            public InstructionOperand(InstructionOperandType type, ReadOnlyMemory<char> text, SourceRange source, InstructionOperand[] switchCaseOperands)
-            {
-                Type = type;
-                Text = text;
-                Source = source;
-                SwitchCaseOperands = switchCaseOperands;
+                (Source, Opcode, Offset, Length) = (instruction.Location, opcode, offset, length);
+                Operands = instruction.Operands;
             }
         }
 
