@@ -4,13 +4,12 @@ using System;
 using System.IO;
 using System.Text;
 using System.Buffers.Binary;
-using ScTools.GameFiles.Payne;
 using ScTools.ScriptAssembly;
 using ScTools.GameFiles;
 
 public class DumperPayne
 {
-    public static void Dump(Script sc, TextWriter w, bool showMetadata, bool showDisassembly, bool showOffsets, bool showBytes, bool showInstructions)
+    public static void Dump(ScriptPayne sc, TextWriter w, bool showMetadata, bool showDisassembly, bool showOffsets, bool showBytes, bool showInstructions)
     {
         sc = sc ?? throw new ArgumentNullException(nameof(sc));
         w = w ?? throw new ArgumentNullException(nameof(w));
@@ -38,7 +37,7 @@ public class DumperPayne
                     w.WriteLine("\t[{0}] = {1:X8} ({2}) ({3})", i++, v.AsInt32, v.AsInt32, v.AsFloat);
                 }
             }
-            w.WriteLine("Unknown_V11 = 0x{0:X8}", sc.Unknown_V11);
+            w.WriteLine("Unknown_18h = 0x{0:X8}", sc.Unknown_18h);
             w.WriteLine("Code Length = {0}", sc.CodeLength);
         }
 
@@ -48,7 +47,7 @@ public class DumperPayne
         }
     }
 
-    private static void Disassemble(Script sc, TextWriter w, bool showOffsets, bool showBytes, bool showInstructions)
+    private static void Disassemble(ScriptPayne sc, TextWriter w, bool showOffsets, bool showBytes, bool showInstructions)
     {
         w = w ?? throw new ArgumentNullException(nameof(w));
         w.WriteLine("Disassembly:");
@@ -97,7 +96,7 @@ public class DumperPayne
         }
     }
 
-    private static void DisassembleInstructionAt(StringBuilder sb, Script sc, uint ip)
+    private static void DisassembleInstructionAt(StringBuilder sb, ScriptPayne sc, uint ip)
     {
         var inst = sc.Code.AsSpan((int)ip, (int)SizeOf(sc, ip));
         var opcode = (OpcodePayne)inst[0];
@@ -188,7 +187,7 @@ public class DumperPayne
         }
     }
 
-    public static uint SizeOf(Script sc, uint ip)
+    public static uint SizeOf(ScriptPayne sc, uint ip)
     {
         OpcodePayne opcode = (OpcodePayne)sc.Code![ip];
         uint s = (uint)opcode.ByteSize();
@@ -205,7 +204,7 @@ public class DumperPayne
 
         return s;
 
-        static uint SizeOfSTRING(Script sc, uint ip)
+        static uint SizeOfSTRING(ScriptPayne sc, uint ip)
         {
             uint size = 2;
             uint strLength = sc.Code![ip + 1];

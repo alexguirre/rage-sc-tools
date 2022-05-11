@@ -4,13 +4,12 @@ using System;
 using System.IO;
 using System.Text;
 using System.Buffers.Binary;
-using ScTools.GameFiles.NY;
 using ScTools.ScriptAssembly;
 using ScTools.GameFiles;
 
 public class DumperNY
 {
-    public static void Dump(Script sc, TextWriter w, bool showMetadata, bool showDisassembly, bool showOffsets, bool showBytes, bool showInstructions)
+    public static void Dump(ScriptNY sc, TextWriter w, bool showMetadata, bool showDisassembly, bool showOffsets, bool showBytes, bool showInstructions)
     {
         sc = sc ?? throw new ArgumentNullException(nameof(sc));
         w = w ?? throw new ArgumentNullException(nameof(w));
@@ -47,7 +46,7 @@ public class DumperNY
         }
     }
 
-    private static void Disassemble(Script sc, TextWriter w, bool showOffsets, bool showBytes, bool showInstructions)
+    private static void Disassemble(ScriptNY sc, TextWriter w, bool showOffsets, bool showBytes, bool showInstructions)
     {
         w = w ?? throw new ArgumentNullException(nameof(w));
         w.WriteLine("Disassembly:");
@@ -96,7 +95,7 @@ public class DumperNY
         }
     }
 
-    private static void DisassembleInstructionAt(StringBuilder sb, Script sc, uint ip)
+    private static void DisassembleInstructionAt(StringBuilder sb, ScriptNY sc, uint ip)
     {
         var inst = sc.Code.AsSpan((int)ip, (int)SizeOf(sc, ip));
         var opcode = (OpcodeNY)inst[0];
@@ -174,7 +173,7 @@ public class DumperNY
         }
     }
 
-    public static uint SizeOf(Script sc, uint ip)
+    public static uint SizeOf(ScriptNY sc, uint ip)
     {
         OpcodeNY opcode = (OpcodeNY)sc.Code![ip];
         uint s = (uint)opcode.ByteSize();
