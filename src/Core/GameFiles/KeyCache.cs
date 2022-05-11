@@ -1,8 +1,10 @@
 ﻿namespace ScTools.GameFiles;
 
+using System;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 
 internal static class KeyCache
 {
@@ -39,5 +41,30 @@ internal static class KeyCache
         {
             f.Write(key, 0, key.Length);
         }
+    }
+
+    public static bool SearchKey(ReadOnlySpan<byte> data, ReadOnlySpan<byte> sha1KeyHash, int keyLength, out ReadOnlySpan<byte> key)
+    {
+        const int HashLength = 20;
+        if (sha1KeyHash.Length != HashLength)
+        {
+            throw new ArgumentException($"{nameof(sha1KeyHash)} must be {HashLength} bytes long");
+        }
+
+        Span<byte> computedHash = stackalloc byte[HashLength];
+
+        for (int i = 0; i < data.Length - keyLength; i++)
+        {
+            key = data.Slice(i, keyLength);
+            SHA1.HashData(key, computedHash);
+
+            if (computedHash.SequenceEqual(sha1KeyHash))
+            {
+                return true;
+            }
+        }
+
+        key = default;
+        return false;
     }
 }

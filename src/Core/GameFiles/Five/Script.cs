@@ -39,13 +39,13 @@
 
         // reference data
         public ScriptPageArray<byte>? CodePages { get; set; }
-        public ScriptValue[]? Statics { get; set; }
-        public ScriptPageArray<ScriptValue>? GlobalsPages { get; set; }
+        public ScriptValue64[]? Statics { get; set; }
+        public ScriptPageArray<ScriptValue64>? GlobalsPages { get; set; }
         public ulong[]? Natives { get; set; }
         public string? Name { get; set; }
         public ScriptPageArray<byte>? StringsPages { get; set; }
 
-        private ResourceSystemStructBlock<ScriptValue>? staticsBlock;
+        private ResourceSystemStructBlock<ScriptValue64>? staticsBlock;
         private ResourceSystemStructBlock<ulong>? nativesBlock;
         private string_r? nameBlock;
 
@@ -88,8 +88,8 @@
 
             // read reference data
             CodePages = reader.ReadBlockAt<ScriptPageArray<byte>>(CodePagesPointer, CodeLength);
-            Statics = reader.ReadStructsAt<ScriptValue>(StaticsPointer, StaticsCount);
-            GlobalsPages = reader.ReadBlockAt<ScriptPageArray<ScriptValue>>(GlobalsPagesPointer, GlobalsLength);
+            Statics = reader.ReadStructsAt<ScriptValue64>(StaticsPointer, StaticsCount);
+            GlobalsPages = reader.ReadBlockAt<ScriptPageArray<ScriptValue64>>(GlobalsPagesPointer, GlobalsLength);
             Natives = reader.ReadUlongsAt(NativesPointer, NativesCount);
             Name = reader.ReadStringAt(NamePointer);
             StringsPages = reader.ReadBlockAt<ScriptPageArray<byte>>(StringsPagesPointer, StringsLength);
@@ -145,7 +145,7 @@
 
             if (Statics != null && Statics.Length > 0)
             {
-                staticsBlock = new ResourceSystemStructBlock<ScriptValue>(Statics);
+                staticsBlock = new ResourceSystemStructBlock<ScriptValue64>(Statics);
                 list.Add(staticsBlock);
             }
             else
@@ -289,14 +289,14 @@
             {
                 Data = reader.ReadBytes((int)length) as T[];
             }
-            else if (typeof(T) == typeof(ScriptValue))
+            else if (typeof(T) == typeof(ScriptValue64))
             {
-                byte[] d = reader.ReadBytes((int)length * Marshal.SizeOf<ScriptValue>());
-                ScriptValue[] v = new ScriptValue[length];
+                byte[] d = reader.ReadBytes((int)length * Marshal.SizeOf<ScriptValue64>());
+                ScriptValue64[] v = new ScriptValue64[length];
                 unsafe
                 {
                     fixed (byte* src = d)
-                    fixed (ScriptValue* dest = v)
+                    fixed (ScriptValue64* dest = v)
                     {
                         Buffer.MemoryCopy(src, dest, d.Length, d.Length);
                     }
@@ -320,13 +320,13 @@
             {
                 writer.Write(Data as byte[]);
             }
-            else if (typeof(T) == typeof(ScriptValue))
+            else if (typeof(T) == typeof(ScriptValue64))
             {
-                byte[] d = new byte[Data.Length * Marshal.SizeOf<ScriptValue>()];
-                ScriptValue[] v = Data as ScriptValue[];
+                byte[] d = new byte[Data.Length * Marshal.SizeOf<ScriptValue64>()];
+                ScriptValue64[] v = Data as ScriptValue64[];
                 unsafe
                 {
-                    fixed (ScriptValue* src = v)
+                    fixed (ScriptValue64* src = v)
                     fixed (byte* dest = d)
                     {
                         Buffer.MemoryCopy(src, dest, d.Length, d.Length);
@@ -430,50 +430,5 @@
         }
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-    }
-
-    public struct ScriptValue
-    {
-        private ValueUnion union;
-
-        public float AsFloat
-        {
-            get => union.AsFloat;
-            set => union.AsFloat = value;
-        }
-
-        public int AsInt32
-        {
-            get => union.AsInt32;
-            set => union.AsInt32 = value;
-        }
-
-        public uint AsUInt32
-        {
-            get => union.AsUInt32;
-            set => union.AsUInt32 = value;
-        }
-
-        public long AsInt64
-        {
-            get => union.AsInt64;
-            set => union.AsInt64 = value;
-        }
-
-        public ulong AsUInt64
-        {
-            get => union.AsUInt64;
-            set => union.AsUInt64 = value;
-        }
-
-        [StructLayout(LayoutKind.Explicit, Size = 8)]
-        private struct ValueUnion
-        {
-            [FieldOffset(0)] public float AsFloat;
-            [FieldOffset(0)] public int AsInt32;
-            [FieldOffset(0)] public uint AsUInt32;
-            [FieldOffset(0)] public long AsInt64;
-            [FieldOffset(0)] public ulong AsUInt64;
-        }
     }
 }

@@ -6,6 +6,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 
+using ScTools.GameFiles;
 using ScTools.GameFiles.Five;
 using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.Ast.Expressions;
@@ -56,9 +57,9 @@ public sealed partial class CodeEmitter
 
     public ScriptPageArray<byte> ToCodePages() => codeBuffer.ToCodePages(labels);
 
-    public ScriptValue[] GetStaticSegment(out int numScriptParams)
+    public ScriptValue64[] GetStaticSegment(out int numScriptParams)
     {
-        var staticsBuffer = new ScriptValue[statics.AllocatedSize];
+        var staticsBuffer = new ScriptValue64[statics.AllocatedSize];
 
         foreach (var s in statics)
         {
@@ -532,7 +533,7 @@ public sealed partial class CodeEmitter
         }
     }
 
-    private static void StaticDefaultInit(Span<ScriptValue> dest, TypeInfo type)
+    private static void StaticDefaultInit(Span<ScriptValue64> dest, TypeInfo type)
     {
         Debug.Assert(dest.Length == type.SizeOf);
         switch (type)
@@ -543,7 +544,7 @@ public sealed partial class CodeEmitter
         }
     }
 
-    private static void StaticDefaultInitStruct(Span<ScriptValue> dest, StructType structTy)
+    private static void StaticDefaultInitStruct(Span<ScriptValue64> dest, StructType structTy)
     {
         foreach (var (field, fieldDecl) in structTy.Fields.Zip(structTy.Declaration.Fields))
         {
@@ -589,7 +590,7 @@ public sealed partial class CodeEmitter
         }
     }
 
-    private static void StaticDefaultInitArray(Span<ScriptValue> dest, ArrayType arrayTy)
+    private static void StaticDefaultInitArray(Span<ScriptValue64> dest, ArrayType arrayTy)
     {
         // write array size
         dest[0].AsInt32 = arrayTy.Length;

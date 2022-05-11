@@ -6,6 +6,7 @@ using System.Text;
 using System.Runtime.CompilerServices;
 using ScTools.GameFiles.Five;
 using ScTools.ScriptAssembly;
+using ScTools.GameFiles;
 
 public class Dumper
 {
@@ -22,7 +23,7 @@ public class Dumper
             if (sc.Statics != null)
             {
                 int i = 0;
-                foreach (ScriptValue v in sc.Statics)
+                foreach (ScriptValue64 v in sc.Statics)
                 {
                     w.WriteLine("\t[{0}] = {1:X16} ({2}) ({3})", i++, v.AsInt64, v.AsInt32, v.AsFloat);
                 }
@@ -38,7 +39,7 @@ public class Dumper
                     foreach (var page in sc.GlobalsPages)
                     {
                         uint i = 0;
-                        foreach (ScriptValue g in page.Data)
+                        foreach (ScriptValue64 g in page.Data)
                         {
                             uint globalId = (sc.GlobalsBlock << 18) | (pageIndex << 14) | i;
 

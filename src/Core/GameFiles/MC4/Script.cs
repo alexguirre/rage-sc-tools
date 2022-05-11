@@ -1,4 +1,4 @@
-﻿namespace ScTools.GameFiles.Payne;
+﻿namespace ScTools.GameFiles.MC4;
 
 using System;
 using System.IO;
@@ -8,12 +8,12 @@ using System.Runtime.InteropServices;
 
 using CodeWalker.GameFiles;
 
+// Same as NY.Script, use different namespace organization? Script formats by version instead of game?
 public class Script
 {
-    public const uint MagicEncryptedV10 = 0x10726373,           // "scr\x10"
-                      MagicEncryptedCompressedV10 = 0x10726353, // "Scr\x10"
-                      MagicEncryptedV11 = 0x11726373,           // "scr\x11"
-                      MagicEncryptedCompressedV11 = 0x11726353; // "Scr\x11"
+    public const uint MagicUnencrypted = 0x0E524353,         // "SCR\x0E"
+                      MagicEncrypted = 0x0E726373,           // "scr\x0E"
+                      MagicEncryptedCompressed = 0x0E726353; // "Scr\x0E"
 
     public uint Magic { get; set; }
     public uint CodeLength { get; set; }
@@ -21,7 +21,6 @@ public class Script
     public uint GlobalsCount { get; set; }
     public uint ArgsCount { get; set; }
     public uint GlobalsSignature { get; set; }
-    public uint Unknown_V11 { get; set; }
     public byte[]? Code { get; set; }
     public ScriptValue32[]? Statics { get; set; }
     public ScriptValue32[]? Globals { get; set; }
@@ -35,19 +34,17 @@ public class Script
         ArgsCount = reader.ReadUInt32();
         GlobalsSignature = reader.ReadUInt32();
 
-        if (Magic is MagicEncryptedV11 or MagicEncryptedCompressedV11)
-        {
-            Unknown_V11 = reader.ReadUInt32();
-        }
-        else
-        {
-            Unknown_V11 = 0xFFFFFFFF;
-        }
-
         switch (Magic)
         {
-            case MagicEncryptedV10:
-            case MagicEncryptedV11:
+            case MagicUnencrypted:
+                {
+                    Code = reader.ReadBytes((int)CodeLength);
+                    Statics = ScriptValue.FromBytes32(reader.ReadBytes((int)(4 * StaticsCount)));
+                    Globals = ScriptValue.FromBytes32(reader.ReadBytes((int)(4 * GlobalsCount)));
+                }
+                break;
+
+            case MagicEncrypted:
                 {
                     Code = reader.ReadBytes((int)CodeLength);
                     var statics = reader.ReadBytes((int)(4 * StaticsCount));
@@ -60,8 +57,7 @@ public class Script
                 }
                 break;
 
-            case MagicEncryptedCompressedV10:
-            case MagicEncryptedCompressedV11:
+            case MagicEncryptedCompressed:
                 {
                     var compressedSize = reader.ReadUInt32();
                     var compressed = reader.ReadBytes((int)compressedSize);
@@ -102,15 +98,17 @@ public class Script
         writer.Write(ArgsCount);
         writer.Write(GlobalsSignature);
 
-        if (Magic is MagicEncryptedV11 or MagicEncryptedCompressedV11)
-        {
-            writer.Write(Unknown_V11);
-        }
-
         switch (Magic)
         {
-            case MagicEncryptedV10:
-            case MagicEncryptedV11:
+            case MagicUnencrypted:
+                {
+                    writer.Write(Code);
+                    writer.Write(ScriptValue.ToBytes32(Statics));
+                    writer.Write(ScriptValue.ToBytes32(Globals));
+                }
+                break;
+
+            case MagicEncrypted:
                 {
                     var code = Code?.ToArray() ?? Array.Empty<byte>();
                     var statics = ScriptValue.ToBytes32(Statics);
@@ -124,8 +122,7 @@ public class Script
                 }
                 break;
 
-            case MagicEncryptedCompressedV10:
-            case MagicEncryptedCompressedV11:
+            case MagicEncryptedCompressed:
                 {
                     using var compressedStream = new MemoryStream();
                     using (var zs = new ZLibStream(compressedStream, CompressionLevel.SmallestSize, leaveOpen: true))
@@ -147,6 +144,6 @@ public class Script
         }
     }
 
-    private static void Encrypt(byte[] data) => Aes.Encrypt(data, Keys.AesKeyPC);
-    private static void Decrypt(byte[] data) => Aes.Decrypt(data, Keys.AesKeyPC);
+    private static void Encrypt(byte[] data) => Aes.Encrypt(data, Keys.AesKeyXenon);
+    private static void Decrypt(byte[] data) => Aes.Decrypt(data, Keys.AesKeyXenon);
 }

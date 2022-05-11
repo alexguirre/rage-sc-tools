@@ -8,6 +8,7 @@ namespace ScTools.ScriptAssembly
     using System.Linq;
     using System.Runtime.InteropServices;
 
+    using ScTools.GameFiles;
     using ScTools.GameFiles.Five;
 
     public readonly struct AssemblerOptions
@@ -27,7 +28,7 @@ namespace ScTools.ScriptAssembly
         public static int GetAddressingUnitByteSize(Segment segment) => segment switch
         {
             // ScriptValue-addressable
-            Segment.Global or Segment.Static or Segment.Arg => Marshal.SizeOf<ScriptValue>(),
+            Segment.Global or Segment.Static or Segment.Arg => Marshal.SizeOf<ScriptValue64>(),
 
             // NativeHash-addressable
             Segment.Include => sizeof(ulong),
@@ -118,7 +119,7 @@ namespace ScTools.ScriptAssembly
             OutputScript.CodePages = codeSegmentBuilder.Length != 0 ? codeSegmentBuilder.ToPages<byte>() : null;
             OutputScript.CodeLength = OutputScript.CodePages?.Length ?? 0;
 
-            OutputScript.GlobalsPages = globalSegmentBuilder.Length != 0 ? globalSegmentBuilder.ToPages<ScriptValue>() : null;
+            OutputScript.GlobalsPages = globalSegmentBuilder.Length != 0 ? globalSegmentBuilder.ToPages<ScriptValue64>() : null;
             OutputScript.GlobalsLength = OutputScript.GlobalsPages?.Length ?? 0;
 
             (OutputScript.Statics, OutputScript.StaticsCount, OutputScript.ArgsCount) = SegmentToStaticsArray(staticSegmentBuilder, argSegmentBuilder);
@@ -1050,12 +1051,12 @@ namespace ScTools.ScriptAssembly
             }
         }
     
-        private static (ScriptValue[] Statics, uint StaticsCount, uint ArgsCount) SegmentToStaticsArray(SegmentBuilder staticSegment, SegmentBuilder argSegment)
+        private static (ScriptValue64[] Statics, uint StaticsCount, uint ArgsCount) SegmentToStaticsArray(SegmentBuilder staticSegment, SegmentBuilder argSegment)
         {
-            var statics = MemoryMarshal.Cast<byte, ScriptValue>(staticSegment.RawDataBuffer);
-            var args = MemoryMarshal.Cast<byte, ScriptValue>(argSegment.RawDataBuffer);
+            var statics = MemoryMarshal.Cast<byte, ScriptValue64>(staticSegment.RawDataBuffer);
+            var args = MemoryMarshal.Cast<byte, ScriptValue64>(argSegment.RawDataBuffer);
 
-            var combined = new ScriptValue[statics.Length + args.Length];
+            var combined = new ScriptValue64[statics.Length + args.Length];
             statics.CopyTo(combined.AsSpan(0, statics.Length));
             args.CopyTo(combined.AsSpan(statics.Length, args.Length));
             return (combined, (uint)combined.Length, (uint)args.Length);

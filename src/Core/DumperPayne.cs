@@ -6,6 +6,7 @@ using System.Text;
 using System.Buffers.Binary;
 using ScTools.GameFiles.Payne;
 using ScTools.ScriptAssembly;
+using ScTools.GameFiles;
 
 public class DumperPayne
 {
@@ -22,7 +23,7 @@ public class DumperPayne
             if (sc.Statics != null)
             {
                 int i = 0;
-                foreach (ScriptValue v in sc.Statics)
+                foreach (ScriptValue32 v in sc.Statics)
                 {
                     w.WriteLine("\t[{0}] = {1:X8} ({2}) ({3})", i++, v.AsInt32, v.AsInt32, v.AsFloat);
                 }
@@ -32,7 +33,7 @@ public class DumperPayne
             if (sc.Globals != null)
             {
                 int i = 0;
-                foreach (ScriptValue v in sc.Globals)
+                foreach (ScriptValue32 v in sc.Globals)
                 {
                     w.WriteLine("\t[{0}] = {1:X8} ({2}) ({3})", i++, v.AsInt32, v.AsInt32, v.AsFloat);
                 }

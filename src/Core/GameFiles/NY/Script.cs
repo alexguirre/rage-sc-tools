@@ -21,8 +21,8 @@ public class Script
     public uint ArgsCount { get; set; }
     public uint GlobalsSignature { get; set; }
     public byte[]? Code { get; set; }
-    public ScriptValue[]? Statics { get; set; }
-    public ScriptValue[]? Globals { get; set; }
+    public ScriptValue32[]? Statics { get; set; }
+    public ScriptValue32[]? Globals { get; set; }
 
     public void Read(DataReader reader)
     {
@@ -38,8 +38,8 @@ public class Script
             case MagicUnencrypted:
                 {
                     Code = reader.ReadBytes((int)CodeLength);
-                    Statics = BytesToScriptValues(reader.ReadBytes((int)(4 * StaticsCount)));
-                    Globals = BytesToScriptValues(reader.ReadBytes((int)(4 * GlobalsCount)));
+                    Statics = ScriptValue.FromBytes32(reader.ReadBytes((int)(4 * StaticsCount)));
+                    Globals = ScriptValue.FromBytes32(reader.ReadBytes((int)(4 * GlobalsCount)));
                 }
                 break;
 
@@ -51,8 +51,8 @@ public class Script
                     Decrypt(Code);
                     Decrypt(statics);
                     Decrypt(globals);
-                    Statics = BytesToScriptValues(statics);
-                    Globals = BytesToScriptValues(globals);
+                    Statics = ScriptValue.FromBytes32(statics);
+                    Globals = ScriptValue.FromBytes32(globals);
                 }
                 break;
 
@@ -68,8 +68,8 @@ public class Script
 
                     decompressed.Position = 0;
                     Code = new byte[CodeLength];
-                    Statics = new ScriptValue[StaticsCount];
-                    Globals = new ScriptValue[GlobalsCount];
+                    Statics = new ScriptValue32[StaticsCount];
+                    Globals = new ScriptValue32[GlobalsCount];
                     decompressed.Read(Code, 0, Code.Length);
                     decompressed.Read(MemoryMarshal.AsBytes(Statics.AsSpan()));
                     decompressed.Read(MemoryMarshal.AsBytes(Globals.AsSpan()));
@@ -102,16 +102,16 @@ public class Script
             case MagicUnencrypted:
                 {
                     writer.Write(Code);
-                    writer.Write(ScriptValuesToBytes(Statics));
-                    writer.Write(ScriptValuesToBytes(Globals));
+                    writer.Write(ScriptValue.ToBytes32(Statics));
+                    writer.Write(ScriptValue.ToBytes32(Globals));
                 }
                 break;
 
             case MagicEncrypted:
                 {
                     var code = Code?.ToArray() ?? Array.Empty<byte>();
-                    var statics = ScriptValuesToBytes(Statics);
-                    var globals = ScriptValuesToBytes(Globals);
+                    var statics = ScriptValue.ToBytes32(Statics);
+                    var globals = ScriptValue.ToBytes32(Globals);
                     Encrypt(code);
                     Encrypt(statics);
                     Encrypt(globals);
@@ -143,40 +143,6 @@ public class Script
         }
     }
 
-    private static unsafe ScriptValue[] BytesToScriptValues(byte[]? buffer)
-    {
-        if (buffer is null) return Array.Empty<ScriptValue>();
-
-        var result = new ScriptValue[buffer.Length / sizeof(ScriptValue)];
-        fixed (void* bufferPtr = buffer)
-        fixed (void* resultPtr = result)
-        {
-            Buffer.MemoryCopy(source: bufferPtr, destination: resultPtr, buffer.Length, buffer.Length);
-        }
-        return result;
-    }
-
-    private static unsafe byte[] ScriptValuesToBytes(ScriptValue[]? values)
-    {
-        if (values is null) return Array.Empty<byte>();
-
-        var result = new byte[values.Length * sizeof(ScriptValue)];
-        fixed (void* valuesPtr = values)
-        fixed (void* resultPtr = result)
-        {
-            Buffer.MemoryCopy(source: valuesPtr, destination: resultPtr, result.Length, result.Length);
-        }
-        return result;
-    }
-
-    private static void Encrypt(byte[] data) => Aes.Encrypt(data, Keys.AesKey);
-    private static void Decrypt(byte[] data) => Aes.Decrypt(data, Keys.AesKey);
-}
-
-[StructLayout(LayoutKind.Explicit, Size = 4)]
-public struct ScriptValue
-{
-    [FieldOffset(0)] public float AsFloat;
-    [FieldOffset(0)] public int AsInt32;
-    [FieldOffset(0)] public uint AsUInt32;
+    private static void Encrypt(byte[] data) => Aes.Encrypt(data, Keys.AesKeyPC);
+    private static void Decrypt(byte[] data) => Aes.Decrypt(data, Keys.AesKeyPC);
 }
