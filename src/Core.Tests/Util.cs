@@ -4,6 +4,7 @@
     using System.IO;
     using System.Linq;
 
+    using ScTools.GameFiles;
     using ScTools.ScriptAssembly;
     using ScTools.ScriptLang;
 
@@ -22,13 +23,6 @@
             using var w = new StringWriter();
             Disassembler.Disassemble(w, sc);
             return w.ToString();
-        }
-
-        public static string Dump(GameFiles.Five.Script sc)
-        {
-            using var s = new StringWriter();
-            Dumper.Dump(sc, s, true, true, true, true, true);
-            return s.ToString();
         }
 
         public static void AssertScriptsAreEqual(GameFiles.Five.Script sc1, GameFiles.Five.Script sc2)

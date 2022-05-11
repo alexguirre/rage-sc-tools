@@ -17,6 +17,7 @@
     using System.Collections.Generic;
     //using ScTools.ScriptLang.Semantics;
     using ScTools.ScriptLang.CodeGen;
+    using ScTools.GameFiles;
 
     internal static class Program
     {
@@ -501,9 +502,7 @@
                 if (CanOutput())
                 {
                     OutputFile("original_disassembly.txt", originalDisassembly);
-                    using var originalDumpWriter = new StringWriter();
-                    Dumper.Dump(originalScript, originalDumpWriter, true, true, true, true, true);
-                    OutputFile("original_dump.txt", originalDumpWriter.ToString());
+                    OutputFile("original_dump.txt", originalScript.DumpToString());
                 }
 
                 Assembler reassembled;
@@ -541,9 +540,7 @@
                 if (CanOutput())
                 {
                     OutputFile("new_disassembly.txt", newDisassembly);
-                    using var newDumpWriter = new StringWriter();
-                    Dumper.Dump(newScript, newDumpWriter, true, true, true, true, true);
-                    OutputFile("new_dump.txt", newDumpWriter.ToString());
+                    OutputFile("new_dump.txt", newScript.DumpToString());
                 }
 
                 var sc1 = originalScript;
@@ -660,8 +657,8 @@
                     _ => new StreamWriter(Path.Combine(o.Output.FullName, Path.ChangeExtension(inputFile.Name, "txt")))
                 };
 
-                Dumper.Dump(sc, w, showMetadata: !o.NoMetadata, showDisassembly: !o.NoDisassembly,
-                            showOffsets: !o.NoOffsets, showBytes: !o.NoBytes, showInstructions: !o.NoInstructions);
+                sc.Dump(new(Sink: w, IncludeMetadata: !o.NoMetadata, IncludeDisassembly: !o.NoDisassembly,
+                            IncludeOffsets: !o.NoOffsets, IncludeBytes: !o.NoBytes, IncludeInstructions: !o.NoInstructions));
             });
         }
 

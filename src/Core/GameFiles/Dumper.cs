@@ -1,4 +1,4 @@
-﻿namespace ScTools;
+﻿namespace ScTools.GameFiles;
 
 using System;
 using System.IO;
@@ -6,16 +6,22 @@ using System.Text;
 using System.Runtime.CompilerServices;
 using ScTools.GameFiles.Five;
 using ScTools.ScriptAssembly;
-using ScTools.GameFiles;
 
-public class Dumper
+public static class Dumper
 {
-    public static void Dump(Script sc, TextWriter w, bool showMetadata, bool showDisassembly, bool showOffsets, bool showBytes, bool showInstructions)
+    public static string DumpToString(this Script sc)
+    {
+        using var sw = new StringWriter();
+        Dump(sc, DumpOptions.Default(sw));
+        return sw.ToString();
+    }
+
+    public static void Dump(this Script sc, in DumpOptions options)
     {
         sc = sc ?? throw new ArgumentNullException(nameof(sc));
-        w = w ?? throw new ArgumentNullException(nameof(w));
+        var w = options.Sink;
 
-        if (showMetadata)
+        if (options.IncludeMetadata)
         {
             w.WriteLine("Name = {0} (0x{1:X8})", sc.Name, sc.NameHash);
             w.WriteLine("Hash = 0x{0:X8}", sc.GlobalsSignature);
@@ -41,7 +47,7 @@ public class Dumper
                         uint i = 0;
                         foreach (ScriptValue64 g in page.Data)
                         {
-                            uint globalId = (sc.GlobalsBlock << 18) | (pageIndex << 14) | i;
+                            uint globalId = sc.GlobalsBlock << 18 | pageIndex << 14 | i;
 
                             w.WriteLine("\t[{0}] = {1:X16} ({2}) ({3})", globalId, g.AsInt64, g.AsInt32, g.AsFloat);
 
@@ -70,15 +76,15 @@ public class Dumper
             w.WriteLine("Code Length = {0}", sc.CodeLength);
         }
 
-        if (showDisassembly)
+        if (options.IncludeDisassembly)
         {
-            Disassemble(sc, w, showOffsets, showBytes, showInstructions);
+            Disassemble(sc, options);
         }
     }
 
-    private static void Disassemble(Script sc, TextWriter w, bool showOffsets, bool showBytes, bool showInstructions)
+    private static void Disassemble(Script sc, in DumpOptions options)
     {
-        w = w ?? throw new ArgumentNullException(nameof(w));
+        var w = options.Sink;
         w.WriteLine("Disassembly:");
 
         var lineSB = new StringBuilder();
@@ -90,14 +96,14 @@ public class Dumper
             uint size = SizeOf(sc, ip);
 
             // write offset
-            if (showOffsets)
+            if (options.IncludeOffsets)
             {
                 lineSB.Append(ip.ToString("000000"));
                 lineSB.Append(" : ");
             }
 
             // write bytes
-            if (showBytes)
+            if (options.IncludeBytes)
             {
                 for (uint offset = 0; offset < size; offset++)
                 {
@@ -112,7 +118,7 @@ public class Dumper
             }
 
             // write instruction
-            if (showInstructions)
+            if (options.IncludeInstructions)
             {
                 DisassembleInstructionAt(lineSB, sc, ip);
             }

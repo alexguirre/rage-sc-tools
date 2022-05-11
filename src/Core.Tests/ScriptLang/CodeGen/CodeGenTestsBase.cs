@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
+using ScTools.GameFiles;
 using ScTools.ScriptLang;
 using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.CodeGen;
@@ -84,11 +85,7 @@ public abstract class CodeGenTestsBase
         using var expectedAssemblyReader = new StringReader(expectedAssembly);
         var expectedAssembler = ScTools.ScriptAssembly.Assembler.Assemble(expectedAssemblyReader, "test_expected.scasm", nativeDB, options: new() { IncludeFunctionNames = true });
 
-        using StringWriter sourceDumpWriter = new(), expectedDumpWriter = new();
-        Dumper.Dump(compiledScript, sourceDumpWriter, true, true, true, true, true);
-        Dumper.Dump(expectedAssembler.OutputScript, expectedDumpWriter, true, true, true, true, true);
-
-        string sourceDump = sourceDumpWriter.ToString(), expectedDump = expectedDumpWriter.ToString();
+        string sourceDump = compiledScript.DumpToString(), expectedDump = expectedAssembler.OutputScript.DumpToString();
 
         Util.AssertScriptsAreEqual(compiledScript, expectedAssembler.OutputScript);
     }

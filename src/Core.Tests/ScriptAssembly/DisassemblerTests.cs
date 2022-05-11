@@ -1,5 +1,7 @@
 ﻿namespace ScTools.Tests.ScriptAssembly
 {
+    using ScTools.GameFiles;
+
     using Xunit;
 
     public class DisassemblerTests
@@ -51,8 +53,8 @@ getMyFloat: ENTER 0, 2
 
             using var finalAsm = Util.Assemble(disassembly);
 
-            var initialDump = Util.Dump(initialAsm.OutputScript);
-            var finalDump = Util.Dump(finalAsm.OutputScript);
+            var initialDump = initialAsm.OutputScript.DumpToString();
+            var finalDump = finalAsm.OutputScript.DumpToString();
 
             Assert.Equal(initialDump, finalDump);
             Util.AssertScriptsAreEqual(initialAsm.OutputScript, finalAsm.OutputScript);
