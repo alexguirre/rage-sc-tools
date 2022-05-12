@@ -51,7 +51,7 @@ public class ScriptNY
 
             case MagicEncrypted:
                 {
-                    if (aesKey is null) { throw new ArgumentNullException(nameof(aesKey)); }
+                    Aes.ThrowIfInvalidKey(aesKey);
 
                     Code = reader.ReadBytes((int)CodeLength);
                     var statics = reader.ReadBytes((int)(4 * StaticsCount));
@@ -66,7 +66,7 @@ public class ScriptNY
 
             case MagicEncryptedCompressed:
                 {
-                    if (aesKey is null) { throw new ArgumentNullException(nameof(aesKey)); }
+                    Aes.ThrowIfInvalidKey(aesKey);
 
                     var compressedSize = reader.ReadUInt32();
                     var compressed = reader.ReadBytes((int)compressedSize);
@@ -119,7 +119,7 @@ public class ScriptNY
 
             case MagicEncrypted:
                 {
-                    if (aesKey is null) { throw new ArgumentNullException(nameof(aesKey)); }
+                    Aes.ThrowIfInvalidKey(aesKey);
 
                     var code = Code?.ToArray() ?? Array.Empty<byte>();
                     var statics = ScriptValue.ToBytes32(Statics);
@@ -135,7 +135,7 @@ public class ScriptNY
 
             case MagicEncryptedCompressed:
                 {
-                    if (aesKey is null) { throw new ArgumentNullException(nameof(aesKey)); }
+                    Aes.ThrowIfInvalidKey(aesKey);
 
                     using var compressedStream = new MemoryStream();
                     using (var zs = new ZLibStream(compressedStream, CompressionLevel.SmallestSize, leaveOpen: true))

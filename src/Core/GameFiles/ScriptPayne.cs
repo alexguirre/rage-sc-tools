@@ -34,6 +34,8 @@ public class ScriptPayne
 
     public void Read(DataReader reader, byte[] aesKey)
     {
+        Aes.ThrowIfInvalidKey(aesKey);
+
         Magic = reader.ReadUInt32();
         CodeLength = reader.ReadUInt32();
         StaticsCount = reader.ReadUInt32();

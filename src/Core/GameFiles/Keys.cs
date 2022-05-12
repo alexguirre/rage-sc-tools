@@ -6,7 +6,6 @@ using System.Security.Cryptography;
 
 public static class Keys
 {
-    private const int AesKeyLength = 32;
     private const int SHA1HashLength = 20;
 
     public static class NY
@@ -16,7 +15,7 @@ public static class Keys
 
         public static void Load(string exeFilePath)
         {
-            if (KeyCache.ReadKeysFromCache(CacheFile, out var keys, AesKeyLength))
+            if (KeyCache.ReadKeysFromCache(CacheFile, out var keys, Aes.KeyLength))
             {
                 AesKeyPC = keys[0];
                 return;
@@ -34,7 +33,7 @@ public static class Keys
                 0xDE, 0xA3, 0x75, 0xEF, 0x1E, 0x6E, 0xF2, 0x22, 0x3A, 0x12, 0x21, 0xC2, 0xC5, 0x75, 0xC4, 0x7B, 0xF1, 0x7E, 0xFA, 0x5E
             };
 
-            return SearchKey(exeFile, aesKeyHash, AesKeyLength, out aesKey);
+            return SearchKey(exeFile, aesKeyHash, Aes.KeyLength, out aesKey);
         }
     }
 
@@ -45,7 +44,7 @@ public static class Keys
 
         public static void Load(string xexFilePath)
         {
-            if (KeyCache.ReadKeysFromCache(CacheFile, out var keys, AesKeyLength))
+            if (KeyCache.ReadKeysFromCache(CacheFile, out var keys, Aes.KeyLength))
             {
                 AesKeyXenon = keys[0];
                 return;
@@ -64,7 +63,7 @@ public static class Keys
                 0x59, 0x9F, 0xA7, 0x13, 0xE0, 0x50, 0x85, 0xD9, 0xB8, 0x84, 0x94, 0x91, 0x39, 0xBA, 0x1F, 0x95, 0xBA, 0x20, 0x71, 0xA7
             };
 
-            return SearchKey(xexFile, aesKeyHash, AesKeyLength, out aesKey);
+            return SearchKey(xexFile, aesKeyHash, Aes.KeyLength, out aesKey);
         }
     }
 
@@ -75,7 +74,7 @@ public static class Keys
 
         public static void Load(string exeFilePath)
         {
-            if (KeyCache.ReadKeysFromCache(CacheFile, out var keys, AesKeyLength))
+            if (KeyCache.ReadKeysFromCache(CacheFile, out var keys, Aes.KeyLength))
             {
                 AesKeyPC = keys[0];
                 return;
@@ -93,7 +92,7 @@ public static class Keys
                 0xDE, 0xA3, 0x75, 0xEF, 0x1E, 0x6E, 0xF2, 0x22, 0x3A, 0x12, 0x21, 0xC2, 0xC5, 0x75, 0xC4, 0x7B, 0xF1, 0x7E, 0xFA, 0x5E
             };
 
-            return SearchKey(exeFile, aesKeyHash, AesKeyLength, out aesKey);
+            return SearchKey(exeFile, aesKeyHash, Aes.KeyLength, out aesKey);
         }
     }
 
