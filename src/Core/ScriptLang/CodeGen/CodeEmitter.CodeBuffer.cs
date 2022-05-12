@@ -89,7 +89,7 @@ public partial class CodeEmitter
             }
         }
 
-        public ScriptPageArray<byte> ToCodePages(List<LabelInfo> labels)
+        public ScriptPageTable<byte> ToCodePages(List<LabelInfo> labels)
         {
             var segment = new SegmentBuilder(sizeof(byte), isPaged: true);
             var codeBuffer = CollectionsMarshal.AsSpan(buffer);

@@ -55,7 +55,7 @@ public sealed partial class CodeEmitter
         addressEmitter = new(this);
     }
 
-    public ScriptPageArray<byte> ToCodePages() => codeBuffer.ToCodePages(labels);
+    public ScriptPageTable<byte> ToCodePages() => codeBuffer.ToCodePages(labels);
 
     public ScriptValue64[] GetStaticSegment(out int numScriptParams)
     {

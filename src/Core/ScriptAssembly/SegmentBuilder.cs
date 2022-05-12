@@ -182,7 +182,7 @@
             }
         }
 
-        public ScriptPageArray<T> ToPages<T>() where T : struct
+        public ScriptPageTable<T> ToPages<T>() where T : unmanaged
         {
             if (!IsPaged)
             {
@@ -206,7 +206,7 @@
                 data.Slice((int)((pageCount - 1) * Script.MaxPageLength), p[^1].Data.Length).CopyTo(p[^1].Data);
             }
 
-            return new ScriptPageArray<T> { Items = p };
+            return new ScriptPageTable<T> { Pages = p };
         }
     }
 }

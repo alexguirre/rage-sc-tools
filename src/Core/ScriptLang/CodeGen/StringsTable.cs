@@ -11,7 +11,7 @@ public sealed class StringsTable
     private readonly Dictionary<string, int> stringToOffset = new();
 
     public int ByteLength => segmentBuilder.Length;
-    public ScriptPageArray<byte> ToPages() => segmentBuilder.ToPages<byte>();
+    public ScriptPageTable<byte> ToPages() => segmentBuilder.ToPages<byte>();
 
     public int GetOffsetOf(string str)
     {
