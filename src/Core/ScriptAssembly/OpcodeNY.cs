@@ -310,4 +310,29 @@ public static class OpcodeNYExtensions
 
             _ => 1,
         };
+    
+    /// <returns>
+    /// The number of operands required by <see cref="opcode"/>; or, <c>-1</c> if it accepts a variable number of operands (i.e. <paramref name="opcode"/> is <see cref="Opcode.SWITCH"/>).
+    /// </returns>
+    public static int NumberOfOperands(this OpcodeNY opcode)
+        => opcode switch
+        {
+            OpcodeNY.LEAVE or
+            OpcodeNY.ENTER => 2,
+
+            OpcodeNY.J or
+            OpcodeNY.JZ or
+            OpcodeNY.JNZ or
+            OpcodeNY.PUSH_CONST_U16 or
+            OpcodeNY.PUSH_CONST_U32 or
+            OpcodeNY.PUSH_CONST_F or
+            OpcodeNY.CALL or
+            OpcodeNY.NATIVE => 7,
+
+            OpcodeNY.STRING => 1,
+            
+            OpcodeNY.SWITCH => -1,
+
+            _ => 0,
+        };
 }

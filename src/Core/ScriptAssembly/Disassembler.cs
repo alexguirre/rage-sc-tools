@@ -49,7 +49,7 @@ namespace ScTools.ScriptAssembly
             w.WriteLine(".script_name {0}", sc.Name);
             if (sc.GlobalsSignature != 0)
             {
-                w.WriteLine(".script_hash 0x{0:X8}", sc.GlobalsSignature);
+                w.WriteLine(".globals_signature 0x{0:X8}", sc.GlobalsSignature);
             }
 
             WriteGlobalsSegment(w);
@@ -63,46 +63,6 @@ namespace ScTools.ScriptAssembly
             WriteIncludeSegment(w);
 
             WriteCodeSegment(w);
-        }
-
-        private void WriteGlobalsValues(TextWriter w)
-        {
-            var sc = Script;
-            int repeatedValue = 0;
-            int repeatedCount = 0;
-            foreach (var page in sc.GlobalsPages)
-            {
-                var values = page.Data;
-                for (int i = 0; i < values.Length; i++)
-                {
-                    Debug.Assert(values[i].AsUInt64 <= uint.MaxValue, $"{nameof(WriteGlobalsValues)} only handles 32-bit values");
-
-                    var v = values[i].AsInt32;
-                    if (repeatedCount > 0 && v != repeatedValue)
-                    {
-                        FlushValue();
-                    }
-
-                    repeatedValue = v;
-                    repeatedCount++;
-                }
-            }
-
-            FlushValue();
-
-            void FlushValue()
-            {
-                if (repeatedCount > 1)
-                {
-                    w.WriteLine("\t\t.int {0} dup ({1})", repeatedCount, repeatedValue);
-                }
-                else if (repeatedCount == 1)
-                {
-                    w.WriteLine("\t\t.int {0}", repeatedValue);
-                }
-
-                repeatedCount = 0;
-            }
         }
 
         private void WriteGlobalsSegment(TextWriter w)
@@ -207,13 +167,13 @@ namespace ScTools.ScriptAssembly
         private void WriteStaticsSegment(TextWriter w)
         {
             var sc = Script;
-            if (sc.StaticsCount == 0)
+            var numStatics = sc.StaticsCount - sc.ArgsCount;
+            if (numStatics == 0)
             {
                 return;
             }
 
             w.WriteLine(".static");
-            var numStatics = sc.StaticsCount - sc.ArgsCount;
             WriteStaticsValues(w, from: 0, toExclusive: numStatics);
             w.WriteLine();
         }

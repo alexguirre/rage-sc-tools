@@ -17,9 +17,9 @@ public class ScriptNYOld
     public uint GlobalsCount { get; set; }
     public uint ArgsCount { get; set; }
     public uint GlobalsSignature { get; set; }
-    public byte[]? Code { get; set; }
-    public ScriptValue32[]? Statics { get; set; }
-    public ScriptValue32[]? Globals { get; set; }
+    public byte[] Code { get; set; } = Array.Empty<byte>();
+    public ScriptValue32[] Statics { get; set; } = Array.Empty<ScriptValue32>();
+    public ScriptValue32[] Globals { get; set; } = Array.Empty<ScriptValue32>();
 
     public void Read(DataReader reader)
     {

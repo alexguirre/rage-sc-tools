@@ -28,9 +28,9 @@ public class ScriptPayne
     /// Added in version 17. In version 16 it is set to <c>0xFFFFFFFF</c>.
     /// </summary>
     public uint Unknown_18h { get; set; }
-    public byte[]? Code { get; set; }
-    public ScriptValue32[]? Statics { get; set; }
-    public ScriptValue32[]? Globals { get; set; }
+    public byte[] Code { get; set; } = Array.Empty<byte>();
+    public ScriptValue32[] Statics { get; set; } = Array.Empty<ScriptValue32>();
+    public ScriptValue32[] Globals { get; set; } = Array.Empty<ScriptValue32>();
 
     public void Read(DataReader reader, byte[] aesKey)
     {
