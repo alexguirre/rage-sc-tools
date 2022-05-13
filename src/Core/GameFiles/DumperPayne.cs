@@ -60,11 +60,11 @@ public static class DumperPayne
 
         var lineSB = new StringBuilder();
 
-        for (uint ip = 0; ip < sc.CodeLength;)
+        for (var ip = 0; ip < sc.CodeLength;)
         {
             lineSB.Clear();
 
-            uint size = SizeOf(sc, ip);
+            var size = OpcodePayneExtensions.ByteSize(sc.Code.AsSpan(ip));
 
             // write offset
             if (options.IncludeOffsets)
@@ -102,43 +102,37 @@ public static class DumperPayne
         }
     }
 
-    private static void DisassembleInstructionAt(StringBuilder sb, ScriptPayne sc, uint ip)
+    private static void DisassembleInstructionAt(StringBuilder sb, ScriptPayne sc, int ip)
     {
-        var inst = sc.Code.AsSpan((int)ip, (int)SizeOf(sc, ip));
-        var opcode = (OpcodePayne)inst[0];
-
+        var opcode = (OpcodePayne)sc.Code[ip];
         if (opcode.IsInvalid())
         {
             sb.Append($"<invalid opcode {opcode:X2}>");
             return;
         }
-
-        if (opcode is OpcodePayne.CALLINDIRECT)
-        {
-            ;
-        }
+        
+        var inst = OpcodePayneExtensions.GetInstructionSpan(sc.Code, ip);
 
         sb.Append(opcode.Mnemonic());
 
         switch (opcode)
         {
             case OpcodePayne.STRING:
-                var str = Encoding.UTF8.GetString(inst[2..^1]).Escape();
-                sb.Append($" '{str}'");
+                sb.Append($" '{opcode.GetStringOperand(inst).Escape()}'");
                 break;
 
             case OpcodePayne.PUSH_CONST_U16:
-                var u16 = BinaryPrimitives.ReadUInt16LittleEndian(inst[1..]);
+                var u16 = opcode.GetU16Operand(inst);
                 sb.Append($" {u16} (0x{u16:X})");
                 break;
 
             case OpcodePayne.PUSH_CONST_U32:
-                var u32 = BinaryPrimitives.ReadUInt32LittleEndian(inst[1..]);
+                var u32 = opcode.GetU32Operand(inst);
                 sb.Append($" {unchecked((int)u32)} (0x{u32:X})");
                 break;
 
             case OpcodePayne.PUSH_CONST_F:
-                var f = BinaryPrimitives.ReadSingleLittleEndian(inst[1..]);
+                var f = opcode.GetFloatOperand(inst);
                 sb.Append($" {f}");
                 break;
 
@@ -146,38 +140,35 @@ public static class DumperPayne
             case OpcodePayne.JZ:
             case OpcodePayne.JNZ:
             case OpcodePayne.CALL:
-                var addr = BinaryPrimitives.ReadUInt32LittleEndian(inst[1..]);
+                var addr = opcode.GetU32Operand(inst);
                 sb.Append($" {addr:000000}");
                 break;
 
             case OpcodePayne.SWITCH:
-                for (int i = 0; i < inst[1]; i++)
+                foreach (var (value, jumpAddr) in opcode.GetSwitchOperands(inst))
                 {
-                    var caseOffset = 2 + i * 8;
-                    var caseValue = BinaryPrimitives.ReadUInt32LittleEndian(inst[caseOffset..(caseOffset + 4)]);
-                    var caseJumpAddr = BinaryPrimitives.ReadUInt32LittleEndian(inst[(caseOffset + 4)..]);
-                    sb.Append($" {caseValue}:{caseJumpAddr:000000}");
+                    sb.Append($" {value}:{jumpAddr:000000}");
                 }
                 break;
 
             case OpcodePayne.ENTER:
-                sb.Append($" {inst[1]} {BinaryPrimitives.ReadUInt16LittleEndian(inst[2..])}");
-                if (inst[4] > 2)
+                var enter = opcode.GetEnterOperands(inst);
+                var funcName = opcode.GetEnterFunctionName(inst);
+                sb.Append($" {enter.ParamCount} {enter.FrameSize}");
+                if (funcName is not null)
                 {
-                    var nameSlice = inst[5..^1];
-                    while (nameSlice[0] == 0xFF) { nameSlice = nameSlice[1..]; }
-
-                    var name = Encoding.UTF8.GetString(nameSlice);
-                    sb.Append($" [{name}]");
+                    sb.Append($" [{funcName}]");
                 }
                 break;
 
             case OpcodePayne.LEAVE:
-                sb.Append($" {inst[1]} {inst[2]}");
+                var leave = opcode.GetLeaveOperands(inst);
+                sb.Append($" {leave.ParamCount} {leave.ReturnCount}");
                 break;
 
             case OpcodePayne.NATIVE:
-                sb.Append($" {inst[1]} {inst[2]} 0x{BinaryPrimitives.ReadUInt32LittleEndian(inst[3..]):X8}");
+                var native = opcode.GetNativeOperands(inst);
+                sb.Append($" {native.ParamCount} {native.ReturnCount} 0x{native.CommandHash:X8}");
                 break;
 
             default:
@@ -190,38 +181,6 @@ public static class DumperPayne
                     }
                 }
                 break;
-        }
-    }
-
-    public static uint SizeOf(ScriptPayne sc, uint ip)
-    {
-        OpcodePayne opcode = (OpcodePayne)sc.Code![ip];
-        uint s = (uint)opcode.ByteSize();
-        if (s == 0)
-        {
-            s = opcode switch
-            {
-                OpcodePayne.ENTER => (uint)sc.Code![ip + 4] + 5,
-                OpcodePayne.SWITCH => 8 * (uint)sc.Code![ip + 1] + 2,
-                OpcodePayne.STRING => SizeOfSTRING(sc, ip),
-                _ => 1,
-            };
-        }
-
-        return s;
-
-        static uint SizeOfSTRING(ScriptPayne sc, uint ip)
-        {
-            uint size = 2;
-            uint strLength = sc.Code![ip + 1];
-            if (strLength == 0)
-            {
-                // long string
-                strLength = sc.Code![ip + 2] | (uint)sc.Code![ip + 3] << 8;
-                size += 2;
-            }
-            size += strLength;
-            return size;
         }
     }
 }

@@ -3,16 +3,11 @@
 using System;
 using System.Globalization;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Collections.Generic;
-using System.Linq;
-using System.Diagnostics;
 
 using ScTools.GameFiles;
-using System.Buffers.Binary;
-using System.Text;
 
-public class DisassemblerNY
+public class DisassemblerPayne
 {
     private const string CodeFuncPrefix = "func_",
                          CodeLabelPrefix = "lbl_",
@@ -20,14 +15,14 @@ public class DisassemblerNY
                          ArgLabelPrefix = "arg_";
 
     private readonly byte[] code;
-    private readonly Dictionary<uint, string> codeLabels = new();
-    private readonly Dictionary<uint, string> staticsLabels = new();
+    private readonly Dictionary<int, string> codeLabels = new();
+    private readonly Dictionary<int, string> staticsLabels = new();
     private readonly Dictionary<uint, string> nativeCommands;
 
     public string ScriptName { get; }
-    public ScriptNY Script { get; }
+    public ScriptPayne Script { get; }
 
-    public DisassemblerNY(ScriptNY sc, string scriptName, Dictionary<uint, string> nativeCommands)
+    public DisassemblerPayne(ScriptPayne sc, string scriptName, Dictionary<uint, string> nativeCommands)
     {
         Script = sc ?? throw new ArgumentNullException(nameof(sc));
         ScriptName = scriptName;
@@ -103,12 +98,12 @@ public class DisassemblerNY
         }
     }
 
-    private void WriteStaticsValues(TextWriter w, uint from, uint toExclusive)
+    private void WriteStaticsValues(TextWriter w, int from, int toExclusive)
     {
         var sc = Script;
         int repeatedValue = 0;
         int repeatedCount = 0;
-        for (uint i = from; i < toExclusive; i++)
+        for (int i = from; i < toExclusive; i++)
         {
             if (staticsLabels.TryGetValue(i, out var label))
             {
@@ -153,7 +148,7 @@ public class DisassemblerNY
         }
 
         w.WriteLine(".static");
-        WriteStaticsValues(w, from: 0, toExclusive: numStatics);
+        WriteStaticsValues(w, from: 0, toExclusive: (int)numStatics);
         w.WriteLine();
     }
 
@@ -166,7 +161,7 @@ public class DisassemblerNY
         }
 
         w.WriteLine(".arg");
-        WriteStaticsValues(w, from: sc.StaticsCount - sc.ArgsCount, toExclusive: sc.StaticsCount);
+        WriteStaticsValues(w, from: (int)(sc.StaticsCount - sc.ArgsCount), toExclusive: (int)sc.StaticsCount);
         w.WriteLine();
     }
 
@@ -186,10 +181,10 @@ public class DisassemblerNY
         });
 
         // in case we have label pointing to the end of the code
-        TryWriteLabel((uint)code.Length);
+        TryWriteLabel(code.Length);
 
 
-        void TryWriteLabel(uint address)
+        void TryWriteLabel(int address)
         {
             if (codeLabels.TryGetValue(address, out var label))
             {
@@ -207,9 +202,9 @@ public class DisassemblerNY
         }
     }
 
-    private void DisassembleInstruction(TextWriter w, InstructionContext ctx, uint ip, ReadOnlySpan<byte> inst)
+    private void DisassembleInstruction(TextWriter w, InstructionContext ctx, int ip, ReadOnlySpan<byte> inst)
     {
-        var opcode = (OpcodeNY)inst[0];
+        var opcode = (OpcodePayne)inst[0];
 
         w.Write("\t\t");
         w.Write(opcode.ToString());
@@ -220,63 +215,70 @@ public class DisassemblerNY
 
         switch (opcode)
         {
-            case OpcodeNY.LEAVE:
-                w.Write(inst[1]);
-                w.Write(", ");
-                w.Write(inst[2]);
+            case OpcodePayne.LEAVE:
+                var leave = opcode.GetLeaveOperands(inst);
+                w.Write($" {leave.ParamCount}, {leave.ReturnCount}");
                 break;
-            case OpcodeNY.ENTER:
-                w.Write(inst[1]);
-                w.Write(", ");
-                w.Write(MemoryMarshal.Read<ushort>(inst[2..]));
+            case OpcodePayne.ENTER:
+                var enter = opcode.GetEnterOperands(inst);
+                w.Write($" {enter.ParamCount}, {enter.FrameSize}");
                 break;
-            case OpcodeNY.PUSH_CONST_U16:
-                w.Write(MemoryMarshal.Read<ushort>(inst[1..]));
+            case OpcodePayne.PUSH_CONST_U16:
+                w.Write(opcode.GetU16Operand(inst));
                 break;
-            case OpcodeNY.PUSH_CONST_U32:
-                w.Write(MemoryMarshal.Read<uint>(inst[1..]));
+            case OpcodePayne.PUSH_CONST_U32:
+                w.Write(opcode.GetU32Operand(inst));
                 break;
-            case OpcodeNY.PUSH_CONST_F:
-                w.Write(MemoryMarshal.Read<float>(inst[1..]).ToString("G9", CultureInfo.InvariantCulture));
+            case OpcodePayne.PUSH_CONST_F:
+                w.Write(opcode.GetFloatOperand(inst).ToString("G9", CultureInfo.InvariantCulture));
                 break;
-            case OpcodeNY.NATIVE:
-                var argCount = inst[1];
-                var returnCount = inst[2];
-                var nativeHash = MemoryMarshal.Read<uint>(inst[3..]);
-                if (nativeCommands.TryGetValue(nativeHash, out var nativeName))
+            case OpcodePayne.NATIVE:
+                var native = opcode.GetNativeOperands(inst);
+                if (nativeCommands.TryGetValue(native.CommandHash, out var nativeName))
                 {
-                    w.Write($"{argCount}, {returnCount}, {nativeName}");
+                    w.Write($"{native.ParamCount}, {native.ReturnCount}, {nativeName}");
                 }
                 else
                 {
-                    w.Write($"{argCount}, {returnCount}, 0x{nativeHash:X8}");
+                    w.Write($"{native.ParamCount}, {native.ReturnCount}, 0x{native.CommandHash:X8}");
                 }
                 break;
-            case OpcodeNY.J:
-            case OpcodeNY.JZ:
-            case OpcodeNY.JNZ:
-            case OpcodeNY.CALL:
-                var jumpAddress = MemoryMarshal.Read<uint>(inst[1..]);
-                w.Write(codeLabels.TryGetValue(jumpAddress, out var label) ? label : jumpAddress);
-                break;
-            case OpcodeNY.SWITCH:
-                var caseCount = inst[1];
-                for (int i = 0; i < caseCount; i++)
+            case OpcodePayne.J:
+            case OpcodePayne.JZ:
+            case OpcodePayne.JNZ:
+            case OpcodePayne.CALL:
+                var addr = opcode.GetU32Operand(inst);
+                if (codeLabels.TryGetValue((int)addr, out var label))
                 {
-                    var caseOffset = 2 + i * 8;
-                    var caseValue = BinaryPrimitives.ReadUInt32LittleEndian(inst[caseOffset..(caseOffset + 4)]);
-                    var caseJumpAddr = BinaryPrimitives.ReadUInt32LittleEndian(inst[(caseOffset + 4)..]);
-
-                    if (i != 0)
+                    w.Write(label);
+                }
+                else
+                {
+                    w.Write(addr);
+                }
+                break;
+            case OpcodePayne.SWITCH:
+                var firstCase = true;
+                foreach (var (value, jumpAddr) in opcode.GetSwitchOperands(inst))
+                {
+                    if (!firstCase)
                     {
                         w.Write(", ");
                     }
-                    w.Write("{0}:{1}", caseValue, codeLabels.TryGetValue(caseJumpAddr, out var caseLabel) ? caseLabel : caseJumpAddr);
+                    firstCase = false;
+                    
+                    if (codeLabels.TryGetValue((int)jumpAddr, out var caseLabel))
+                    {
+                        w.Write($"{value}:{caseLabel}");
+                    }
+                    else
+                    {
+                        w.Write($"{value}:{jumpAddr}");
+                    }
                 }
                 break;
-            case OpcodeNY.STRING:
-                var str = Encoding.UTF8.GetString(inst[2..^1]).Escape();
-                w.Write($" '{str}'");
+            case OpcodePayne.STRING:
+                w.Write($" '{opcode.GetStringOperand(inst).Escape()}'");
                 break;
         }
 
@@ -293,34 +295,30 @@ public class DisassemblerNY
             {
                 switch (inst.Opcode)
                 {
-                    case OpcodeNY.J:
-                    case OpcodeNY.JZ:
-                    case OpcodeNY.JNZ:
-                        var jumpAddress = MemoryMarshal.Read<uint>(inst.Bytes[1..]);
-                        AddLabel(codeLabels, jumpAddress);
+                    case OpcodePayne.J:
+                    case OpcodePayne.JZ:
+                    case OpcodePayne.JNZ:
+                        var jumpAddress = inst.Opcode.GetU32Operand(inst.Bytes);
+                        AddLabel(codeLabels, (int)jumpAddress);
                         break;
-                    case OpcodeNY.SWITCH:
-                        var caseCount = inst.Bytes[1];
-                        for (int i = 0; i < caseCount; i++)
+                    case OpcodePayne.SWITCH:
+                        foreach (var (value, jumpAddr) in inst.Opcode.GetSwitchOperands(inst.Bytes))
                         {
-                            var caseOffset = 2 + i * 8;
-                            var caseValue = BinaryPrimitives.ReadUInt32LittleEndian(inst.Bytes[caseOffset..(caseOffset + 4)]);
-                            var caseJumpAddr = BinaryPrimitives.ReadUInt32LittleEndian(inst.Bytes[(caseOffset + 4)..]);
-                            AddLabel(codeLabels, caseJumpAddr);
+                            AddLabel(codeLabels, (int)jumpAddr);
                         }
                         break;
-                    case OpcodeNY.ENTER:
+                    case OpcodePayne.ENTER:
                         var funcAddress = inst.Address;
-                        var funcName = funcAddress == 0 ? "main" : null;
+                        var funcName = inst.Opcode.GetEnterFunctionName(inst.Bytes) ?? (funcAddress == 0 ? "main" : null);
                         AddFuncLabel(codeLabels, funcAddress, funcName);
                         break;
                 }
             });
         }
 
-        static void AddFuncLabel(Dictionary<uint, string> codeLabels, uint address, string? name)
+        static void AddFuncLabel(Dictionary<int, string> codeLabels, int address, string? name)
             => codeLabels.TryAdd(address, name ?? CodeFuncPrefix + address);
-        static void AddLabel(Dictionary<uint, string> codeLabels, uint address)
+        static void AddLabel(Dictionary<int, string> codeLabels, int address)
             => codeLabels.TryAdd(address, CodeLabelPrefix + address);
     }
 
@@ -368,48 +366,37 @@ public class DisassemblerNY
     {
         InstructionContext.CB previousCB = currInst =>
         {
-            uint prevAddress = 0;
-            uint address = 0;
+            int prevAddress = 0;
+            int address = 0;
             while (address < currInst.Address)
             {
                 prevAddress = address;
-                address += (uint)GetInstructionLength(code, address);
+                address += OpcodePayneExtensions.ByteSize(code.AsSpan(address));
             }
             return GetInstructionContext(code, prevAddress, currInst.PreviousCB, currInst.NextCB);
         };
         InstructionContext.CB nextCB = currInst =>
         {
-            var nextAddress = currInst.Address + (uint)currInst.Bytes.Length;
+            var nextAddress = currInst.Address + currInst.Bytes.Length;
             return GetInstructionContext(code, nextAddress, currInst.PreviousCB, currInst.NextCB);
         };
 
-        uint ip = 0;
+        int ip = 0;
         while (ip < code.Length)
         {
             var inst = GetInstructionContext(code, ip, previousCB, nextCB);
             callback(inst);
-            ip += (uint)inst.Bytes.Length;
+            ip += inst.Bytes.Length;
         }
 
-        static InstructionContext GetInstructionContext(byte[] code, uint address, InstructionContext.CB previousCB, InstructionContext.CB nextCB)
+        static InstructionContext GetInstructionContext(byte[] code, int address, InstructionContext.CB previousCB, InstructionContext.CB nextCB)
             => address >= code.Length ? default : new()
             {
                 Address = address,
-                Bytes = code.AsSpan((int)address, GetInstructionLength(code, address)),
+                Bytes = OpcodePayneExtensions.GetInstructionSpan(code, address),
                 PreviousCB = previousCB,
                 NextCB = nextCB,
             };
-
-        static int GetInstructionLength(byte[] code, uint address)
-        {
-            var opcode = (OpcodeNY)code[address];
-            return opcode switch
-            {
-                OpcodeNY.SWITCH => 8 * code[address + 1] + 2,
-                OpcodeNY.STRING => code[address + 1] + 2,
-                _ => opcode.ByteSize(),
-            };
-        }
     }
 
     private readonly ref struct InstructionContext
@@ -417,9 +404,9 @@ public class DisassemblerNY
         public delegate InstructionContext CB(InstructionContext curr);
 
         public bool IsValid => Bytes.Length > 0;
-        public uint Address { get; init; }
+        public int Address { get; init; }
         public ReadOnlySpan<byte> Bytes { get; init; }
-        public OpcodeNY Opcode => (OpcodeNY)Bytes[0];
+        public OpcodePayne Opcode => (OpcodePayne)Bytes[0];
         public CB PreviousCB { get; init; }
         public CB NextCB { get; init; }
 
@@ -427,9 +414,9 @@ public class DisassemblerNY
         public InstructionContext Next() => NextCB(this);
     }
 
-    public static void Disassemble(TextWriter output, ScriptNY sc, string scriptName, Dictionary<uint, string> nativeCommands)
+    public static void Disassemble(TextWriter output, ScriptPayne sc, string scriptName, Dictionary<uint, string> nativeCommands)
     {
-        var a = new DisassemblerNY(sc, scriptName, nativeCommands);
+        var a = new DisassemblerPayne(sc, scriptName, nativeCommands);
         a.Disassemble(output);
     }
 }

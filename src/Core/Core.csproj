@@ -25,13 +25,5 @@
       <HintPath>..\..\dependencies\CodeWalker.Core.dll</HintPath>
     </Reference>
   </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="GameFiles\MC4\" />
-    <Folder Include="GameFiles\NY\" />
-    <Folder Include="GameFiles\Payne\" />
-    <Folder Include="GameFiles\RDR3\" />
-    <Folder Include="GameFiles\RDR2\" />
-  </ItemGroup>
   
 </Project>
