@@ -62,7 +62,7 @@ public class IntrinsicsTests : SemanticsTestsBase
     }
 
     [Theory]
-    [MemberData(nameof(GetAllTextLabelTypes))]
+    [MemberData(nameof(GetAllTextLabelTypes64Bit))]
     public void SizeOfWithTextLabelTypes(TextLabelType tlType)
     {
         var s = Analyze(

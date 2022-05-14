@@ -45,15 +45,15 @@ public class TypeInfoTests
     public static IEnumerable<object[]> GetAllHandleKinds() => HandleType.All.Select(h => new object[] { h.Kind });
 
     [Theory]
-    [MemberData(nameof(GetAllTextLabelLengths))]
+    [MemberData(nameof(GetAllTextLabelLengths64Bit))]
     public void DifferentInstancesOfSameTextLabelTypeMustBeEqual(int length)
     {
-        var tlA = new TextLabelType(length);
-        var tlB = new TextLabelType(length);
+        var tlA = new TextLabelType(length, 8);
+        var tlB = new TextLabelType(length, 8);
 
         EqualAndSameHashCode(tlA, tlB);
     }
-    public static IEnumerable<object[]> GetAllTextLabelLengths() => TextLabelType.All.Select(tl => new object[] { tl.Length });
+    public static IEnumerable<object[]> GetAllTextLabelLengths64Bit() => TextLabelType.All64.Select(tl => new object[] { tl.Length });
 
     [Fact]
     public void DifferentInstancesOfSameEnumTypeMustBeEqual()

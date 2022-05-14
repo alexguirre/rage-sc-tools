@@ -188,7 +188,7 @@ public class ConstantsTests : SemanticsTestsBase
     }
 
     [Theory]
-    [MemberData(nameof(GetAllTextLabelTypes))]
+    [MemberData(nameof(GetAllTextLabelTypes64Bit))]
     public void TextLabelTypesAreNotAllowed(TextLabelType tlType)
     {
         var tlTypeName = TextLabelType.GetTypeNameForLength(tlType.Length);

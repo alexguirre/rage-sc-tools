@@ -21,7 +21,7 @@ public class TextLabelTests : SemanticsTestsBase
     //TEXT_LABEL_APPEND_INT = 0x68,
     //TEXT_LABEL_COPY = 0x69,
     [Theory]
-    [MemberData(nameof(GetAllTextLabelTypes))]
+    [MemberData(nameof(GetAllTextLabelTypes64Bit))]
     public void AssignString(TextLabelType tl)
     {
         var s = Analyze(
@@ -35,7 +35,7 @@ public class TextLabelTests : SemanticsTestsBase
     }
 
     [Theory]
-    [MemberData(nameof(GetAllTextLabelTypes))]
+    [MemberData(nameof(GetAllTextLabelTypes64Bit))]
     public void AssignInt(TextLabelType tl)
     {
         var s = Analyze(
@@ -49,7 +49,7 @@ public class TextLabelTests : SemanticsTestsBase
     }
 
     [Theory]
-    [MemberData(nameof(GetAllTextLabelTypes))]
+    [MemberData(nameof(GetAllTextLabelTypes64Bit))]
     public void AssignTextLabel(TextLabelType tl)
     {
         var s = Analyze(
@@ -63,7 +63,7 @@ public class TextLabelTests : SemanticsTestsBase
     }
 
     [Theory]
-    [MemberData(nameof(GetAllTextLabelTypes))]
+    [MemberData(nameof(GetAllTextLabelTypes64Bit))]
     public void AssignNonAddressableTextLabel(TextLabelType tl)
     {
         var s = Analyze(
@@ -81,7 +81,7 @@ public class TextLabelTests : SemanticsTestsBase
     }
 
     [Theory]
-    [MemberData(nameof(GetAllTextLabelTypes))]
+    [MemberData(nameof(GetAllTextLabelTypes64Bit))]
     public void AppendString(TextLabelType tl)
     {
         var s = Analyze(
@@ -95,7 +95,7 @@ public class TextLabelTests : SemanticsTestsBase
     }
 
     [Theory]
-    [MemberData(nameof(GetAllTextLabelTypes))]
+    [MemberData(nameof(GetAllTextLabelTypes64Bit))]
     public void AppendInt(TextLabelType tl)
     {
         var s = Analyze(
@@ -109,7 +109,7 @@ public class TextLabelTests : SemanticsTestsBase
     }
 
     [Theory]
-    [MemberData(nameof(GetAllTextLabelTypes))]
+    [MemberData(nameof(GetAllTextLabelTypes64Bit))]
     public void AppendTextLabel(TextLabelType tl)
     {
         var s = Analyze(
@@ -124,7 +124,7 @@ public class TextLabelTests : SemanticsTestsBase
     }
 
     [Theory]
-    [MemberData(nameof(GetAllTextLabelTypes))]
+    [MemberData(nameof(GetAllTextLabelTypes64Bit))]
     public void CannotAppendNonAddressableTextLabel(TextLabelType tl)
     {
         // TEXT_LABEL_APPEND_STRING requires an address but return values are not addressable

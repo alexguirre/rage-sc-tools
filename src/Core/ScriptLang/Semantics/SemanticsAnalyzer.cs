@@ -58,7 +58,7 @@ public sealed class SemanticsAnalyzer : Visitor
 
         HandleType.All.ForEach(h => AddSymbol(new BuiltInTypeDeclaration(HandleType.KindToTypeName(h.Kind), h)));
 
-        TextLabelType.All.ForEach(tl => AddSymbol(new BuiltInTypeDeclaration(TextLabelType.GetTypeNameForLength(tl.Length), tl)));
+        TextLabelType.All64.ForEach(tl => AddSymbol(new BuiltInTypeDeclaration(TextLabelType.GetTypeNameForLength(tl.Length), tl)));
     }
 
     private void RegisterIntrinsics()

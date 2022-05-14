@@ -143,7 +143,7 @@ public class StaticsTests : SemanticsTestsBase
     }
 
     [Theory]
-    [MemberData(nameof(GetAllTextLabelTypes))]
+    [MemberData(nameof(GetAllTextLabelTypes64Bit))]
     public void TextLabelTypesWithInitializerAreAllowed(TextLabelType tlType)
     {
         // TODO: static initializers are no longer constant-evaluated
@@ -210,7 +210,7 @@ public class StaticsTests : SemanticsTestsBase
         );
 
         False(s.Diagnostics.HasErrors);
-        AssertStaticWithInitializer(s, "bar", new TextLabelType(64), "hello", StringType.Instance);
+        AssertStaticWithInitializer(s, "bar", new TextLabelType(64, 8), "hello", StringType.Instance);
     }
 
     [Fact]

@@ -130,7 +130,7 @@ public class IntrinsicsTests : CodeGenTestsBase
     }
 
     [Theory]
-    [MemberData(nameof(GetAllTextLabelTypes))]
+    [MemberData(nameof(GetAllTextLabelTypes64Bit))]
     public void SizeOfWithTextLabelTypes(TextLabelType tlType)
     {
         CompileScript(
