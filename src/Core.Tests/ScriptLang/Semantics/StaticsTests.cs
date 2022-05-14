@@ -133,6 +133,7 @@ public class StaticsTests : SemanticsTestsBase
     [MemberData(nameof(GetAllHandleTypes))]
     public void HandleTypesWithNullInitializerAreAllowed(HandleType handleType)
     {
+        // TODO: static initializers are no longer constant-evaluated
         var s = Analyze(
             @$"{HandleType.KindToTypeName(handleType.Kind)} foo = NULL"
         );
@@ -145,6 +146,7 @@ public class StaticsTests : SemanticsTestsBase
     [MemberData(nameof(GetAllTextLabelTypes))]
     public void TextLabelTypesWithInitializerAreAllowed(TextLabelType tlType)
     {
+        // TODO: static initializers are no longer constant-evaluated
         var s = Analyze(
             @$"{TextLabelType.GetTypeNameForLength(tlType.Length)} foo = 'hello'"
         );
@@ -156,6 +158,7 @@ public class StaticsTests : SemanticsTestsBase
     [Fact]
     public void CannotInitializeToFunctionInvocation()
     {
+        // TODO: initializing to function invocation is now allowed
         var s = Analyze(
             @$"FUNC INT foo()
                 RETURN 1
@@ -172,6 +175,7 @@ public class StaticsTests : SemanticsTestsBase
     [Fact]
     public void CannotInitializeToOtherStaticVariable()
     {
+        // TODO: initializing to a previous static var is now allowed
         var s = Analyze(
             @$"INT foo = 1
                INT bar = foo"
@@ -186,6 +190,7 @@ public class StaticsTests : SemanticsTestsBase
     [Fact]
     public void CanInitializeToConstant()
     {
+        // TODO: static initializers are no longer constant-evaluated
         var s = Analyze(
             @$"CONST INT foo = 1
                INT bar = foo"
@@ -198,6 +203,7 @@ public class StaticsTests : SemanticsTestsBase
     [Fact]
     public void CanInitializeTextLabelToString()
     {
+        // TODO: static initializers are no longer constant-evaluated
         var s = Analyze(
             @$"CONST STRING foo = 'hello'
                TEXT_LABEL_63 bar = foo"
@@ -266,6 +272,7 @@ public class StaticsTests : SemanticsTestsBase
         );
 
         False(s.Diagnostics.HasErrors);
+        AssertStatic(s, "foo", new FunctionType(VoidType.Instance, ImmutableArray<ParameterInfo>.Empty));
     }
 
     [Fact]

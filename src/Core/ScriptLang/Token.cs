@@ -277,7 +277,7 @@ public static class TokenKindExtensions
         => new(kind, kind.GetCanonicalLexeme(), location);
 }
 
-public readonly record struct Token
+public readonly record struct Token : IToken<Token, TokenKind>
 {
     public TokenKind Kind { get; init; }
     public bool IsMissing { get; init; }
@@ -337,4 +337,7 @@ public readonly record struct Token
     public static Token Float(float value, SourceRange location = default) => TokenKind.Float.Create(value.ToString("G9"), location);
     public static Token Bool(bool value, SourceRange location = default) => TokenKind.Boolean.Create(value ? "TRUE" : "FALSE", location);
     public static Token String(string value, SourceRange location = default) => TokenKind.String.Create($"'{value.Escape()}'", location);
+
+    public static Token Create(TokenKind kind, ReadOnlyMemory<char> lexeme, SourceRange location = default)
+        => new(kind, lexeme, location);
 }

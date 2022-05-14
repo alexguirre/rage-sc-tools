@@ -2,6 +2,7 @@
 {
     using System;
     using System.Text;
+    using System.Globalization;
 
     public static class SpanExtensions
     {
@@ -143,28 +144,35 @@
         public static string Unescape(this string str) => str.AsSpan().Unescape();
 
         public static int ParseAsInt(this ReadOnlySpan<char> str)
-            => str.StartsWith("0x") ?
-                int.Parse(str[2..], System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture) :
-                int.Parse(str, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture);
+            => TryParseHexInt(str, out var hexValue) ?
+                hexValue :
+                int.Parse(str, NumberStyles.Number, CultureInfo.InvariantCulture);
         public static int ParseAsInt(this ReadOnlyMemory<char> str) => str.Span.ParseAsInt();
         public static int ParseAsInt(this string str) => str.AsSpan().ParseAsInt();
 
+        public static uint ParseAsUInt(this ReadOnlySpan<char> str)
+            => TryParseHexUInt(str, out var hexValue) ?
+                hexValue :
+                uint.Parse(str, NumberStyles.Number, CultureInfo.InvariantCulture);
+        public static uint ParseAsUInt(this ReadOnlyMemory<char> str) => str.Span.ParseAsUInt();
+        public static uint ParseAsUInt(this string str) => str.AsSpan().ParseAsUInt();
+
         public static float ParseAsFloat(this ReadOnlySpan<char> str)
-            => float.Parse(str, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
+            => float.Parse(str, NumberStyles.Float, CultureInfo.InvariantCulture);
         public static float ParseAsFloat(this ReadOnlyMemory<char> str) => str.Span.ParseAsFloat();
         public static float ParseAsFloat(this string str) => str.AsSpan().ParseAsFloat();
 
         public static ulong ParseAsUInt64(this ReadOnlySpan<char> str)
-            => str.StartsWith("0x") ?
-                ulong.Parse(str[2..], System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture) :
-                ulong.Parse(str, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture);
+            => TryParseHexUInt64(str, out var hexValue) ?
+                hexValue :
+                ulong.Parse(str, NumberStyles.Number, CultureInfo.InvariantCulture);
         public static ulong ParseAsUInt64(this ReadOnlyMemory<char> str) => str.Span.ParseAsUInt64();
         public static ulong ParseAsUInt64(this string str) => str.AsSpan().ParseAsUInt64();
 
         public static long ParseAsInt64(this ReadOnlySpan<char> str)
-            => str.StartsWith("0x") ?
-                long.Parse(str[2..], System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture) :
-                long.Parse(str, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture);
+            => TryParseHexInt64(str, out var hexValue) ?
+                hexValue :
+                long.Parse(str, NumberStyles.Number, CultureInfo.InvariantCulture);
         public static long ParseAsInt64(this ReadOnlyMemory<char> str) => str.Span.ParseAsInt64();
         public static long ParseAsInt64(this string str) => str.AsSpan().ParseAsInt64();
 
@@ -172,5 +180,88 @@
             => bool.Parse(str);
         public static bool ParseAsBool(this ReadOnlyMemory<char> str) => str.Span.ParseAsBool();
         public static bool ParseAsBool(this string str) => str.AsSpan().ParseAsBool();
+
+
+        private static bool TryParseHexUInt(ReadOnlySpan<char> str, out uint value)
+        {
+            var s = TryParseHexInt(str, out var valueSigned);
+            value = unchecked((uint)valueSigned);
+            return s;
+        }
+        private static bool TryParseHexInt(ReadOnlySpan<char> str, out int value)
+        {
+            if (str.Length < 3)
+            {
+                value = 0;
+                return false;
+            }
+
+            int sign = 1;
+            if (str[0] == '-')
+            {
+                sign = -1;
+                str = str[1..];
+            }
+            else if (str[0] == '+')
+            {
+                str = str[1..];
+            }
+
+            if (str[0] != '0' || (str[1] != 'x' && str[1] != 'X'))
+            {
+                value = 0;
+                return false;
+            }
+
+            if (uint.TryParse(str[2..], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var valueUnsigned))
+            {
+                value = unchecked((int)valueUnsigned) * sign;
+                return true;
+            }
+
+            value = 0;
+            return false;
+        }
+
+        private static bool TryParseHexUInt64(ReadOnlySpan<char> str, out ulong value)
+        {
+            var s = TryParseHexInt64(str, out var valueSigned);
+            value = unchecked((ulong)valueSigned);
+            return s;
+        }
+        private static bool TryParseHexInt64(ReadOnlySpan<char> str, out long value)
+        {
+            if (str.Length < 3)
+            {
+                value = 0;
+                return false;
+            }
+
+            int sign = 1;
+            if (str[0] == '-')
+            {
+                sign = -1;
+                str = str[1..];
+            }
+            else if (str[0] == '+')
+            {
+                str = str[1..];
+            }
+
+            if (str[0] != '0' || (str[1] != 'x' && str[1] != 'X'))
+            {
+                value = 0;
+                return false;
+            }
+
+            if (ulong.TryParse(str[2..], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var valueUnsigned))
+            {
+                value = unchecked((long)valueUnsigned) * sign;
+                return true;
+            }
+
+            value = 0;
+            return false;
+        }
     }
 }

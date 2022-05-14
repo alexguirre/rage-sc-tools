@@ -285,10 +285,8 @@
         }
 
         [Fact]
-        public void IntegerLiteralWithPlusMinus()
+        public void IntegerLiteralWithSign()
         {
-            // TODO: should the plus/minus be part of the literal?
-            // plus/minus with integers are tokenized independently
             var (tokens, diag) = Lex("+9 -9 +0x1 -0x1");
 
             False(diag.HasErrors);
@@ -306,10 +304,30 @@
             TokenEqual(TokenKind.Integer, "0x1", (1, 13), (1, 15), tokens[7]);
             TokenIsEOF(tokens.Last());
 
-            //Equal(9, tokens[0].GetIntLiteral());
-            //Equal(-9, tokens[1].GetIntLiteral());
-            //Equal(1, tokens[2].GetIntLiteral());
-            //Equal(-1, tokens[3].GetIntLiteral());
+            Equal(9, tokens[1].GetIntLiteral());
+            Equal(9, tokens[3].GetIntLiteral());
+            Equal(1, tokens[5].GetIntLiteral());
+            Equal(1, tokens[7].GetIntLiteral());
+        }
+
+        [Fact]
+        public void IntegersWithSignWithoutSpaces()
+        {
+            var (tokens, diag) = Lex("+9-9");
+
+            False(diag.HasErrors);
+            False(diag.HasWarnings);
+
+            Equal(5, tokens.Length);
+
+            TokenEqual(TokenKind.Plus, "+", (1, 1), (1, 1), tokens[0]);
+            TokenEqual(TokenKind.Integer, "9", (1, 2), (1, 2), tokens[1]);
+            TokenEqual(TokenKind.Minus, "-", (1, 3), (1, 3), tokens[2]);
+            TokenEqual(TokenKind.Integer, "9", (1, 4), (1, 4), tokens[3]);
+            TokenIsEOF(tokens.Last());
+
+            Equal(9, tokens[1].GetIntLiteral());
+            Equal(9, tokens[3].GetIntLiteral());
         }
 
         [Fact]
@@ -330,28 +348,31 @@
             Equal(15.25f, tokens[1].GetFloatLiteral());
         }
 
-        //[Fact]
-        //public void FloatLiteralWithPlusMinus()
-        //{
-        // TODO: should the plus/minus be part of the literal?
-        //    var (tokens, diag) = Lex("+0.0 -0.0 +15.25 -15.25");
+        [Fact]
+        public void FloatLiteralWithSign()
+        {
+            var (tokens, diag) = Lex("+0.0 -0.0 +15.25 -15.25");
 
-        //    False(diag.HasErrors);
-        //    False(diag.HasWarnings);
+            False(diag.HasErrors);
+            False(diag.HasWarnings);
 
-        //    Equal(5, tokens.Length);
+            Equal(9, tokens.Length);
 
-        //    TokenEqual(TokenKind.Float, "+0.0", (1, 1), (1, 4), tokens[0]);
-        //    TokenEqual(TokenKind.Float, "-0.0", (1, 6), (1, 9), tokens[1]);
-        //    TokenEqual(TokenKind.Float, "+15.25", (1, 11), (1, 16), tokens[1]);
-        //    TokenEqual(TokenKind.Float, "-15.25", (1, 18), (1, 23), tokens[1]);
-        //    TokenIsEOF(tokens.Last());
+            TokenEqual(TokenKind.Plus, "+", (1, 1), (1, 1), tokens[0]);
+            TokenEqual(TokenKind.Float, "0.0", (1, 2), (1, 4), tokens[1]);
+            TokenEqual(TokenKind.Minus, "-", (1, 6), (1, 6), tokens[2]);
+            TokenEqual(TokenKind.Float, "0.0", (1, 7), (1, 9), tokens[3]);
+            TokenEqual(TokenKind.Plus, "+", (1, 11), (1, 11), tokens[4]);
+            TokenEqual(TokenKind.Float, "15.25", (1, 12), (1, 16), tokens[5]);
+            TokenEqual(TokenKind.Minus, "-", (1, 18), (1, 18), tokens[6]);
+            TokenEqual(TokenKind.Float, "15.25", (1, 19), (1, 23), tokens[7]);
+            TokenIsEOF(tokens.Last());
 
-        //    Equal(0.0f, tokens[0].GetFloatLiteral());
-        //    Equal(-0.0f, tokens[1].GetFloatLiteral());
-        //    Equal(15.25f, tokens[2].GetFloatLiteral());
-        //    Equal(-15.25f, tokens[3].GetFloatLiteral());
-        //}
+            Equal(0.0f, tokens[1].GetFloatLiteral());
+            Equal(0.0f, tokens[3].GetFloatLiteral());
+            Equal(15.25f, tokens[5].GetFloatLiteral());
+            Equal(15.25f, tokens[7].GetFloatLiteral());
+        }
 
         [Fact]
         public void FloatStartingWithDotLiteral()
