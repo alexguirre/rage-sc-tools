@@ -53,7 +53,7 @@ public sealed class Lexer : LexerBase<Token, TokenKind, ErrorCode>
                     OpenComment: ErrorCode.LexerOpenComment,
                     InvalidIntegerLiteral: ErrorCode.LexerInvalidIntegerLiteral,
                     InvalidFloatLiteral: ErrorCode.LexerInvalidFloatLiteral),
-                allowAssemblyStyleSingleLineComments: true)
+                allowAssemblyStyleSingleLineComments: false)
         {
         }
 
