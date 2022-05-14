@@ -52,7 +52,8 @@ public sealed class Lexer : LexerBase<Token, TokenKind, ErrorCode>
                     UnrecognizedEscapeSequence: ErrorCode.LexerUnrecognizedEscapeSequence,
                     OpenComment: ErrorCode.LexerOpenComment,
                     InvalidIntegerLiteral: ErrorCode.LexerInvalidIntegerLiteral,
-                    InvalidFloatLiteral: ErrorCode.LexerInvalidFloatLiteral))
+                    InvalidFloatLiteral: ErrorCode.LexerInvalidFloatLiteral),
+                allowAssemblyStyleSingleLineComments: true)
         {
         }
 

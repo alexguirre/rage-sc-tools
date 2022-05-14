@@ -544,6 +544,22 @@
         }
 
         [Fact]
+        public void SingleLineCommentAssemblyStyle()
+        {
+            var (tokens, diag) = Lex("foo;comment\nbar");
+
+            False(diag.HasErrors);
+            False(diag.HasWarnings);
+
+            Equal(4, tokens.Length);
+
+            TokenEqual(TokenKind.Identifier, "foo", (1, 1), (1, 3), tokens[0]);
+            TokenEqual(TokenKind.EOS, "\n", (1, 12), (1, 12), tokens[1]);
+            TokenEqual(TokenKind.Identifier, "bar", (2, 1), (2, 3), tokens[2]);
+            TokenIsEOF(tokens.Last());
+        }
+
+        [Fact]
         public void SingleLineCommentWithStatementContinuation()
         {
             var (tokens, diag) = Lex("foo//comment\\\nbar\nxyz"); // 'bar' should be part of the comment but not 'xyz'

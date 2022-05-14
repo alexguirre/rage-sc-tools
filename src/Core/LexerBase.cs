@@ -75,6 +75,7 @@ public abstract class LexerBase<TToken, TTokenKind, TErrorCode> : IEnumerable<TT
         public LexerBase<TToken, TTokenKind, TErrorCode> Lexer { get; }
         private readonly CommonTokens commonTokens;
         private readonly CommonErrors commonErrors;
+        private readonly bool allowAssemblyStyleSingleLineComments; // allows single-line comments to be prefixed with ';'
         private int startPos, endPos;
         private int startLine, endLine;
         private int startColumn, endColumn;
@@ -88,10 +89,11 @@ public abstract class LexerBase<TToken, TTokenKind, TErrorCode> : IEnumerable<TT
         protected ReadOnlyMemory<char> TokenLexeme
             => Lexer.Source.AsMemory(startPos, endPos - startPos);
 
-        public EnumeratorBase(LexerBase<TToken, TTokenKind, TErrorCode> lexer, CommonTokens commonTokens, CommonErrors commonErrors)
+        public EnumeratorBase(LexerBase<TToken, TTokenKind, TErrorCode> lexer, CommonTokens commonTokens, CommonErrors commonErrors, bool allowAssemblyStyleSingleLineComments)
         {
             this.commonTokens = commonTokens;
             this.commonErrors = commonErrors;
+            this.allowAssemblyStyleSingleLineComments = allowAssemblyStyleSingleLineComments;
             Lexer = lexer;
             Reset();
         }
@@ -363,14 +365,21 @@ public abstract class LexerBase<TToken, TTokenKind, TErrorCode> : IEnumerable<TT
 
         private bool SkipSingleLineComment()
         {
-            if (Peek(0) != '/' || Peek(1) != '/')
+            if ((Peek(0) != '/' || Peek(1) != '/') && (!allowAssemblyStyleSingleLineComments || Peek(0) != ';'))
             {
                 return false;
             }
 
             // skip comment prefix
-            Next();
-            Next();
+            if (Peek(0) == ';')
+            {
+                Next();
+            }
+            else
+            {
+                Next();
+                Next();
+            }
 
             var prevIsBackslash = false;
             while (true)
