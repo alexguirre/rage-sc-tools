@@ -42,6 +42,7 @@ public sealed class Lexer : LexerBase<Token, TokenKind, ErrorCode>
                     OpenParen: TokenKind.OpenParen,
                     CloseParen: TokenKind.CloseParen,
                     Colon: TokenKind.Colon,
+                    Hash: TokenKind.Hash,
                     Integer: TokenKind.Integer,
                     Float: TokenKind.Float,
                     String: TokenKind.String,

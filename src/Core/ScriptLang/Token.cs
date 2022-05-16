@@ -45,6 +45,7 @@ public enum TokenKind
     LessThanLessThan,       // <<
     GreaterThanGreaterThan, // >>
     Colon,                  // :
+    Hash,                   // #
 
     // Literals
     String,     // "...", '...'
@@ -137,6 +138,7 @@ public static class TokenLexemes
     public const string LessThanLessThan = "<<";
     public const string GreaterThanGreaterThan = ">>";
     public const string Colon = ":";
+    public const string Hash = "#";
 
     public const string BooleanTrue = "TRUE";
     public const string BooleanFalse = "FALSE";
@@ -224,6 +226,7 @@ public static class TokenKindExtensions
             TokenKind.LessThanLessThan => TokenLexemes.LessThanLessThan,
             TokenKind.GreaterThanGreaterThan => TokenLexemes.GreaterThanGreaterThan,
             TokenKind.Colon => TokenLexemes.Colon,
+            TokenKind.Hash => TokenLexemes.Hash,
             TokenKind.Null => TokenLexemes.Null,
             TokenKind.SCRIPT => TokenLexemes.SCRIPT,
             TokenKind.ENDSCRIPT => TokenLexemes.ENDSCRIPT,

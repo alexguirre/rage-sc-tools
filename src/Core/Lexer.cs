@@ -14,7 +14,17 @@ public interface IToken<TSelf, TTokenKind> where TTokenKind : struct, Enum
     SourceRange Location { get; }
 }
 
-public abstract class LexerBase<TToken, TTokenKind, TErrorCode> : IEnumerable<TToken>
+public interface ILexer<TToken, TTokenKind, TErrorCode> : IEnumerable<TToken>
+    where TToken : struct, IToken<TToken, TTokenKind>
+    where TTokenKind : struct, Enum
+    where TErrorCode : struct, Enum
+{
+    string FilePath { get; }
+    string Source { get; }
+    DiagnosticsReport Diagnostics { get; }
+}
+
+public abstract class LexerBase<TToken, TTokenKind, TErrorCode> : ILexer<TToken, TTokenKind, TErrorCode>
     where TToken : struct, IToken<TToken, TTokenKind>
     where TTokenKind : struct, Enum
     where TErrorCode : struct, Enum
@@ -49,20 +59,21 @@ public abstract class LexerBase<TToken, TTokenKind, TErrorCode> : IEnumerable<TT
     protected static bool IsHexadecimalDigit(char c)
         => c is (>= '0' and <= '9') or (>= 'A' and <= 'F') or (>= 'a' and <= 'f');
 
-    public readonly record struct CommonTokens(
+    public readonly record struct CommonTokenSet(
         TTokenKind Bad,
         TTokenKind Dot,
         TTokenKind Comma,
         TTokenKind OpenParen,
         TTokenKind CloseParen,
         TTokenKind Colon,
+        TTokenKind Hash,
         TTokenKind Integer,
         TTokenKind Float,
         TTokenKind String,
         TTokenKind EOS,
         TTokenKind EOF);
 
-    public readonly record struct CommonErrors(
+    public readonly record struct CommonErrorSet(
         TErrorCode UnexpectedCharacter,
         TErrorCode IncompleteString,
         TErrorCode UnrecognizedEscapeSequence,
@@ -73,8 +84,8 @@ public abstract class LexerBase<TToken, TTokenKind, TErrorCode> : IEnumerable<TT
     public abstract class EnumeratorBase : IEnumerator<TToken>
     {
         public LexerBase<TToken, TTokenKind, TErrorCode> Lexer { get; }
-        private readonly CommonTokens commonTokens;
-        private readonly CommonErrors commonErrors;
+        private readonly CommonTokenSet commonTokens;
+        private readonly CommonErrorSet commonErrors;
         private readonly bool allowAssemblyStyleSingleLineComments; // allows single-line comments to be prefixed with ';'
         private int startPos, endPos;
         private int startLine, endLine;
@@ -89,7 +100,7 @@ public abstract class LexerBase<TToken, TTokenKind, TErrorCode> : IEnumerable<TT
         protected ReadOnlyMemory<char> TokenLexeme
             => Lexer.Source.AsMemory(startPos, endPos - startPos);
 
-        public EnumeratorBase(LexerBase<TToken, TTokenKind, TErrorCode> lexer, CommonTokens commonTokens, CommonErrors commonErrors, bool allowAssemblyStyleSingleLineComments)
+        public EnumeratorBase(LexerBase<TToken, TTokenKind, TErrorCode> lexer, CommonTokenSet commonTokens, CommonErrorSet commonErrors, bool allowAssemblyStyleSingleLineComments)
         {
             this.commonTokens = commonTokens;
             this.commonErrors = commonErrors;
@@ -161,6 +172,7 @@ public abstract class LexerBase<TToken, TTokenKind, TErrorCode> : IEnumerable<TT
                 '(' => NewToken(commonTokens.OpenParen),
                 ')' => NewToken(commonTokens.CloseParen),
                 ':' => NewToken(commonTokens.Colon),
+                '#' => NewToken(commonTokens.Hash),
                 '"' or '\'' => LexString(),
                 '`' => LexHashString(),
                 '\n' => LexEOS(),

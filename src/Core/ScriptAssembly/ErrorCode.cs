@@ -18,5 +18,10 @@
         SemanticUndefinedSymbol = 0x2001,
         SemanticLabelAlreadyDefined = 0x2002,
         SemanticUndefinedLabel = 0x2003,
+
+        // Preprocessor errors   0x3000 - 0x3FFF
+        PreprocessorDirectiveWrongPlacement = 0x3000,
+        PreprocessorUnknownDirective = 0x3001,
+        PreprocessorUnexpectedToken = 0x3002,
     }
 }

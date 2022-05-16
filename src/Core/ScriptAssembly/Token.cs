@@ -18,6 +18,7 @@ public enum TokenKind
     OpenParen,              // (
     CloseParen,             // )
     Colon,                  // :
+    Hash,                   // #
 
     // Literals
     String,     // "...", '...'
@@ -42,6 +43,7 @@ public static class TokenLexemes
     public const string OpenParen = "(";
     public const string CloseParen = ")";
     public const string Colon = ":";
+    public const string Hash = "#";
 
     public const string EOS = "\n";
     public const string EOF = "";
@@ -57,6 +59,7 @@ public static class TokenKindExtensions
             TokenKind.OpenParen => TokenLexemes.OpenParen,
             TokenKind.CloseParen => TokenLexemes.CloseParen,
             TokenKind.Colon => TokenLexemes.Colon,
+            TokenKind.Hash => TokenLexemes.Hash,
             TokenKind.EOS => TokenLexemes.EOS,
             TokenKind.EOF => TokenLexemes.EOF,
             _ => throw new ArgumentException($"Token '{kind}' has no canonical lexeme", nameof(kind)),

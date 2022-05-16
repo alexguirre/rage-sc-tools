@@ -19,7 +19,7 @@ public class Parser
     internal const int MissingGlobalBlockIndex = -1;
     public static StringComparer CaseInsensitiveComparer => ScriptAssembly.Assembler.CaseInsensitiveComparer;
 
-    private readonly Lexer.Enumerator lexerEnumerator;
+    private readonly IEnumerator<Token> tokenEnumerator;
     private readonly Queue<Token> lookAheadTokens = new();
     private bool isInsideCommaSeparatedVarDeclaration = false;
     private Token commaSeparatedVarDeclarationTypeIdentifier = default; // set when isInsideVarDeclaration is true
@@ -32,11 +32,13 @@ public class Parser
     private Token Current { get; set; }
     private Diagnostic? LastError { get; set; }
 
-    public Parser(Lexer lexer, DiagnosticsReport diagnostics)
+    public Parser(Lexer lexer, DiagnosticsReport diagnostics, bool runPreprocessor = true)
     {
         Lexer = lexer;
         Diagnostics = diagnostics;
-        lexerEnumerator = lexer.GetEnumerator();
+        tokenEnumerator = runPreprocessor ?
+            new Preprocessor(diagnostics).Preprocess(lexer).GetEnumerator():
+            lexer.GetEnumerator();
         Next();
     }
 
@@ -1085,8 +1087,8 @@ public class Parser
         {
             while (lookAheadTokens.Count < offset)
             {
-                lexerEnumerator.MoveNext();
-                lookAheadTokens.Enqueue(lexerEnumerator.Current);
+                tokenEnumerator.MoveNext();
+                lookAheadTokens.Enqueue(tokenEnumerator.Current);
             }
         }
         return lookAheadTokens.ElementAt(offset - 1);
@@ -1100,8 +1102,8 @@ public class Parser
         }
         else
         {
-            lexerEnumerator.MoveNext();
-            Current = lexerEnumerator.Current;
+            tokenEnumerator.MoveNext();
+            Current = tokenEnumerator.Current;
         }
     }
 

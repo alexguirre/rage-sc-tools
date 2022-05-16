@@ -27,12 +27,12 @@
         [Fact]
         public void Symbols()
         {
-            var (tokens, diag) = Lex(".,():");
+            var (tokens, diag) = Lex(".,():#");
 
             False(diag.HasErrors);
             False(diag.HasWarnings);
 
-            Equal(6, tokens.Length);
+            Equal(7, tokens.Length);
 
             int checkTokenIndex = 0;
             (int Line, int Column) checkStart, checkEnd;
@@ -51,6 +51,7 @@
             check(TokenKind.OpenParen, "(");
             check(TokenKind.CloseParen, ")");
             check(TokenKind.Colon, ":");
+            check(TokenKind.Hash, "#");
 
             TokenIsEOF(tokens.Last());
         }
