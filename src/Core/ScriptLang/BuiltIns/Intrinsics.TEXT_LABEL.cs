@@ -39,21 +39,23 @@ public static partial class Intrinsics
     /// <summary>
     /// Type-checks an invocation against the signature (TEXT_LABEL_n&, <paramref name="secondParamType"/>) -> VOID
     /// </summary>
-    private static ExpressionSemantics TypeCheckInvocationWithTextLabelRefParameter(InvocationExpression node, SemanticsAnalyzer semantics, ExpressionTypeChecker exprTypeChecker, TypeInfo secondParamType)
+    private static ExpressionSemantics TypeCheckInvocationWithTextLabelRefParameter(IIntrinsicDeclaration intrinsic, InvocationExpression node, SemanticsAnalyzer semantics, ExpressionTypeChecker exprTypeChecker, TypeInfo secondParamType)
     {
-        var argTypes = node.Arguments.Select(a => a.Accept(exprTypeChecker, semantics)).ToArray();
+        IntrinsicUsagePrecondition(intrinsic, node);
+
+        node.Arguments.ForEach(a => a.Accept(exprTypeChecker, semantics));
 
         // type-check arguments
         var args = node.Arguments;
         ExpressionTypeChecker.CheckArgumentCount(parameterCount: 2, node, semantics);
 
         TypeInfo returnType = ErrorType.Instance;
-        if (argTypes.Length > 0)
+        if (args.Length > 0)
         {
             TypeCheckTextLabelOfAnyLengthReferenceParameter(0, args[0], semantics);
         }
 
-        if (argTypes.Length > 1)
+        if (args.Length > 1)
         {
             ExpressionTypeChecker.TypeCheckArgumentAgainstParameter(1, args[1], new(secondParamType, IsReference: false), semantics);
         }
@@ -75,7 +77,7 @@ public static partial class Intrinsics
         }
 
         public override ExpressionSemantics InvocationTypeCheck(InvocationExpression node, SemanticsAnalyzer semantics, ExpressionTypeChecker exprTypeChecker)
-            => TypeCheckInvocationWithTextLabelRefParameter(node, semantics, exprTypeChecker, StringType.Instance);
+            => TypeCheckInvocationWithTextLabelRefParameter(this, node, semantics, exprTypeChecker, StringType.Instance);
 
         public override void CodeGen(InvocationExpression node, CodeEmitter c)
             => c.EmitTextLabelAssignString(destinationTextLabel: node.Arguments[0], sourceString: node.Arguments[1]);
@@ -95,7 +97,7 @@ public static partial class Intrinsics
         }
 
         public override ExpressionSemantics InvocationTypeCheck(InvocationExpression node, SemanticsAnalyzer semantics, ExpressionTypeChecker exprTypeChecker)
-            => TypeCheckInvocationWithTextLabelRefParameter(node, semantics, exprTypeChecker, IntType.Instance);
+            => TypeCheckInvocationWithTextLabelRefParameter(this, node, semantics, exprTypeChecker, IntType.Instance);
 
         public override void CodeGen(InvocationExpression node, CodeEmitter c)
             => c.EmitTextLabelAssignInt(destinationTextLabel: node.Arguments[0], sourceInt: node.Arguments[1]);
@@ -115,7 +117,7 @@ public static partial class Intrinsics
         }
 
         public override ExpressionSemantics InvocationTypeCheck(InvocationExpression node, SemanticsAnalyzer semantics, ExpressionTypeChecker exprTypeChecker)
-            => TypeCheckInvocationWithTextLabelRefParameter(node, semantics, exprTypeChecker, StringType.Instance);
+            => TypeCheckInvocationWithTextLabelRefParameter(this, node, semantics, exprTypeChecker, StringType.Instance);
 
         public override void CodeGen(InvocationExpression node, CodeEmitter c)
             => c.EmitTextLabelAppendString(destinationTextLabel: node.Arguments[0], sourceString: node.Arguments[1]);
@@ -135,7 +137,7 @@ public static partial class Intrinsics
         }
 
         public override ExpressionSemantics InvocationTypeCheck(InvocationExpression node, SemanticsAnalyzer semantics, ExpressionTypeChecker exprTypeChecker)
-            => TypeCheckInvocationWithTextLabelRefParameter(node, semantics, exprTypeChecker, IntType.Instance);
+            => TypeCheckInvocationWithTextLabelRefParameter(this, node, semantics, exprTypeChecker, IntType.Instance);
 
         public override void CodeGen(InvocationExpression node, CodeEmitter c)
             => c.EmitTextLabelAppendInt(destinationTextLabel: node.Arguments[0], sourceInt: node.Arguments[1]);

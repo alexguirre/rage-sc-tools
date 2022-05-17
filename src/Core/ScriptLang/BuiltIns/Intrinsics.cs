@@ -11,11 +11,11 @@ using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 // TODO: implement intrinsics
 // HASH_ENUM_TO_INT_INDEX (HASH_ENUM) -> INT
 // INT_INDEX_TO_HASH_ENUM (ENUNNAME, INT) -> HASH_ENUM
-// NATIVE_TO_INT (handle types?) -> INT
 
 public interface IIntrinsicDeclaration : IDeclaration
 {
@@ -57,6 +57,7 @@ public static partial class Intrinsics
     // Bit Utilities
     public static IIntrinsicDeclaration IS_BIT_SET { get; } = new IntrinsicIS_BIT_SET();
 
+    public static IIntrinsicDeclaration NATIVE_TO_INT { get; } = new IntrinsicNATIVE_TO_INT();
 
     public static ImmutableArray<IIntrinsicDeclaration> All { get; } = ImmutableArray.Create(
         I2F, F2I, F2V,
@@ -64,7 +65,16 @@ public static partial class Intrinsics
         COUNT_OF,
         ENUM_TO_INT, INT_TO_ENUM, ENUM_TO_STRING,
         TEXT_LABEL_ASSIGN_STRING, TEXT_LABEL_ASSIGN_INT, TEXT_LABEL_APPEND_STRING, TEXT_LABEL_APPEND_INT,
-        IS_BIT_SET);
+        IS_BIT_SET,
+        NATIVE_TO_INT);
+
+    private static void IntrinsicUsagePrecondition(IIntrinsicDeclaration intrinsic, InvocationExpression node, [CallerArgumentExpression("node")] string? paramName = null)
+    {
+        if (node.Callee is not NameExpression nameExpr || !ReferenceEquals(nameExpr.Semantics.Declaration, intrinsic))
+        {
+            throw new ArgumentException("Expected a call to this intrinsic.", paramName);
+        }
+    }
 
     private abstract class BaseIntrinsic : IIntrinsicDeclaration
     {
@@ -87,6 +97,9 @@ public static partial class Intrinsics
         public virtual ConstantValue ConstantEval(InvocationExpression node, SemanticsAnalyzer semantics)
              => throw new NotSupportedException($"Intrinsic '{Name}' cannot be constant-evaluated.");
         public abstract void CodeGen(InvocationExpression node, CodeEmitter codeEmitter);
+
+        protected void UsagePrecondition(InvocationExpression node, [CallerArgumentExpression("node")] string? paramName = null)
+            => IntrinsicUsagePrecondition(this, node, paramName);
     }
 
     private abstract class BaseFunctionLikeIntrinsic : BaseIntrinsic
@@ -100,7 +113,7 @@ public static partial class Intrinsics
 
         public sealed override ExpressionSemantics InvocationTypeCheck(InvocationExpression node, SemanticsAnalyzer semantics, ExpressionTypeChecker exprTypeChecker)
         {
-            Debug.Assert(node.Callee is NameExpression nameExpr && ReferenceEquals(nameExpr.Semantics.Declaration, this));
+            UsagePrecondition(node);
 
             // NOTE: invocation type-checking code copied from ExpressionTypeChecker
             var argTypes = node.Arguments.Select(a => a.Accept(exprTypeChecker, semantics)).ToArray();

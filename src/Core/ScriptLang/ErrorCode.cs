@@ -45,6 +45,7 @@
         SemanticArgNotAnEnum = 0x2014,
         SemanticArgNotAnEnumType = 0x2015,
         SemanticArgNotAnArray = 0x2016,
+        SemanticArgNotAHandle = 0x2017,
 
         // Preprocessor errors   0x3000 - 0x3FFF
         PreprocessorDirectiveWrongPlacement = 0x3000,

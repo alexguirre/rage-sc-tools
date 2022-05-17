@@ -25,10 +25,9 @@ public static partial class Intrinsics
 
         public override ExpressionSemantics InvocationTypeCheck(InvocationExpression node, SemanticsAnalyzer semantics, ExpressionTypeChecker exprTypeChecker)
         {
-            Debug.Assert(node.Callee is NameExpression nameExpr && ReferenceEquals(nameExpr.Semantics.Declaration, this));
+            UsagePrecondition(node);
 
-            // NOTE: invocation type-checking code copied from ExpressionTypeChecker
-            var argTypes = node.Arguments.Select(a => a.Accept(exprTypeChecker, semantics)).ToArray();
+            node.Arguments.ForEach(a => a.Accept(exprTypeChecker, semantics));
 
             // type-check arguments
             ExpressionTypeChecker.CheckArgumentCount(parameterCount: 1, node, semantics);

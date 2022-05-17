@@ -11,15 +11,15 @@ using System.Linq;
 public static partial class Intrinsics
 {
     /// <summary>
-    /// Casts an ENUM value to the corresponding INT value.
+    /// Casts an handle type value to the corresponding INT value.
     /// <br/>
-    /// Signature: ENUM_TO_INT (ENUM) -> INT
+    /// Signature: NATIVE_TO_INT (HANDLE) -> INT
     /// </summary>
-    private sealed class IntrinsicENUM_TO_INT : BaseIntrinsic
+    private sealed class IntrinsicNATIVE_TO_INT : BaseIntrinsic
     {
-        public new const string Name = "ENUM_TO_INT";
+        public new const string Name = "NATIVE_TO_INT";
 
-        public IntrinsicENUM_TO_INT() : base(Name)
+        public IntrinsicNATIVE_TO_INT() : base(Name)
         {
         }
 
@@ -34,18 +34,12 @@ public static partial class Intrinsics
             ExpressionTypeChecker.CheckArgumentCount(parameterCount: 1, node, semantics);
 
             // check that the argument is an ENUM value
-            if (argTypes.Length > 0 && argTypes[0] is not EnumType)
+            if (argTypes.Length > 0 && argTypes[0] is not HandleType)
             {
-                ExpressionTypeChecker.ArgNotAnEnumError(semantics, 0, args[0], argTypes[0]);
+                ExpressionTypeChecker.ArgNotAHandleError(semantics, 0, args[0], argTypes[0]);
             }
 
-            return new(IntType.Instance, ValueKind.RValue | (args[0].ValueKind & ValueKind.Constant), ArgumentKind.None);
-        }
-
-        public override ConstantValue ConstantEval(InvocationExpression node, SemanticsAnalyzer semantics)
-        {
-            var v = ConstantExpressionEvaluator.Eval(node.Arguments[0], semantics);
-            return ConstantValue.Int(v.IntValue);
+            return new(IntType.Instance, ValueKind.RValue, ArgumentKind.None);
         }
 
         public override void CodeGen(InvocationExpression node, CodeEmitter c)

@@ -55,10 +55,7 @@ internal static class Rules
         {
             NullType => destination is IntType or FloatType or StringType or BoolType or AnyType or HandleType,
             IntType => destination is FloatType or BoolType,
-            HandleType
-            {
-                Kind: HandleKind.PedIndex or HandleKind.VehicleIndex or HandleKind.ObjectIndex
-            } => destination is HandleType { Kind: HandleKind.EntityIndex },
+            HandleType h => destination is HandleType destH && destH.Kind.IsAssignableFrom(destH.Kind),
 
             _ => false,
         };
@@ -105,17 +102,7 @@ internal static class Rules
                 return Source is NullType;
             }
 
-            if (destination.Kind is HandleKind.EntityIndex)
-            {
-                return srcHandle.Kind is HandleKind.EntityIndex or
-                                            HandleKind.PedIndex or
-                                            HandleKind.VehicleIndex or
-                                            HandleKind.ObjectIndex;
-            }
-            else
-            {
-                return destination.Kind == srcHandle.Kind;
-            }
+            return destination.Kind.IsAssignableFrom(srcHandle.Kind);
         }
         // TEXT_LABEL_n <- TEXT_LABEL_n | STRING
         public bool Visit(TextLabelType destination) => Source is TextLabelType or StringType;

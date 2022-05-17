@@ -129,4 +129,39 @@ public class IntrinsicsTests : SemanticsTestsBase
         False(s.Diagnostics.HasErrors);
         AssertConst(s, "MYSTR", StringType.Instance, expectedString);
     }
+
+    [Theory]
+    [MemberData(nameof(GetAllHandleTypes))]
+    public void NativeToInt(HandleType handleType)
+    {
+        var s = Analyze(@$"
+            SCRIPT test_script
+                {HandleType.KindToTypeName(handleType.Kind)} handle
+                INT foo = NATIVE_TO_INT(handle)
+            ENDSCRIPT
+        ");
+
+        False(s.Diagnostics.HasErrors);
+    }
+
+    [Theory]
+    [InlineData("INT")]
+    [InlineData("FLOAT")]
+    [InlineData("BOOL")]
+    [InlineData("STRING")]
+    [InlineData("ANY")]
+    [InlineData("VECTOR")]
+    [InlineData("TEXT_LABEL_63")]
+    public void NativeToIntOnlyAllowsHandleTypes(string typeName)
+    {
+        var s = Analyze(@$"
+            SCRIPT test_script
+                {typeName} v
+                INT foo = NATIVE_TO_INT(v)
+            ENDSCRIPT
+        ");
+
+        True(s.Diagnostics.HasErrors);
+        CheckError(ErrorCode.SemanticArgNotAHandle, (4, 41), (4, 41), s.Diagnostics);
+    }
 }

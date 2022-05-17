@@ -311,4 +311,21 @@ public class IntrinsicsTests : CodeGenTestsBase
             strENUM_NOT_FOUND:  .str 'ENUM_NOT_FOUND'
             ");
     }
+
+    [Theory]
+    [MemberData(nameof(GetAllHandleTypes))]
+    public void NativeToInt(HandleType handleType)
+    {
+        CompileScript(
+        scriptSource: @$"
+            {HandleType.KindToTypeName(handleType.Kind)} handle
+            INT foo = NATIVE_TO_INT(handle)
+        ",
+        expectedAssembly: @$"
+            ENTER 0, 4
+            LOCAL_U8_LOAD 2
+            LOCAL_U8_STORE 3
+            LEAVE 0, 0
+        ");
+    }
 }
