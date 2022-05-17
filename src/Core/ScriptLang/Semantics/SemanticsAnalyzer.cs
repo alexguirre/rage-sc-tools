@@ -254,15 +254,7 @@ public sealed class SemanticsAnalyzer : Visitor
             var varType = node.Semantics.ValueType;
             Debug.Assert(varType is not null);
             var initializerType = node.Initializer?.Accept(s.exprTypeChecker, s) ?? ErrorType.Instance;
-
-            if (!varType.IsError && !initializerType.IsError)
-            {
-                Debug.Assert(node.Initializer is not null);
-                if (!varType.IsAssignableFrom(initializerType))
-                {
-                    s.CannotConvertTypeError(initializerType, varType, node.Initializer.Location);
-                }
-            }
+            s.CheckRuntimeAssignment(varType, initializerType, node.Initializer);
 
             node.Semantics = node.Semantics with { ConstantValue = null };
         }
@@ -270,7 +262,21 @@ public sealed class SemanticsAnalyzer : Visitor
 
     public override void Visit(AssignmentStatement node)
     {
-        throw new System.NotImplementedException();
+        var lhsType = node.LHS.Accept(exprTypeChecker, this);
+        var rhsType = node.RHS.Accept(exprTypeChecker, this);
+        CheckRuntimeAssignment(lhsType, rhsType, node.RHS);
+    }
+
+    private void CheckRuntimeAssignment(TypeInfo lhsType, TypeInfo rhsType, INode? rhsNode)
+    {
+        if (!lhsType.IsError && !rhsType.IsError)
+        {
+            if (!lhsType.IsAssignableFrom(rhsType))
+            {
+                Debug.Assert(rhsNode is not null);
+                CannotConvertTypeError(rhsType, lhsType, rhsNode.Location);
+            }
+        }
     }
 
     public override void Visit(BreakStatement node)

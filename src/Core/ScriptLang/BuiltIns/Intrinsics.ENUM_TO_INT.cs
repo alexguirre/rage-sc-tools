@@ -31,12 +31,8 @@ public static partial class Intrinsics
             var argTypes = node.Arguments.Select(a => a.Accept(exprTypeChecker, semantics)).ToArray();
 
             // type-check arguments
-            const int ParameterCount = 1;
             var args = node.Arguments;
-            if (ParameterCount != args.Length)
-            {
-                ExpressionTypeChecker.MismatchedArgumentCountError(semantics, ParameterCount, node);
-            }
+            ExpressionTypeChecker.CheckArgumentCount(parameterCount: 1, node, semantics);
 
             // check that the argument is an ENUM value
             if (argTypes.Length > 0 && argTypes[0] is not EnumType)

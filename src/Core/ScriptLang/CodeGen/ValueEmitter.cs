@@ -67,33 +67,7 @@ internal sealed class ValueEmitter : Visitor
         }
 
         static void EmitArgs(CodeEmitter c, InvocationExpression invocation)
-        {
-            var parameters = ((FunctionType)invocation.Callee.Type!).Parameters;
-            var arguments = invocation.Arguments;
-            foreach (var (p, a) in parameters.Zip(arguments))
-            {
-                EmitArg(c, p, a);
-            }
-        }
-
-        static void EmitArg(CodeEmitter c, ParameterInfo param, IExpression arg)
-        {
-            if (arg.ArgumentKind is ArgumentKind.ByRef)
-            {
-                // pass by reference
-                Debug.Assert(arg.ValueKind.Is(ValueKind.Addressable));
-                c.EmitAddress(arg);
-            }
-            else if(arg.ArgumentKind is ArgumentKind.ByValue)
-            {
-                // pass by value
-                c.EmitValue(arg);
-            }
-            else
-            {
-                Debug.Assert(false, "No semantic analysis on the arg?");
-            }
-        }
+            => invocation.Arguments.ForEach(arg => c.EmitArg(arg));
     }
 
     public override void Visit(UnaryExpression node)

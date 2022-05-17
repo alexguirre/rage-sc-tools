@@ -228,7 +228,7 @@ public sealed class ExpressionTypeChecker : EmptyVisitor<TypeInfo, SemanticsAnal
         }
         else
         {
-            var argTypes = node.Arguments.Select(a => a.Accept(this, s)).ToArray();
+            node.Arguments.ForEach(a => a.Accept(this, s));
             if (calleeType.IsError)
             {
                 return ErrorType;
@@ -243,56 +243,12 @@ public sealed class ExpressionTypeChecker : EmptyVisitor<TypeInfo, SemanticsAnal
             // type-check arguments
             var parameters = funcType.Parameters;
             var args = node.Arguments;
-            if (parameters.Length != args.Length)
-            {
-                MismatchedArgumentCountError(s, parameters.Length, node);
-            }
+            CheckArgumentCount(parameters.Length, node, s);
 
             var n = Math.Min(args.Length, parameters.Length);
             for (int i = 0; i < n; i++)
             {
-                var param = parameters[i];
-                var arg = args[i];
-                var paramType = param.Type;
-                var argType = argTypes[i];
-
-                if (param.IsReference)
-                {
-                    // pass by reference
-                    if (!paramType.IsRefAssignableFrom(argType))
-                    {
-                        ArgCannotPassRefTypeError(s, i, arg, argType, paramType);
-                    }
-                    else if (!arg.Semantics.ValueKind.Is(ValueKind.Addressable))
-                    {
-                        ArgCannotPassNonLValueToRefParamError(s, i, arg);
-                    }
-
-                    arg.Semantics = arg.Semantics with { ArgumentKind = ArgumentKind.ByRef };
-                }
-                else if (paramType is ArrayType)
-                {
-                    Debug.Assert(arg.Semantics.ValueKind.Is(ValueKind.Addressable)); // all expression of array type should be lvalues
-
-                    // pass array by reference
-                    if (paramType != argType)
-                    {
-                        ArgCannotPassTypeError(s, i, arg, argType, paramType);
-                    }
-                    // TODO: check 'incomplete' array
-
-                    arg.Semantics = arg.Semantics with { ArgumentKind = ArgumentKind.ByRef };
-                }
-                else
-                {
-                    // pass by value
-                    if (!paramType.IsAssignableFrom(argType))
-                    {
-                        ArgCannotPassTypeError(s, i, arg, argType, paramType);
-                    }
-
-                    arg.Semantics = arg.Semantics with { ArgumentKind = ArgumentKind.ByValue };
-                }
+                TypeCheckArgumentAgainstParameter(i, args[i], parameters[i], s);
             }
 
             result = new(funcType.Return, ValueKind.RValue, ArgumentKind.None);
@@ -300,6 +256,76 @@ public sealed class ExpressionTypeChecker : EmptyVisitor<TypeInfo, SemanticsAnal
 
         node.Semantics = result;
         return result.Type!;
+    }
+
+    internal static void CheckArgumentCount(int parameterCount, InvocationExpression invocation, SemanticsAnalyzer s)
+    {
+        var args = invocation.Arguments;
+        if (parameterCount != args.Length)
+        {
+            MismatchedArgumentCountError(s, parameterCount, invocation);
+        }
+    }
+    internal static void TypeCheckArgumentAgainstParameter(int argIndex, IExpression arg, ParameterInfo param, SemanticsAnalyzer s)
+    {
+        var paramType = param.Type;
+        var argType = arg.Type;
+        if (argType is null)
+        {
+            throw new ArgumentException($"Argument type is null, argument expression was not type-checked yet.", nameof(arg));
+        }
+
+        if (argType.IsError)
+        {
+            return;
+        }
+
+        if (param.IsReference)
+        {
+            // pass by reference
+            if (!paramType.IsRefAssignableFrom(argType))
+            {
+                ArgCannotPassRefTypeError(s, argIndex, arg, argType, paramType);
+            }
+            else if (!arg.Semantics.ValueKind.Is(ValueKind.Addressable))
+            {
+                ArgCannotPassNonLValueToRefParamError(s, argIndex, arg);
+            }
+
+            arg.Semantics = arg.Semantics with { ArgumentKind = ArgumentKind.ByRef };
+        }
+        else if (paramType is ArrayType)
+        {
+            Debug.Assert(arg.Semantics.ValueKind.Is(ValueKind.Addressable)); // all expression of array type should be lvalues
+
+            // pass array by reference
+            if (paramType != argType)
+            {
+                ArgCannotPassTypeError(s, argIndex, arg, argType, paramType);
+            }
+            // TODO: check 'incomplete' array
+
+            arg.Semantics = arg.Semantics with { ArgumentKind = ArgumentKind.ByRef };
+        }
+        else if (paramType is StringType && argType is TextLabelType)
+        {
+            if (!arg.Semantics.ValueKind.Is(ValueKind.Addressable))
+            {
+                ArgCannotPassNonLValueTextLabelToStringParamError(s, argIndex, arg);
+            }
+
+            arg.Semantics = arg.Semantics with { ArgumentKind = ArgumentKind.ByRef };
+        }
+        else
+        {
+            // pass by value
+            if (!paramType.IsAssignableFrom(argType))
+            {
+                ArgCannotPassTypeError(s, argIndex, arg, argType, paramType);
+            }
+
+            arg.Semantics = arg.Semantics with { ArgumentKind = ArgumentKind.ByValue };
+        }
     }
 
     public override TypeInfo Visit(NameExpression node, SemanticsAnalyzer s)
@@ -407,8 +433,12 @@ public sealed class ExpressionTypeChecker : EmptyVisitor<TypeInfo, SemanticsAnal
         => Error(s, ErrorCode.SemanticArgCannotPassType, $"Argument {argIndex + 1}: cannot pass '{argType.ToPrettyString()}' to parameter type '{paramType.ToPrettyString()}'", arg.Location);
     internal static void ArgCannotPassRefTypeError(SemanticsAnalyzer s, int argIndex, IExpression arg, TypeInfo argType, TypeInfo paramType)
         => Error(s, ErrorCode.SemanticArgCannotPassRefType, $"Argument {argIndex + 1}: cannot pass '{argType.ToPrettyString()}' to reference parameter type '{paramType.ToPrettyString()}'", arg.Location);
+    internal static void ArgCannotPassRefTextLabelError(SemanticsAnalyzer s, int argIndex, IExpression arg, TypeInfo argType)
+        => Error(s, ErrorCode.SemanticArgCannotPassRefType, $"Argument {argIndex + 1}: cannot pass '{argType.ToPrettyString()}' to TEXT_LABEL_* reference", arg.Location);
     internal static void ArgCannotPassNonLValueToRefParamError(SemanticsAnalyzer s, int argIndex, IExpression arg)
         => Error(s, ErrorCode.SemanticArgCannotPassNonLValueToRefParam, $"Argument {argIndex + 1}: cannot pass non-lvalue to reference parameter", arg.Location);
+    internal static void ArgCannotPassNonLValueTextLabelToStringParamError(SemanticsAnalyzer s, int argIndex, IExpression arg)
+        => Error(s, ErrorCode.SemanticArgCannotPassNonLValueToRefParam, $"Argument {argIndex + 1}: cannot pass non-lvalue TEXT_LABEL_* to STRING parameter", arg.Location);
     internal static void ArgNotAnEnumError(SemanticsAnalyzer s, int argIndex, IExpression arg, TypeInfo argType)
         => Error(s, ErrorCode.SemanticArgNotAnEnum, $"Argument {argIndex + 1}: type '{argType.ToPrettyString()}' is not an ENUM value", arg.Location);
     internal static void ArgNotAnEnumTypeError(SemanticsAnalyzer s, int argIndex, IExpression arg)

@@ -19,19 +19,6 @@ internal sealed class StatementEmitter : Visitor
 
     public StatementEmitter(CodeEmitter codeEmitter) => _C = codeEmitter;
 
-    private void EmitAssignment(IExpression destination, IExpression source)
-    {
-        // TODO: handle special cases in assignment
-        _C.EmitValue(source);
-        _C.EmitStoreAt(destination);
-    }
-    public void EmitAssignment(VarDeclaration destination, IExpression source)
-    {
-        // TODO: handle special cases in assignment
-        _C.EmitValue(source);
-        _C.EmitStoreAt(destination);
-    }
-
     public override void Visit(VarDeclaration node)
     {
         Debug.Assert(node.Kind is VarKind.Local);
@@ -44,15 +31,22 @@ internal sealed class StatementEmitter : Visitor
         }
         else if (node.Initializer is not null)
         {
-            EmitAssignment(node, node.Initializer);
+            _C.EmitAssignmentToVar(node, node.Initializer);
         }
     }
 
     public override void Visit(AssignmentStatement node)
     {
-        throw new NotImplementedException(nameof(AssignmentStatement));
-        // TODO: AssignmentStatement consider compound assignments, no longer lowered to lhs = lhs binOp rhs
-        //node.LHS.Type!.CGAssign(CG, node);
+        if (node.CompoundOperator is null)
+        {
+            _C.EmitAssignment(node.LHS, node.RHS);
+        }
+        else
+        {
+            throw new NotImplementedException(nameof(AssignmentStatement));
+            // TODO: AssignmentStatement consider compound assignments, no longer lowered to lhs = lhs binOp rhs
+            //node.LHS.Type!.CGAssign(CG, node);
+        }
     }
 
     public override void Visit(BreakStatement node)

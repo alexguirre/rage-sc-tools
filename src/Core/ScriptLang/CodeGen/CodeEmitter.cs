@@ -156,7 +156,7 @@ public sealed partial class CodeEmitter
         {
             if (s.Initializer is not null)
             {
-                stmtEmitter.EmitAssignment(s, s.Initializer);
+                EmitAssignmentToVar(s, s.Initializer);
             }
         }
     }
@@ -195,6 +195,24 @@ public sealed partial class CodeEmitter
     }
     public void EmitAddress(IExpression expr) => expr.Accept(addressEmitter);
 
+    public void EmitArg(IExpression arg)
+    {
+        if (arg.ArgumentKind is ArgumentKind.ByRef)
+        {
+            // pass by reference
+            Debug.Assert(arg.ValueKind.Is(ValueKind.Addressable));
+            EmitAddress(arg);
+        }
+        else if (arg.ArgumentKind is ArgumentKind.ByValue)
+        {
+            // pass by value
+            EmitValue(arg);
+        }
+        else
+        {
+            throw new ArgumentException("Argument kind not set, no semantic analysis done on the arg?", nameof(arg));
+        }
+    }
 
     public void EmitJump(string label)
     {
@@ -249,6 +267,54 @@ public sealed partial class CodeEmitter
         }
     }
 
+    public void EmitTextLabelAssignString(IExpression destinationTextLabel, IExpression sourceString)
+    {
+        EmitArg(sourceString);
+        EmitArg(destinationTextLabel);
+        var tlType = (TextLabelType)destinationTextLabel.Type!;
+        Debug.Assert(tlType.Length <= byte.MaxValue);
+        instEmitter.EmitTextLabelAssignString((byte)tlType.Length);
+    }
+
+    public void EmitTextLabelAssignInt(IExpression destinationTextLabel, IExpression sourceInt)
+    {
+        EmitArg(sourceInt);
+        EmitArg(destinationTextLabel);
+        var tlType = (TextLabelType)destinationTextLabel.Type!;
+        Debug.Assert(tlType.Length <= byte.MaxValue);
+        instEmitter.EmitTextLabelAssignInt((byte)tlType.Length);
+    }
+
+    public void EmitTextLabelAppendString(IExpression destinationTextLabel, IExpression sourceString)
+    {
+        EmitArg(sourceString);
+        EmitArg(destinationTextLabel);
+        var tlType = (TextLabelType)destinationTextLabel.Type!;
+        Debug.Assert(tlType.Length <= byte.MaxValue);
+        instEmitter.EmitTextLabelAppendString((byte)tlType.Length);
+    }
+
+    public void EmitTextLabelAppendInt(IExpression destinationTextLabel, IExpression sourceInt)
+    {
+        EmitArg(sourceInt);
+        EmitArg(destinationTextLabel);
+        var tlType = (TextLabelType)destinationTextLabel.Type!;
+        Debug.Assert(tlType.Length <= byte.MaxValue);
+        instEmitter.EmitTextLabelAppendInt((byte)tlType.Length);
+    }
+
+    public void EmitTextLabelCopy(IExpression destinationTextLabel, IExpression sourceTextLabel)
+    {
+        var sourceType = (TextLabelType)sourceTextLabel.Type!;
+        var destinationType = (TextLabelType)destinationTextLabel.Type!;
+
+        EmitValue(sourceTextLabel);
+        EmitPushInt(sourceType.SizeOf);
+        EmitPushInt(destinationType.SizeOf);
+        EmitAddress(destinationTextLabel);
+        instEmitter.EmitTextLabelCopy();
+    }
+
     public void EmitLoadFrom(IExpression lvalueExpr)
     {
         Debug.Assert(lvalueExpr.Semantics.ValueKind.Is(ValueKind.Addressable));
@@ -285,22 +351,44 @@ public sealed partial class CodeEmitter
         }
     }
 
-    public void EmitStoreAt(VarDeclaration varDecl)
+    public void EmitAssignment(IExpression destination, IExpression source)
     {
-        Debug.Assert(varDecl.Kind is VarKind.Local or VarKind.Static or VarKind.Global);
+        var sourceType = source.Type!;
+        var destinationType = destination.Type!;
 
-        var size = varDecl.Semantics.ValueType!.SizeOf;
-        if (size == 1)
+        if (sourceType is TextLabelType sourceTypeTL && destinationType is TextLabelType destinationTypeTL &&
+            sourceTypeTL.Length != destinationTypeTL.Length)
         {
-            EmitVarAddress(varDecl);
-            instEmitter.EmitStore();
+            // Use TEXT_LABEL_COPY for assigning text labels of different lengths
+            EmitTextLabelCopy(destination, source);
+        }
+        else if (sourceType is StringType && destinationType is TextLabelType destinationTypeTL2)
+        {
+            // Allow assignment of strings to text labels without intrinsics.
+            // NOTE: not using EmitTextLabelAssignString() here because it acts as a function call using EmitArg() for source and destination expressions
+            //       since it was intended for the intrinsic. The expressions here are not invocation arguments and don't have ArgumentKind set during the
+            //       semantic analysis so EmitArg() would fail.
+            EmitValue(source);
+            EmitAddress(destination);
+            Debug.Assert(destinationTypeTL2.Length <= byte.MaxValue);
+            instEmitter.EmitTextLabelAssignString((byte)destinationTypeTL2.Length);
         }
         else
         {
-            EmitPushInt(size);
-            EmitVarAddress(varDecl);
-            instEmitter.EmitStoreN();
+            EmitValue(source);
+            EmitStoreAt(destination);
         }
+    }
+
+    public void EmitAssignmentToVar(VarDeclaration destination, IExpression source)
+    {
+        Debug.Assert(destination.Kind is not (VarKind.Constant or VarKind.Field), "Destination variable must be addressable");
+        EmitAssignment(
+            destination: new NameExpression(destination.NameToken)
+            {
+                Semantics = new(destination.Semantics.ValueType, ValueKind.RValue | ValueKind.Addressable, ArgumentKind.None, destination)
+            },
+            source);
     }
 
     public void EmitArrayIndexing(IndexingExpression expr)

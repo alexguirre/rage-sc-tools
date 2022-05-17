@@ -32,14 +32,11 @@ public static partial class Intrinsics
             var argTypes = node.Arguments.Select(a => a.Accept(exprTypeChecker, semantics)).ToArray();
 
             // type-check arguments
-            const int ParameterCount = 2;
             var args = node.Arguments;
-            if (ParameterCount != args.Length)
-            {
-                ExpressionTypeChecker.MismatchedArgumentCountError(semantics, ParameterCount, node);
-            }
+            ExpressionTypeChecker.CheckArgumentCount(parameterCount: 2, node, semantics);
 
             TypeInfo returnType = ErrorType.Instance;
+            ValueKind constantFlag = ValueKind.Constant;
             if (argTypes.Length > 0)
             {
                 if (argTypes[0] is TypeNameType { TypeDeclaration: EnumDeclaration enumDecl })
@@ -52,12 +49,13 @@ public static partial class Intrinsics
                 }
             }
 
-            if (argTypes.Length > 1 && !IntType.Instance.IsAssignableFrom(argTypes[1]))
+            if (argTypes.Length > 1)
             {
-                ExpressionTypeChecker.ArgCannotPassTypeError(semantics, 1, args[1], argTypes[1], IntType.Instance);
+                ExpressionTypeChecker.TypeCheckArgumentAgainstParameter(1, args[1], new(IntType.Instance, IsReference: false), semantics);
+                constantFlag &= args[1].ValueKind;
             }
 
-            return new(returnType, ValueKind.RValue | (args[0].ValueKind & args[1].ValueKind & ValueKind.Constant), ArgumentKind.None);
+            return new(returnType, ValueKind.RValue | constantFlag, ArgumentKind.None);
         }
 
         public override ConstantValue ConstantEval(InvocationExpression node, SemanticsAnalyzer semantics)

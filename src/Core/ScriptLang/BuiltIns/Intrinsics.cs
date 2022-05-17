@@ -13,7 +13,6 @@ using System.Diagnostics;
 using System.Linq;
 
 // TODO: implement intrinsics
-// APPEND (TEXT_LABEL_n, STRING|INT) -> VOID
 // HASH_ENUM_TO_INT_INDEX (HASH_ENUM) -> INT
 // INT_INDEX_TO_HASH_ENUM (ENUNNAME, INT) -> HASH_ENUM
 // NATIVE_TO_INT (handle types?) -> INT
@@ -49,6 +48,12 @@ public static partial class Intrinsics
     public static IIntrinsicDeclaration INT_TO_ENUM { get; } = new IntrinsicINT_TO_ENUM();
     public static IIntrinsicDeclaration ENUM_TO_STRING { get; } = new IntrinsicENUM_TO_STRING();
 
+    // Text Label Utilities
+    public static IIntrinsicDeclaration TEXT_LABEL_ASSIGN_STRING { get; } = new IntrinsicTEXT_LABEL_ASSIGN_STRING();
+    public static IIntrinsicDeclaration TEXT_LABEL_ASSIGN_INT { get; } = new IntrinsicTEXT_LABEL_ASSIGN_INT();
+    public static IIntrinsicDeclaration TEXT_LABEL_APPEND_STRING { get; } = new IntrinsicTEXT_LABEL_APPEND_STRING();
+    public static IIntrinsicDeclaration TEXT_LABEL_APPEND_INT { get; } = new IntrinsicTEXT_LABEL_APPEND_INT();
+
     // Bit Utilities
     public static IIntrinsicDeclaration IS_BIT_SET { get; } = new IntrinsicIS_BIT_SET();
 
@@ -58,6 +63,7 @@ public static partial class Intrinsics
         SIZE_OF,
         COUNT_OF,
         ENUM_TO_INT, INT_TO_ENUM, ENUM_TO_STRING,
+        TEXT_LABEL_ASSIGN_STRING, TEXT_LABEL_ASSIGN_INT, TEXT_LABEL_APPEND_STRING, TEXT_LABEL_APPEND_INT,
         IS_BIT_SET);
 
     private abstract class BaseIntrinsic : IIntrinsicDeclaration
@@ -78,7 +84,8 @@ public static partial class Intrinsics
         public void Accept(IVisitor visitor) => throw new NotSupportedException($"Cannot visit intrinsics");
 
         public abstract ExpressionSemantics InvocationTypeCheck(InvocationExpression node, SemanticsAnalyzer semantics, ExpressionTypeChecker expressionTypeChecker);
-        public abstract ConstantValue ConstantEval(InvocationExpression node, SemanticsAnalyzer semantics);
+        public virtual ConstantValue ConstantEval(InvocationExpression node, SemanticsAnalyzer semantics)
+             => throw new NotSupportedException($"Intrinsic '{Name}' cannot be constant-evaluated.");
         public abstract void CodeGen(InvocationExpression node, CodeEmitter codeEmitter);
     }
 
@@ -101,59 +108,15 @@ public static partial class Intrinsics
             // type-check arguments
             var parameters = Type.Parameters;
             var args = node.Arguments;
-            if (parameters.Length != args.Length)
-            {
-                ExpressionTypeChecker.MismatchedArgumentCountError(semantics, parameters.Length, node);
-            }
+            ExpressionTypeChecker.CheckArgumentCount(parameters.Length, node, semantics);
 
             var n = Math.Min(args.Length, parameters.Length);
             var constantFlag = ValueKind.Constant;
             for (int i = 0; i < n; i++)
             {
-                var param = parameters[i];
-                var arg = args[i];
-                var paramType = param.Type;
-                var argType = argTypes[i];
+                ExpressionTypeChecker.TypeCheckArgumentAgainstParameter(i, args[i], parameters[i], semantics);
 
-                if (param.IsReference)
-                {
-                    // pass by reference
-                    if (!paramType.IsRefAssignableFrom(argType))
-                    {
-                        ExpressionTypeChecker.ArgCannotPassRefTypeError(semantics, i, arg, argType, paramType);
-                    }
-                    else if (!arg.Semantics.ValueKind.Is(ValueKind.Addressable))
-                    {
-                        ExpressionTypeChecker.ArgCannotPassNonLValueToRefParamError(semantics, i, arg);
-                    }
-
-                    arg.Semantics = arg.Semantics with { ArgumentKind = ArgumentKind.ByRef };
-                }
-                else if (paramType is ArrayType)
-                {
-                    Debug.Assert(arg.Semantics.ValueKind.Is(ValueKind.Addressable)); // all expression of array type should be lvalues
-
-                    // pass array by reference
-                    if (paramType != argType)
-                    {
-                        ExpressionTypeChecker.ArgCannotPassTypeError(semantics, i, arg, argType, paramType);
-                    }
-                    // TODO: check 'incomplete' array
-
-                    arg.Semantics = arg.Semantics with { ArgumentKind = ArgumentKind.ByRef };
-                }
-                else
-                {
-                    // pass by value
-                    if (!paramType.IsAssignableFrom(argType))
-                    {
-                        ExpressionTypeChecker.ArgCannotPassTypeError(semantics, i, arg, argType, paramType);
-                    }
-
-                    arg.Semantics = arg.Semantics with { ArgumentKind = ArgumentKind.ByValue };
-                }
-
-                constantFlag &= arg.ValueKind;
+                constantFlag &= args[i].ValueKind;
             }
 
             return new(Type.Return, ValueKind.RValue | constantFlag, ArgumentKind.None);

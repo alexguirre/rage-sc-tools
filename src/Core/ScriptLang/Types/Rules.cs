@@ -117,7 +117,7 @@ internal static class Rules
                 return destination.Kind == srcHandle.Kind;
             }
         }
-        // TEXT_LABEL_n <- TEXT_LABEL_* | STRING
+        // TEXT_LABEL_n <- TEXT_LABEL_n | STRING
         public bool Visit(TextLabelType destination) => Source is TextLabelType or StringType;
         // FUNCPTR <- FUNCPTR
         public bool Visit(FunctionType destination) => destination == Source;
