@@ -17,6 +17,10 @@ public class Parser
     {
         public abstract SourceRange Location { get; }
     }
+    public sealed record EmptyLine(Label? Label, SourceRange Location) : Line(Label)
+    {
+        public override SourceRange Location { get; } = Location;
+    }
     public sealed record Directive(Label? Label, Token Dot, Token Name, ImmutableArray<DirectiveOperand> Operands) : Line(Label)
     {
         public override SourceRange Location => Operands.Aggregate(Dot.Location.Merge(Name.Location), (acc, op) => acc.Merge(op.Location));
@@ -99,11 +103,14 @@ public class Parser
             if (IsPossibleLabel())
             {
                 label = ParseLabel();
-                AcceptEOS(); // allow new-lines after the label
             }
 
             Line line;
-            if (IsPossibleDirective())
+            if (IsAtEOS)
+            {
+                line = new EmptyLine(null, Current.Location);
+            }
+            else if (IsPossibleDirective())
             {
                 line = ParseDirective();
             }

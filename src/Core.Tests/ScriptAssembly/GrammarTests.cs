@@ -11,9 +11,9 @@
         {
             using var asm = Util.Assemble(@"
             .script_name my_script
-            .script_hash 0x1234ABCD
+            .globals_signature 0x1234ABCD
 
-            .const MY_DEFAULT_VALUE 4.0
+            .const MY_DEFAULT_VALUE, 4.0
 
             .global_block 1
             .global     ; segment for global variables, the integer is the block ID
@@ -28,7 +28,7 @@ myInt2:     .int 0xF
 myIntArray: .int 5, 1, 2, 3, 4, 5
 
 myFloatArray:
-            .const MY_FLOAT_ARRAY_SIZE 10       ; .const directive is compile-time only
+            .const MY_FLOAT_ARRAY_SIZE, 10       ; .const directive is compile-time only
             .int MY_FLOAT_ARRAY_SIZE
             .float MY_FLOAT_ARRAY_SIZE dup (1)
 
@@ -102,7 +102,7 @@ func1_label3:
             PUSH_CONST_S16 1000
             NATIVE 1, 0, WAIT
 
-            .const MY_TEST_CONST 16
+            .const MY_TEST_CONST, 16
             PUSH_CONST_U8 MY_TEST_CONST     ; constants as operands
             PUSH_CONST_U8_U8 MY_TEST_CONST, MY_TEST_CONST
             PUSH_CONST_U8_U8_U8 MY_TEST_CONST, MY_TEST_CONST, MY_TEST_CONST
@@ -125,7 +125,7 @@ func1_label3:
             PUSH_CONST_U8 256       ; warning: possible loss of data
             DROP
 
-            .const MY_TEST_FLOAT 12.34
+            .const MY_TEST_FLOAT, 12.34
             PUSH_CONST_F MY_TEST_FLOAT
             PUSH_CONST_F 8
             PUSH_CONST_F 8.9
@@ -145,8 +145,8 @@ func1_label3:
             DROP
             DROP
 
-            .const CASE_1_VALUE 1
-            .const CASE_2_VALUE 2
+            .const CASE_1_VALUE, 1
+            .const CASE_2_VALUE, 2
 
             PUSH_CONST_U8 1
             SWITCH CASE_1_VALUE:case1, CASE_2_VALUE:case2, 3:case3, 4:0
