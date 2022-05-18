@@ -29,10 +29,6 @@ public class Parser
     {
         public abstract SourceRange Location { get; }
     }
-    public sealed record DirectiveOperandIdentifier(Token Name) : DirectiveOperand()
-    {
-        public override SourceRange Location => Name.Location;
-    }
     public sealed record DirectiveOperandInteger(Token Integer) : DirectiveOperand()
     {
         public override SourceRange Location => Integer.Location;
@@ -45,7 +41,7 @@ public class Parser
     {
         public override SourceRange Location => String.Location;
     }
-    public sealed record DirectiveOperandDup(Token Count/* Identifier or Integer */, ImmutableArray<DirectiveOperand> InnerOperands) : DirectiveOperand()
+    public sealed record DirectiveOperandDup(Token Count/* Integer */, ImmutableArray<DirectiveOperand> InnerOperands) : DirectiveOperand()
     {
         public override SourceRange Location => InnerOperands.Aggregate(Count.Location, (acc, op) => acc.Merge(op.Location));
     }
@@ -183,28 +179,23 @@ public class Parser
     public DirectiveOperand ParseDirectiveOperand()
     {
         // directiveOperand
-        //     : identifier                                                    #identifierDirectiveOperand
         //     | integer                                                       #integerDirectiveOperand
         //     | float                                                         #floatDirectiveOperand
         //     | string                                                        #stringDirectiveOperand
-        //     | (identifier | integer) K_DUP '(' directiveOperandList ')'     #dupDirectiveOperand
+        //     | integer K_DUP '(' directiveOperandList ')'     #dupDirectiveOperand
         //     ;
         if (Peek(1) is { Kind: TokenKind.Identifier } dupToken &&
             dupToken.Lexeme.Span.Equals("dup", StringComparison.InvariantCultureIgnoreCase))
         {
-            ExpectEither(TokenKind.Identifier, TokenKind.Integer, out var count);
+            Expect(TokenKind.Integer, out var count);
             Expect(TokenKind.Identifier, out _); // dupToken
             ExpectOrMissing(TokenKind.OpenParen, out _);
             var operands = ParseDirectiveOperandList();
             ExpectOrMissing(TokenKind.CloseParen, out _);
             return new DirectiveOperandDup(count, operands);
         }
-        
-        if (Accept(TokenKind.Identifier, out var ident))
-        {
-            return new DirectiveOperandIdentifier(ident);
-        }
-        else if (Accept(TokenKind.Integer, out var integer))
+
+        if (Accept(TokenKind.Integer, out var integer))
         {
             return new DirectiveOperandInteger(integer);
         }
@@ -217,8 +208,8 @@ public class Parser
             return new DirectiveOperandString(stringToken);
         }
 
-        UnexpectedTokenError(TokenKind.Identifier, TokenKind.Integer, TokenKind.Float);
-        return new DirectiveOperandIdentifier(MissingIdentifier());
+        UnexpectedTokenError(TokenKind.Integer, TokenKind.Float, TokenKind.String);
+        return new DirectiveOperandString(Token.String("<missing>", Current.Location));
     }
 
     public bool IsPossibleInstruction()

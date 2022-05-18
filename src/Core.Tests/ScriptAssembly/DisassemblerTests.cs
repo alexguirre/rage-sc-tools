@@ -10,10 +10,10 @@
         public void TestBasic()
         {
             using var initialAsm = Util.Assemble(@"
-            .script_name my_script
-            .script_hash 0x1234ABCD
+            .script_name 'my_script'
+            .globals_signature 0x1234ABCD
 
-            .const MY_FLOAT_VALUE 4.5
+            #define MY_FLOAT_VALUE 4.5
 
             .code
 main:       ENTER 0, 2

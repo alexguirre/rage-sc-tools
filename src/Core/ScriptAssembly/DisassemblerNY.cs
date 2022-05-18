@@ -43,7 +43,7 @@ public class DisassemblerNY
         IdentifyCodeLabels();
         IdentifyStaticsLabels();
 
-        w.WriteLine(".script_name {0}", ScriptName);
+        w.WriteLine(".script_name '{0}'", ScriptName.Escape());
         if (sc.GlobalsSignature != 0)
         {
             w.WriteLine(".globals_signature 0x{0:X8}", sc.GlobalsSignature);

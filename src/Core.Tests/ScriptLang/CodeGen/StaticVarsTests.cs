@@ -384,7 +384,7 @@ public class StaticVarsTests : CodeGenTestsBase
                 ENDSCRIPT
             ",
         expectedAssembly: @"
-            .script_name test
+            .script_name 'test'
             .code
             SCRIPT:
                 ENTER 0, 3
@@ -409,7 +409,7 @@ public class StaticVarsTests : CodeGenTestsBase
                 ENDSCRIPT
             ",
         expectedAssembly: @"
-            .script_name test
+            .script_name 'test'
             .code
             SCRIPT:
                 ENTER 0, 3
@@ -438,7 +438,7 @@ public class StaticVarsTests : CodeGenTestsBase
                 ENDSCRIPT
             ",
         expectedAssembly: @"
-            .script_name test
+            .script_name 'test'
             .code
             SCRIPT:
                 ENTER 0, 3

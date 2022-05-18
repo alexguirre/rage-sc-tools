@@ -2756,7 +2756,7 @@
                     ENDSCRIPT",
 
                 expectedAssembly: $@"
-                    .script_name test_script
+                    .script_name 'test_script'
                     .code
                     SCRIPT:
                     {expectedAssembly}",

@@ -65,7 +65,6 @@ namespace ScTools.ScriptAssembly
         public Lexer Lexer { get; }
         public DiagnosticsReport Diagnostics { get; }
         public Script OutputScript { get; }
-        public Dictionary<string, ConstantValue> Constants { get; }
         public Dictionary<string, Label> Labels { get; }
         public bool HasScriptName { get; private set; }
         public bool HasGlobalsSignature { get; private set; }
@@ -82,7 +81,6 @@ namespace ScTools.ScriptAssembly
                 Name = DefaultScriptName,
                 NameHash = DefaultScriptName.ToLowercaseHash(),
             };
-            Constants = new(CaseInsensitiveComparer);
             Labels = new(CaseInsensitiveComparer);
             codeBuilder = new CodeBuilder(codeSegmentBuilder);
         }
@@ -184,11 +182,7 @@ namespace ScTools.ScriptAssembly
                 offset |= (int)(OutputScript.GlobalsBlock << 18);
             }
 
-            if (Constants.ContainsKey(name))
-            {
-                Diagnostics.AddError($"Constant named '{name}' already defined", label.Location);
-            }
-            else if (!Labels.TryAdd(name, new Label(CurrentSegment, offset)))
+            if (!Labels.TryAdd(name, new Label(CurrentSegment, offset)))
             {
                 Diagnostics.AddError($"Label '{name}' already defined", label.Location);
             }
@@ -242,13 +236,13 @@ namespace ScTools.ScriptAssembly
                         {
                             UnexpectedNumberOfOperandsError(directive, 1);
                         }
-                        else if (directive.Operands[0] is not Parser.DirectiveOperandIdentifier ident)
+                        else if (directive.Operands[0] is not Parser.DirectiveOperandString nameOperand)
                         {
-                            ExpectedIdentifierError(directive.Operands[0]);
+                            ExpectedStringError(directive.Operands[0]);
                         }
                         else
                         {
-                            scriptName = ident.Name.Lexeme.ToString();
+                            scriptName = nameOperand.String.GetStringLiteral();
                         }
 
                         OutputScript.Name = scriptName;
@@ -305,58 +299,6 @@ namespace ScTools.ScriptAssembly
 
                         OutputScript.GlobalsBlock = globalsBlock;
                         HasGlobalBlock = true;
-                    }
-                    break;
-                case "const":
-                    if (directive.Operands.Length != 2) { UnexpectedNumberOfOperandsError(directive, 2); }
-
-                    var constName = Parser.MissingIdentifierLexeme;
-                    var constNameLocation = SourceRange.Unknown;
-                    if (directive.Operands.Length > 0)
-                    {
-                        if (directive.Operands[0] is Parser.DirectiveOperandIdentifier ident)
-                        {
-                            constName = ident.Name.Lexeme.ToString();
-                            constNameLocation = ident.Name.Location;
-                        }
-                        else
-                        {
-                            ExpectedIdentifierError(directive.Operands[0]);
-                        }
-                    }
-
-                    var isInteger = true;
-                    var integerValue = 0L;
-                    var floatValue = 0.0f;
-                    if (directive.Operands.Length > 1)
-                    {
-                        if (directive.Operands[1] is Parser.DirectiveOperandInteger integer)
-                        {
-                            isInteger = true;
-                            integerValue = integer.Integer.GetInt64Literal();
-                        }
-                        else if (directive.Operands[1] is Parser.DirectiveOperandFloat floatOp)
-                        {
-                            isInteger = false;
-                            floatValue = floatOp.Float.GetFloatLiteral();
-                        }
-                        else
-                        {
-                            ExpectedIntegerOrFloatError(directive.Operands[1]);
-                        }
-                    }
-
-                    var constValue = isInteger ?
-                                        new ConstantValue(integerValue) :
-                                        new ConstantValue(floatValue);
-
-                    if (Labels.ContainsKey(constName))
-                    {
-                        Diagnostics.AddError($"Label named '{constName}' already defined", constNameLocation);
-                    }
-                    else if (!Constants.TryAdd(constName, constValue))
-                    {
-                        Diagnostics.AddError($"Constant '{constName}' already defined", constNameLocation);
                     }
                     break;
                 case "int":
@@ -421,8 +363,6 @@ namespace ScTools.ScriptAssembly
                     break;
             }
 
-            void ExpectedIdentifierError(Parser.DirectiveOperand operand)
-                => Diagnostics.AddError($"Expected identifier but found {OperandToTypeName(operand)}", operand.Location);
             void ExpectedIntegerError(Parser.DirectiveOperand operand)
                 => Diagnostics.AddError($"Expected integer but found {OperandToTypeName(operand)}", operand.Location);
             void ExpectedIntegerOrFloatError(Parser.DirectiveOperand operand)
@@ -437,7 +377,6 @@ namespace ScTools.ScriptAssembly
             static string OperandToTypeName(Parser.DirectiveOperand operand)
                 => operand switch
                 {
-                    Parser.DirectiveOperandIdentifier _ => "identifier",
                     Parser.DirectiveOperandInteger _ => "integer",
                     Parser.DirectiveOperandFloat _ => "float",
                     Parser.DirectiveOperandString _ => "string",
@@ -747,18 +686,9 @@ namespace ScTools.ScriptAssembly
                     {
                         value = label.Offset;
                     }
-                    else if (Constants.TryGetValue(name, out var constValue))
-                    {
-                        if (constValue.DefinedAsFloat)
-                        {
-                            Diagnostics.AddWarning("Floating-point number truncated", operand.Location);
-                        }
-
-                        value = constValue.Integer;
-                    }
                     else
                     {
-                        Diagnostics.AddError($"'{name}' is undefined", operand.Location);
+                        Diagnostics.AddError($"Label '{name}' is undefined", operand.Location);
                     }
                     break;
             }
@@ -790,18 +720,9 @@ namespace ScTools.ScriptAssembly
                     {
                         value = label.Offset;
                     }
-                    else if (Constants.TryGetValue(name, out var constValue))
-                    {
-                        if (constValue.DefinedAsFloat)
-                        {
-                            Diagnostics.AddWarning("Floating-point number truncated", operand.Location);
-                        }
-
-                        value = constValue.Integer;
-                    }
                     else
                     {
-                        Diagnostics.AddError($"'{name}' is undefined", operand.Location);
+                        Diagnostics.AddError($"Label '{name}' is undefined", operand.Location);
                     }
                     break;
             }
@@ -826,13 +747,9 @@ namespace ScTools.ScriptAssembly
                     {
                         Diagnostics.AddError($"Expected floating-point number, cannot use label '{name}'", operand.Location);
                     }
-                    else if (Constants.TryGetValue(name, out var constValue))
-                    {
-                        value = constValue.Float;
-                    }
                     else
                     {
-                        Diagnostics.AddError($"'{name}' is undefined", operand.Location);
+                        Diagnostics.AddError($"Label '{name}' is undefined", operand.Location);
                     }
                     break;
             }
@@ -948,26 +865,6 @@ namespace ScTools.ScriptAssembly
             {
                 switch (operand)
                 {
-                    case Parser.DirectiveOperandIdentifier identifierOperand:
-                        if (TryGetConstant(identifierOperand.Name, out var constValue))
-                        {
-                            if (isFloat)
-                            {
-                                CurrentSegmentBuilder.Float(constValue.Float);
-                            }
-                            else
-                            {
-                                if (isInt64)
-                                {
-                                    CurrentSegmentBuilder.Int64(constValue.Integer);
-                                }
-                                else
-                                {
-                                    CurrentSegmentBuilder.Int((int)constValue.Integer); // TODO: check for data loss
-                                }
-                            }
-                        }
-                        break;
                     case Parser.DirectiveOperandInteger integerOperand:
                         var intValue = integerOperand.Integer.GetInt64Literal();
                         if (isFloat)
@@ -1005,15 +902,7 @@ namespace ScTools.ScriptAssembly
                         }
                         break;
                     case Parser.DirectiveOperandDup dupOperand:
-                        long count = 0;
-                        if (dupOperand.Count.Kind is TokenKind.Identifier && TryGetConstant(dupOperand.Count, out var countConst))
-                        {
-                            count = countConst.Integer;
-                        }
-                        else if (dupOperand.Count.Kind is TokenKind.Integer)
-                        {
-                            count = dupOperand.Count.GetInt64Literal();
-                        }
+                        long count = dupOperand.Count.GetInt64Literal();
 
                         for (long i = 0; i < count; i++)
                         {
@@ -1021,20 +910,6 @@ namespace ScTools.ScriptAssembly
                         }
                         break;
                 }
-            }
-        }
-
-        private bool TryGetConstant(Token identifier, out ConstantValue value)
-        {
-            var name = identifier.Lexeme.ToString();
-            if (Constants.TryGetValue(name, out value))
-            {
-                return true;
-            }
-            else
-            {
-                Diagnostics.AddError($"Undefined constant '{name}'", identifier.Location);
-                return false;
             }
         }
 
