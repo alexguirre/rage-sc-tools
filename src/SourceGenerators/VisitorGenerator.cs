@@ -61,9 +61,9 @@ public class VisitorGenerator : ISourceGenerator
         sb.Append($@"
 partial {(baseType.IsRecord ? "record" : "class")} {baseType.Name}
 {{
-    public abstract void Accept(IIRVisitor visitor);
-    public abstract TReturn Accept<TReturn>(IIRVisitor<TReturn> visitor);
-    public abstract TReturn Accept<TReturn, TParam>(IIRVisitor<TReturn, TParam> visitor, TParam param);
+    public abstract void Accept({visitorInterfaceName} visitor);
+    public abstract TReturn Accept<TReturn>({visitorInterfaceName}<TReturn> visitor);
+    public abstract TReturn Accept<TReturn, TParam>({visitorInterfaceName}<TReturn, TParam> visitor, TParam param);
 }}
 ");
 
@@ -73,9 +73,9 @@ partial {(baseType.IsRecord ? "record" : "class")} {baseType.Name}
             sb.Append($@"
 partial {(leafType.IsRecord ? "record" : "class")} {leafType.Name}
 {{
-    public override void Accept(IIRVisitor visitor) => visitor.Visit(this);
-    public override TReturn Accept<TReturn>(IIRVisitor<TReturn> visitor) => visitor.Visit(this);
-    public override TReturn Accept<TReturn, TParam>(IIRVisitor<TReturn, TParam> visitor, TParam param) => visitor.Visit(this, param);
+    public override void Accept({visitorInterfaceName} visitor) => visitor.Visit(this);
+    public override TReturn Accept<TReturn>({visitorInterfaceName}<TReturn> visitor) => visitor.Visit(this);
+    public override TReturn Accept<TReturn, TParam>({visitorInterfaceName}<TReturn, TParam> visitor, TParam param) => visitor.Visit(this, param);
 }}
 ");
         }

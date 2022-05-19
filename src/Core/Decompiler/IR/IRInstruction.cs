@@ -9,6 +9,11 @@ public abstract partial record IRInstruction(int Address)
     public IRInstruction? Next { get; internal set; }
 }
 
+/// <summary>
+/// Not a real instruction, but used to represent the end of the script instructions.
+/// </summary>
+public sealed partial record IREndOfScript(int Address) : IRInstruction(Address) { }
+
 #region Jumps
 /// <summary>
 /// Unconditional jump.
@@ -181,3 +186,11 @@ public sealed partial record IRGlobalRefFromStack(int Address) : IRVarRefFromSta
 #endregion Vars
 
 public sealed partial record IRArrayItemRef(int Address) : IRInstruction(Address) { }
+
+public sealed partial record IRNullRef(int Address) : IRInstruction(Address) { }
+
+public sealed partial record IRTextLabelAssignString(int Address, int TextLabelLength) : IRInstruction(Address) { }
+public sealed partial record IRTextLabelAssignInt(int Address, int TextLabelLength) : IRInstruction(Address) { }
+public sealed partial record IRTextLabelAppendString(int Address, int TextLabelLength) : IRInstruction(Address) { }
+public sealed partial record IRTextLabelAppendInt(int Address, int TextLabelLength) : IRInstruction(Address) { }
+public sealed partial record IRTextLabelCopy(int Address) : IRInstruction(Address) { }

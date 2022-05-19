@@ -117,6 +117,13 @@ public static class DumperPayne
 
         switch (opcode)
         {
+            case OpcodePayne.TEXT_LABEL_ASSIGN_STRING:
+            case OpcodePayne.TEXT_LABEL_ASSIGN_INT:
+            case OpcodePayne.TEXT_LABEL_APPEND_STRING:
+            case OpcodePayne.TEXT_LABEL_APPEND_INT:
+                sb.Append($" {opcode.GetTextLabelLength(inst)}");
+                break;
+                
             case OpcodePayne.STRING:
                 sb.Append($" '{opcode.GetStringOperand(inst).Escape()}'");
                 break;

@@ -39,6 +39,7 @@ public class IRDisassemblerPayne
         {
             DisassembleInstruction(sc, inst, inst.Address, inst.Bytes);
         });
+        sc.AppendInstruction(new IREndOfScript(code.Length));
         return sc;
     }
 
@@ -152,33 +153,26 @@ public class IRDisassemblerPayne
             case OpcodePayne.LOCAL_7:
                 script.AppendInstruction(new IRLocalRef(ip, opcode - OpcodePayne.LOCAL_0));
                 break;
-            case OpcodePayne.LOCAL:
-                script.AppendInstruction(new IRLocalRefFromStack(ip));
-                break;
-            case OpcodePayne.STATIC:
-                script.AppendInstruction(new IRStaticRefFromStack(ip));
-                break;
-            case OpcodePayne.GLOBAL:
-                script.AppendInstruction(new IRGlobalRefFromStack(ip));
-                break;
-            case OpcodePayne.ARRAY:
-                script.AppendInstruction(new IRArrayItemRef(ip));
-                break;
-            case OpcodePayne.NULL:
-            case OpcodePayne.TEXT_LABEL_ASSIGN_STRING:
-            case OpcodePayne.TEXT_LABEL_ASSIGN_INT:
-            case OpcodePayne.TEXT_LABEL_APPEND_STRING:
-            case OpcodePayne.TEXT_LABEL_APPEND_INT:
-            case OpcodePayne.CATCH:
-            case OpcodePayne.THROW:
-            case OpcodePayne.TEXT_LABEL_COPY: break;
-            //throw new NotImplementedException(opcode.ToString());
-            case OpcodePayne.CALLINDIRECT:
-                script.AppendInstruction(new IRCallIndirect(ip));
-                break;
+
+            case OpcodePayne.LOCAL: script.AppendInstruction(new IRLocalRefFromStack(ip)); break;
+            case OpcodePayne.STATIC: script.AppendInstruction(new IRStaticRefFromStack(ip)); break;
+            case OpcodePayne.GLOBAL: script.AppendInstruction(new IRGlobalRefFromStack(ip)); break;
+            case OpcodePayne.ARRAY: script.AppendInstruction(new IRArrayItemRef(ip)); break;
+            case OpcodePayne.NULL: script.AppendInstruction(new IRNullRef(ip)); break;
+            case OpcodePayne.TEXT_LABEL_ASSIGN_STRING: script.AppendInstruction(new IRTextLabelAssignString(ip, opcode.GetTextLabelLength(inst))); break;
+            case OpcodePayne.TEXT_LABEL_ASSIGN_INT: script.AppendInstruction(new IRTextLabelAssignInt(ip, opcode.GetTextLabelLength(inst))); break;
+            case OpcodePayne.TEXT_LABEL_APPEND_STRING: script.AppendInstruction(new IRTextLabelAppendString(ip, opcode.GetTextLabelLength(inst))); break;
+            case OpcodePayne.TEXT_LABEL_APPEND_INT: script.AppendInstruction(new IRTextLabelAppendInt(ip, opcode.GetTextLabelLength(inst))); break;
+            case OpcodePayne.TEXT_LABEL_COPY: script.AppendInstruction(new IRTextLabelCopy(ip)); break;
+            case OpcodePayne.CALLINDIRECT: script.AppendInstruction(new IRCallIndirect(ip)); break;
             case >= OpcodePayne.PUSH_CONST_M16 and <= OpcodePayne.PUSH_CONST_159:
                 script.AppendInstruction(new IRPushInt(ip, (int)opcode - (int)OpcodePayne.PUSH_CONST_0));
                 break;
+
+            case OpcodePayne.CATCH:
+            case OpcodePayne.THROW:
+            default:
+                throw new NotImplementedException(opcode.ToString());
         }
     }
 

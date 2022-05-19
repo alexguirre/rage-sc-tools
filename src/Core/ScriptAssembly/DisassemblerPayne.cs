@@ -278,7 +278,13 @@ public class DisassemblerPayne
                 }
                 break;
             case OpcodePayne.STRING:
-                w.Write($" '{opcode.GetStringOperand(inst).Escape()}'");
+                w.Write($"'{opcode.GetStringOperand(inst).Escape()}'");
+                break;
+            case OpcodePayne.TEXT_LABEL_ASSIGN_STRING:
+            case OpcodePayne.TEXT_LABEL_ASSIGN_INT:
+            case OpcodePayne.TEXT_LABEL_APPEND_STRING:
+            case OpcodePayne.TEXT_LABEL_APPEND_INT:
+                w.Write($"{opcode.GetTextLabelLength(inst)}");
                 break;
         }
 

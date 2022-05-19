@@ -312,6 +312,11 @@ public static class OpcodePayneExtensions
     public static int ConstantByteSize(this OpcodePayne opcode)
         => opcode switch
         {
+            OpcodePayne.TEXT_LABEL_ASSIGN_STRING or
+            OpcodePayne.TEXT_LABEL_ASSIGN_INT or
+            OpcodePayne.TEXT_LABEL_APPEND_STRING or
+            OpcodePayne.TEXT_LABEL_APPEND_INT => 2,
+
             OpcodePayne.PUSH_CONST_U16 or
             OpcodePayne.LEAVE => 3,
 
@@ -493,6 +498,17 @@ public static class OpcodePayneExtensions
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
         ThrowIfNotExpectedOpcode(OpcodePayne.NATIVE, bytecode);
         return (bytecode[1], bytecode[2], BinaryPrimitives.ReadUInt32LittleEndian(bytecode[3..]));
+    }
+
+    public static byte GetTextLabelLength(this OpcodePayne opcode, ReadOnlySpan<byte> bytecode)
+    {
+        ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
+        if ((OpcodePayne)bytecode[0] is not (OpcodePayne.TEXT_LABEL_ASSIGN_STRING or OpcodePayne.TEXT_LABEL_ASSIGN_INT or
+                                             OpcodePayne.TEXT_LABEL_APPEND_STRING or OpcodePayne.TEXT_LABEL_APPEND_INT))
+        {
+            throw new ArgumentException($"The instruction opcode is not a TEXT_LABEL_ASSIGN/APPEND opcode.", nameof(bytecode));
+        }
+        return bytecode[1];
     }
 
     internal static void ThrowIfOpcodeDoesNotMatch(OpcodePayne opcode, ReadOnlySpan<byte> bytecode)
