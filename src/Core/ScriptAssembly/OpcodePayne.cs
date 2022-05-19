@@ -62,8 +62,8 @@ public enum OpcodePayne : byte
     LOAD = 0x31,
     STORE = 0x32,
     STORE_REV = 0x33,
-    ARRAY_LOAD = 0x34,
-    ARRAY_STORE = 0x35,
+    LOAD_N = 0x34,
+    STORE_N = 0x35,
     LOCAL_0 = 0x36,
     LOCAL_1 = 0x37,
     LOCAL_2 = 0x38,
@@ -443,6 +443,13 @@ public static class OpcodePayneExtensions
         {
             throw new ArgumentException($"The opcode {opcode} does not have a FLOAT operand.", nameof(opcode));
         }
+    }
+
+    public static int GetSwitchNumberOfCases(this OpcodePayne opcode, ReadOnlySpan<byte> bytecode)
+    {
+        ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
+        ThrowIfNotExpectedOpcode(OpcodePayne.SWITCH, bytecode);
+        return bytecode[1];
     }
 
     public static SwitchCasesEnumerator GetSwitchOperands(this OpcodePayne opcode, ReadOnlySpan<byte> bytecode)

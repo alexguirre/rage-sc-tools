@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30011.22
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.32505.173
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Core", "src\Core\Core.csproj", "{A58329C4-FB85-4189-90DC-E324D2A9D033}"
 EndProject
@@ -14,6 +14,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LanguageServer", "src\LanguageServer\LanguageServer.csproj", "{BDC8A6FC-E28B-4C7C-BAA5-B7671E7CE3D8}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ScriptManager", "src\ScriptManager\ScriptManager.csproj", "{E9249AA8-6EF0-4259-BA36-5A78FF0718E8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SourceGenerators", "src\SourceGenerators\SourceGenerators.csproj", "{536E190D-22F0-4EB7-8D87-8898180DF68D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,6 +47,10 @@ Global
 		{E9249AA8-6EF0-4259-BA36-5A78FF0718E8}.Debug|x64.Build.0 = Debug|x64
 		{E9249AA8-6EF0-4259-BA36-5A78FF0718E8}.Release|x64.ActiveCfg = Release|x64
 		{E9249AA8-6EF0-4259-BA36-5A78FF0718E8}.Release|x64.Build.0 = Release|x64
+		{536E190D-22F0-4EB7-8D87-8898180DF68D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{536E190D-22F0-4EB7-8D87-8898180DF68D}.Debug|x64.Build.0 = Debug|Any CPU
+		{536E190D-22F0-4EB7-8D87-8898180DF68D}.Release|x64.ActiveCfg = Release|Any CPU
+		{536E190D-22F0-4EB7-8D87-8898180DF68D}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

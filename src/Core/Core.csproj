@@ -25,5 +25,10 @@
       <HintPath>..\..\dependencies\CodeWalker.Core.dll</HintPath>
     </Reference>
   </ItemGroup>
-  
+
+  <ItemGroup>
+    <ProjectReference Include="..\SourceGenerators\SourceGenerators.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
 </Project>
