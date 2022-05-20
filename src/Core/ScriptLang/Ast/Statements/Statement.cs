@@ -48,7 +48,7 @@ public abstract class BaseStatement : BaseNode, IStatement
     }
 }
 
-public sealed class Label : BaseNode
+public sealed partial class Label : BaseNode
 {
     public Token NameToken => Tokens[0];
     public string Name => NameToken.Lexeme.ToString();
@@ -59,10 +59,6 @@ public sealed class Label : BaseNode
         Debug.Assert(identifierToken.Kind is TokenKind.Identifier);
         Debug.Assert(colon.Kind is TokenKind.Colon);
     }
-
-    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-        => visitor.Visit(this, param);
-    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     public override string DebuggerDisplay =>
         $@"{nameof(Label)} {{ {nameof(Name)} = {Name} }}";

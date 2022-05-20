@@ -2,7 +2,7 @@
 
 using System.Diagnostics;
 
-public sealed class UsingDirective : BaseNode
+public sealed partial class UsingDirective : BaseNode
 {
     public string Path => Tokens[1].GetStringLiteral();
 
@@ -12,8 +12,4 @@ public sealed class UsingDirective : BaseNode
         Debug.Assert(usingKeyword.Kind is TokenKind.USING);
         Debug.Assert(pathString.Kind is TokenKind.String);
     }
-
-    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-        => visitor.Visit(this, param);
-    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 }

@@ -9,7 +9,7 @@ using System.Linq;
 
 public record struct ScriptDeclarationSemantics(List<VarDeclaration>? UsedStatics);
 
-public sealed class ScriptDeclaration : BaseNode, IDeclaration, ISemanticNode<ScriptDeclarationSemantics>
+public sealed partial class ScriptDeclaration : BaseNode, IDeclaration, ISemanticNode<ScriptDeclarationSemantics>
 {
     public Token NameToken => Tokens[1];
     public string Name => NameToken.Lexeme.ToString();
@@ -38,10 +38,6 @@ public sealed class ScriptDeclaration : BaseNode, IDeclaration, ISemanticNode<Sc
         Parameters = ImmutableArray<VarDeclaration>.Empty;
         Body = body.ToImmutableArray();
     }
-
-    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-        => visitor.Visit(this, param);
-    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     public override string DebuggerDisplay =>
         $@"{nameof(ScriptDeclaration)} {{ {nameof(Name)} = {Name}, {nameof(Parameters)} = [{string.Join(", ", Parameters.Select(a => a.DebuggerDisplay))}, {nameof(Body)} = [{string.Join(", ", Body.Select(a => a.DebuggerDisplay))}] }}";

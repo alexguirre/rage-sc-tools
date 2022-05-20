@@ -2,7 +2,7 @@
 
 using System.Diagnostics;
 
-public sealed class FloatLiteralExpression : BaseExpression, ILiteralExpression<float>
+public sealed partial class FloatLiteralExpression : BaseExpression, ILiteralExpression<float>
 {
     public float Value { get; }
 
@@ -12,10 +12,6 @@ public sealed class FloatLiteralExpression : BaseExpression, ILiteralExpression<
         Debug.Assert(floatToken.Kind is TokenKind.Integer or TokenKind.Float);
         Value = floatToken.GetFloatLiteral();
     }
-
-    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-        => visitor.Visit(this, param);
-    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     object? ILiteralExpression.Value => Value;
 

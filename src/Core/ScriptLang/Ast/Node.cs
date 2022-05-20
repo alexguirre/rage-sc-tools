@@ -6,16 +6,14 @@ using System.Collections.Immutable;
 using System.ComponentModel;
 using System.Diagnostics;
 
-public interface INode
+[SourceGenerators.GenerateVisitor("Ast")]
+public partial interface INode
 {
     ImmutableArray<Token> Tokens { get; }
     ImmutableArray<INode> Children { get; }
     SourceRange Location { get; }
     [DebuggerBrowsable(DebuggerBrowsableState.Never), EditorBrowsable(EditorBrowsableState.Never)]
     string DebuggerDisplay { get; }
-
-    TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param);
-    void Accept(IVisitor visitor);
 }
 
 /// <summary>
@@ -31,7 +29,7 @@ public interface ISemanticNode<T> : INode where T : notnull
 }
 
 [DebuggerDisplay("{DebuggerDisplay,nq}")]
-public abstract class BaseNode : INode
+public abstract partial class BaseNode : INode
 {
     private SourceRange? location;
 
@@ -47,9 +45,6 @@ public abstract class BaseNode : INode
 
     [Obsolete("Nodes now require tokens and children nodes", false)]
     public BaseNode(SourceRange source) => throw new NotImplementedException("Deprecated constructor");
-
-    public abstract TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param);
-    public abstract void Accept(IVisitor visitor);
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never), EditorBrowsable(EditorBrowsableState.Never)]
     public virtual string DebuggerDisplay => GetType().Name;
@@ -76,4 +71,8 @@ public abstract class BaseNode : INode
 
         return s;
     }
+
+    public abstract void Accept(IAstVisitor visitor);
+    public abstract TReturn Accept<TReturn>(IAstVisitor<TReturn> visitor);
+    public abstract TReturn Accept<TReturn, TParam>(IAstVisitor<TReturn, TParam> visitor, TParam param);
 }

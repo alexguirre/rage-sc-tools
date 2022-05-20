@@ -90,9 +90,6 @@ public static partial class Intrinsics
             Name = name;
         }
 
-        public TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param) => throw new NotSupportedException($"Cannot visit intrinsics");
-        public void Accept(IVisitor visitor) => throw new NotSupportedException($"Cannot visit intrinsics");
-
         public abstract ExpressionSemantics InvocationTypeCheck(InvocationExpression node, SemanticsAnalyzer semantics, ExpressionTypeChecker expressionTypeChecker);
         public virtual ConstantValue ConstantEval(InvocationExpression node, SemanticsAnalyzer semantics)
              => throw new NotSupportedException($"Intrinsic '{Name}' cannot be constant-evaluated.");
@@ -100,6 +97,10 @@ public static partial class Intrinsics
 
         protected void UsagePrecondition(InvocationExpression node, [CallerArgumentExpression("node")] string? paramName = null)
             => IntrinsicUsagePrecondition(this, node, paramName);
+
+        public void Accept(IAstVisitor visitor) => throw new NotSupportedException($"Cannot visit intrinsics");
+        public TReturn Accept<TReturn>(IAstVisitor<TReturn> visitor) => throw new NotSupportedException($"Cannot visit intrinsics");
+        public TReturn Accept<TReturn, TParam>(IAstVisitor<TReturn, TParam> visitor, TParam param) => throw new NotSupportedException($"Cannot visit intrinsics");
     }
 
     private abstract class BaseFunctionLikeIntrinsic : BaseIntrinsic

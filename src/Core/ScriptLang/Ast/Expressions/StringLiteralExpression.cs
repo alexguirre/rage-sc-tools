@@ -5,7 +5,7 @@ using System.Diagnostics;
 /// <remarks>
 /// The string is nullable for representing the value of <code>STRING s = NULL</code> as a literal.
 /// </remarks> 
-public sealed class StringLiteralExpression : BaseExpression, ILiteralExpression<string?>
+public sealed partial class StringLiteralExpression : BaseExpression, ILiteralExpression<string?>
 {
     public string Value { get; }
 
@@ -15,10 +15,6 @@ public sealed class StringLiteralExpression : BaseExpression, ILiteralExpression
         Debug.Assert(stringOrNullToken.Kind is TokenKind.String);
         Value = stringOrNullToken.GetStringLiteral();
     }
-
-    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-        => visitor.Visit(this, param);
-    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     object? ILiteralExpression.Value => Value;
 

@@ -15,7 +15,7 @@ using ScTools.ScriptLang.Types;
 /// Handles type-checking of <see cref="IExpression"/>s.
 /// Only visit methods for expression nodes are implemented, the other methods throw <see cref="System.NotImplementedException"/>.
 /// </summary>
-public sealed class ExpressionTypeChecker : EmptyVisitor<TypeInfo, SemanticsAnalyzer>
+public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyzer>
 {
     private static readonly ErrorType ErrorType = ErrorType.Instance;
 

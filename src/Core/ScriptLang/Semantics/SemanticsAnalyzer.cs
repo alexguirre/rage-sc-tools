@@ -14,7 +14,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
-public sealed class SemanticsAnalyzer : Visitor
+public sealed class SemanticsAnalyzer : AstVisitor
 {
     // helpers
     private readonly TypeFactory typeFactory;

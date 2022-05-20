@@ -9,7 +9,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 
-internal sealed class TypeFactory : EmptyVisitor<TypeInfo, SemanticsAnalyzer>
+internal sealed class TypeFactory
 {
     private readonly Visitor visitor;
     private readonly SemanticsAnalyzer semantics;
@@ -26,7 +26,7 @@ internal sealed class TypeFactory : EmptyVisitor<TypeInfo, SemanticsAnalyzer>
 
     private static TypeInfo Error => ErrorType.Instance;
 
-    private sealed class Visitor : EmptyVisitor<TypeInfo, SemanticsAnalyzer>
+    private sealed class Visitor : AstVisitor<TypeInfo, SemanticsAnalyzer>
     {
         private readonly VarDeclaratorVisitor varDeclaratorVisitor;
 
@@ -125,7 +125,7 @@ internal sealed class TypeFactory : EmptyVisitor<TypeInfo, SemanticsAnalyzer>
         }
     }
 
-    private sealed class VarDeclaratorVisitor : EmptyVisitor<TypeInfo, (VarDeclaration Var, SemanticsAnalyzer S)>
+    private sealed class VarDeclaratorVisitor : AstVisitor<TypeInfo, (VarDeclaration Var, SemanticsAnalyzer S)>
     {
         private readonly Visitor declarationVisitor;
 

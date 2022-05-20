@@ -2,7 +2,7 @@
 
 using System.Diagnostics;
 
-public sealed class IndexingExpression : BaseExpression
+public sealed partial class IndexingExpression : BaseExpression
 {
     public IExpression Array => (IExpression)Children[0];
     public IExpression Index => (IExpression)Children[1];
@@ -13,10 +13,6 @@ public sealed class IndexingExpression : BaseExpression
         Debug.Assert(openBracket.Kind is TokenKind.OpenBracket);
         Debug.Assert(closeBracket.Kind is TokenKind.CloseBracket);
     }
-
-    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-        => visitor.Visit(this, param);
-    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     public override string DebuggerDisplay =>
         $@"{nameof(IndexingExpression)} {{ {nameof(Array)} = {Array.DebuggerDisplay}, {nameof(Index)} = {Index.DebuggerDisplay} }}";

@@ -7,7 +7,7 @@ using System.Linq;
 
 using ScTools.ScriptLang.Ast.Expressions;
 
-public sealed class WhileStatement : BaseStatement, ILoopStatement
+public sealed partial class WhileStatement : BaseStatement, ILoopStatement
 {
     public IExpression Condition => (IExpression)Children[0];
     public ImmutableArray<IStatement> Body { get; }
@@ -25,10 +25,6 @@ public sealed class WhileStatement : BaseStatement, ILoopStatement
         Debug.Assert(endwhileKeyword.Kind is TokenKind.ENDWHILE);
         Body = body.ToImmutableArray();
     }
-
-    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-        => visitor.Visit(this, param);
-    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     public override string DebuggerDisplay =>
         $@"{nameof(WhileStatement)} {{ {nameof(Condition)} = {Condition.DebuggerDisplay}, {nameof(Body)} = [{string.Join(", ", Body.Select(a => a.DebuggerDisplay))}] }}";

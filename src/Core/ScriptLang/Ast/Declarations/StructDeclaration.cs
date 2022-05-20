@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 
-public sealed class StructDeclaration : BaseTypeDeclaration
+public sealed partial class StructDeclaration : BaseTypeDeclaration
 {
     public override Token NameToken => Tokens[1];
     public ImmutableArray<VarDeclaration> Fields { get; }
@@ -18,8 +18,4 @@ public sealed class StructDeclaration : BaseTypeDeclaration
 
         Fields = fields.ToImmutableArray();
     }
-
-    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-        => visitor.Visit(this, param);
-    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 }

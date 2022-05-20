@@ -23,7 +23,7 @@ public enum BinaryOperator
     LogicalOr,
 }
 
-public sealed class BinaryExpression : BaseExpression
+public sealed partial class BinaryExpression : BaseExpression
 {
     public BinaryOperator Operator { get; }
     public IExpression LHS => (IExpression)Children[0];
@@ -44,10 +44,6 @@ public sealed class BinaryExpression : BaseExpression
             TokenKind.AND or TokenKind.OR);
         Operator = BinaryOperatorExtensions.FromToken(operatorToken.Kind);
     }
-
-    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-        => visitor.Visit(this, param);
-    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     public override string DebuggerDisplay =>
         $@"{nameof(BinaryExpression)} {{ {nameof(Operator)} = {Operator}, {nameof(LHS)} = {LHS.DebuggerDisplay}, {nameof(RHS)} = {RHS.DebuggerDisplay} }}";

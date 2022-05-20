@@ -41,7 +41,7 @@ public enum VarKind
     Field,
 }
 
-public sealed class VarDeclaration : BaseValueDeclaration, IStatement
+public sealed partial class VarDeclaration : BaseValueDeclaration, IStatement
 {
     public override Token NameToken => Declarator.NameToken;
     public Label? Label { get; }
@@ -60,10 +60,6 @@ public sealed class VarDeclaration : BaseValueDeclaration, IStatement
         Label = label;
     }
 
-    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-        => visitor.Visit(this, param);
-    public override void Accept(IVisitor visitor) => visitor.Visit(this);
-
     internal VarDeclaration WithLabel(Label? label)
         => new(Type, Declarator, Kind, Initializer, label);
 
@@ -77,7 +73,7 @@ public interface IVarDeclarator : INode
     string Name { get; }
 }
 
-public sealed class VarDeclarator : BaseNode, IVarDeclarator
+public sealed partial class VarDeclarator : BaseNode, IVarDeclarator
 {
     public Token NameToken => Tokens[0];
     public string Name => NameToken.Lexeme.ToString();
@@ -88,15 +84,11 @@ public sealed class VarDeclarator : BaseNode, IVarDeclarator
         Debug.Assert(nameIdentifier.Kind is TokenKind.Identifier);
     }
 
-    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-        => visitor.Visit(this, param);
-    public override void Accept(IVisitor visitor) => visitor.Visit(this);
-
     public override string DebuggerDisplay =>
         $@"{nameof(VarDeclarator)} {{ {nameof(Name)} = {Name} }}";
 }
 
-public sealed class VarRefDeclarator : BaseNode, IVarDeclarator
+public sealed partial class VarRefDeclarator : BaseNode, IVarDeclarator
 {
     public Token AmpersandToken => Tokens[0];
     public Token NameToken => Tokens[1];
@@ -109,15 +101,11 @@ public sealed class VarRefDeclarator : BaseNode, IVarDeclarator
         Debug.Assert(nameIdentifier.Kind is TokenKind.Identifier);
     }
 
-    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-        => visitor.Visit(this, param);
-    public override void Accept(IVisitor visitor) => visitor.Visit(this);
-
     public override string DebuggerDisplay =>
         $@"{nameof(VarRefDeclarator)} {{ {nameof(Name)} = {Name} }}";
 }
 
-public sealed class VarArrayDeclarator : BaseNode, IVarDeclarator
+public sealed partial class VarArrayDeclarator : BaseNode, IVarDeclarator
 {
     public Token NameToken => Tokens[0];
     public string Name => NameToken.Lexeme.ToString();
@@ -142,10 +130,6 @@ public sealed class VarArrayDeclarator : BaseNode, IVarDeclarator
         Debug.Assert(closeBracket.Kind is TokenKind.CloseBracket);
         Lengths = lengths.ToImmutableArray();
     }
-
-    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-        => visitor.Visit(this, param);
-    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     public override string DebuggerDisplay =>
         $@"{nameof(VarArrayDeclarator)} {{ {nameof(Name)} = {Name}, {nameof(Lengths)} = [{string.Join(", ", Lengths.Select(l => l?.DebuggerDisplay ?? "null"))}] }}";

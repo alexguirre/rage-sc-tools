@@ -7,7 +7,7 @@ using System.Linq;
 
 using ScTools.ScriptLang.Ast.Expressions;
 
-public sealed class RepeatStatement : BaseStatement, ILoopStatement
+public sealed partial class RepeatStatement : BaseStatement, ILoopStatement
 {
     public IExpression Limit => (IExpression)Children[0];
     public IExpression Counter => (IExpression)Children[1];
@@ -26,10 +26,6 @@ public sealed class RepeatStatement : BaseStatement, ILoopStatement
         Debug.Assert(endrepeatKeyword.Kind is TokenKind.ENDREPEAT);
         Body = body.ToImmutableArray();
     }
-
-    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-        => visitor.Visit(this, param);
-    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     public override string DebuggerDisplay =>
         $@"{nameof(RepeatStatement)} {{ {nameof(Limit)} = {Limit.DebuggerDisplay}, {nameof(Counter)} = {Counter.DebuggerDisplay}, {nameof(Body)} = [{string.Join(", ", Body.Select(a => a.DebuggerDisplay))}] }}";

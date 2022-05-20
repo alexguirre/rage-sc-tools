@@ -20,7 +20,7 @@ internal static class ConstantExpressionEvaluator
     public static ConstantValue Eval(IExpression expression, SemanticsAnalyzer semantics)
         => expression.Accept(Evaluator.Instance, semantics);
 
-    private sealed class Evaluator : EmptyVisitor<ConstantValue, SemanticsAnalyzer>
+    private sealed class Evaluator : AstVisitor<ConstantValue, SemanticsAnalyzer>
     {
         public static readonly Evaluator Instance = new Evaluator();
 

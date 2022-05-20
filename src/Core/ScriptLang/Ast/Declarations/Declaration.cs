@@ -33,7 +33,7 @@ public interface IValueDeclaration : IDeclaration, ISemanticNode<ValueDeclaratio
 {
 }
 
-public sealed class TypeName : BaseNode
+public sealed partial class TypeName : BaseNode
 {
     public Token NameToken => Tokens[0];
     public string Name => NameToken.Lexeme.ToString();
@@ -43,10 +43,6 @@ public sealed class TypeName : BaseNode
     {
         Debug.Assert(nameIdentifier.Kind is TokenKind.Identifier);
     }
-
-    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-        => visitor.Visit(this, param);
-    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     public override string DebuggerDisplay =>
         $@"{nameof(TypeName)} {{ {nameof(Name)} = {Name} }}";

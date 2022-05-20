@@ -14,7 +14,7 @@ using ScTools.ScriptLang.Types;
 /// <summary>
 /// Emits code to push the value of expressions.
 /// </summary>
-internal sealed class ValueEmitter : Visitor
+internal sealed class ValueEmitter : AstVisitor
 {
     private readonly CodeEmitter _C;
 

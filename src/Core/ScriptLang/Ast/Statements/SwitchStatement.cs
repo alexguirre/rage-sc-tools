@@ -7,7 +7,7 @@ using System.Linq;
 
 using ScTools.ScriptLang.Ast.Expressions;
 
-public sealed class SwitchStatement : BaseStatement, IBreakableStatement
+public sealed partial class SwitchStatement : BaseStatement, IBreakableStatement
 {
     public IExpression Expression => (IExpression)Children[0];
     public ImmutableArray<SwitchCase> Cases { get; }
@@ -20,10 +20,6 @@ public sealed class SwitchStatement : BaseStatement, IBreakableStatement
         Debug.Assert(endswitchKeyword.Kind is TokenKind.ENDSWITCH);
         Cases = cases.ToImmutableArray();
     }
-
-    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-        => visitor.Visit(this, param);
-    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     public override string DebuggerDisplay =>
         $@"{nameof(SwitchStatement)} {{ {nameof(Expression)} = {Expression.DebuggerDisplay}, {nameof(Cases)} = [{string.Join(", ", Cases.Select(a => a.DebuggerDisplay))}] }}";
@@ -43,7 +39,7 @@ public abstract class SwitchCase : BaseNode, ISemanticNode<SwitchCaseSemantics>
     }
 }
 
-public sealed class ValueSwitchCase : SwitchCase
+public sealed partial class ValueSwitchCase : SwitchCase
 {
     public IExpression Value => (IExpression)Children[0];
 
@@ -53,25 +49,17 @@ public sealed class ValueSwitchCase : SwitchCase
         Debug.Assert(caseKeyword.Kind is TokenKind.CASE);
     }
 
-    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-        => visitor.Visit(this, param);
-    public override void Accept(IVisitor visitor) => visitor.Visit(this);
-
     public override string DebuggerDisplay =>
         $@"{nameof(ValueSwitchCase)} {{ {nameof(Value)} = {Value.DebuggerDisplay}, {nameof(Body)} = [{string.Join(", ", Body.Select(a => a.DebuggerDisplay))}] }}";
 }
 
-public sealed class DefaultSwitchCase : SwitchCase
+public sealed partial class DefaultSwitchCase : SwitchCase
 {
     public DefaultSwitchCase(Token defaultKeyword, IEnumerable<IStatement> body)
         : base(body, OfTokens(defaultKeyword), OfChildren())
     {
         Debug.Assert(defaultKeyword.Kind is TokenKind.DEFAULT);
     }
-
-    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-        => visitor.Visit(this, param);
-    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     public override string DebuggerDisplay =>
         $@"{nameof(DefaultSwitchCase)} {{ {nameof(Body)} = [{string.Join(", ", Body.Select(a => a.DebuggerDisplay))}] }}";

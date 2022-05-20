@@ -10,7 +10,7 @@ using System.Collections.Immutable;
 /// <summary>
 /// Type declaration added by the compiler.
 /// </summary>
-public sealed class BuiltInTypeDeclaration : ITypeDeclaration
+public sealed partial class BuiltInTypeDeclaration : ITypeDeclaration
 {
     public TypeInfo BuiltInType { get; }
     public string Name { get; }
@@ -30,7 +30,4 @@ public sealed class BuiltInTypeDeclaration : ITypeDeclaration
         BuiltInType = type;
         Name = name;
     }
-
-    public TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param) => visitor.Visit(this, param);
-    public void Accept(IVisitor visitor) => visitor.Visit(this);
 }

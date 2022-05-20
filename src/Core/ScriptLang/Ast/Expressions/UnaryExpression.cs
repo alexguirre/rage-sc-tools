@@ -9,7 +9,7 @@ public enum UnaryOperator
     LogicalNot,
 }
 
-public sealed class UnaryExpression : BaseExpression
+public sealed partial class UnaryExpression : BaseExpression
 {
     public UnaryOperator Operator { get; }
     public IExpression SubExpression => (IExpression)Children[0];
@@ -20,10 +20,6 @@ public sealed class UnaryExpression : BaseExpression
         Debug.Assert(operatorToken.Kind is TokenKind.NOT or TokenKind.Minus);
         Operator = UnaryOperatorExtensions.FromToken(operatorToken.Kind);
     }
-
-    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-        => visitor.Visit(this, param);
-    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     public override string DebuggerDisplay =>
         $@"{nameof(UnaryExpression)} {{ {nameof(Operator)} = {Operator}, {nameof(SubExpression)} = {SubExpression.DebuggerDisplay} }}";

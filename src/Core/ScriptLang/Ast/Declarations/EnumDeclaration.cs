@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 using ScTools.ScriptLang.Ast.Expressions;
 
-public sealed class EnumDeclaration : BaseTypeDeclaration
+public sealed partial class EnumDeclaration : BaseTypeDeclaration
 {
     public override Token NameToken => Tokens[1];
     public ImmutableArray<EnumMemberDeclaration> Members { get; }
@@ -20,13 +20,9 @@ public sealed class EnumDeclaration : BaseTypeDeclaration
 
         Members = members.ToImmutableArray();
     }
-
-    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-        => visitor.Visit(this, param);
-    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 }
 
-public sealed class EnumMemberDeclaration : BaseValueDeclaration
+public sealed partial class EnumMemberDeclaration : BaseValueDeclaration
 {
     public override Token NameToken => Tokens[0];
     public IExpression? Initializer => Children.Length > 0 ? (IExpression)Children[0] : null;
@@ -36,8 +32,4 @@ public sealed class EnumMemberDeclaration : BaseValueDeclaration
     {
         Debug.Assert(nameIdentifier.Kind is TokenKind.Identifier);
     }
-
-    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-        => visitor.Visit(this, param);
-    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 }

@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 public record struct FieldAccessExpressionSemantics(TypeInfo? Type, ValueKind ValueKind, ArgumentKind ArgumentKind, FieldInfo? Field);
 
-public sealed class FieldAccessExpression : BaseExpression
+public sealed partial class FieldAccessExpression : BaseExpression
 {
     private FieldInfo? semanticsField;
 
@@ -29,10 +29,6 @@ public sealed class FieldAccessExpression : BaseExpression
         Debug.Assert(dotToken.Kind is TokenKind.Dot);
         Debug.Assert(fieldNameIdentifierToken.Kind is TokenKind.Identifier);
     }
-
-    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-        => visitor.Visit(this, param);
-    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     public override string DebuggerDisplay =>
         $@"{nameof(FieldAccessExpression)} {{ {nameof(SubExpression)} = {SubExpression.DebuggerDisplay}, {nameof(FieldName)} = {FieldName} }}";

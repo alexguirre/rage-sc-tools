@@ -2,7 +2,7 @@
 
 using System.Diagnostics;
 
-public sealed class VectorExpression : BaseExpression
+public sealed partial class VectorExpression : BaseExpression
 {
     public IExpression X => (IExpression)Children[0];
     public IExpression Y => (IExpression)Children[1];
@@ -17,10 +17,6 @@ public sealed class VectorExpression : BaseExpression
         Debug.Assert(commaYZToken.Kind is TokenKind.Comma);
         Debug.Assert(closeToken.Kind is TokenKind.GreaterThanGreaterThan);
     }
-
-    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-        => visitor.Visit(this, param);
-    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     public override string DebuggerDisplay =>
         $@"{nameof(VectorExpression)} {{ {nameof(X)} = {X.DebuggerDisplay}, {nameof(Y)} = {Y.DebuggerDisplay}, {nameof(Z)} = {Z.DebuggerDisplay} }}";

@@ -43,7 +43,7 @@ public static class IRPrinter
         Print(inst, sw);
         return sw.ToString();
     }
-
+    
     private sealed class Visitor : IIRVisitor
     {
         private readonly TextWriter w;

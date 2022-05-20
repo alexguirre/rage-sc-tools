@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 
-public sealed class CompilationUnit : BaseNode
+public sealed partial class CompilationUnit : BaseNode
 {
     public ImmutableArray<UsingDirective> Usings { get; }
     public ImmutableArray<IDeclaration> Declarations { get; }
@@ -17,8 +17,4 @@ public sealed class CompilationUnit : BaseNode
         Usings = usings.ToImmutableArray();
         Declarations = declarations.ToImmutableArray();
     }
-
-    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-        => visitor.Visit(this, param);
-    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 }

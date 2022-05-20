@@ -9,7 +9,7 @@ using ScTools.ScriptLang.Ast.Expressions;
 
 public record struct IfStatementSemantics(string? ElseLabel, string? EndLabel);
 
-public sealed class IfStatement : BaseStatement, ISemanticNode<IfStatementSemantics>
+public sealed partial class IfStatement : BaseStatement, ISemanticNode<IfStatementSemantics>
 {
     public IExpression Condition => (IExpression)Children[0];
     public ImmutableArray<IStatement> Then { get; }
@@ -33,10 +33,6 @@ public sealed class IfStatement : BaseStatement, ISemanticNode<IfStatementSemant
         Then = thenBody.ToImmutableArray();
         Else = elseBody.ToImmutableArray();
     }
-
-    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-        => visitor.Visit(this, param);
-    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     public override string DebuggerDisplay =>
         $@"{nameof(IfStatement)} {{ {nameof(Condition)} = {Condition.DebuggerDisplay}, {nameof(Then)} = [{string.Join(", ", Then.Select(a => a.DebuggerDisplay))}], {nameof(Else)} = [{string.Join(", ", Else.Select(a => a.DebuggerDisplay))}] }}";

@@ -13,7 +13,7 @@ using ScTools.ScriptLang.Types;
 /// <summary>
 /// Emits code to execute statements.
 /// </summary>
-internal sealed class StatementEmitter : Visitor
+internal sealed class StatementEmitter : AstVisitor
 {
     private readonly CodeEmitter _C;
 

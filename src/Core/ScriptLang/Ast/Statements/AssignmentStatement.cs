@@ -5,7 +5,7 @@ using ScTools.ScriptLang.Ast.Expressions;
 using System;
 using System.Diagnostics;
 
-public sealed class AssignmentStatement : BaseStatement
+public sealed partial class AssignmentStatement : BaseStatement
 {
     public BinaryOperator? CompoundOperator { get; }
     public bool IsCompound => CompoundOperator != null;
@@ -19,10 +19,6 @@ public sealed class AssignmentStatement : BaseStatement
 
         CompoundOperator = GetCompoundOperator(operatorToken.Kind);
     }
-
-    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-        => visitor.Visit(this, param);
-    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     public override string DebuggerDisplay =>
         $@"{nameof(AssignmentStatement)} {{{(IsCompound ? $"{nameof(CompoundOperator)} = {CompoundOperator}," : "")} {nameof(LHS)} = {LHS.DebuggerDisplay}, {nameof(RHS)} = {RHS.DebuggerDisplay} }}";

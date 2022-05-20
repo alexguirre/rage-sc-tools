@@ -10,7 +10,7 @@ public record struct NameExpressionSemantics(TypeInfo? Type, ValueKind ValueKind
 /// <summary>
 /// Represents a reference to a <see cref="IDeclaration"/>.
 /// </summary>
-public sealed class NameExpression : BaseExpression, ISemanticNode<NameExpressionSemantics>
+public sealed partial class NameExpression : BaseExpression, ISemanticNode<NameExpressionSemantics>
 {
     private IDeclaration? semanticsDeclaration;
 
@@ -31,10 +31,6 @@ public sealed class NameExpression : BaseExpression, ISemanticNode<NameExpressio
     {
         Debug.Assert(identifierToken.Kind is TokenKind.Identifier);
     }
-
-    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-        => visitor.Visit(this, param);
-    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     public override string DebuggerDisplay =>
         $@"{nameof(NameExpression)} {{ {nameof(Name)} = {Name} }}";

@@ -8,7 +8,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 
-public sealed class FunctionDeclaration : BaseValueDeclaration
+public sealed partial class FunctionDeclaration : BaseValueDeclaration
 {
     public override Token NameToken => Tokens[1];
     public TypeName? ReturnType { get; }
@@ -32,10 +32,6 @@ public sealed class FunctionDeclaration : BaseValueDeclaration
         Parameters = parameters.ToImmutableArray();
         Body = body.ToImmutableArray();
     }
-
-    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-        => visitor.Visit(this, param);
-    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     public override string DebuggerDisplay =>
         $@"{nameof(FunctionDeclaration)} {{ {nameof(Name)} = {Name}, {nameof(ReturnType)} = {ReturnType?.DebuggerDisplay}, {nameof(Parameters)} = [{string.Join(", ", Parameters.Select(a => a.DebuggerDisplay))}, {nameof(Body)} = [{string.Join(", ", Body.Select(a => a.DebuggerDisplay))}] }}";

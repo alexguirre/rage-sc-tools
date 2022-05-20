@@ -8,7 +8,7 @@ using System.Linq;
 
 using ScTools.ScriptLang.Ast.Statements;
 
-public sealed class InvocationExpression : BaseExpression, IStatement
+public sealed partial class InvocationExpression : BaseExpression, IStatement
 {
     public Label? Label { get; }
     public IExpression Callee => (IExpression)Children[0];
@@ -24,10 +24,6 @@ public sealed class InvocationExpression : BaseExpression, IStatement
         Arguments = arguments.ToImmutableArray();
         Label = label;
     }
-
-    public override TReturn Accept<TReturn, TParam>(IVisitor<TReturn, TParam> visitor, TParam param)
-        => visitor.Visit(this, param);
-    public override void Accept(IVisitor visitor) => visitor.Visit(this);
 
     internal InvocationExpression WithLabel(Label? label)
         => new(Tokens[0], Tokens[1], Callee, Arguments, label);

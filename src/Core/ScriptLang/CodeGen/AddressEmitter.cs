@@ -11,7 +11,7 @@
     /// <summary>
     /// Emits code to push the address of lvalue expressions.
     /// </summary>
-    internal sealed class AddressEmitter : Visitor
+    internal sealed class AddressEmitter : AstVisitor
     {
         private readonly CodeEmitter _C;
 
