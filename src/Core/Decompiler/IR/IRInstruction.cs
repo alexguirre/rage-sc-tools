@@ -1,12 +1,24 @@
-﻿using System.Collections.Immutable;
+﻿namespace ScTools.Decompiler.IR;
 
-namespace ScTools.Decompiler.IR;
+using System.Text;
+using System.Collections.Immutable;
+using System.Diagnostics;
+using System.ComponentModel;
 
 [SourceGenerators.GenerateVisitor(nameof(IR))]
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
 public abstract partial record IRInstruction(int Address)
 {
     public IRInstruction? Previous { get; internal set; }
     public IRInstruction? Next { get; internal set; }
+    [DebuggerBrowsable(DebuggerBrowsableState.Never), EditorBrowsable(EditorBrowsableState.Never)]
+    public string DebuggerDisplay => IRPrinter.PrintToString(this);
+
+    protected virtual bool PrintMembers(StringBuilder stringBuilder)
+    {
+        stringBuilder.Append($"Address = {Address:000000}");
+        return true;
+    }
 }
 
 /// <summary>
@@ -63,7 +75,7 @@ public sealed partial record IRNativeCall(int Address, int ParamCount, int Retur
 }
 #endregion Function Calls
 
-public sealed partial record IREnter(int Address, int ParamCount, int LocalCount) : IRInstruction(Address) { }
+public sealed partial record IREnter(int Address, int ParamCount, int LocalCount, string? FunctionName = null) : IRInstruction(Address) { }
 public sealed partial record IRLeave(int Address, int ParamCount, int ReturnCount) : IRInstruction(Address) { }
 
 public sealed partial record IRPushInt(int Address, int Value) : IRInstruction(Address)
@@ -107,6 +119,7 @@ public sealed partial record IRIMod(int Address) : IRInstruction(Address) { }
 public sealed partial record IRIAnd(int Address) : IRInstruction(Address) { }
 public sealed partial record IRIOr(int Address) : IRInstruction(Address) { }
 public sealed partial record IRIXor(int Address) : IRInstruction(Address) { }
+public sealed partial record IRIBitTest(int Address) : IRInstruction(Address) { }
 
 public sealed partial record IRINot(int Address) : IRInstruction(Address) { }
 public sealed partial record IRINeg(int Address) : IRInstruction(Address) { }
@@ -185,7 +198,8 @@ public sealed partial record IRStaticRefFromStack(int Address) : IRVarRefFromSta
 public sealed partial record IRGlobalRefFromStack(int Address) : IRVarRefFromStack(Address) { }
 #endregion Vars
 
-public sealed partial record IRArrayItemRef(int Address) : IRInstruction(Address) { }
+public sealed partial record IRArrayItemRefSizeInStack(int Address) : IRInstruction(Address) { }
+public sealed partial record IRArrayItemRef(int Address, int ItemSize) : IRInstruction(Address) { }
 
 public sealed partial record IRNullRef(int Address) : IRInstruction(Address) { }
 

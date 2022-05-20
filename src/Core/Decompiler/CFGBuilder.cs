@@ -10,8 +10,8 @@ using System.Linq;
 
 public sealed class CFGBuilder
 {
-    public static CFGBlock[] BuildFrom(IRInstruction startInstruction)
-        => new CFGBuilder(startInstruction).BuildGraph();
+    public static CFGBlock BuildFrom(IRScript script, IRInstruction startInstruction)
+        => new CFGBuilder(script, startInstruction).BuildGraph();
 
     private class CFGBlockInProgress
     {
@@ -41,15 +41,17 @@ public sealed class CFGBuilder
         public int? SwitchCaseValue { get; init; }
     }
 
+    private readonly IRScript script;
     private readonly IRInstruction start;
     private readonly Dictionary<int, CFGBlockInProgress> blocksByStartAddress = new();
 
-    private CFGBuilder(IRInstruction startInstruction)
+    private CFGBuilder(IRScript script, IRInstruction startInstruction)
     {
+        this.script = script;
         start = startInstruction;
     }
 
-    private CFGBlock[] BuildGraph()
+    private CFGBlock BuildGraph()
     {
         StartBlocks();
         EndBlocks();
@@ -68,26 +70,11 @@ public sealed class CFGBuilder
             block.OutgoingEdges = outgoing.MoveToImmutable();
         }
 
-        return blocks.Values.ToArray();
+        return blocks.Values.OrderBy(b => b.Start.Address).First();
 
         CFGBlock ConvertBlock(CFGBlockInProgress block)
-            => new(FindInstructionAt(block.StartAddress)!,
-                   FindInstructionAt(block.EndAddress)!);
-    }
-
-    private IRInstruction? FindInstructionAt(int address)
-    {
-        var inst = start;
-        while (inst is not null)
-        {
-            if (inst.Address == address)
-            {
-                return inst;
-            }
-
-            inst = inst.Next;
-        }
-        return null;
+            => new(script.FindInstructionAt(block.StartAddress)!,
+                   script.FindInstructionAt(block.EndAddress)!);
     }
 
     private void StartBlocks()
@@ -149,11 +136,11 @@ public sealed class CFGBuilder
         for (int i = 0; i < blocksOrderedByAddress.Length - 1; i++)
         {
             blocksOrderedByAddress[i].EndAddress = blocksOrderedByAddress[i + 1].StartAddress;
-            blocksOrderedByAddress[i].LastInstruction = FindInstructionAt(blocksOrderedByAddress[i].EndAddress)?.Previous;
+            blocksOrderedByAddress[i].LastInstruction = script.FindInstructionAt(blocksOrderedByAddress[i].EndAddress)?.Previous;
         }
 
         var lastBlock = blocksOrderedByAddress[^1];
-        var lastInstruction = FindInstructionAt(lastBlock.StartAddress);
+        var lastInstruction = script.FindInstructionAt(lastBlock.StartAddress);
         Debug.Assert(lastInstruction is not null);
         while (lastInstruction.Next is not null and not IREndOfScript) { lastInstruction = lastInstruction.Next; }
         lastBlock.EndAddress = lastInstruction.Address;

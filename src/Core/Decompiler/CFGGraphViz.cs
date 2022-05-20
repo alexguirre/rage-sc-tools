@@ -6,14 +6,14 @@ using System.IO;
 
 public static class CFGGraphViz
 {
-    public static string ToDot(CFGBlock[] blocks)
+    public static string ToDot(CFGBlock startBlock)
     {
         using var s = new StringWriter();
-        ToDot(s, blocks);
+        ToDot(s, startBlock);
         return s.ToString();
     }
 
-    public static void ToDot(TextWriter w, CFGBlock[] blocks)
+    public static void ToDot(TextWriter w, CFGBlock startBlock)
     {
         // header
         w.WriteLine($@"digraph ""CFG"" {{");
@@ -25,9 +25,18 @@ public static class CFGGraphViz
         w.WriteLine();
 
         // nodes
+        var blocks = new List<CFGBlock>();
+        var blockQueue = new Queue<CFGBlock>();
+        blockQueue.Enqueue(startBlock);
         var blocksIds = new Dictionary<CFGBlock, int>();
-        foreach (var block in blocks)
+        while (blockQueue.TryDequeue(out var block))
         {
+            if (blocksIds.ContainsKey(block))
+            {
+                continue;
+            }
+
+            blocks.Add(block);
             var id = blocksIds.Count;
             blocksIds.Add(block, id);
 
@@ -49,6 +58,11 @@ public static class CFGGraphViz
             //    w.Write("<empty>");
             //}
             w.WriteLine("\"];");
+
+            foreach (var edges in block.OutgoingEdges)
+            {
+                blockQueue.Enqueue(edges.Target);
+            }
         }
         w.WriteLine();
 

@@ -2,9 +2,11 @@
 
 using ScTools.Decompiler.IR;
 
+using System.Collections;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 
-public class CFGBlock
+public class CFGBlock : IEnumerable<IRInstruction>
 {
     /// <summary>
     /// Start of the block.
@@ -20,6 +22,50 @@ public class CFGBlock
     {
         Start = start;
         End = end;
+    }
+
+    public Enumerator GetEnumerator() => new(this);
+    IEnumerator<IRInstruction> IEnumerable<IRInstruction>.GetEnumerator() => GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    public struct Enumerator : IEnumerator<IRInstruction>
+    {
+        private readonly CFGBlock block;
+        private IRInstruction? current;
+        private IRInstruction? iter;
+
+        public IRInstruction Current => current!;
+        object IEnumerator.Current => Current;
+
+        public Enumerator(CFGBlock block)
+        {
+            this.block = block;
+            current = null;
+            iter = block.Start;
+        }
+
+        public void Dispose()
+        {
+        }
+
+        public bool MoveNext()
+        {
+            if (iter is null || iter == block.End)
+            {
+                current = null;
+                return false;
+            }
+
+            current = iter;
+            iter = iter.Next;
+            return true;
+        }
+
+        public void Reset()
+        {
+            current = null;
+            iter = block.Start;
+        }
     }
 }
 

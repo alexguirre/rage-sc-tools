@@ -633,7 +633,7 @@ public class Disassembler
                         AddFuncLabel(codeLabels, funcAddress, funcName);
                         break;
                     case Opcode.LEAVE:
-                        addressAfterLastLeaveInst = (uint)(inst.Address + Opcode.LEAVE.ByteSize());
+                        addressAfterLastLeaveInst = (uint)(inst.Address + Opcode.LEAVE.ConstantByteSize());
                         break;
                     case Opcode.CALLINDIRECT:
                         hasIndirectCalls = true;
@@ -697,7 +697,7 @@ public class Disassembler
             while (address < currInst.Address)
             {
                 prevAddress = address;
-                address += (uint)GetInstructionLength(code, address);
+                address += (uint)OpcodeExtensions.ByteSize(code[(int)address..]);
             }
             return GetInstructionContext(code, prevAddress, currInst.PreviousCB, currInst.NextCB);
         };
@@ -719,21 +719,10 @@ public class Disassembler
             => address >= code.Length ? default : new()
             {
                 Address = address,
-                Bytes = code.AsSpan((int)address, GetInstructionLength(code, address)),
+                Bytes = OpcodeExtensions.GetInstructionSpan(code, (int)address),
                 PreviousCB = previousCB,
                 NextCB = nextCB,
             };
-
-        static int GetInstructionLength(byte[] code, uint address)
-        {
-            var opcode = (Opcode)code[address];
-            return opcode switch
-            {
-                Opcode.ENTER => 5 + code[address + 4],  // 5 + nameLength
-                Opcode.SWITCH => 2 + 6 * code[address + 1], // 2 + 6 * caseCount
-                _ => opcode.ByteSize(),
-            };
-        }
     }
 
     private readonly ref struct InstructionContext

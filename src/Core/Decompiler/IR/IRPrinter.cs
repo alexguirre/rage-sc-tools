@@ -5,32 +5,39 @@ using System.Linq;
 
 public static class IRPrinter
 {
-    public static void PrintAll(IRInstruction? inst, TextWriter writer)
+    public static void PrintAll(IRInstruction? inst, TextWriter writer, bool includeAddress = true)
     {
         var visitor = new Visitor(writer);
         while (inst is not null)
         {
-            writer.Write($"{inst.Address:000000} : ");
+            if (includeAddress)
+            {
+                writer.Write($"{inst.Address:000000} : ");
+            }
             inst.Accept(visitor);
             writer.WriteLine();
             inst = inst.Next;
         }
     }
 
-    public static string PrintAllToString(IRInstruction? inst)
+    public static string PrintAllToString(IRInstruction? inst, bool includeAddress = true)
     {
         using var sw = new StringWriter();
         PrintAll(inst, sw);
         return sw.ToString();
     }
     
-    public static void Print(IRInstruction inst, TextWriter writer)
+    public static void Print(IRInstruction inst, TextWriter writer, bool includeAddress = true)
     {
         var visitor = new Visitor(writer);
+        if (includeAddress)
+        {
+            writer.Write($"{inst.Address:000000} : ");
+        }
         inst.Accept(visitor);
-    }
+    }    
 
-    public static string PrintToString(IRInstruction inst)
+    public static string PrintToString(IRInstruction inst, bool includeAddress = true)
     {
         using var sw = new StringWriter();
         Print(inst, sw);
@@ -44,7 +51,9 @@ public static class IRPrinter
         public Visitor(TextWriter w) => this.w = w;
 
         public void Visit(IREndOfScript inst) { }
-        public void Visit(IREnter inst) => w.Write($"ENTER\t{inst.ParamCount}, {inst.LocalCount}");
+        public void Visit(IREnter inst) => w.Write(inst.FunctionName is null ?
+                                                $"ENTER\t{inst.ParamCount}, {inst.LocalCount}" :
+                                                $"ENTER\t{inst.ParamCount}, {inst.LocalCount}\t[{inst.FunctionName}]");
         public void Visit(IRJump inst) => w.Write($"J\t{inst.JumpAddress:000000}");
         public void Visit(IRJumpIfZero inst) => w.Write($"JZ\t{inst.JumpAddress:000000}");
         public void Visit(IRSwitch inst) => w.Write($"SWITCH\t{string.Join(", ", inst.Cases.Select(c => $"{c.Value}:{c.JumpAddress:000000}"))}");
@@ -66,6 +75,7 @@ public static class IRPrinter
         public void Visit(IRIAnd inst) => w.Write($"IAND");
         public void Visit(IRIOr inst) => w.Write($"IOR");
         public void Visit(IRIXor inst) => w.Write($"IXOR");
+        public void Visit(IRIBitTest inst) => w.Write($"IBITTEST");
         public void Visit(IRINot inst) => w.Write($"INOT");
         public void Visit(IRINeg inst) => w.Write($"INEG");
         public void Visit(IRIEqual inst) => w.Write($"IEQ");
@@ -107,7 +117,8 @@ public static class IRPrinter
         public void Visit(IRLocalRefFromStack inst) => w.Write($"LOCAL_S");
         public void Visit(IRStaticRefFromStack inst) => w.Write($"STATIC_S");
         public void Visit(IRGlobalRefFromStack inst) => w.Write($"GLOBAL_S");
-        public void Visit(IRArrayItemRef inst) => w.Write($"ARRAY");
+        public void Visit(IRArrayItemRef inst) => w.Write($"ARRAY {inst.ItemSize}");
+        public void Visit(IRArrayItemRefSizeInStack inst) => w.Write($"ARRAY_S");
         public void Visit(IRNullRef inst) => w.Write($"NULL");
         public void Visit(IRTextLabelAssignString  inst) => w.Write($"TEXT_LABEL_ASSIGN_STRING\t{inst.TextLabelLength}");
         public void Visit(IRTextLabelAssignInt  inst) => w.Write($"TEXT_LABEL_ASSIGN_INT\t{inst.TextLabelLength}");

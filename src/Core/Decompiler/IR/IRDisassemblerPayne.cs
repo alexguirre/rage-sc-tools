@@ -57,7 +57,7 @@ public class IRDisassemblerPayne
                 break;
             case OpcodePayne.ENTER:
                 var enter = opcode.GetEnterOperands(inst);
-                script.AppendInstruction(new IREnter(ip, enter.ParamCount, enter.FrameSize - 2));
+                script.AppendInstruction(new IREnter(ip, enter.ParamCount, enter.FrameSize - 2, opcode.GetEnterFunctionName(inst)));
                 break;
             case OpcodePayne.PUSH_CONST_U16:
                 script.AppendInstruction(new IRPushInt(ip, opcode.GetU16Operand(inst)));
@@ -157,7 +157,7 @@ public class IRDisassemblerPayne
             case OpcodePayne.LOCAL: script.AppendInstruction(new IRLocalRefFromStack(ip)); break;
             case OpcodePayne.STATIC: script.AppendInstruction(new IRStaticRefFromStack(ip)); break;
             case OpcodePayne.GLOBAL: script.AppendInstruction(new IRGlobalRefFromStack(ip)); break;
-            case OpcodePayne.ARRAY: script.AppendInstruction(new IRArrayItemRef(ip)); break;
+            case OpcodePayne.ARRAY: script.AppendInstruction(new IRArrayItemRefSizeInStack(ip)); break;
             case OpcodePayne.NULL: script.AppendInstruction(new IRNullRef(ip)); break;
             case OpcodePayne.TEXT_LABEL_ASSIGN_STRING: script.AppendInstruction(new IRTextLabelAssignString(ip, opcode.GetTextLabelLength(inst))); break;
             case OpcodePayne.TEXT_LABEL_ASSIGN_INT: script.AppendInstruction(new IRTextLabelAssignInt(ip, opcode.GetTextLabelLength(inst))); break;

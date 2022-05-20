@@ -1,6 +1,8 @@
 ﻿namespace ScTools.ScriptAssembly
 {
     using System;
+    using System.Buffers.Binary;
+    using System.Text;
 
     public enum Opcode : byte
     {
@@ -132,12 +134,15 @@
         PUSH_CONST_F6 = 0x7D,
         PUSH_CONST_F7 = 0x7E,
         // TODO: document and support IS_BIT_SET opcode (IBITTEST?), added in b2612
-        IS_BIT_SET = 0x7F,
+        IBITTEST = 0x7F,
     }
 
     public static class OpcodeExtensions
     {
-        public const int NumberOfOpcodes = 127;
+        public const int NumberOfOpcodes = 128;
+
+        public static bool IsInvalid(this Opcode opcode)
+            => (byte)opcode is >= NumberOfOpcodes;
 
         public static bool IsJump(this Opcode opcode)
             => opcode is Opcode.J or Opcode.JZ or
@@ -153,8 +158,255 @@
         /// <returns>
         /// The byte size of a instruction with this <paramref name="opcode"/>; or, <c>0</c> if the size is variable (i.e. <paramref name="opcode"/> is <see cref="Opcode.CALL"/> or <see cref="Opcode.SWITCH"/>).
         /// </returns>
-        public static int ByteSize(this Opcode opcode)
-            => (int)opcode < NumberOfOpcodes ? ByteSizeTable[(int)opcode] : throw new ArgumentException($"Unknown opcode '{opcode}'", nameof(opcode));
+        public static int ConstantByteSize(this Opcode opcode)
+            => (int)opcode < NumberOfOpcodes ? ByteSizeTable[(int)opcode] : 1;
+
+        /// <returns>
+        /// The length in bytes of an instruction with this <paramref name="opcode"/> and <paramref name="bytecode"/>.
+        /// </returns>
+        public static int ByteSize(this Opcode opcode, ReadOnlySpan<byte> bytecode)
+        {
+            ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
+            return ByteSize(bytecode);
+        }
+
+        /// <returns>
+        /// The length in bytes of an instruction with this <paramref name="bytecode"/>.
+        /// </returns>
+        public static int ByteSize(ReadOnlySpan<byte> bytecode)
+        {
+            var opcode = (Opcode)bytecode[0];
+            var s = opcode switch
+            {
+                Opcode.ENTER => bytecode[4] + 5,
+                Opcode.SWITCH => 6 * bytecode[1] + 2,
+                _ => opcode.ConstantByteSize(),
+            };
+
+            return s;
+        }
+
+        public static ReadOnlySpan<byte> GetInstructionSpan(ReadOnlySpan<byte> code, int address)
+        {
+            var opcode = (Opcode)code[address];
+            var inst = code[address..];
+            var instLength = opcode.ByteSize(inst);
+            return inst[..instLength]; // trim to instruction length
+        }
+
+        public static byte GetU8Operand(this Opcode opcode, ReadOnlySpan<byte> bytecode, int operandIndex = 0)
+        {
+            ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
+
+            // TODO: check opcodes with U8 operands
+            //if (opcode is Opcode.PUSH_CONST_U8)
+            //{
+            return bytecode[1 + operandIndex];
+            //}
+            //else
+            //{
+            //    throw new ArgumentException($"The opcode {opcode} does not have a U8 operand.", nameof(opcode));
+            //}
+        }
+
+        public static short GetS16Operand(this Opcode opcode, ReadOnlySpan<byte> bytecode)
+        {
+            ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
+
+            // TODO: check opcodes with U16 operands
+            //if (opcode is Opcode.PUSH_CONST_U16)
+            //{
+            return BinaryPrimitives.ReadInt16LittleEndian(bytecode[1..]);
+            //}
+            //else
+            //{
+            //    throw new ArgumentException($"The opcode {opcode} does not have a U16 operand.", nameof(opcode));
+            //}
+        }
+
+        public static ushort GetU16Operand(this Opcode opcode, ReadOnlySpan<byte> bytecode)
+        {
+            ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
+
+            // TODO: check opcodes with U16 operands
+            //if (opcode is Opcode.PUSH_CONST_U16)
+            //{
+            return BinaryPrimitives.ReadUInt16LittleEndian(bytecode[1..]);
+            //}
+            //else
+            //{
+            //    throw new ArgumentException($"The opcode {opcode} does not have a U16 operand.", nameof(opcode));
+            //}
+        }
+
+        public static uint GetU24Operand(this Opcode opcode, ReadOnlySpan<byte> bytecode)
+        {
+            ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
+
+            // TODO: check opcodes with U24 operands
+            //if (opcode is )
+            //{                var lo = inst[0];
+            var lo = bytecode[1];
+            var mi = bytecode[2];
+            var hi = bytecode[3];
+            
+            return (uint)((hi << 16) | (mi << 8) | lo);
+            //}
+            //else
+            //{
+            //    throw new ArgumentException($"The opcode {opcode} does not have a U32 operand.", nameof(opcode));
+            //}
+        }
+
+        public static uint GetU32Operand(this Opcode opcode, ReadOnlySpan<byte> bytecode)
+        {
+            ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
+
+            // TODO: check opcodes with U32 operands
+            //if (opcode is )
+            //{
+            return BinaryPrimitives.ReadUInt32LittleEndian(bytecode[1..]);
+            //}
+            //else
+            //{
+            //    throw new ArgumentException($"The opcode {opcode} does not have a U32 operand.", nameof(opcode));
+            //}
+        }
+
+        public static float GetFloatOperand(this Opcode opcode, ReadOnlySpan<byte> bytecode)
+        {
+            ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
+            if (opcode is not Opcode.PUSH_CONST_F)
+            {
+                throw new ArgumentException($"The opcode {opcode} does not have a FLOAT operand.", nameof(opcode));
+            }
+
+            return BinaryPrimitives.ReadSingleLittleEndian(bytecode[1..]);
+        }
+
+        public static int GetSwitchNumberOfCases(this Opcode opcode, ReadOnlySpan<byte> bytecode)
+        {
+            ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
+            ThrowIfNotExpectedOpcode(Opcode.SWITCH, bytecode);
+            return bytecode[1];
+        }
+
+        public static SwitchCasesEnumerator GetSwitchOperands(this Opcode opcode, ReadOnlySpan<byte> bytecode)
+        {
+            ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
+            return new(bytecode);
+        }
+
+        public static (byte ParamCount, ushort FrameSize) GetEnterOperands(this Opcode opcode, ReadOnlySpan<byte> bytecode)
+        {
+            ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
+            ThrowIfNotExpectedOpcode(Opcode.ENTER, bytecode);
+            return (bytecode[1], BinaryPrimitives.ReadUInt16LittleEndian(bytecode[2..]));
+        }
+
+        public static string? GetEnterFunctionName(this Opcode opcode, ReadOnlySpan<byte> bytecode)
+        {
+            ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
+            ThrowIfNotExpectedOpcode(Opcode.ENTER, bytecode);
+
+            if (bytecode[4] > 2)
+            {
+                var nameSlice = bytecode[5..^1];
+                while (nameSlice[0] == 0xFF) { nameSlice = nameSlice[1..]; }
+
+                return Encoding.UTF8.GetString(nameSlice);
+            }
+
+            return null;
+        }
+
+        public static (byte ParamCount, byte ReturnCount) GetLeaveOperands(this Opcode opcode, ReadOnlySpan<byte> bytecode)
+        {
+            ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
+            ThrowIfNotExpectedOpcode(Opcode.LEAVE, bytecode);
+            return (bytecode[1], bytecode[2]);
+        }
+
+        public static (byte ParamCount, byte ReturnCount, ushort CommandIndex) GetNativeOperands(this Opcode opcode, ReadOnlySpan<byte> bytecode)
+        {
+            ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
+                        ThrowIfNotExpectedOpcode(Opcode.NATIVE, bytecode);
+
+            var paramReturnCounts = bytecode[0];
+            var nativeIndexHi = bytecode[2];
+            var nativeIndexLo = bytecode[3];
+
+            var paramCount = (paramReturnCounts >> 2) & 0x3F;
+            var returnCount = paramReturnCounts & 0x3;
+            var nativeIndex = (nativeIndexHi << 8) | nativeIndexLo;
+
+            return ((byte)paramCount, (byte)returnCount, (ushort)nativeIndex);
+        }
+
+        public static byte GetTextLabelLength(this Opcode opcode, ReadOnlySpan<byte> bytecode)
+        {
+            ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
+            if ((Opcode)bytecode[0] is not (Opcode.TEXT_LABEL_ASSIGN_STRING or Opcode.TEXT_LABEL_ASSIGN_INT or
+                                            Opcode.TEXT_LABEL_APPEND_STRING or Opcode.TEXT_LABEL_APPEND_INT))
+            {
+                throw new ArgumentException($"The instruction opcode is not a TEXT_LABEL_ASSIGN/APPEND opcode.", nameof(bytecode));
+            }
+            return bytecode[1];
+        }
+
+        internal static void ThrowIfOpcodeDoesNotMatch(Opcode opcode, ReadOnlySpan<byte> bytecode)
+        {
+            if ((byte)opcode != bytecode[0])
+            {
+                throw new ArgumentException($"The opcode {opcode} does not match the bytecode {bytecode[0]:X2}.", nameof(bytecode));
+            }
+        }
+
+        internal static void ThrowIfNotExpectedOpcode(Opcode expectedOpcode, ReadOnlySpan<byte> bytecode)
+        {
+            if (bytecode[0] != (byte)expectedOpcode)
+            {
+                throw new ArgumentException($"The instruction opcode is not {expectedOpcode}.", nameof(bytecode));
+            }
+        }
+
+        public ref struct SwitchCasesEnumerator
+        {
+            private readonly ReadOnlySpan<byte> bytecode;
+            private (uint Value, short JumpOffset, int OffsetInInstruction) current;
+            private int index;
+
+            public SwitchCasesEnumerator(ReadOnlySpan<byte> bytecode)
+            {
+                ThrowIfNotExpectedOpcode(Opcode.SWITCH, bytecode);
+
+                this.bytecode = bytecode;
+                current = default;
+                index = 0;
+            }
+
+            public (uint Value, short JumpOffset, int OffsetInInstruction) Current => current;
+
+            public SwitchCasesEnumerator GetEnumerator() => this;
+
+            public bool MoveNext()
+            {
+                var numCases = bytecode[1];
+                if (index >= numCases)
+                {
+                    current = default;
+                    return false;
+                }
+
+                var caseOffset = 2 + index * 6;
+                var caseValue = BinaryPrimitives.ReadUInt32LittleEndian(bytecode[caseOffset..(caseOffset + 4)]);
+                var caseJumpOffset = BinaryPrimitives.ReadInt16LittleEndian(bytecode[(caseOffset + 4)..]);
+
+                current = (caseValue, caseJumpOffset, caseOffset);
+                index++;
+                return true;
+            }
+        }
 
         /// <returns>
         /// The number of operands required by <see cref="opcode"/>; or, <c>-1</c> if it accepts a variable number of operands (i.e. <paramref name="opcode"/> is <see cref="Opcode.SWITCH"/>).
@@ -167,7 +419,7 @@
             0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
             0,0,0,0,0,1,2,3,1,1,0,0,3,2,2,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,0,
             1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-            1,1,-1,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            1,1,-1,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
         };
 
         private static readonly byte[] ByteSizeTable = new byte[NumberOfOpcodes]
@@ -175,7 +427,7 @@
             1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
             1,1,1,1,1,2,3,4,5,5,1,1,4,0,3,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,1,
             2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,
-            4,4,0,1,1,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            4,4,0,1,1,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
         };
     }
 }

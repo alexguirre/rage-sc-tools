@@ -293,7 +293,7 @@ public static class Dumper
     public static uint SizeOf(Script sc, uint ip)
     {
         Opcode opcode = (Opcode)sc.IP(ip);
-        uint s = (uint)opcode.ByteSize();
+        uint s = (uint)opcode.ConstantByteSize();
         if (s == 0)
         {
             s = opcode switch
@@ -414,6 +414,7 @@ public static class Dumper
         "b",
         "b",
         "b",
+        "",
         "",
         "",
         "",
