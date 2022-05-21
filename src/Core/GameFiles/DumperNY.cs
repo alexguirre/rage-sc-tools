@@ -182,7 +182,7 @@ public static class DumperNY
     public static uint SizeOf(ScriptNY sc, uint ip)
     {
         OpcodeNY opcode = (OpcodeNY)sc.Code![ip];
-        uint s = (uint)opcode.ByteSize();
+        uint s = (uint)opcode.ConstantByteSize();
         if (s == 0)
         {
             s = opcode switch

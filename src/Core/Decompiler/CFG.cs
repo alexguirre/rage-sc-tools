@@ -91,11 +91,4 @@ public  enum CFGEdgeKind
     SwitchCase,
 }
 
-public record CFGEdge(CFGBlock Source, CFGBlock Target, CFGEdgeKind Kind, int? SwitchCaseValue = null)
-{
-}
-
-public class CFG
-{
-    
-}
+public record CFGEdge(CFGBlock Source, CFGBlock Target, CFGEdgeKind Kind, int? SwitchCaseValue = null);

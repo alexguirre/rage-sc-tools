@@ -1,4 +1,8 @@
-﻿namespace ScTools.ScriptAssembly;
+﻿using System;
+using System.Buffers.Binary;
+using System.Text;
+
+namespace ScTools.ScriptAssembly;
 
 /// <summary>
 /// Instruction set used with <see cref="GameFiles.ScriptNY"/>.
@@ -56,8 +60,8 @@ public enum OpcodeNY : byte
     LOAD = 0x31,
     STORE = 0x32,
     STORE_REV = 0x33,
-    ARRAY_LOAD = 0x34,
-    ARRAY_STORE = 0x35,
+    LOAD_N = 0x34,
+    STORE_N = 0x35,
     LOCAL_0 = 0x36,
     LOCAL_1 = 0x37,
     LOCAL_2 = 0x38,
@@ -80,14 +84,39 @@ public enum OpcodeNY : byte
     CATCH = 0x49,
     THROW = 0x4A,
     TEXT_LABEL_COPY = 0x4B,
+
+    /// <summary>
+    /// Equivalent to <see cref="LOAD"/> but with a protected memory address.
+    /// <para>addr1 → n1</para>
+    /// </summary>
     /// <remarks>
     /// Only available in GTA IV for PC.
     /// </remarks>
     _XPROTECT_LOAD = 0x4C,
+    /// <summary>
+    /// Equivalent to <see cref="STORE"/> but with a protected memory address.
+    /// <para>n1 addr1 →</para>
+    /// </summary>
     /// <remarks>
     /// Only available in GTA IV for PC.
     /// </remarks>
     _XPROTECT_STORE = 0x4D,
+    /// <summary>
+    /// Push a temporary unprotected memory address `addr2` for the protected memory address `addr1` with size `n1`. 
+    /// Used when a reference to a protected variable is needed (e.g. calling a native command that modifies one of the parameters).
+    /// <para>
+    /// `n2` are flags:
+    /// <list type="bullet">
+    /// <item>1 = get unprotected memory address</item>
+    /// <item>2 = dispose? used after flag 1, when the unprotected reference is no longer needed</item>
+    /// <item>4 = is array?</item>
+    /// </list>
+    /// </para>
+    /// <para>if n2 &amp; 1: addr1 n1 n2 → addr2
+    /// <br/>
+    /// else: addr1 n1 n2 →
+    /// </para>
+    /// </summary>
     /// <remarks>
     /// Only available in GTA IV for PC.
     /// </remarks>
@@ -288,9 +317,14 @@ public static class OpcodeNYExtensions
     /// <returns>
     /// The byte size of a instruction with this <paramref name="opcode"/>; or, <c>0</c> if the size is variable (i.e. <paramref name="opcode"/> is <see cref="Opcode.SWITCH"/> or <see cref="Opcode.STRING"/>).
     /// </returns>
-    public static int ByteSize(this OpcodeNY opcode)
+    public static int ConstantByteSize(this OpcodeNY opcode)
         => opcode switch
         {
+            OpcodeNY.TEXT_LABEL_ASSIGN_STRING or
+            OpcodeNY.TEXT_LABEL_ASSIGN_INT or
+            OpcodeNY.TEXT_LABEL_APPEND_STRING or
+            OpcodeNY.TEXT_LABEL_APPEND_INT => 2,
+
             OpcodeNY.PUSH_CONST_U16 or
             OpcodeNY.LEAVE => 3,
 
@@ -310,7 +344,144 @@ public static class OpcodeNYExtensions
 
             _ => 1,
         };
-    
+
+    /// <returns>
+    /// The length in bytes of an instruction with this <paramref name="opcode"/> and <paramref name="bytecode"/>.
+    /// </returns>
+    public static int ByteSize(this OpcodeNY opcode, ReadOnlySpan<byte> bytecode)
+    {
+        ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
+        return ByteSize(bytecode);
+    }
+
+    /// <returns>
+    /// The length in bytes of an instruction with this <paramref name="bytecode"/>.
+    /// </returns>
+    public static int ByteSize(ReadOnlySpan<byte> bytecode)
+    {
+        var opcode = (OpcodeNY)bytecode[0];
+        var s = opcode switch
+        {
+            OpcodeNY.SWITCH => 8 * bytecode[1] + 2,
+            OpcodeNY.STRING => bytecode[1] + 2,
+            _ => opcode.ConstantByteSize(),
+        };
+
+        return s;
+    }
+
+    public static ReadOnlySpan<byte> GetInstructionSpan(ReadOnlySpan<byte> code, int address)
+    {
+        var opcode = (OpcodeNY)code[address];
+        var inst = code[address..];
+        var instLength = opcode.ByteSize(inst);
+        return inst[..instLength]; // trim to instruction length
+    }
+
+    public static string GetStringOperand(this OpcodeNY opcode, ReadOnlySpan<byte> bytecode)
+    {
+        ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
+        ThrowIfNotExpectedOpcode(OpcodeNY.STRING, bytecode);
+
+        if (opcode is OpcodeNY.STRING)
+        {
+            return Encoding.UTF8.GetString(bytecode[2..^1]);
+        }
+        else
+        {
+            throw new ArgumentException($"The opcode {opcode} does not have a string operand.", nameof(opcode));
+        }
+    }
+
+    public static ushort GetU16Operand(this OpcodeNY opcode, ReadOnlySpan<byte> bytecode)
+    {
+        ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
+
+        if (opcode is OpcodeNY.PUSH_CONST_U16)
+        {
+            return BinaryPrimitives.ReadUInt16LittleEndian(bytecode[1..]);
+        }
+        else
+        {
+            throw new ArgumentException($"The opcode {opcode} does not have a U16 operand.", nameof(opcode));
+        }
+    }
+
+    public static uint GetU32Operand(this OpcodeNY opcode, ReadOnlySpan<byte> bytecode)
+    {
+        ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
+
+        if (opcode is OpcodeNY.PUSH_CONST_U32 or
+                      OpcodeNY.J or OpcodeNY.JZ or OpcodeNY.JNZ or
+                      OpcodeNY.CALL)
+        {
+            return BinaryPrimitives.ReadUInt32LittleEndian(bytecode[1..]);
+        }
+        else
+        {
+            throw new ArgumentException($"The opcode {opcode} does not have a U32 operand.", nameof(opcode));
+        }
+    }
+
+    public static float GetFloatOperand(this OpcodeNY opcode, ReadOnlySpan<byte> bytecode)
+    {
+        ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
+
+        if (opcode is OpcodeNY.PUSH_CONST_F)
+        {
+            return BinaryPrimitives.ReadSingleLittleEndian(bytecode[1..]);
+        }
+        else
+        {
+            throw new ArgumentException($"The opcode {opcode} does not have a FLOAT operand.", nameof(opcode));
+        }
+    }
+
+    public static int GetSwitchNumberOfCases(this OpcodeNY opcode, ReadOnlySpan<byte> bytecode)
+    {
+        ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
+        ThrowIfNotExpectedOpcode(OpcodeNY.SWITCH, bytecode);
+        return bytecode[1];
+    }
+
+    public static SwitchCasesEnumerator GetSwitchOperands(this OpcodeNY opcode, ReadOnlySpan<byte> bytecode)
+    {
+        ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
+        return new(bytecode);
+    }
+
+    public static (byte ParamCount, ushort FrameSize) GetEnterOperands(this OpcodeNY opcode, ReadOnlySpan<byte> bytecode)
+    {
+        ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
+        ThrowIfNotExpectedOpcode(OpcodeNY.ENTER, bytecode);
+        return (bytecode[1], BinaryPrimitives.ReadUInt16LittleEndian(bytecode[2..]));
+    }
+
+    public static (byte ParamCount, byte ReturnCount) GetLeaveOperands(this OpcodeNY opcode, ReadOnlySpan<byte> bytecode)
+    {
+        ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
+        ThrowIfNotExpectedOpcode(OpcodeNY.LEAVE, bytecode);
+        return (bytecode[1], bytecode[2]);
+    }
+
+    public static (byte ParamCount, byte ReturnCount, uint CommandHash) GetNativeOperands(this OpcodeNY opcode, ReadOnlySpan<byte> bytecode)
+    {
+        ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
+        ThrowIfNotExpectedOpcode(OpcodeNY.NATIVE, bytecode);
+        return (bytecode[1], bytecode[2], BinaryPrimitives.ReadUInt32LittleEndian(bytecode[3..]));
+    }
+
+    public static byte GetTextLabelLength(this OpcodeNY opcode, ReadOnlySpan<byte> bytecode)
+    {
+        ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
+        if ((OpcodeNY)bytecode[0] is not (OpcodeNY.TEXT_LABEL_ASSIGN_STRING or OpcodeNY.TEXT_LABEL_ASSIGN_INT or
+                                          OpcodeNY.TEXT_LABEL_APPEND_STRING or OpcodeNY.TEXT_LABEL_APPEND_INT))
+        {
+            throw new ArgumentException($"The instruction opcode is not a TEXT_LABEL_ASSIGN/APPEND opcode.", nameof(bytecode));
+        }
+        return bytecode[1];
+    }
+
     /// <returns>
     /// The number of operands required by <see cref="opcode"/>; or, <c>-1</c> if it accepts a variable number of operands (i.e. <paramref name="opcode"/> is <see cref="Opcode.SWITCH"/>).
     /// </returns>
@@ -329,10 +500,68 @@ public static class OpcodeNYExtensions
             OpcodeNY.CALL or
             OpcodeNY.NATIVE => 7,
 
+            OpcodeNY.TEXT_LABEL_ASSIGN_STRING or
+            OpcodeNY.TEXT_LABEL_ASSIGN_INT or
+            OpcodeNY.TEXT_LABEL_APPEND_STRING or
+            OpcodeNY.TEXT_LABEL_APPEND_INT or
             OpcodeNY.STRING => 1,
             
             OpcodeNY.SWITCH => -1,
 
             _ => 0,
         };
+
+    internal static void ThrowIfOpcodeDoesNotMatch(OpcodeNY opcode, ReadOnlySpan<byte> bytecode)
+    {
+        if ((byte)opcode != bytecode[0])
+        {
+            throw new ArgumentException($"The opcode {opcode} does not match the bytecode {bytecode[0]:X2}.", nameof(bytecode));
+        }
+    }
+
+    internal static void ThrowIfNotExpectedOpcode(OpcodeNY expectedOpcode, ReadOnlySpan<byte> bytecode)
+    {
+        if (bytecode[0] != (byte)expectedOpcode)
+        {
+            throw new ArgumentException($"The instruction opcode is not {expectedOpcode}.", nameof(bytecode));
+        }
+    }
+
+    public ref struct SwitchCasesEnumerator
+    {
+        private readonly ReadOnlySpan<byte> bytecode;
+        private (uint Value, uint JumpAddress) current;
+        private int index;
+
+        public SwitchCasesEnumerator(ReadOnlySpan<byte> bytecode)
+        {
+            ThrowIfNotExpectedOpcode(OpcodeNY.SWITCH, bytecode);
+
+            this.bytecode = bytecode;
+            current = default;
+            index = 0;
+        }
+
+        public (uint Value, uint JumpAddress) Current => current;
+
+        public SwitchCasesEnumerator GetEnumerator() => this;
+
+        public bool MoveNext()
+        {
+            var numCases = bytecode[1];
+            if (index >= numCases)
+            {
+                current = default;
+                return false;
+            }
+
+            var caseOffset = 2 + index * 8;
+            var caseValue = BinaryPrimitives.ReadUInt32LittleEndian(bytecode[caseOffset..(caseOffset + 4)]);
+            var caseJumpAddr = BinaryPrimitives.ReadUInt32LittleEndian(bytecode[(caseOffset + 4)..]);
+
+            current = (caseValue, caseJumpAddr);
+            index++;
+            return true;
+        }
+    }
 }

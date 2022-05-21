@@ -299,6 +299,10 @@ public static class OpcodePayneExtensions
             OpcodePayne.CALL or
             OpcodePayne.NATIVE => 7,
 
+            OpcodePayne.TEXT_LABEL_ASSIGN_STRING or
+            OpcodePayne.TEXT_LABEL_ASSIGN_INT or
+            OpcodePayne.TEXT_LABEL_APPEND_STRING or
+            OpcodePayne.TEXT_LABEL_APPEND_INT or
             OpcodePayne.STRING => 1,
 
             OpcodePayne.SWITCH => -1,

@@ -289,8 +289,9 @@ public class IRDisassemblerFive
                 script.AppendInstruction(new IRPushFloat(ip, (int)opcode - (int)Opcode.PUSH_CONST_F0));
                 break;
 
-            case Opcode.CATCH:
-            case Opcode.THROW:
+            case Opcode.CATCH: script.AppendInstruction(new IRCatch(ip)); break;
+            case Opcode.THROW: script.AppendInstruction(new IRThrow(ip)); break;
+
             default:
                 throw new NotImplementedException(opcode.ToString());
         }

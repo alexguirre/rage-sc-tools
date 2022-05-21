@@ -111,6 +111,9 @@ public static class IRPrinter
         public void Visit(IRStoreRev inst) => w.Write($"STORE_REV");
         public void Visit(IRLoadN inst) => w.Write($"LOAD_N");
         public void Visit(IRStoreN inst) => w.Write($"STORE_N");
+        public void Visit(IRXProtectLoad inst) => w.Write($"_XPROTECT_LOAD");
+        public void Visit(IRXProtectStore inst) => w.Write($"_XPROTECT_STORE");
+        public void Visit(IRXProtectRef inst) => w.Write($"_XPROTECT_REF");
         public void Visit(IRLocalRef inst) => w.Write($"LOCAL\t{inst.VarAddress}");
         public void Visit(IRStaticRef inst) => w.Write($"STATIC\t{inst.VarAddress}");
         public void Visit(IRGlobalRef inst) => w.Write($"GLOBAL\t{inst.VarAddress}");
@@ -125,5 +128,7 @@ public static class IRPrinter
         public void Visit(IRTextLabelAppendString inst) => w.Write($"TEXT_LABEL_APPEND_STRING\t{inst.TextLabelLength}");
         public void Visit(IRTextLabelAppendInt  inst) => w.Write($"TEXT_LABEL_APPEND_INT\t{inst.TextLabelLength}");
         public void Visit(IRTextLabelCopy inst) => w.Write($"TEXT_LABEL_COPY");
+        public void Visit(IRCatch inst) => w.Write($"CATCH");
+        public void Visit(IRThrow inst) => w.Write($"THROW");
     }
 }

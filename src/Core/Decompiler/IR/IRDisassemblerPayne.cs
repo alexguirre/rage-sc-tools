@@ -169,8 +169,9 @@ public class IRDisassemblerPayne
                 script.AppendInstruction(new IRPushInt(ip, (int)opcode - (int)OpcodePayne.PUSH_CONST_0));
                 break;
 
-            case OpcodePayne.CATCH:
-            case OpcodePayne.THROW:
+            case OpcodePayne.CATCH: script.AppendInstruction(new IRCatch(ip)); break;
+            case OpcodePayne.THROW: script.AppendInstruction(new IRThrow(ip)); break;
+
             default:
                 throw new NotImplementedException(opcode.ToString());
         }

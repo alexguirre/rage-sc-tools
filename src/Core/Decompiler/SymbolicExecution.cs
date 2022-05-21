@@ -67,22 +67,14 @@ internal static class SymStackExtensions
 
 public class SymbolicExecutor
 {
-    private readonly IRScript script;
+    private readonly Script script;
     private readonly Executor executor;
     private readonly Queue<SymState> states = new();
-    private readonly List<Function> functions = new();
 
-    public SymbolicExecutor(IRScript script)
+    public SymbolicExecutor(Script script)
     {
-        if (script.Head is null || script.Tail is null)
-        {
-            throw new ArgumentException("Script is missing instructions.", nameof(script));
-        }
-
         this.script = script;
-        var entryFunction = new Function(script, script.Head);
-        functions.Add(entryFunction);
-        states.Enqueue(new(script.Head, SymStack.Empty, SymFunctionFrame.Root(entryFunction)));
+        states.Enqueue(new(script.EntryFunction.Start, SymStack.Empty, SymFunctionFrame.Root(script.EntryFunction)));
         executor = new(this);
     }
 
@@ -100,27 +92,6 @@ public class SymbolicExecutor
                 newStates.ForEach(s => states.Enqueue(s));
             }
         }
-    }
-
-    private Function GetFunctionAt(int address)
-    {
-        foreach (var function in functions)
-        {
-            if (function.StartAddress == address)
-            {
-                return function;
-            }
-        }
-
-        var inst = script.FindInstructionAt(address);
-        if (inst is null)
-        {
-            throw new ArgumentException($"Instruction at address {address:000000} not found.", nameof(address));
-        }
-
-        var func = new Function(script, inst);
-        functions.Add(func);
-        return func;
     }
 
     private sealed class Executor : IIRVisitor<IEnumerable<SymState>, SymState>
@@ -147,7 +118,7 @@ public class SymbolicExecutor
         private SymState Call(SymState state, int address)
         {
             // TODO: this is going to fail because the CFG is only build for the main function
-            var func = parent.GetFunctionAt(address);
+            var func = parent.script.GetFunctionAt(address);
             return state with { PreviousState = state, PC = func.Start, Frame = new(func, state.PC.Next!) };
         }
 
@@ -444,6 +415,21 @@ public class SymbolicExecutor
             throw new System.NotImplementedException();
         }
 
+        public IEnumerable<SymState> Visit(IRXProtectLoad inst, SymState state)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public IEnumerable<SymState> Visit(IRXProtectStore inst, SymState state)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public IEnumerable<SymState> Visit(IRXProtectRef inst, SymState state)
+        {
+            throw new System.NotImplementedException();
+        }
+
         public IEnumerable<SymState> Visit(IRLocalRef inst, SymState state)
         {
             yield return Step(state, state.Stack.Push(new SymLocalRef(inst.VarAddress)));
@@ -516,6 +502,16 @@ public class SymbolicExecutor
         }
 
         public IEnumerable<SymState> Visit(IRTextLabelCopy inst, SymState state)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public IEnumerable<SymState> Visit(IRCatch inst, SymState state)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public IEnumerable<SymState> Visit(IRThrow inst, SymState state)
         {
             throw new System.NotImplementedException();
         }
