@@ -697,6 +697,9 @@ public sealed partial class CodeEmitter
     public void EmitCastFloatToInt() => instEmitter.EmitF2I();
     public void EmitCastFloatToVector() => instEmitter.EmitF2V();
 
+    public void EmitCatch() => instEmitter.EmitCatch();
+    public void EmitThrow() => instEmitter.EmitThrow();
+
     public void EmitPushString(string value)
     {
         var offset = Strings.GetOffsetOf(value);

@@ -9,7 +9,7 @@ using ScTools.ScriptLang.Types;
 
 using System;
 using System.Collections.Immutable;
-using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
@@ -59,6 +59,10 @@ public static partial class Intrinsics
 
     public static IIntrinsic NATIVE_TO_INT { get; } = new IntrinsicNATIVE_TO_INT();
 
+    // Exception Handling
+    public static IIntrinsic CATCH { get; } = new IntrinsicCATCH();
+    public static IIntrinsic THROW { get; } = new IntrinsicTHROW();
+
     public static ImmutableArray<IIntrinsic> All { get; } = ImmutableArray.Create(
         I2F, F2I, F2V,
         SIZE_OF,
@@ -66,7 +70,8 @@ public static partial class Intrinsics
         ENUM_TO_INT, INT_TO_ENUM, ENUM_TO_STRING,
         TEXT_LABEL_ASSIGN_STRING, TEXT_LABEL_ASSIGN_INT, TEXT_LABEL_APPEND_STRING, TEXT_LABEL_APPEND_INT,
         IS_BIT_SET,
-        NATIVE_TO_INT);
+        NATIVE_TO_INT,
+        CATCH, THROW);
 
     private static void IntrinsicUsagePrecondition(IIntrinsic intrinsic, InvocationExpression node, [CallerArgumentExpression("node")] string? paramName = null)
     {
@@ -75,6 +80,10 @@ public static partial class Intrinsics
             throw new ArgumentException("Expected a call to this intrinsic.", paramName);
         }
     }
+
+    [DoesNotReturn]
+    private static void ThrowCannotBeConstantEvaluated(IIntrinsic intrinsic)
+        => throw new NotSupportedException($"Intrinsic '{intrinsic.Name}' cannot be constant-evaluated.");
 
     private abstract class BaseIntrinsic : IIntrinsic
     {
@@ -87,7 +96,10 @@ public static partial class Intrinsics
 
         public abstract ExpressionSemantics InvocationTypeCheck(InvocationExpression node, SemanticsAnalyzer semantics, ExpressionTypeChecker expressionTypeChecker);
         public virtual ConstantValue ConstantEval(InvocationExpression node, SemanticsAnalyzer semantics)
-             => throw new NotSupportedException($"Intrinsic '{Name}' cannot be constant-evaluated.");
+        {
+            ThrowCannotBeConstantEvaluated(this);
+            return null;
+        }
         public abstract void CodeGen(InvocationExpression node, CodeEmitter codeEmitter);
 
         protected void UsagePrecondition(InvocationExpression node, [CallerArgumentExpression("node")] string? paramName = null)
@@ -97,10 +109,12 @@ public static partial class Intrinsics
     private abstract class BaseFunctionLikeIntrinsic : BaseIntrinsic
     {
         public FunctionType Type { get; }
+        public bool CanBeConstant { get; }
 
-        public BaseFunctionLikeIntrinsic(string name, FunctionType functionType) : base(name)
+        public BaseFunctionLikeIntrinsic(string name, FunctionType functionType, bool canBeConstant = true) : base(name)
         {
             Type = functionType;
+            CanBeConstant = canBeConstant;
         }
 
         public sealed override ExpressionSemantics InvocationTypeCheck(InvocationExpression node, SemanticsAnalyzer semantics, ExpressionTypeChecker exprTypeChecker)
@@ -116,7 +130,7 @@ public static partial class Intrinsics
             ExpressionTypeChecker.CheckArgumentCount(parameters.Length, node, semantics);
 
             var n = Math.Min(args.Length, parameters.Length);
-            var constantFlag = ValueKind.Constant;
+            var constantFlag = CanBeConstant ? ValueKind.Constant : 0;
             for (int i = 0; i < n; i++)
             {
                 ExpressionTypeChecker.TypeCheckArgumentAgainstParameter(i, args[i], parameters[i], semantics);

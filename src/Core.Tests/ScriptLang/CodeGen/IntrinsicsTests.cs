@@ -328,4 +328,24 @@ public class IntrinsicsTests : CodeGenTestsBase
             LEAVE 0, 0
         ");
     }
+
+    [Fact]
+    public void ThrowAndCatch()
+    {
+        CompileScript(
+        scriptSource: @"
+                INT errorCode = CATCH()
+                THROW(1)
+            ",
+        expectedAssembly: @"
+                ENTER 0, 3
+
+                CATCH
+                LOCAL_U8_STORE 2
+                PUSH_CONST_1
+                THROW
+
+                LEAVE 0, 0
+            ");
+    }
 }
