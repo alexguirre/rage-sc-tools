@@ -221,7 +221,7 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
         var calleeType = node.Callee.Accept(this, s); // callee type-checked here so Semantics gets filled before accessing it in the 'is intrinsic' check
 
         ExpressionSemantics result;
-        if (node.Callee is NameExpression { Semantics.Declaration: IIntrinsicDeclaration intrinsic })
+        if (node.Callee is NameExpression { Semantics.Symbol: IIntrinsic intrinsic })
         {
             result = intrinsic.InvocationTypeCheck(node, s, this);
             Debug.Assert(result.Type is not null);
@@ -330,26 +330,26 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
 
     public override TypeInfo Visit(NameExpression node, SemanticsAnalyzer s)
     {
-        if (!s.GetSymbol(node, out var decl))
+        if (!s.GetSymbol(node, out var symbol))
         {
             return ErrorType;
         }
 
-        if (decl is ScriptDeclaration)
+        if (symbol is ScriptDeclaration)
         {
-            node.Semantics = new(null, 0, ArgumentKind.None, decl);
+            node.Semantics = new(null, 0, ArgumentKind.None, symbol);
             return ScriptNameNotAllowedInExpressionError(s, node);
         }
 
-        (TypeInfo? type, ValueKind valueKind) = decl switch
+        (TypeInfo? type, ValueKind valueKind) = symbol switch
         {
             IValueDeclaration valueDecl => (valueDecl.Semantics.ValueType, ValueKindOfDeclaration(valueDecl)),
-            ITypeDeclaration typeDecl => (new TypeNameType(typeDecl), ValueKind.Constant),
-            IIntrinsicDeclaration => (null, ValueKind.Constant),
+            ITypeSymbol typeSymbol => (new TypeNameType(typeSymbol), ValueKind.Constant),
+            IIntrinsic => (null, ValueKind.Constant),
             _ => throw new ArgumentException($"Unknown declaration with name '{node.Name}'", nameof(node)),
         };
 
-        node.Semantics = new(type, valueKind, ArgumentKind.None, decl);
+        node.Semantics = new(type, valueKind, ArgumentKind.None, symbol);
         return type ?? ErrorType;
 
         static ValueKind ValueKindOfDeclaration(IValueDeclaration valueDecl)

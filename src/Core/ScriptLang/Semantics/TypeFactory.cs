@@ -35,9 +35,6 @@ internal sealed class TypeFactory
             varDeclaratorVisitor = new(this);
         }
 
-        public override TypeInfo Visit(BuiltInTypeDeclaration node, SemanticsAnalyzer param)
-            => node.BuiltInType;
-
         public override TypeInfo Visit(EnumDeclaration node, SemanticsAnalyzer s)
         {
             if (node.Semantics.DeclaredType is null)

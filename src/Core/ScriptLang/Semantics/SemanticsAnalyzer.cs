@@ -21,7 +21,7 @@ public sealed class SemanticsAnalyzer : AstVisitor
     private readonly ExpressionTypeChecker exprTypeChecker = new();
 
     // context
-    private readonly SymbolTable<IDeclaration> symbols = new();
+    private readonly SymbolTable<ISymbol> symbols = new();
     private readonly SymbolTable<IStatement> labels = new();
     private readonly TypeRegistry typeRegistry = new();
     private EnumMemberDeclaration? previousEnumMember = null;
@@ -49,16 +49,16 @@ public sealed class SemanticsAnalyzer : AstVisitor
 
     private void RegisterBuiltInTypes()
     {
-        AddSymbol(new BuiltInTypeDeclaration("ANY", AnyType.Instance));
-        AddSymbol(new BuiltInTypeDeclaration("INT", IntType.Instance));
-        AddSymbol(new BuiltInTypeDeclaration("FLOAT", FloatType.Instance));
-        AddSymbol(new BuiltInTypeDeclaration("BOOL", BoolType.Instance));
-        AddSymbol(new BuiltInTypeDeclaration("STRING", StringType.Instance));
-        AddSymbol(new BuiltInTypeDeclaration("VECTOR", VectorType.Instance));
+        AddSymbol(new BuiltInTypeSymbol("ANY", AnyType.Instance));
+        AddSymbol(new BuiltInTypeSymbol("INT", IntType.Instance));
+        AddSymbol(new BuiltInTypeSymbol("FLOAT", FloatType.Instance));
+        AddSymbol(new BuiltInTypeSymbol("BOOL", BoolType.Instance));
+        AddSymbol(new BuiltInTypeSymbol("STRING", StringType.Instance));
+        AddSymbol(new BuiltInTypeSymbol("VECTOR", VectorType.Instance));
 
-        HandleType.All.ForEach(h => AddSymbol(new BuiltInTypeDeclaration(HandleType.KindToTypeName(h.Kind), h)));
+        HandleType.All.ForEach(h => AddSymbol(new BuiltInTypeSymbol(HandleType.KindToTypeName(h.Kind), h)));
 
-        TextLabelType.All64.ForEach(tl => AddSymbol(new BuiltInTypeDeclaration(TextLabelType.GetTypeNameForLength(tl.Length), tl)));
+        TextLabelType.All64.ForEach(tl => AddSymbol(new BuiltInTypeSymbol(TextLabelType.GetTypeNameForLength(tl.Length), tl)));
     }
 
     private void RegisterIntrinsics()
@@ -488,49 +488,56 @@ public sealed class SemanticsAnalyzer : AstVisitor
         }
     }
 
-    private void AddSymbol(IDeclaration declaration)
+    private void AddSymbol(ISymbol symbol)
     {
         // resolve the declaration type
         // the TypeFactory takes care of setting TypeDeclarationSemantics.DeclaredType or ValueDeclarationSemantics.ValueType
-        TypeInfo? type = null;
-        if (declaration is ITypeDeclaration typeDecl)
+        if (symbol is ITypeDeclaration typeDecl)
         {
-            type = typeFactory.GetFrom(typeDecl);
+            typeFactory.GetFrom(typeDecl);
         }
-        else if (declaration is IValueDeclaration valueDecl)
+        else if (symbol is IValueDeclaration valueDecl)
         {
-            type = typeFactory.GetFrom(valueDecl);
+            typeFactory.GetFrom(valueDecl);
         }
 
-        if (!typeRegistry.Find(declaration.Name, out _) && symbols.Add(declaration.Name, declaration))
+        if (!typeRegistry.Find(symbol.Name, out _) && symbols.Add(symbol.Name, symbol))
         {
-            if (declaration is ITypeDeclaration)
+            if (symbol is ITypeSymbol typeSymbol)
             {
-                typeRegistry.Register(declaration.Name, type!);
+                typeRegistry.Register(symbol.Name, typeSymbol.DeclaredType);
             }
         }
         else
         {
-            SymbolAlreadyDefinedError(declaration);
+            if (symbol is IDeclaration decl)
+            {
+                SymbolAlreadyDefinedError(decl);
+            }
+            else
+            {
+                // if the symbol doesn't come from the AST, probably an issue with a built-in type
+                throw new ArgumentException("Built-in symbol already defined", nameof(symbol));
+            }
         }
     }
 
-    public bool GetSymbol(NameExpression expr, [MaybeNullWhen(false)] out IDeclaration declaration) => GetSymbol(expr.Name, expr.Location, out declaration);
-    public bool GetSymbol(Token identifier, [MaybeNullWhen(false)] out IDeclaration declaration) => GetSymbol(identifier.Lexeme.ToString(), identifier.Location, out declaration);
-    public bool GetSymbol(string name, SourceRange location, [MaybeNullWhen(false)] out IDeclaration declaration)
+    public bool GetSymbol(NameExpression expr, [MaybeNullWhen(false)] out ISymbol symbol) => GetSymbol(expr.Name, expr.Location, out symbol);
+    public bool GetSymbol(Token identifier, [MaybeNullWhen(false)] out ISymbol symbol) => GetSymbol(identifier.Lexeme.ToString(), identifier.Location, out symbol);
+    public bool GetSymbol(string name, SourceRange location, [MaybeNullWhen(false)] out ISymbol symbol)
     {
-        if (GetSymbolUnchecked(name, out declaration))
+        if (GetSymbolUnchecked(name, out symbol))
         {
             return true;
         }
         else
         {
             UndefinedSymbolError(name, location);
-            declaration = null;
+            symbol = null;
             return false;
         }
     }
-    public bool GetSymbolUnchecked(string name, [MaybeNullWhen(false)] out IDeclaration declaration) => symbols.Find(name, out declaration);
+    public bool GetSymbolUnchecked(string name, [MaybeNullWhen(false)] out ISymbol symbol) => symbols.Find(name, out symbol);
 
     public bool GetTypeSymbol(TypeName typeName, [MaybeNullWhen(false)] out TypeInfo type) => GetTypeSymbol(typeName.NameToken, out type);
     public bool GetTypeSymbol(Token identifier, [MaybeNullWhen(false)] out TypeInfo type) => GetTypeSymbol(identifier.Lexeme.ToString(), identifier.Location, out type);

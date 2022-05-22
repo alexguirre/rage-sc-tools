@@ -48,7 +48,7 @@ public abstract class BaseStatement : BaseNode, IStatement
     }
 }
 
-public sealed partial class Label : BaseNode
+public sealed partial class Label : BaseNode, Semantics.ISymbol
 {
     public Token NameToken => Tokens[0];
     public string Name => NameToken.Lexeme.ToString();

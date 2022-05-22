@@ -45,16 +45,16 @@ internal sealed class ValueEmitter : AstVisitor
 
     public override void Visit(InvocationExpression node)
     {
-        if (node.Callee is NameExpression { Semantics.Declaration: IIntrinsicDeclaration intrinsic })
+        if (node.Callee is NameExpression { Semantics.Symbol: IIntrinsic intrinsic })
         {
             intrinsic.CodeGen(node, _C);
         }
-        else if (node.Callee is NameExpression { Semantics.Declaration: FunctionDeclaration funcDecl })
+        else if (node.Callee is NameExpression { Semantics.Symbol: FunctionDeclaration funcDecl })
         {
             EmitArgs(_C, node);
             _C.EmitCall(funcDecl);
         }
-        else if (node.Callee is NameExpression { Semantics.Declaration: NativeFunctionDeclaration nativeDecl })
+        else if (node.Callee is NameExpression { Semantics.Symbol: NativeFunctionDeclaration nativeDecl })
         {
             EmitArgs(_C, node);
             _C.EmitNativeCall(nativeDecl);
@@ -96,7 +96,7 @@ internal sealed class ValueEmitter : AstVisitor
         }
         else
         {
-            switch (node.Semantics.Declaration)
+            switch (node.Semantics.Symbol)
             {
                 case FunctionDeclaration func:
                     _C.EmitFunctionAddress(func);

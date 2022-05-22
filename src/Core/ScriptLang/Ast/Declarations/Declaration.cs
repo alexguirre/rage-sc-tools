@@ -9,10 +9,9 @@ using System.Diagnostics;
 /// <summary>
 /// Represents a symbol declaration.
 /// </summary>
-public interface IDeclaration : INode
+public interface IDeclaration : INode, ISymbol
 {
     Token NameToken { get; }
-    string Name { get; }
 }
 
 public record struct TypeDeclarationSemantics(TypeInfo? DeclaredType);
@@ -20,7 +19,7 @@ public record struct TypeDeclarationSemantics(TypeInfo? DeclaredType);
 /// <summary>
 /// Represents a declaration of a type.
 /// </summary>
-public interface ITypeDeclaration : IDeclaration, ISemanticNode<TypeDeclarationSemantics>
+public interface ITypeDeclaration : IDeclaration, ISemanticNode<TypeDeclarationSemantics>, ITypeSymbol
 {
 }
 
@@ -53,6 +52,7 @@ public abstract class BaseTypeDeclaration : BaseNode, ITypeDeclaration
     public abstract Token NameToken { get; }
     public string Name => NameToken.Lexeme.ToString();
     public TypeDeclarationSemantics Semantics { get; set; }
+    public TypeInfo DeclaredType => Semantics.DeclaredType ?? throw new System.InvalidOperationException("Cannot access declared type before semantic analysis.");
 
     public BaseTypeDeclaration(IEnumerable<Token> tokens, IEnumerable<INode> children) : base(tokens, children)
     {

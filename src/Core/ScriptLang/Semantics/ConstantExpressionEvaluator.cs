@@ -176,7 +176,7 @@ internal static class ConstantExpressionEvaluator
         public override ConstantValue Visit(InvocationExpression node, SemanticsAnalyzer param)
         {
             // TODO: ConstantExpressionEvaluator handle intrinsics calls
-            if (node.Callee is NameExpression { Semantics.Declaration: IIntrinsicDeclaration intrinsic })
+            if (node.Callee is NameExpression { Semantics.Symbol: IIntrinsic intrinsic })
             {
                 return intrinsic.ConstantEval(node, param);
             }

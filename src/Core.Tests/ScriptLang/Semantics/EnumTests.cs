@@ -176,10 +176,10 @@ public class EnumTests : SemanticsTestsBase
         AssertEnumMember(member!, expectedEnumType, expectedValue);
     }
 
-    private static void AssertEnumMember(IDeclaration declaration, EnumType expectedType, int expectedValue)
+    private static void AssertEnumMember(ISymbol symbol, EnumType expectedType, int expectedValue)
     {
-        True(declaration is EnumMemberDeclaration);
-        if (declaration is EnumMemberDeclaration enumMemberA)
+        True(symbol is EnumMemberDeclaration);
+        if (symbol is EnumMemberDeclaration enumMemberA)
         {
             Equal(expectedType, enumMemberA.Semantics.ValueType);
             NotNull(enumMemberA.Semantics.ConstantValue);

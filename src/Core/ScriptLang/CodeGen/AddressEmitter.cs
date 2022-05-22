@@ -19,8 +19,8 @@
 
         public override void Visit(NameExpression node)
         {
-            Debug.Assert(node.Semantics.Declaration is VarDeclaration); // VarDeclaration are the only declarations that can be lvalues
-            var varDecl = (VarDeclaration)node.Semantics.Declaration!;
+            Debug.Assert(node.Semantics.Symbol is VarDeclaration); // VarDeclaration are the only declarations that can be lvalues
+            var varDecl = (VarDeclaration)node.Semantics.Symbol!;
             _C.EmitVarAddress(varDecl);
         }
 

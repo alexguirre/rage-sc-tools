@@ -46,7 +46,7 @@ public static partial class Intrinsics
             TypeInfo type = node.Arguments[0].Type!;
             if (type is TypeNameType typeName)
             {
-                type = typeName.TypeDeclaration.Semantics.DeclaredType!;
+                type = typeName.TypeSymbol.DeclaredType;
             }
             return type;
         }

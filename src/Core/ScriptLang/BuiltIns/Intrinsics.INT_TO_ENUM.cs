@@ -38,7 +38,7 @@ public static partial class Intrinsics
             ValueKind constantFlag = ValueKind.Constant;
             if (argTypes.Length > 0)
             {
-                if (argTypes[0] is TypeNameType { TypeDeclaration: EnumDeclaration enumDecl })
+                if (argTypes[0] is TypeNameType { TypeSymbol: EnumDeclaration enumDecl })
                 {
                     returnType = enumDecl.Semantics.DeclaredType!;
                 }

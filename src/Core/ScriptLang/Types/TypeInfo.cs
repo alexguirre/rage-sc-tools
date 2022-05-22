@@ -1,6 +1,7 @@
 ﻿namespace ScTools.ScriptLang.Types;
 
 using ScTools.ScriptLang.Ast.Declarations;
+using ScTools.ScriptLang.Semantics;
 
 using System;
 using System.Collections.Generic;
@@ -164,12 +165,12 @@ public sealed record ArrayType(TypeInfo Item, int Length) : TypeInfo
 /// Represents a type name when used as a expression.
 /// For example, in INT_TO_ENUM(MYENUM, 1) the type of 'MYENUM' would be <see cref="TypeNameType"/>.
 /// </summary>
-public sealed record TypeNameType(ITypeDeclaration TypeDeclaration) : TypeInfo
+public sealed record TypeNameType(ITypeSymbol TypeSymbol) : TypeInfo
 {
     public override int SizeOf => 0;
     public override ImmutableArray<FieldInfo> Fields => ImmutableArray<FieldInfo>.Empty;
 
-    public override string ToPrettyString() => TypeDeclaration.Name;
+    public override string ToPrettyString() => TypeSymbol.Name;
     public override TReturn Accept<TReturn>(ITypeVisitor<TReturn> visitor) => visitor.Visit(this);
 }
 

@@ -39,7 +39,7 @@ public static partial class Intrinsics
     /// <summary>
     /// Type-checks an invocation against the signature (TEXT_LABEL_n&, <paramref name="secondParamType"/>) -> VOID
     /// </summary>
-    private static ExpressionSemantics TypeCheckInvocationWithTextLabelRefParameter(IIntrinsicDeclaration intrinsic, InvocationExpression node, SemanticsAnalyzer semantics, ExpressionTypeChecker exprTypeChecker, TypeInfo secondParamType)
+    private static ExpressionSemantics TypeCheckInvocationWithTextLabelRefParameter(IIntrinsic intrinsic, InvocationExpression node, SemanticsAnalyzer semantics, ExpressionTypeChecker exprTypeChecker, TypeInfo secondParamType)
     {
         IntrinsicUsagePrecondition(intrinsic, node);
 

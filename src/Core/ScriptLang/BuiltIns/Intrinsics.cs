@@ -17,7 +17,7 @@ using System.Runtime.CompilerServices;
 // HASH_ENUM_TO_INT_INDEX (HASH_ENUM) -> INT
 // INT_INDEX_TO_HASH_ENUM (ENUNNAME, INT) -> HASH_ENUM
 
-public interface IIntrinsicDeclaration : IDeclaration
+public interface IIntrinsic : ISymbol
 {
     ExpressionSemantics InvocationTypeCheck(InvocationExpression node, SemanticsAnalyzer semantics, ExpressionTypeChecker expressionTypeChecker);
     /// <summary>
@@ -33,33 +33,33 @@ public interface IIntrinsicDeclaration : IDeclaration
 public static partial class Intrinsics
 {
     // Casts
-    public static IIntrinsicDeclaration I2F { get; } = new IntrinsicI2F();
-    public static IIntrinsicDeclaration F2I { get; } = new IntrinsicF2I();
-    public static IIntrinsicDeclaration F2V { get; } = new IntrinsicF2V();
+    public static IIntrinsic I2F { get; } = new IntrinsicI2F();
+    public static IIntrinsic F2I { get; } = new IntrinsicF2I();
+    public static IIntrinsic F2V { get; } = new IntrinsicF2V();
 
     // Type Utilities
-    public static IIntrinsicDeclaration SIZE_OF { get; } = new IntrinsicSIZE_OF();
+    public static IIntrinsic SIZE_OF { get; } = new IntrinsicSIZE_OF();
 
     // Array Utilities
-    public static IIntrinsicDeclaration COUNT_OF { get; } = new IntrinsicCOUNT_OF();
+    public static IIntrinsic COUNT_OF { get; } = new IntrinsicCOUNT_OF();
 
     // Enum Utilities
-    public static IIntrinsicDeclaration ENUM_TO_INT { get; } = new IntrinsicENUM_TO_INT();
-    public static IIntrinsicDeclaration INT_TO_ENUM { get; } = new IntrinsicINT_TO_ENUM();
-    public static IIntrinsicDeclaration ENUM_TO_STRING { get; } = new IntrinsicENUM_TO_STRING();
+    public static IIntrinsic ENUM_TO_INT { get; } = new IntrinsicENUM_TO_INT();
+    public static IIntrinsic INT_TO_ENUM { get; } = new IntrinsicINT_TO_ENUM();
+    public static IIntrinsic ENUM_TO_STRING { get; } = new IntrinsicENUM_TO_STRING();
 
     // Text Label Utilities
-    public static IIntrinsicDeclaration TEXT_LABEL_ASSIGN_STRING { get; } = new IntrinsicTEXT_LABEL_ASSIGN_STRING();
-    public static IIntrinsicDeclaration TEXT_LABEL_ASSIGN_INT { get; } = new IntrinsicTEXT_LABEL_ASSIGN_INT();
-    public static IIntrinsicDeclaration TEXT_LABEL_APPEND_STRING { get; } = new IntrinsicTEXT_LABEL_APPEND_STRING();
-    public static IIntrinsicDeclaration TEXT_LABEL_APPEND_INT { get; } = new IntrinsicTEXT_LABEL_APPEND_INT();
+    public static IIntrinsic TEXT_LABEL_ASSIGN_STRING { get; } = new IntrinsicTEXT_LABEL_ASSIGN_STRING();
+    public static IIntrinsic TEXT_LABEL_ASSIGN_INT { get; } = new IntrinsicTEXT_LABEL_ASSIGN_INT();
+    public static IIntrinsic TEXT_LABEL_APPEND_STRING { get; } = new IntrinsicTEXT_LABEL_APPEND_STRING();
+    public static IIntrinsic TEXT_LABEL_APPEND_INT { get; } = new IntrinsicTEXT_LABEL_APPEND_INT();
 
     // Bit Utilities
-    public static IIntrinsicDeclaration IS_BIT_SET { get; } = new IntrinsicIS_BIT_SET();
+    public static IIntrinsic IS_BIT_SET { get; } = new IntrinsicIS_BIT_SET();
 
-    public static IIntrinsicDeclaration NATIVE_TO_INT { get; } = new IntrinsicNATIVE_TO_INT();
+    public static IIntrinsic NATIVE_TO_INT { get; } = new IntrinsicNATIVE_TO_INT();
 
-    public static ImmutableArray<IIntrinsicDeclaration> All { get; } = ImmutableArray.Create(
+    public static ImmutableArray<IIntrinsic> All { get; } = ImmutableArray.Create(
         I2F, F2I, F2V,
         SIZE_OF,
         COUNT_OF,
@@ -68,22 +68,17 @@ public static partial class Intrinsics
         IS_BIT_SET,
         NATIVE_TO_INT);
 
-    private static void IntrinsicUsagePrecondition(IIntrinsicDeclaration intrinsic, InvocationExpression node, [CallerArgumentExpression("node")] string? paramName = null)
+    private static void IntrinsicUsagePrecondition(IIntrinsic intrinsic, InvocationExpression node, [CallerArgumentExpression("node")] string? paramName = null)
     {
-        if (node.Callee is not NameExpression nameExpr || !ReferenceEquals(nameExpr.Semantics.Declaration, intrinsic))
+        if (node.Callee is not NameExpression nameExpr || !ReferenceEquals(nameExpr.Semantics.Symbol, intrinsic))
         {
             throw new ArgumentException("Expected a call to this intrinsic.", paramName);
         }
     }
 
-    private abstract class BaseIntrinsic : IIntrinsicDeclaration
+    private abstract class BaseIntrinsic : IIntrinsic
     {
         public string Name { get; }
-        public Token NameToken => Token.Identifier(Name);
-        public ImmutableArray<Token> Tokens => ImmutableArray<Token>.Empty;
-        public ImmutableArray<INode> Children => ImmutableArray<INode>.Empty;
-        public SourceRange Location => default;
-        public string DebuggerDisplay => $"<intrinsic {Name}>";
 
         public BaseIntrinsic(string name)
         {
@@ -97,10 +92,6 @@ public static partial class Intrinsics
 
         protected void UsagePrecondition(InvocationExpression node, [CallerArgumentExpression("node")] string? paramName = null)
             => IntrinsicUsagePrecondition(this, node, paramName);
-
-        public void Accept(IAstVisitor visitor) => throw new NotSupportedException($"Cannot visit intrinsics");
-        public TReturn Accept<TReturn>(IAstVisitor<TReturn> visitor) => throw new NotSupportedException($"Cannot visit intrinsics");
-        public TReturn Accept<TReturn, TParam>(IAstVisitor<TReturn, TParam> visitor, TParam param) => throw new NotSupportedException($"Cannot visit intrinsics");
     }
 
     private abstract class BaseFunctionLikeIntrinsic : BaseIntrinsic
