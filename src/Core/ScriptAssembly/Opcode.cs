@@ -309,7 +309,7 @@
             ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
             ThrowIfNotExpectedOpcode(Opcode.ENTER, bytecode);
 
-            if (bytecode[4] > 2)
+            if (bytecode[4] > 0)
             {
                 var nameSlice = bytecode[5..^1];
                 while (nameSlice[0] == 0xFF) { nameSlice = nameSlice[1..]; }

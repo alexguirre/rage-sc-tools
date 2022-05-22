@@ -67,6 +67,37 @@ public static class Keys
         }
     }
 
+    public static class RDR2
+    {
+        private const string CacheFile = "keys_rdr2.dat";
+        public static byte[] AesKeyXenon { get; private set; } = Array.Empty<byte>();
+
+        public static void Load(string xexFilePath)
+        {
+            if (KeyCache.ReadKeysFromCache(CacheFile, out var keys, Aes.KeyLength))
+            {
+                AesKeyXenon = keys[0];
+                return;
+            }
+
+            var xexFile = File.ReadAllBytes(xexFilePath).AsSpan();
+            // TODO: .xex files are not readable as-is so SearchAesKeyXenon doesn't find the key
+            //AesKeyXenon = SearchAesKeyXenon(xexFile, out var aesKey) ? aesKey.ToArray() : throw new InvalidDataException("AES key not found");
+            KeyCache.CacheKeys(CacheFile, AesKeyXenon);
+        }
+
+        private static bool SearchAesKeyXenon(ReadOnlySpan<byte> xexFile, out ReadOnlySpan<byte> aesKey)
+        {
+            var aesKeyHash = new byte[SHA1HashLength]
+            {
+                // TODO: change hash
+                0x59, 0x9F, 0xA7, 0x13, 0xE0, 0x50, 0x85, 0xD9, 0xB8, 0x84, 0x94, 0x91, 0x39, 0xBA, 0x1F, 0x95, 0xBA, 0x20, 0x71, 0xA7
+            };
+
+            return SearchKey(xexFile, aesKeyHash, Aes.KeyLength, out aesKey);
+        }
+    }
+
     public static class Payne
     {
         private const string CacheFile = "keys_payne.dat";
