@@ -51,6 +51,7 @@ public static class IRPrinter
         public Visitor(TextWriter w) => this.w = w;
 
         public void Visit(IREndOfScript inst) { }
+        public void Visit(IRNop inst) => w.Write($"NOP");
         public void Visit(IREnter inst) => w.Write(inst.FunctionName is null ?
                                                 $"ENTER\t{inst.ParamCount}, {inst.LocalCount}" :
                                                 $"ENTER\t{inst.ParamCount}, {inst.LocalCount}\t[{inst.FunctionName}]");

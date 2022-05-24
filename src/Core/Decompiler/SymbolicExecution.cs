@@ -124,6 +124,11 @@ public class SymbolicExecutor
 
         public IEnumerable<SymState> Visit(IREndOfScript inst, SymState state) => Array.Empty<SymState>();
 
+        public IEnumerable<SymState> Visit(IRNop inst, SymState state)
+        {
+            yield return Step(state, state.Stack);
+        }
+
         public IEnumerable<SymState> Visit(IRJump inst, SymState state)
         {
             yield return JumpTo(state, inst.JumpAddress);

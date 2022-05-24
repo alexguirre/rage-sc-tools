@@ -209,10 +209,8 @@ public static class DumperRDR2
                 break;
 
             case >= OpcodeRDR2.CALL_0 and <= OpcodeRDR2.CALL_F:
-                var callBase = ((int)opcode - (int)OpcodeRDR2.CALL_0) << 16;
-                var callOffset = (int)opcode.GetU16Operand(inst);
-                var callAddress = callBase | callOffset;
-                sb.Append($" {callOffset} [{callAddress:000000}]");
+                var call = opcode.GetCallTarget(inst);
+                sb.Append($" {call.Offset} [{call.Address:000000}]");
                 break;
 
             case >= OpcodeRDR2.J and <= OpcodeRDR2.ILE_JZ:
@@ -222,10 +220,10 @@ public static class DumperRDR2
                 break;
 
             case OpcodeRDR2.SWITCH:
-                foreach (var (caseValue, caseJumpOffset, offsetWithinInstruction) in opcode.GetSwitchOperands(inst))
+                foreach (var c in opcode.GetSwitchOperands(inst))
                 {
-                    var caseJumpAddress = ip + offsetWithinInstruction + 6 + caseJumpOffset;
-                    sb.Append($" {caseValue}:{caseJumpAddress:000000}");
+                    var caseJumpAddress = ip + c.OffsetInInstruction + 6 + c.JumpOffset;
+                    sb.Append($" {c.Value}:{caseJumpAddress:000000}");
                 }
                 break;
 

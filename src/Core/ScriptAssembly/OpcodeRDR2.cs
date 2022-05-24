@@ -375,6 +375,20 @@ public static class OpcodeRDR2Extensions
         return BinaryPrimitives.ReadSingleLittleEndian(bytecode[1..]);
     }
 
+    public static (int Base, ushort Offset, int Address) GetCallTarget(this OpcodeRDR2 opcode, ReadOnlySpan<byte> bytecode)
+    {
+        ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
+        if (opcode is not (>= OpcodeRDR2.CALL_0 and <= OpcodeRDR2.CALL_F))
+        {
+            throw new ArgumentException($"The opcode {opcode} does not have a FLOAT operand.", nameof(opcode));
+        }
+
+        var callBase = ((int)opcode - (int)OpcodeRDR2.CALL_0) << 16;
+        var callOffset = BinaryPrimitives.ReadUInt16LittleEndian(bytecode[1..]);
+        var callAddress = callBase | callOffset;
+        return (callBase, callOffset, callAddress);
+    }
+
     public static int GetSwitchNumberOfCases(this OpcodeRDR2 opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);

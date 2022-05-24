@@ -14,7 +14,6 @@ public class DisassemblerPayne
                          StaticLabelPrefix = "s_",
                          ArgLabelPrefix = "arg_";
 
-    private readonly byte[] code;
     private readonly Dictionary<int, string> codeLabels = new();
     private readonly Dictionary<int, string> staticsLabels = new();
     private readonly Dictionary<uint, string> nativeCommands;
@@ -26,7 +25,6 @@ public class DisassemblerPayne
     {
         Script = sc ?? throw new ArgumentNullException(nameof(sc));
         ScriptName = scriptName;
-        code = sc.Code ?? Array.Empty<byte>();
 
         this.nativeCommands = nativeCommands;
     }
@@ -167,21 +165,21 @@ public class DisassemblerPayne
 
     private void WriteCodeSegment(TextWriter w)
     {
-        if (code.Length == 0)
+        if (Script.CodeLength == 0)
         {
             return;
         }
 
         w.WriteLine(".code");
-        IterateCode(inst =>
+        foreach (var inst in Script.EnumerateInstructions())
         {
             TryWriteLabel(inst.Address);
 
-            DisassembleInstruction(w, inst, inst.Address, inst.Bytes);
-        });
+            DisassembleInstruction(w, inst.Address, inst.Bytes);
+        }
 
         // in case we have label pointing to the end of the code
-        TryWriteLabel(code.Length);
+        TryWriteLabel((int)Script.CodeLength);
 
 
         void TryWriteLabel(int address)
@@ -202,7 +200,7 @@ public class DisassemblerPayne
         }
     }
 
-    private void DisassembleInstruction(TextWriter w, InstructionContext ctx, int ip, ReadOnlySpan<byte> inst)
+    private void DisassembleInstruction(TextWriter w, int ip, ReadOnlySpan<byte> inst)
     {
         var opcode = (OpcodePayne)inst[0];
 
@@ -295,9 +293,9 @@ public class DisassemblerPayne
     {
         codeLabels.Clear();
 
-        if (code.Length != 0)
+        if (Script.CodeLength != 0)
         {
-            IterateCode(inst =>
+            foreach (var inst in Script.EnumerateInstructions())
             {
                 switch (inst.Opcode)
                 {
@@ -319,7 +317,7 @@ public class DisassemblerPayne
                         AddFuncLabel(codeLabels, funcAddress, funcName);
                         break;
                 }
-            });
+            }
         }
 
         static void AddFuncLabel(Dictionary<int, string> codeLabels, int address, string? name)
@@ -365,59 +363,6 @@ public class DisassemblerPayne
 
         //    statisLabels.TryAdd(address, label);
         //}
-    }
-
-    private delegate void IterateCodeCallback(InstructionContext instruction);
-    private void IterateCode(IterateCodeCallback callback)
-    {
-        InstructionContext.CB previousCB = currInst =>
-        {
-            int prevAddress = 0;
-            int address = 0;
-            while (address < currInst.Address)
-            {
-                prevAddress = address;
-                address += OpcodePayneExtensions.ByteSize(code.AsSpan(address));
-            }
-            return GetInstructionContext(code, prevAddress, currInst.PreviousCB, currInst.NextCB);
-        };
-        InstructionContext.CB nextCB = currInst =>
-        {
-            var nextAddress = currInst.Address + currInst.Bytes.Length;
-            return GetInstructionContext(code, nextAddress, currInst.PreviousCB, currInst.NextCB);
-        };
-
-        int ip = 0;
-        while (ip < code.Length)
-        {
-            var inst = GetInstructionContext(code, ip, previousCB, nextCB);
-            callback(inst);
-            ip += inst.Bytes.Length;
-        }
-
-        static InstructionContext GetInstructionContext(byte[] code, int address, InstructionContext.CB previousCB, InstructionContext.CB nextCB)
-            => address >= code.Length ? default : new()
-            {
-                Address = address,
-                Bytes = OpcodePayneExtensions.GetInstructionSpan(code, address),
-                PreviousCB = previousCB,
-                NextCB = nextCB,
-            };
-    }
-
-    private readonly ref struct InstructionContext
-    {
-        public delegate InstructionContext CB(InstructionContext curr);
-
-        public bool IsValid => Bytes.Length > 0;
-        public int Address { get; init; }
-        public ReadOnlySpan<byte> Bytes { get; init; }
-        public OpcodePayne Opcode => (OpcodePayne)Bytes[0];
-        public CB PreviousCB { get; init; }
-        public CB NextCB { get; init; }
-
-        public InstructionContext Previous() => PreviousCB(this);
-        public InstructionContext Next() => NextCB(this);
     }
 
     public static void Disassemble(TextWriter output, ScriptPayne sc, string scriptName, Dictionary<uint, string> nativeCommands)

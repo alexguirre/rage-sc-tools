@@ -26,6 +26,11 @@ public abstract partial record IRInstruction(int Address)
 /// </summary>
 public sealed partial record IREndOfScript(int Address) : IRInstruction(Address);
 
+/// <summary>
+/// No-operation.
+/// </summary>
+public sealed partial record IRNop(int Address) : IRInstruction(Address);
+
 #region Jumps
 /// <summary>
 /// Unconditional jump.

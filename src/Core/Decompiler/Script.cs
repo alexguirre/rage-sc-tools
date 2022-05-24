@@ -44,7 +44,8 @@ public class Script
         return func;
     }
 
-    public static Script FromFive(GameFiles.Five.Script script) => new(new IRDisassemblerFive(script).Disassemble());
-    public static Script FromPayne(GameFiles.ScriptPayne script) => new(new IRDisassemblerPayne(script).Disassemble());
-    public static Script FromNY(GameFiles.ScriptNY script) => new(new IRDisassemblerNY(script).Disassemble());
+    public static Script FromFive(GameFiles.Five.Script script) => new(IRDisassemblerFive.Disassemble(script));
+    public static Script FromRDR2(GameFiles.ScriptRDR2 script) => new(IRDisassemblerRDR2.Disassemble(script));
+    public static Script FromPayne(GameFiles.ScriptPayne script) => new(IRDisassemblerPayne.Disassemble(script));
+    public static Script FromNY(GameFiles.ScriptNY script) => new(IRDisassemblerNY.Disassemble(script));
 }

@@ -10,46 +10,41 @@ using ScTools.GameFiles;
 using ScTools.ScriptAssembly;
 using System.Collections.Immutable;
 
-public class IRDisassemblerPayne
+public sealed class IRDisassemblerPayne
 {
-    private readonly byte[] code;
+    public static IRScript Disassemble(ScriptPayne script) => new IRDisassemblerPayne(script).Disassemble();
 
-    public ScriptPayne Script { get; }
+    private ScriptPayne Script { get; }
 
-    public IRDisassemblerPayne(ScriptPayne sc)
+    private IRDisassemblerPayne(ScriptPayne sc)
     {
         Script = sc ?? throw new ArgumentNullException(nameof(sc));
-        code = sc.Code ?? Array.Empty<byte>();
     }
 
-    public IRScript Disassemble()
-    {
-        return ToIRScript();
-    }
-
-    private IRScript ToIRScript()
+    private IRScript Disassemble()
     {
         var sc = new IRScript();
-        if (code.Length == 0)
+        if (Script.CodeLength == 0)
         {
             return sc;
         }
 
-        IterateCode(inst =>
+        foreach (var inst in Script.EnumerateInstructions())
         {
-            DisassembleInstruction(sc, inst, inst.Address, inst.Bytes);
-        });
-        sc.AppendInstruction(new IREndOfScript(code.Length));
+            DisassembleInstruction(sc, inst.Address, inst.Bytes);
+        }
+        sc.AppendInstruction(new IREndOfScript((int)Script.CodeLength));
         return sc;
     }
 
-    private void DisassembleInstruction(IRScript script, InstructionContext ctx, int ip, ReadOnlySpan<byte> inst)
+    private void DisassembleInstruction(IRScript script, int ip, ReadOnlySpan<byte> inst)
     {
         var opcode = (OpcodePayne)inst[0];
 
         switch (opcode)
         {
             case OpcodePayne.NOP:
+                script.AppendInstruction(new IRNop(ip));
                 break;
             case OpcodePayne.LEAVE:
                 var leave = opcode.GetLeaveOperands(inst);
@@ -175,64 +170,5 @@ public class IRDisassemblerPayne
             default:
                 throw new NotImplementedException(opcode.ToString());
         }
-    }
-
-    private delegate void IterateCodeCallback(InstructionContext instruction);
-    private void IterateCode(IterateCodeCallback callback)
-    {
-        InstructionContext.CB previousCB = currInst =>
-        {
-            int prevAddress = 0;
-            int address = 0;
-            while (address < currInst.Address)
-            {
-                prevAddress = address;
-                address += OpcodePayneExtensions.ByteSize(code.AsSpan(address));
-            }
-            return GetInstructionContext(code, prevAddress, currInst.PreviousCB, currInst.NextCB);
-        };
-        InstructionContext.CB nextCB = currInst =>
-        {
-            var nextAddress = currInst.Address + currInst.Bytes.Length;
-            return GetInstructionContext(code, nextAddress, currInst.PreviousCB, currInst.NextCB);
-        };
-
-        int ip = 0;
-        while (ip < code.Length)
-        {
-            var inst = GetInstructionContext(code, ip, previousCB, nextCB);
-            callback(inst);
-            ip += inst.Bytes.Length;
-        }
-
-        static InstructionContext GetInstructionContext(byte[] code, int address, InstructionContext.CB previousCB, InstructionContext.CB nextCB)
-            => address >= code.Length ? default : new()
-            {
-                Address = address,
-                Bytes = OpcodePayneExtensions.GetInstructionSpan(code, address),
-                PreviousCB = previousCB,
-                NextCB = nextCB,
-            };
-    }
-
-    private readonly ref struct InstructionContext
-    {
-        public delegate InstructionContext CB(InstructionContext curr);
-
-        public bool IsValid => Bytes.Length > 0;
-        public int Address { get; init; }
-        public ReadOnlySpan<byte> Bytes { get; init; }
-        public OpcodePayne Opcode => (OpcodePayne)Bytes[0];
-        public CB PreviousCB { get; init; }
-        public CB NextCB { get; init; }
-
-        public InstructionContext Previous() => PreviousCB(this);
-        public InstructionContext Next() => NextCB(this);
-    }
-
-    public static void Disassemble(TextWriter output, ScriptPayne sc, string scriptName, Dictionary<uint, string> nativeCommands)
-    {
-        var a = new DisassemblerPayne(sc, scriptName, nativeCommands);
-        a.Disassemble(output);
     }
 }

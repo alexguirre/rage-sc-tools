@@ -10,40 +10,34 @@ using ScTools.GameFiles;
 using ScTools.ScriptAssembly;
 using System.Collections.Immutable;
 
-public class IRDisassemblerNY
+public sealed class IRDisassemblerNY
 {
-    private readonly byte[] code;
+    public static IRScript Disassemble(ScriptNY script) => new IRDisassemblerNY(script).Disassemble();
 
-    public ScriptNY Script { get; }
+    private ScriptNY Script { get; }
 
-    public IRDisassemblerNY(ScriptNY sc)
+    private IRDisassemblerNY(ScriptNY sc)
     {
         Script = sc ?? throw new ArgumentNullException(nameof(sc));
-        code = sc.Code ?? Array.Empty<byte>();
     }
 
-    public IRScript Disassemble()
-    {
-        return ToIRScript();
-    }
-
-    private IRScript ToIRScript()
+    private IRScript Disassemble()
     {
         var sc = new IRScript();
-        if (code.Length == 0)
+        if (Script.CodeLength == 0)
         {
             return sc;
         }
 
-        IterateCode(inst =>
+        foreach (var inst in Script.EnumerateInstructions())
         {
-            DisassembleInstruction(sc, inst, inst.Address, inst.Bytes);
-        });
-        sc.AppendInstruction(new IREndOfScript(code.Length));
+            DisassembleInstruction(sc, inst.Address, inst.Bytes);
+        }
+        sc.AppendInstruction(new IREndOfScript((int)Script.CodeLength));
         return sc;
     }
 
-    private void DisassembleInstruction(IRScript script, InstructionContext ctx, int ip, ReadOnlySpan<byte> inst)
+    private void DisassembleInstruction(IRScript script, int ip, ReadOnlySpan<byte> inst)
     {
         var opcode = (OpcodeNY)inst[0];
 
@@ -176,64 +170,5 @@ public class IRDisassemblerNY
             default:
                 throw new NotImplementedException(opcode.ToString());
         }
-    }
-
-    private delegate void IterateCodeCallback(InstructionContext instruction);
-    private void IterateCode(IterateCodeCallback callback)
-    {
-        InstructionContext.CB previousCB = currInst =>
-        {
-            int prevAddress = 0;
-            int address = 0;
-            while (address < currInst.Address)
-            {
-                prevAddress = address;
-                address += OpcodeNYExtensions.ByteSize(code.AsSpan(address));
-            }
-            return GetInstructionContext(code, prevAddress, currInst.PreviousCB, currInst.NextCB);
-        };
-        InstructionContext.CB nextCB = currInst =>
-        {
-            var nextAddress = currInst.Address + currInst.Bytes.Length;
-            return GetInstructionContext(code, nextAddress, currInst.PreviousCB, currInst.NextCB);
-        };
-
-        int ip = 0;
-        while (ip < code.Length)
-        {
-            var inst = GetInstructionContext(code, ip, previousCB, nextCB);
-            callback(inst);
-            ip += inst.Bytes.Length;
-        }
-
-        static InstructionContext GetInstructionContext(byte[] code, int address, InstructionContext.CB previousCB, InstructionContext.CB nextCB)
-            => address >= code.Length ? default : new()
-            {
-                Address = address,
-                Bytes = OpcodeNYExtensions.GetInstructionSpan(code, address),
-                PreviousCB = previousCB,
-                NextCB = nextCB,
-            };
-    }
-
-    private readonly ref struct InstructionContext
-    {
-        public delegate InstructionContext CB(InstructionContext curr);
-
-        public bool IsValid => Bytes.Length > 0;
-        public int Address { get; init; }
-        public ReadOnlySpan<byte> Bytes { get; init; }
-        public OpcodeNY Opcode => (OpcodeNY)Bytes[0];
-        public CB PreviousCB { get; init; }
-        public CB NextCB { get; init; }
-
-        public InstructionContext Previous() => PreviousCB(this);
-        public InstructionContext Next() => NextCB(this);
-    }
-
-    public static void Disassemble(TextWriter output, ScriptPayne sc, string scriptName, Dictionary<uint, string> nativeCommands)
-    {
-        var a = new DisassemblerPayne(sc, scriptName, nativeCommands);
-        a.Disassemble(output);
     }
 }
