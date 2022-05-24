@@ -222,8 +222,7 @@ public static class DumperRDR2
             case OpcodeRDR2.SWITCH:
                 foreach (var c in opcode.GetSwitchOperands(inst))
                 {
-                    var caseJumpAddress = ip + c.OffsetInInstruction + 6 + c.JumpOffset;
-                    sb.Append($" {c.Value}:{caseJumpAddress:000000}");
+                    sb.Append($" {c.Value}:{c.GetJumpTargetAddress(ip):000000}");
                 }
                 break;
 

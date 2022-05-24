@@ -152,9 +152,9 @@ public static class DumperPayne
                 break;
 
             case OpcodePayne.SWITCH:
-                foreach (var (value, jumpAddr) in opcode.GetSwitchOperands(inst))
+                foreach (var c in opcode.GetSwitchOperands(inst))
                 {
-                    sb.Append($" {value}:{jumpAddr:000000}");
+                    sb.Append($" {c.Value}:{c.JumpAddress:000000}");
                 }
                 break;
 

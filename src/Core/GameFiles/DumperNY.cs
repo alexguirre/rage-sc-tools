@@ -145,12 +145,9 @@ public static class DumperNY
                 break;
 
             case OpcodeNY.SWITCH:
-                for (int i = 0; i < inst[1]; i++)
+                foreach (var c in opcode.GetSwitchOperands(inst))
                 {
-                    var caseOffset = 2 + i * 8;
-                    var caseValue = BinaryPrimitives.ReadUInt32LittleEndian(inst[caseOffset..(caseOffset + 4)]);
-                    var caseJumpAddr = BinaryPrimitives.ReadUInt32LittleEndian(inst[(caseOffset + 4)..]);
-                    sb.Append($" {caseValue}:{caseJumpAddr:000000}");
+                    sb.Append($" {c.Value}:{c.JumpAddress:000000}");
                 }
                 break;
 

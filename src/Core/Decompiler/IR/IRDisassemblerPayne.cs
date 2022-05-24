@@ -86,9 +86,9 @@ public sealed class IRDisassemblerPayne
                 break;
             case OpcodePayne.SWITCH:
                 var cases = ImmutableArray.CreateBuilder<IRSwitchCase>(opcode.GetSwitchNumberOfCases(inst));
-                foreach (var (caseValue, caseJumpAddr) in opcode.GetSwitchOperands(inst))
+                foreach (var c in opcode.GetSwitchOperands(inst))
                 {
-                    cases.Add(new(unchecked((int)caseValue), unchecked((int)caseJumpAddr)));
+                    cases.Add(new(unchecked((int)c.Value), c.JumpAddress));
                 }
                 script.AppendInstruction(new IRSwitch(ip, cases.MoveToImmutable()));
                 break;

@@ -121,8 +121,7 @@ public sealed class IRDisassemblerRDR2
                 var cases = ImmutableArray.CreateBuilder<IRSwitchCase>(opcode.GetSwitchNumberOfCases(inst));
                 foreach (var c in opcode.GetSwitchOperands(inst))
                 {
-                    var caseJumpAddress = ip + c.OffsetInInstruction + 6 + c.JumpOffset;
-                    cases.Add(new(unchecked((int)c.Value), caseJumpAddress));
+                    cases.Add(new(unchecked((int)c.Value), c.GetJumpTargetAddress(ip)));
                 }
                 script.AppendInstruction(new IRSwitch(ip, cases.MoveToImmutable()));
                 break;

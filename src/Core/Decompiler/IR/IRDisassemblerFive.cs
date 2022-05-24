@@ -119,10 +119,9 @@ public sealed class IRDisassemblerFive
                 break;
             case Opcode.SWITCH:
                 var cases = ImmutableArray.CreateBuilder<IRSwitchCase>(opcode.GetSwitchNumberOfCases(inst));
-                foreach (var (caseValue, caseJumpOffset, offsetWithinInstruction) in opcode.GetSwitchOperands(inst))
+                foreach (var c in opcode.GetSwitchOperands(inst))
                 {
-                    var caseJumpAddress = ip + offsetWithinInstruction + 6 + caseJumpOffset;
-                    cases.Add(new(unchecked((int)caseValue), unchecked((int)caseJumpAddress)));
+                    cases.Add(new(unchecked((int)c.Value), c.GetJumpTargetAddress(ip)));
                 }
                 script.AppendInstruction(new IRSwitch(ip, cases.MoveToImmutable()));
                 break;

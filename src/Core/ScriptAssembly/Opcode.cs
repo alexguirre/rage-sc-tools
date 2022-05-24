@@ -370,10 +370,16 @@
             }
         }
 
+        public readonly record struct SwitchCase(uint Value, short JumpOffset, int CaseIndex)
+        {
+            public int OffsetWithinInstruction => 2 + CaseIndex * 6;
+            public int GetJumpTargetAddress(int switchBaseAddress) => switchBaseAddress + OffsetWithinInstruction + 6 + JumpOffset;
+        }
+
         public ref struct SwitchCasesEnumerator
         {
             private readonly ReadOnlySpan<byte> bytecode;
-            private (uint Value, short JumpOffset, int OffsetInInstruction) current;
+            private SwitchCase current;
             private int index;
 
             public SwitchCasesEnumerator(ReadOnlySpan<byte> bytecode)
@@ -385,7 +391,7 @@
                 index = 0;
             }
 
-            public (uint Value, short JumpOffset, int OffsetInInstruction) Current => current;
+            public SwitchCase Current => current;
 
             public SwitchCasesEnumerator GetEnumerator() => this;
 
@@ -402,7 +408,7 @@
                 var caseValue = BinaryPrimitives.ReadUInt32LittleEndian(bytecode[caseOffset..(caseOffset + 4)]);
                 var caseJumpOffset = BinaryPrimitives.ReadInt16LittleEndian(bytecode[(caseOffset + 4)..]);
 
-                current = (caseValue, caseJumpOffset, caseOffset);
+                current = new(caseValue, caseJumpOffset, index);
                 index++;
                 return true;
             }

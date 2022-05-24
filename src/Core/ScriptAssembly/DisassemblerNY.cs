@@ -262,7 +262,7 @@ public class DisassemblerNY
                 break;
             case OpcodeNY.SWITCH:
                 var firstCase = true;
-                foreach (var (value, jumpAddr) in opcode.GetSwitchOperands(inst))
+                foreach (var c in opcode.GetSwitchOperands(inst))
                 {
                     if (!firstCase)
                     {
@@ -270,13 +270,13 @@ public class DisassemblerNY
                     }
                     firstCase = false;
 
-                    if (codeLabels.TryGetValue((int)jumpAddr, out var caseLabel))
+                    if (codeLabels.TryGetValue(c.JumpAddress, out var caseLabel))
                     {
-                        w.Write($"{value}:{caseLabel}");
+                        w.Write($"{c.Value}:{caseLabel}");
                     }
                     else
                     {
-                        w.Write($"{value}:{jumpAddr}");
+                        w.Write($"{c.Value}:{c.JumpAddress}");
                     }
                 }
                 break;
@@ -311,9 +311,9 @@ public class DisassemblerNY
                         AddLabel(codeLabels, (int)jumpAddress);
                         break;
                     case OpcodeNY.SWITCH:
-                        foreach (var (value, jumpAddr) in inst.Opcode.GetSwitchOperands(inst.Bytes))
+                        foreach (var c in inst.Opcode.GetSwitchOperands(inst.Bytes))
                         {
-                            AddLabel(codeLabels, (int)jumpAddr);
+                            AddLabel(codeLabels, c.JumpAddress);
                         }
                         break;
                     case OpcodeNY.ENTER:

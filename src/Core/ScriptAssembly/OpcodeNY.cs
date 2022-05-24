@@ -527,10 +527,12 @@ public static class OpcodeNYExtensions
         }
     }
 
+    public readonly record struct SwitchCase(uint Value, int JumpAddress, int CaseIndex);
+
     public ref struct SwitchCasesEnumerator
     {
         private readonly ReadOnlySpan<byte> bytecode;
-        private (uint Value, uint JumpAddress) current;
+        private SwitchCase current;
         private int index;
 
         public SwitchCasesEnumerator(ReadOnlySpan<byte> bytecode)
@@ -542,7 +544,7 @@ public static class OpcodeNYExtensions
             index = 0;
         }
 
-        public (uint Value, uint JumpAddress) Current => current;
+        public SwitchCase Current => current;
 
         public SwitchCasesEnumerator GetEnumerator() => this;
 
@@ -557,9 +559,9 @@ public static class OpcodeNYExtensions
 
             var caseOffset = 2 + index * 8;
             var caseValue = BinaryPrimitives.ReadUInt32LittleEndian(bytecode[caseOffset..(caseOffset + 4)]);
-            var caseJumpAddr = BinaryPrimitives.ReadUInt32LittleEndian(bytecode[(caseOffset + 4)..]);
+            var caseJumpAddr = BinaryPrimitives.ReadInt32LittleEndian(bytecode[(caseOffset + 4)..]);
 
-            current = (caseValue, caseJumpAddr);
+            current = new(caseValue, caseJumpAddr, index);
             index++;
             return true;
         }
