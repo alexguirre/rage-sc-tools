@@ -3,7 +3,7 @@
 using System.Diagnostics;
 
 /// <param name="Target">The statement corresponding to <see cref="GotoStatement.TargetLabel"/>.</param>
-public record struct GotoStatementSemantics(IStatement? Target);
+public record struct GotoStatementSemantics(Label? Target);
 
 public sealed partial class GotoStatement : BaseStatement, ISemanticNode<GotoStatementSemantics>
 {

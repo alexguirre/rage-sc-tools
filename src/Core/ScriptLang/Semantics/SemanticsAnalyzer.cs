@@ -22,7 +22,7 @@ public sealed class SemanticsAnalyzer : AstVisitor
 
     // context
     private readonly SymbolTable<ISymbol> symbols = new();
-    private readonly SymbolTable<IStatement> labels = new();
+    private readonly SymbolTable<Label> labels = new();
     private readonly TypeRegistry typeRegistry = new();
     private EnumMemberDeclaration? previousEnumMember = null;
     private StructDeclaration? currentStructDeclaration = null;
@@ -501,7 +501,7 @@ public sealed class SemanticsAnalyzer : AstVisitor
             typeFactory.GetFrom(valueDecl);
         }
 
-        if (!typeRegistry.Find(symbol.Name, out _) && symbols.Add(symbol.Name, symbol))
+        if (!typeRegistry.Find(symbol.Name, out _) && symbols.Add(symbol))
         {
             if (symbol is ITypeSymbol typeSymbol)
             {
@@ -568,27 +568,27 @@ public sealed class SemanticsAnalyzer : AstVisitor
     {
         if (stmt.Label is null) { return; }
 
-        if (!labels.Add(stmt.Label.Name, stmt))
+        if (!labels.Add(stmt.Label))
         {
             LabelAlreadyDefinedError(stmt.Label);
         }
     }
 
-    public bool GetLabel(Token identifier, [MaybeNullWhen(false)] out IStatement stmt) => GetLabel(identifier.Lexeme.ToString(), identifier.Location, out stmt);
-    public bool GetLabel(string name, SourceRange location, [MaybeNullWhen(false)] out IStatement stmt)
+    public bool GetLabel(Token identifier, [MaybeNullWhen(false)] out Label label) => GetLabel(identifier.Lexeme.ToString(), identifier.Location, out label);
+    public bool GetLabel(string name, SourceRange location, [MaybeNullWhen(false)] out Label label)
     {
-        if (GetLabelUnchecked(name, out stmt))
+        if (GetLabelUnchecked(name, out label))
         {
             return true;
         }
         else
         {
             UndefinedLabelError(name, location);
-            stmt = null;
+            label = null;
             return false;
         }
     }
-    public bool GetLabelUnchecked(string name, [MaybeNullWhen(false)] out IStatement stmt) => labels.Find(name, out stmt);
+    public bool GetLabelUnchecked(string name, [MaybeNullWhen(false)] out Label label) => labels.Find(name, out label);
 
     #region Errors
     private void Error(ErrorCode code, string message, SourceRange location)

@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
-internal sealed class SymbolTable<T> where T : notnull
+internal sealed class SymbolTable<T> where T : ISymbol
 {
     private readonly Stack<Dictionary<string, T>> scopes = new();
 
@@ -28,7 +28,7 @@ internal sealed class SymbolTable<T> where T : notnull
         }
     }
 
-    public bool Add(string name, T symbol) => CurrentScope.TryAdd(name, symbol);
+    public bool Add(T symbol) => CurrentScope.TryAdd(symbol.Name, symbol);
 
     public bool Find(string name, [MaybeNullWhen(false)] out T symbol)
     {

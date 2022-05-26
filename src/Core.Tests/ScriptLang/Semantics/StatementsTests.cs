@@ -225,7 +225,7 @@ public class StatementsTests : SemanticsTestsBase
         NotNull(@goto.Label);
         Equal("label", @goto.Label!.Name);
         Equal("label", @goto.TargetLabel);
-        Same(@goto, @goto.Semantics.Target);
+        Same(@goto.Label, @goto.Semantics.Target);
     }
 
     [Fact]
@@ -248,7 +248,7 @@ public class StatementsTests : SemanticsTestsBase
         Equal("label", @if.Label!.Name);
         Null(@goto.Label);
         Equal("label", @goto.TargetLabel);
-        Same(@if, @goto.Semantics.Target);
+        Same(@if.Label, @goto.Semantics.Target);
     }
 
     [Fact]
@@ -271,7 +271,7 @@ public class StatementsTests : SemanticsTestsBase
         Equal("label", @if.Label!.Name);
         Null(@goto.Label);
         Equal("label", @goto.TargetLabel);
-        Same(@if, @goto.Semantics.Target);
+        Same(@if.Label, @goto.Semantics.Target);
     }
 
     [Fact]
@@ -304,11 +304,11 @@ public class StatementsTests : SemanticsTestsBase
 
         Null(@goto.Label);
         Equal("label", @goto.TargetLabel);
-        Same(emptyStmt, @goto.Semantics.Target);
+        Same(emptyStmt.Label, @goto.Semantics.Target);
 
         Null(gotoNested.Label);
         Equal("nestedLabel", gotoNested.TargetLabel);
-        Same(nestedEmptyStmt, gotoNested.Semantics.Target);
+        Same(nestedEmptyStmt.Label, gotoNested.Semantics.Target);
     }
 
     [Fact]

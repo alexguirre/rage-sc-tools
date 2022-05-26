@@ -61,7 +61,7 @@ internal sealed class StatementEmitter : AstVisitor
 
     public override void Visit(GotoStatement node)
     {
-        _C.EmitJump(node.Semantics.Target!.Label!.Name);
+        _C.EmitJump(node.Semantics.Target!.Name);
     }
 
     public override void Visit(IfStatement node)
