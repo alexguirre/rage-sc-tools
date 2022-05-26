@@ -92,6 +92,25 @@ public class StatementsTests : SemanticsTestsBase
     }
 
     [Fact]
+    public void BreakInsideWhileLoop()
+    {
+        var (s, ast) = AnalyzeAndAst(
+            @"PROC foo()
+                WHILE TRUE
+                    BREAK
+                ENDWHILE
+              ENDPROC"
+        );
+
+        False(s.Diagnostics.HasErrors);
+        var whileStmt = (WhileStatement)((FunctionDeclaration)ast.Declarations[0]).Body[0];
+        var breakStmt = (BreakStatement)whileStmt.Body[0];
+        True(whileStmt.Condition.Semantics is { Type: BoolType, ValueKind: ValueKind.RValue | ValueKind.Constant });
+        True(whileStmt.Semantics is { ExitLabel: not null, BeginLabel: not null, ContinueLabel: not null });
+        Same(whileStmt, breakStmt.Semantics.EnclosingStatement);
+    }
+
+    [Fact]
     public void BoolLiteralWorksOnIfStatements()
     {
         var (s, ast) = AnalyzeAndAst(
@@ -451,5 +470,269 @@ public class StatementsTests : SemanticsTestsBase
 
         True(s.Diagnostics.HasErrors);
         CheckError(ErrorCode.SemanticValueReturnedFromProcedure, (2, 24), (2, 26), s.Diagnostics);
+    }
+
+    [Fact]
+    public void BreakInsideSwitchStatement()
+    {
+        var (s, ast) = AnalyzeAndAst(
+            @"PROC foo()
+                SWITCH 1
+                CASE 1
+                    BREAK
+                ENDSWITCH
+              ENDPROC"
+        );
+
+        False(s.Diagnostics.HasErrors);
+        var switchStmt = (SwitchStatement)((FunctionDeclaration)ast.Declarations[0]).Body[0];
+        var case1 = (ValueSwitchCase)switchStmt.Cases[0];
+        var breakStmt = (BreakStatement)case1.Body[0];
+        True(switchStmt.Expression.Semantics is { Type: IntType, ValueKind: ValueKind.RValue | ValueKind.Constant });
+        True(switchStmt.Semantics is { ExitLabel: not null });
+        True(case1.Semantics is { Label: not null });
+        Same(switchStmt, breakStmt.Semantics.EnclosingStatement);
+    }
+
+    [Fact]
+    public void DuplicateSwitchCaseIsNotAllowed()
+    {
+        var (s, _) = AnalyzeAndAst(
+            @"PROC foo()
+                SWITCH 1
+                CASE 1
+                    BREAK
+                CASE 1
+                    BREAK
+                ENDSWITCH
+              ENDPROC"
+        );
+
+        True(s.Diagnostics.HasErrors);
+        CheckError(ErrorCode.SemanticDuplicateSwitchCase, (5, 22), (5, 22), s.Diagnostics);
+    }
+
+    [Fact]
+    public void DuplicateSwitchDefaultCaseIsNotAllowed()
+    {
+        var (s, _) = AnalyzeAndAst(
+            @"PROC foo()
+                SWITCH 1
+                DEFAULT
+                    BREAK
+                DEFAULT
+                    BREAK
+                ENDSWITCH
+              ENDPROC"
+        );
+
+        True(s.Diagnostics.HasErrors);
+        CheckError(ErrorCode.SemanticDuplicateSwitchCase, (5, 17), (5, 23), s.Diagnostics);
+    }
+
+    [Fact]
+    public void SwitchWorksWithInts()
+    {
+        var (s, ast) = AnalyzeAndAst(
+            @"PROC foo(INT intValue)
+                SWITCH intValue
+                CASE 0
+                    BREAK
+                CASE 1
+                    BREAK
+                CASE 2+3
+                    BREAK
+                DEFAULT
+                    BREAK
+                ENDSWITCH
+              ENDPROC"
+        );
+
+        False(s.Diagnostics.HasErrors);
+        var switchStmt = (SwitchStatement)((FunctionDeclaration)ast.Declarations[0]).Body[0];
+        var case1 = (ValueSwitchCase)switchStmt.Cases[0];
+        var case2 = (ValueSwitchCase)switchStmt.Cases[1];
+        var case3 = (ValueSwitchCase)switchStmt.Cases[2];
+        var case4 = (DefaultSwitchCase)switchStmt.Cases[3];
+        var breakStmt1 = (BreakStatement)case1.Body[0];
+        var breakStmt2 = (BreakStatement)case2.Body[0];
+        var breakStmt3 = (BreakStatement)case3.Body[0];
+        var breakStmt4 = (BreakStatement)case4.Body[0];
+        Equal(IntType.Instance, switchStmt.Expression.Type);
+        Equal(IntType.Instance, switchStmt.Semantics.SwitchType);
+        True(switchStmt.Semantics is { ExitLabel: not null });
+        True(case1.Semantics is { Label: not null, Value: 0 });
+        True(case2.Semantics is { Label: not null, Value: 1 });
+        True(case3.Semantics is { Label: not null, Value: 5 });
+        True(case4.Semantics is { Label: not null, Value: null });
+        Same(switchStmt, breakStmt1.Semantics.EnclosingStatement);
+        Same(switchStmt, breakStmt2.Semantics.EnclosingStatement);
+        Same(switchStmt, breakStmt3.Semantics.EnclosingStatement);
+        Same(switchStmt, breakStmt4.Semantics.EnclosingStatement);
+    }
+
+    [Theory]
+    [InlineData("FLOAT")]
+    [InlineData("BOOL")]
+    [InlineData("STRING")]
+    [InlineData("VECTOR")]
+    [InlineData("ANY")]
+    [InlineData("TEXT_LABEL_63")]
+    [InlineData("PED_INDEX")]
+    public void SwitchDoesNotWorkWithOtherTypes(string typeStr)
+    {
+        var (s, _) = AnalyzeAndAst(
+            $@"PROC foo({typeStr} v)
+                SWITCH v
+                ENDSWITCH
+              ENDPROC"
+        );
+
+        True(s.Diagnostics.HasErrors);
+        CheckError(ErrorCode.SemanticTypeNotAllowedInSwitch, (2, 24), (2, 24), s.Diagnostics);
+    }
+
+    [Fact]
+    public void SwitchDoesNotWorkWithArrays()
+    {
+        var (s, _) = AnalyzeAndAst(
+            $@"PROC foo()
+                INT arr[10]
+                SWITCH arr
+                ENDSWITCH
+              ENDPROC"
+        );
+
+        True(s.Diagnostics.HasErrors);
+        CheckError(ErrorCode.SemanticTypeNotAllowedInSwitch, (3, 24), (3, 26), s.Diagnostics);
+    }
+
+    [Fact]
+    public void SwitchDoesNotWorkWithStructs()
+    {
+        var (s, _) = AnalyzeAndAst(
+            $@"STRUCT MY_DATA
+                INT x
+              ENDSTRUCT
+
+              PROC foo(MY_DATA d)
+                SWITCH d
+                ENDSWITCH
+              ENDPROC"
+        );
+
+        True(s.Diagnostics.HasErrors);
+        CheckError(ErrorCode.SemanticTypeNotAllowedInSwitch, (6, 24), (6, 24), s.Diagnostics);
+    }
+
+    [Fact]
+    public void SwitchDoesNotWorkWithFunctionPointers()
+    {
+        var (s, _) = AnalyzeAndAst(
+            $@"FUNCPTR INT MY_FUNC()
+
+              PROC foo(MY_FUNC f)
+                SWITCH f
+                ENDSWITCH
+              ENDPROC"
+        );
+
+        True(s.Diagnostics.HasErrors);
+        CheckError(ErrorCode.SemanticTypeNotAllowedInSwitch, (4, 24), (4, 24), s.Diagnostics);
+    }
+
+    [Fact]
+    public void SwitchWorksWithEnums()
+    {
+        var (s, ast) = AnalyzeAndAst(
+            @"ENUM BAR
+                BAR_A
+                BAR_B
+              ENDENUM
+
+              PROC foo(BAR enumValue)
+                SWITCH enumValue
+                CASE BAR_A
+                    BREAK
+                CASE BAR_B
+                    BREAK
+                CASE INT_TO_ENUM(BAR, 2)
+                    BREAK
+                DEFAULT
+                    BREAK
+                ENDSWITCH
+              ENDPROC"
+        );
+
+        False(s.Diagnostics.HasErrors);
+        var enumDecl = (EnumDeclaration)ast.Declarations[0];
+        var switchStmt = (SwitchStatement)((FunctionDeclaration)ast.Declarations[1]).Body[0];
+        var case1 = (ValueSwitchCase)switchStmt.Cases[0];
+        var case2 = (ValueSwitchCase)switchStmt.Cases[1];
+        var case3 = (ValueSwitchCase)switchStmt.Cases[2];
+        var case4 = (DefaultSwitchCase)switchStmt.Cases[3];
+        var breakStmt1 = (BreakStatement)case1.Body[0];
+        var breakStmt2 = (BreakStatement)case2.Body[0];
+        var breakStmt3 = (BreakStatement)case3.Body[0];
+        var breakStmt4 = (BreakStatement)case4.Body[0];
+        Equal(enumDecl.DeclaredType, switchStmt.Expression.Type);
+        Equal(enumDecl.DeclaredType, switchStmt.Semantics.SwitchType);
+        True(switchStmt.Semantics is { ExitLabel: not null });
+        True(case1.Semantics is { Label: not null, Value: 0 });
+        True(case2.Semantics is { Label: not null, Value: 1 });
+        True(case3.Semantics is { Label: not null, Value: 2 });
+        True(case4.Semantics is { Label: not null, Value: null });
+        Same(switchStmt, breakStmt1.Semantics.EnclosingStatement);
+        Same(switchStmt, breakStmt2.Semantics.EnclosingStatement);
+        Same(switchStmt, breakStmt3.Semantics.EnclosingStatement);
+        Same(switchStmt, breakStmt4.Semantics.EnclosingStatement);
+    }
+
+    [Fact]
+    public void SwitchCaseWithDifferentEnumTypeIsNotAllowed()
+    {
+        var (s, ast) = AnalyzeAndAst(
+            @"ENUM BAR
+                BAR_A
+              ENDENUM
+
+              ENUM BAZ
+                BAZ_A
+              ENDENUM
+
+              PROC foo(BAR enumValue)
+                SWITCH enumValue
+                CASE BAR_A
+                    BREAK
+                CASE BAZ_A
+                    BREAK
+                ENDSWITCH
+              ENDPROC"
+        );
+
+        True(s.Diagnostics.HasErrors);
+        CheckError(ErrorCode.SemanticCannotConvertType, (13, 22), (13, 26), s.Diagnostics);
+    }
+
+    [Fact]
+    public void SwitchCaseWithIntWhenSwitchingOnEnumTypeIsNotAllowed()
+    {
+        var (s, ast) = AnalyzeAndAst(
+            @"ENUM BAR
+                BAR_A
+              ENDENUM
+
+              PROC foo(BAR enumValue)
+                SWITCH enumValue
+                CASE BAR_A
+                    BREAK
+                CASE 1
+                    BREAK
+                ENDSWITCH
+              ENDPROC"
+        );
+
+        True(s.Diagnostics.HasErrors);
+        CheckError(ErrorCode.SemanticCannotConvertType, (9, 22), (9, 22), s.Diagnostics);
     }
 }

@@ -170,6 +170,22 @@ public class EnumTests : SemanticsTestsBase
         CheckError(ErrorCode.SemanticSymbolAlreadyDefined, (3, 17), (3, 17), s.Diagnostics);
     }
 
+    [Fact]
+    public void NonConstantInitializerIsNotAllowed()
+    {
+        var s = Analyze(
+            @"FUNC INT BAR()
+                RETURN 1
+              ENDFUNC
+
+              ENUM foo
+                A = BAR()
+              ENDENUM"
+        );
+
+        CheckError(ErrorCode.SemanticInitializerExpressionIsNotConstant, (6, 21), (6, 25), s.Diagnostics);
+    }
+
     private static void AssertEnum(SemanticsAnalyzer s, string memberName, EnumType expectedEnumType, int expectedValue)
     {
         True(s.GetSymbolUnchecked(memberName, out var member));

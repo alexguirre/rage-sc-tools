@@ -6,12 +6,20 @@ using System.Diagnostics;
 using System.Linq;
 
 using ScTools.ScriptLang.Ast.Expressions;
+using ScTools.ScriptLang.Types;
+
+public record struct SwitchStatementSemantics(string? ExitLabel, TypeInfo? SwitchType);
 
 public sealed partial class SwitchStatement : BaseStatement, IBreakableStatement
 {
     public IExpression Expression => (IExpression)Children[0];
     public ImmutableArray<SwitchCase> Cases { get; }
-    public BreakableStatementSemantics Semantics { get; set; }
+    public SwitchStatementSemantics Semantics { get; set; }
+    BreakableStatementSemantics ISemanticNode<BreakableStatementSemantics>.Semantics
+    {
+        get => new(Semantics.ExitLabel);
+        set => Semantics = Semantics with { ExitLabel = value.ExitLabel };
+    }
 
     public SwitchStatement(Token switchKeyword, Token endswitchKeyword, IExpression expression, IEnumerable<SwitchCase> cases, Label? label)
         : base(OfTokens(switchKeyword, endswitchKeyword), OfChildren(expression).Concat(cases), label)

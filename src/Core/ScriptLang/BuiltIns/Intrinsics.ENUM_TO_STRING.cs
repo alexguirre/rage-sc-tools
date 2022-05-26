@@ -100,7 +100,7 @@ public static partial class Intrinsics
                 => new(TokenKind.SWITCH.Create(), TokenKind.ENDSWITCH.Create(),
                        MakeName(param), enumDeclaration.Members.OrderBy(m => m.Semantics.ConstantValue!.IntValue).Select(MakeSwitchCase), label: null)
                 {
-                    Semantics = new(ExitLabel: $"__exit"),
+                    Semantics = new(ExitLabel: $"__exit", SwitchType: enumDeclaration.DeclaredType)
                 };
             static ValueSwitchCase MakeSwitchCase(EnumMemberDeclaration enumMember)
                 => new(TokenKind.CASE.Create(),

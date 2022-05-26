@@ -19,6 +19,7 @@ public sealed class SemanticsAnalyzer : AstVisitor
     // helpers
     private readonly TypeFactory typeFactory;
     private readonly ExpressionTypeChecker exprTypeChecker = new();
+    private readonly LabelGenerator labelGen = new();
 
     // context
     private readonly SymbolTable<ISymbol> symbols = new();
@@ -27,6 +28,9 @@ public sealed class SemanticsAnalyzer : AstVisitor
     private EnumMemberDeclaration? previousEnumMember = null;
     private StructDeclaration? currentStructDeclaration = null;
     private TypeInfo? currentFunctionReturnType = null;
+    private SwitchStatement? currentSwitchStmt = null;
+    private bool currentSwitchHasDefaultCase = false;
+    private readonly HashSet<int> currentSwitchHandledCases = new();
     private readonly Stack<IBreakableStatement> breakableStatements = new();
     private readonly Stack<ILoopStatement> loopStatements = new();
     private readonly List<GotoStatement> gotosToResolve = new();
@@ -89,7 +93,11 @@ public sealed class SemanticsAnalyzer : AstVisitor
         if (!initializerType.IsError)
         {
             Debug.Assert(node.Initializer is not null);
-            if (IntType.Instance.IsAssignableFrom(initializerType) ||
+            if (!node.Initializer.ValueKind.Is(ValueKind.Constant))
+            {
+                InitializerExpressionIsNotConstantError(node);
+            }
+            else if (IntType.Instance.IsAssignableFrom(initializerType) ||
                 node.Semantics.ValueType.IsAssignableFrom(initializerType))
             {
                 value = ConstantExpressionEvaluator.Eval(node.Initializer, this);
@@ -335,6 +343,7 @@ public sealed class SemanticsAnalyzer : AstVisitor
         throw new System.NotImplementedException();
 
         // TODO: type-check limit and counter
+        AddLabelsToLoop(node);
         EnterLoop(node);
         VisitBody(node.Body);
         ExitLoop(node);
@@ -374,28 +383,77 @@ public sealed class SemanticsAnalyzer : AstVisitor
 
     public override void Visit(SwitchStatement node)
     {
-        throw new System.NotImplementedException();
+        var exprType = node.Expression.Accept(exprTypeChecker, this);
+        TypeInfo switchType = ErrorType.Instance;
+        if (!exprType.IsError)
+        {
+            if (IntType.Instance.IsAssignableFrom(exprType))
+            {
+                switchType = IntType.Instance;
+            }
+            else if (exprType is EnumType enumType)
+            {
+                switchType = enumType;
+            }
+            else
+            {
+                TypeNotAllowedInSwitchError(node);
+            }
+        }
 
-        // TODO: type-check switch expression
+        node.Semantics = node.Semantics with { SwitchType = switchType };
+        AddLabelsToBreakable(node);
         EnterBreakableStatement(node);
+        currentSwitchHandledCases.Clear();
+        currentSwitchHasDefaultCase = false;
+        currentSwitchStmt = node;
         node.Cases.ForEach(c => c.Accept(this));
+        currentSwitchStmt = null;
         ExitBreakableStatement(node);
     }
 
     public override void Visit(ValueSwitchCase node)
     {
-        throw new System.NotImplementedException();
+        Debug.Assert(currentSwitchStmt is not null);
 
-        // TODO: type-check case value expression
-        // TODO: ensure there the case value is not repeated
+        var switchType = currentSwitchStmt.Semantics.SwitchType!;
+        var valueType = node.Value.Accept(exprTypeChecker, this);
+        if (!valueType.IsError && !switchType.IsError)
+        {
+            if (!node.Value.ValueKind.Is(ValueKind.Constant))
+            {
+                SwitchCaseValueIsNotConstantError(node);
+            }
+            else if (!switchType.IsAssignableFrom(valueType))
+            {
+                CannotConvertTypeError(valueType, switchType, node.Value.Location);
+            }
+            else
+            {
+                var value = ConstantExpressionEvaluator.Eval(node.Value, this).IntValue;
+                if (!currentSwitchHandledCases.Add(value))
+                {
+                    DuplicateSwitchCaseError(node);
+                }
+                node.Semantics = node.Semantics with { Value = value };
+            }
+        }
+
+        AddLabelsToSwitchCase(node);
         VisitBody(node.Body);
     }
 
     public override void Visit(DefaultSwitchCase node)
     {
-        throw new System.NotImplementedException();
+        Debug.Assert(currentSwitchStmt is not null);
 
-        // TODO: ensure there is a single DEFAULT case
+        if (currentSwitchHasDefaultCase)
+        {
+            DuplicateSwitchDefaultCaseError(node);
+        }
+
+        currentSwitchHasDefaultCase = true;
+        AddLabelsToSwitchCase(node);
         VisitBody(node.Body);
     }
 
@@ -407,6 +465,7 @@ public sealed class SemanticsAnalyzer : AstVisitor
             CannotConvertTypeError(conditionType, BoolType.Instance, node.Condition.Location);
         }
 
+        AddLabelsToLoop(node);
         EnterLoop(node);
         VisitBody(node.Body);
         ExitLoop(node);
@@ -451,6 +510,33 @@ public sealed class SemanticsAnalyzer : AstVisitor
             }
             gotosToResolve.Clear();
         }
+    }
+
+    private void AddLabelsToLoop(ILoopStatement loopStmt)
+    {
+        var n = (ISemanticNode<LoopStatementSemantics>)loopStmt;
+        n.Semantics = n.Semantics with
+        {
+            BeginLabel = labelGen.NextLabel(),
+            ContinueLabel = labelGen.NextLabel(),
+        };
+        AddLabelsToBreakable(loopStmt);
+    }
+
+    private void AddLabelsToBreakable(IBreakableStatement breakableStmt)
+    {
+        breakableStmt.Semantics = breakableStmt.Semantics with
+        {
+            ExitLabel = labelGen.NextLabel(),
+        };
+    }
+
+    private void AddLabelsToSwitchCase(SwitchCase @case)
+    {
+        @case.Semantics = @case.Semantics with
+        {
+            Label = labelGen.NextLabel(),
+        };
     }
 
     private void EnterLoop(ILoopStatement loopStmt)
@@ -609,6 +695,8 @@ public sealed class SemanticsAnalyzer : AstVisitor
         => Error(ErrorCode.SemanticConstantWithoutInitializer, $"Constant '{constVarDecl.Name}' requires an initializer", constVarDecl.NameToken.Location);
     internal void InitializerExpressionIsNotConstantError(VarDeclaration constVarDecl)
         => Error(ErrorCode.SemanticInitializerExpressionIsNotConstant, $"Initializer expression of constant '{constVarDecl.Name}' must be constant", constVarDecl.Initializer!.Location);
+    internal void InitializerExpressionIsNotConstantError(EnumMemberDeclaration enumMemberDecl)
+        => Error(ErrorCode.SemanticInitializerExpressionIsNotConstant, $"Initializer expression of enum '{enumMemberDecl.Name}' must be constant", enumMemberDecl.Initializer!.Location);
     internal void TypeNotAllowedInConstantError(VarDeclaration constVarDecl, TypeInfo type)
     {
         var loc = constVarDecl.Declarator switch
@@ -623,5 +711,13 @@ public sealed class SemanticsAnalyzer : AstVisitor
         => Error(ErrorCode.SemanticExpectedValueInReturn, $"Expected value of type '{returnType.ToPrettyString()}' in RETURN", returnStmt.Location);
     internal void ValueReturnedFromProcedureError(ReturnStatement returnStmt)
         => Error(ErrorCode.SemanticValueReturnedFromProcedure, $"Cannot return values from procedures", returnStmt.Expression!.Location);
+    internal void SwitchCaseValueIsNotConstantError(ValueSwitchCase @case)
+        => Error(ErrorCode.SemanticSwitchCaseValueIsNotConstant, $"Switch case value expression must be constant", @case.Location);
+    internal void DuplicateSwitchCaseError(ValueSwitchCase @case)
+        => Error(ErrorCode.SemanticDuplicateSwitchCase, $"Duplicate switch case '{@case.Semantics.Value}'", @case.Value.Location);
+    internal void DuplicateSwitchDefaultCaseError(DefaultSwitchCase @case)
+        => Error(ErrorCode.SemanticDuplicateSwitchCase, $"Duplicate switch DEFAULT case", @case.Tokens[0].Location);
+    internal void TypeNotAllowedInSwitchError(SwitchStatement switchStmt)
+        => Error(ErrorCode.SemanticTypeNotAllowedInSwitch, $"Type '{switchStmt.Expression.Type!.ToPrettyString()}' is not allowed in SWITCH statement", switchStmt.Expression.Location);
     #endregion Errors
 }

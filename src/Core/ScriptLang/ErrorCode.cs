@@ -46,6 +46,9 @@
         SemanticArgNotAnEnumType = 0x2015,
         SemanticArgNotAnArray = 0x2016,
         SemanticArgNotAHandle = 0x2017,
+        SemanticSwitchCaseValueIsNotConstant = 0x2018,
+        SemanticDuplicateSwitchCase = 0x2019,
+        SemanticTypeNotAllowedInSwitch = 0x201A,
 
         // Preprocessor errors   0x3000 - 0x3FFF
         PreprocessorDirectiveWrongPlacement = 0x3000,
