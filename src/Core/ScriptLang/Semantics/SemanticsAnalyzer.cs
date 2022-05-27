@@ -340,13 +340,28 @@ public sealed class SemanticsAnalyzer : AstVisitor
 
     public override void Visit(RepeatStatement node)
     {
-        throw new System.NotImplementedException();
+        var limitType = node.Limit.Accept(exprTypeChecker, this);
+        if (!limitType.IsError && !IntType.Instance.IsAssignableFrom(limitType))
+        {
+            CannotConvertTypeError(limitType, IntType.Instance, node.Limit.Location);
+        }
 
-        // TODO: type-check limit and counter
+        var counterDecl = SynthesizeVarDeclarationForCounter(node.Counter);
+
         AddLabelsToLoop(node);
         EnterLoop(node);
+        counterDecl.Accept(this); // declare counter var inside the loop scope
+        node.Counter.Accept(exprTypeChecker, this);  // bind counter name expression to counter var
         VisitBody(node.Body);
         ExitLoop(node);
+
+        Debug.Assert(node.Counter.Semantics.Symbol == counterDecl);
+
+        static VarDeclaration SynthesizeVarDeclarationForCounter(NameExpression counter)
+        {
+            var loc = counter.Location;
+            return new(new(Token.Identifier("INT", loc)), new VarDeclarator(counter.NameToken), VarKind.Local);
+        }
     }
 
     public override void Visit(ReturnStatement node)

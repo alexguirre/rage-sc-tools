@@ -2,6 +2,7 @@
 
 using ScTools.ScriptLang;
 using ScTools.ScriptLang.Ast.Declarations;
+using ScTools.ScriptLang.Ast.Expressions;
 using ScTools.ScriptLang.Ast.Statements;
 using ScTools.ScriptLang.Semantics;
 using ScTools.ScriptLang.Types;
@@ -108,6 +109,41 @@ public class StatementsTests : SemanticsTestsBase
         True(whileStmt.Condition.Semantics is { Type: BoolType, ValueKind: ValueKind.RValue | ValueKind.Constant });
         True(whileStmt.Semantics is { ExitLabel: not null, BeginLabel: not null, ContinueLabel: not null });
         Same(whileStmt, breakStmt.Semantics.EnclosingStatement);
+    }
+
+    [Fact]
+    public void RepeatLoop()
+    {
+        var (s, ast) = AnalyzeAndAst(
+            @"PROC foo()
+                REPEAT 10 i
+                ENDREPEAT
+              ENDPROC"
+        );
+
+        False(s.Diagnostics.HasErrors);
+        var repStmt = (RepeatStatement)((FunctionDeclaration)ast.Declarations[0]).Body[0];
+        True(repStmt.Limit.Semantics is { Type: IntType, ValueKind: ValueKind.RValue | ValueKind.Constant });
+        True(repStmt.Counter.Semantics is { Type: IntType, ValueKind: ValueKind.RValue | ValueKind.Addressable | ValueKind.Assignable, Symbol: VarDeclaration { Kind: VarKind.Local } });
+    }
+
+    [Fact]
+    public void RepeatLoopWorksWithNonConstantLimit()
+    {
+        var (s, ast) = AnalyzeAndAst(
+            @"PROC foo()
+                INT n = 10
+                REPEAT n i
+                ENDREPEAT
+              ENDPROC"
+        );
+
+        False(s.Diagnostics.HasErrors);
+        var nVarDecl = (VarDeclaration)((FunctionDeclaration)ast.Declarations[0]).Body[0];
+        var repStmt = (RepeatStatement)((FunctionDeclaration)ast.Declarations[0]).Body[1];
+        True(repStmt.Limit.Semantics is { Type: IntType, ValueKind: ValueKind.RValue | ValueKind.Addressable | ValueKind.Assignable });
+        Equal(nVarDecl, ((NameExpression)repStmt.Limit).Semantics.Symbol);
+        True(repStmt.Counter.Semantics is { Type: IntType, ValueKind: ValueKind.RValue | ValueKind.Addressable | ValueKind.Assignable, Symbol: VarDeclaration { Kind: VarKind.Local } });
     }
 
     [Fact]

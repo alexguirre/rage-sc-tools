@@ -401,7 +401,7 @@ public class Parser
               statementBlock
               K_ENDWHILE                                                #whileStatement
     
-            | K_REPEAT limit=expression counter=expression EOL
+            | K_REPEAT limit=expression counter=identifer EOL
               statementBlock
               K_ENDREPEAT                                               #repeatStatement
     
@@ -474,11 +474,13 @@ public class Parser
         }
         else if (Accept(TokenKind.REPEAT, out var repeatToken))
         {
-            if (Expect(ParseExpression, out var limitExpr) && Expect(ParseExpression, out var counterExpr) && ExpectEOS())
+            if (Expect(ParseExpression, out var limitExpr) &&
+                ExpectOrMissing(TokenKind.Identifier, out var counterName, MissingIdentifier) &&
+                ExpectEOS())
             {
                 var body = ParseBodyUntilAny(TokenKind.ENDREPEAT);
                 ExpectOrMissing(TokenKind.ENDREPEAT, out var endrepeatToken);
-                stmt = new RepeatStatement(repeatToken, endrepeatToken, limitExpr, counterExpr, body, label);
+                stmt = new RepeatStatement(repeatToken, endrepeatToken, limitExpr, new(counterName), body, label);
             }
             else
             {

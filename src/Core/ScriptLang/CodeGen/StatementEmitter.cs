@@ -90,6 +90,7 @@ internal sealed class StatementEmitter : AstVisitor
     {
         var sem = node.Semantics;
         _C.Label(sem.BeginLabel!);
+        _C.Label(sem.ContinueLabel!);
 
         // check condition
         _C.EmitValue(node.Condition);
@@ -106,37 +107,38 @@ internal sealed class StatementEmitter : AstVisitor
 
     public override void Visit(RepeatStatement node)
     {
-        throw new NotImplementedException(nameof(RepeatStatement));
-        //var intTy = BuiltInTypes.Int.CreateType(node.Location);
-        //var constantZero = new IntLiteralExpression(Token.Integer(0, node.Location)) { Semantics = new(intTy, IsConstant: true, IsLValue: false) };
-        //var constantOne = new IntLiteralExpression(Token.Integer(1, node.Location)) { Semantics = new(intTy, IsConstant: true, IsLValue: false) };
+        // synthesized expressions and statements
+        var constantZero = new IntLiteralExpression(Token.Integer(0)) { Semantics = new(IntType.Instance, ValueKind: ValueKind.RValue | ValueKind.Constant, ArgumentKind: ArgumentKind.None) };
+        var constantOne = new IntLiteralExpression(Token.Integer(1)) { Semantics = new(IntType.Instance, ValueKind: ValueKind.RValue | ValueKind.Constant, ArgumentKind: ArgumentKind.None) };
+        var counterLessThanLimit = new BinaryExpression(TokenKind.LessThan.Create(), node.Counter, node.Limit) { Semantics = new(BoolType.Instance, ValueKind: ValueKind.RValue, ArgumentKind: ArgumentKind.None) };
+        var counterIncrement = new AssignmentStatement(TokenKind.PlusEquals.Create(), node.Counter, constantOne, label: null);
+        var counterVarDecl = (VarDeclaration)node.Counter.Semantics.Symbol!;
 
-        //// set counter to 0
-        //new AssignmentStatement(TokenKind.Equals.Create(node.Location), lhs: node.Counter, rhs: constantZero, label: null)
-        //    .Accept(this, func);
+        var sem = node.Semantics;
 
-        //var sem = node.Semantics;
-        //CG.EmitLabel(sem.BeginLabel!);
+        // allocate space for counter
+        // TODO: can we reuse the same counter space for different REPEAT loops?
+        counterVarDecl.Accept(this);
+        
+        // set counter to 0
+        _C.EmitAssignment(node.Counter, constantZero);
 
-        //// check counter < limit
-        //CG.EmitValue(node.Counter);
-        //CG.EmitValue(node.Limit);
-        //CG.Emit(Opcode.ILT_JZ, sem.ExitLabel!);
+        // check condition counter < limit
+        _C.Label(sem.BeginLabel!);
+        _C.EmitValue(counterLessThanLimit);
+        _C.EmitJumpIfZero(sem.ExitLabel!);
 
-        //// body
-        //node.Body.ForEach(stmt => stmt.Accept(this));
+        // body
+        _C.EmitStatementBlock(node.Body);
 
-        //CG.EmitLabel(sem.ContinueLabel!);
+        // increment counter
+        _C.Label(sem.ContinueLabel!);
+        _C.EmitStatement(counterIncrement);
 
-        //// increment counter
-        //var counterPlusOne = new BinaryExpression(TokenKind.Plus.Create(node.Location), node.Counter, constantOne) { Semantics = new(intTy, IsConstant: false, IsLValue: false) };
-        //new AssignmentStatement(TokenKind.Equals.Create(node.Location), lhs: node.Counter, rhs: counterPlusOne, label: null)
-        //    .Accept(this, func);
+        // jump back to condition check
+        _C.EmitJump(sem.BeginLabel!);
 
-        //// jump back to condition check
-        //CG.EmitJump(sem.BeginLabel!);
-
-        //CG.EmitLabel(sem.ExitLabel!);
+        _C.Label(sem.ExitLabel!);
     }
 
     public override void Visit(ReturnStatement node)
