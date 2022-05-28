@@ -35,7 +35,7 @@ public partial class CodeEmitter
 
             new PushConstU8Pattern(),
 
-            //new IntCompareAndJZPattern(),
+            new IntCompareAndJZPattern(),
         };
 
         public void Optimize(CodeBuffer codeBuffer)
@@ -128,10 +128,6 @@ public partial class CodeEmitter
         /// </summary>
         public sealed class AddMulS16Pattern : IPattern
         {
-            public AddMulS16Pattern()
-            {
-            }
-
             public bool MatchAndOptimize(CodeBuffer codeBuffer, InstructionReference instruction)
             {
                 var first = GetFirstNonEmptyInstruction(codeBuffer, instruction.Index);
@@ -161,10 +157,6 @@ public partial class CodeEmitter
         /// </summary>
         public sealed class AddMulU8Pattern : IPattern
         {
-            public AddMulU8Pattern()
-            {
-            }
-
             public bool MatchAndOptimize(CodeBuffer codeBuffer, InstructionReference instruction)
             {
                 var first = GetFirstNonEmptyInstruction(codeBuffer, instruction.Index);
@@ -221,10 +213,6 @@ public partial class CodeEmitter
         /// </summary>
         public sealed class PushConstU8Pattern : IPattern
         {
-            public PushConstU8Pattern()
-            {
-            }
-
             public bool MatchAndOptimize(CodeBuffer codeBuffer, InstructionReference instruction)
             {
                 var first = GetFirstNonEmptyInstruction(codeBuffer, instruction.Index);
@@ -258,39 +246,33 @@ public partial class CodeEmitter
             }
         }
 
-        ///// <summary>
-        ///// Merges a IEQ/INE/IGT/IGE/ILT/ILE instruction followed by JZ to IEQ_JZ/INE_JZ/IGT_JZ/IGE_JZ/ILT_JZ/ILE_JZ.
-        ///// </summary>
-        //public sealed class IntCompareAndJZPattern : IPattern
-        //{
-        //    public IntCompareAndJZPattern()
-        //    {
-        //    }
+        /// <summary>
+        /// Merges a IEQ/INE/IGT/IGE/ILT/ILE instruction followed by JZ to IEQ_JZ/INE_JZ/IGT_JZ/IGE_JZ/ILT_JZ/ILE_JZ.
+        /// </summary>
+        public sealed class IntCompareAndJZPattern : IPattern
+        {
+            public bool MatchAndOptimize(CodeBuffer codeBuffer, InstructionReference instruction)
+            {
+                var first = GetFirstNonEmptyInstruction(codeBuffer, instruction.Index);
+                if (first is null || codeBuffer.GetOpcode(first) is not (>= Opcode.IEQ and <= Opcode.ILE))
+                {
+                    return false;
+                }
 
-        //    public bool Match(List<EmittedInstruction> instructions, int index)
-        //    {
-        //        if (index >= (instructions.Count - 1))
-        //        {
-        //            return false;
-        //        }
+                var second = GetFirstNonEmptyInstruction(codeBuffer, first.Index + 1);
+                if (second is null || codeBuffer.GetOpcode(second) is not Opcode.JZ)
+                {
+                    return false;
+                }
 
-        //        var inst0 = instructions[index + 0].Instruction;
-        //        var inst1 = instructions[index + 1].Instruction;
-        //        if (inst1 is not (Opcode.JZ, _))
-        //        {
-        //            return false;
-        //        }
+                var replacement = codeBuffer.GetOpcode(first) - Opcode.IEQ + Opcode.IEQ_JZ;
 
-        //        if (inst0 is ( >= Opcode.IEQ and <= Opcode.ILE, _))
-        //        {
-        //            var newOpcode = Opcode.IEQ_JZ + (inst0.Value.Opcode - Opcode.IEQ);
-        //            instructions[index + 0] = new() { Instruction = (newOpcode, new[] { inst1.Value.Operands[0] }) };
-        //            instructions.RemoveAt(index + 1);
-        //            return true;
-        //        }
-
-        //        return false;
-        //    }
-        //}
+                var newBytes = codeBuffer.GetBytes(second);
+                newBytes[0] = (byte)replacement;
+                codeBuffer.Update(second, newBytes);
+                codeBuffer.Remove(first);
+                return true;
+            }
+        }
     }
 }

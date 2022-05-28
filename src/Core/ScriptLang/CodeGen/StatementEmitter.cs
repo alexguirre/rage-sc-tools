@@ -37,16 +37,18 @@ internal sealed class StatementEmitter : AstVisitor
 
     public override void Visit(AssignmentStatement node)
     {
-        if (node.CompoundOperator is null)
+        var rhs = node.RHS;
+        if (node.CompoundOperator is not null)
         {
-            _C.EmitAssignment(node.LHS, node.RHS);
+            // synthesize `lhs binOp= rhs` as `lhs = lhs binOp rhs`
+            var binExpr = new BinaryExpression(node.CompoundOperator.Value.ToToken().Create(), node.LHS, node.RHS)
+            {
+                Semantics = new(node.LHS.Type, (ValueKind.RValue | ValueKind.Constant) & node.LHS.ValueKind & node.RHS.ValueKind, ArgumentKind.None)
+            };
+            rhs = binExpr;
         }
-        else
-        {
-            throw new NotImplementedException(nameof(AssignmentStatement));
-            // TODO: AssignmentStatement consider compound assignments, no longer lowered to lhs = lhs binOp rhs
-            //node.LHS.Type!.CGAssign(CG, node);
-        }
+
+        _C.EmitAssignment(node.LHS, rhs);
     }
 
     public override void Visit(BreakStatement node)

@@ -17,6 +17,7 @@ using ScTools.ScriptLang.Types;
 internal sealed class ValueEmitter : AstVisitor
 {
     private readonly CodeEmitter _C;
+    private readonly Semantics.LabelGenerator shortCircuitLabelGen = new() { Prefix = "vsc_lbl" };
 
     public ValueEmitter(CodeEmitter codeEmitter) => _C = codeEmitter;
 
@@ -72,20 +73,78 @@ internal sealed class ValueEmitter : AstVisitor
 
     public override void Visit(UnaryExpression node)
     {
-        if (node.Operator is UnaryOperator.LogicalNot)
-        {
-            _C.EmitValue(node.SubExpression);
-            //_C.EmitNOT();
-        }
-        else
-        {
-            throw new NotImplementedException(nameof(UnaryExpression));
-        }
+        _C.EmitValue(node.SubExpression);
+        _C.EmitUnaryOp(node.Operator, node.SubExpression.Type!);
     }
 
     public override void Visit(BinaryExpression node)
     {
-        throw new NotImplementedException(nameof(BinaryExpression));
+        var lhsType = node.LHS.Semantics.Type;
+        var rhsType = node.LHS.Semantics.Type;
+        TypeInfo operandsType;
+        if (lhsType is EnumType or HandleType || rhsType is EnumType or HandleType)
+        {
+            operandsType = IntType.Instance;
+        }
+        else if (lhsType is FloatType || rhsType is FloatType)
+        {
+            operandsType = FloatType.Instance;
+        }
+        else if (lhsType is IntType || rhsType is IntType)
+        {
+            operandsType = IntType.Instance;
+        }
+        else if (lhsType is BoolType || rhsType is BoolType)
+        {
+            operandsType = BoolType.Instance;
+        }
+        else if (lhsType is VectorType || rhsType is VectorType)
+        {
+            operandsType = VectorType.Instance;
+        }
+        else
+        {
+            throw new InvalidOperationException("No common operand type found for binary expression");
+        }
+
+        if (node.Operator is BinaryOperator.LogicalAnd)
+        {
+            // short-circuit AND
+            var skipLabel = shortCircuitLabelGen.NextLabel();
+            _C.EmitValue(node.LHS);
+            _C.EmitDup();
+            _C.EmitJumpIfZero(skipLabel);
+            _C.EmitValue(node.RHS);
+            _C.EmitBinaryOp(BinaryOperator.LogicalAnd, BoolType.Instance);
+            _C.Label(skipLabel);
+        }
+        else if (node.Operator is BinaryOperator.LogicalOr)
+        {
+            // short-circuit OR
+            var skipLabel = shortCircuitLabelGen.NextLabel();
+            _C.EmitValue(node.LHS);
+            _C.EmitDup();
+            _C.EmitUnaryOp(UnaryOperator.LogicalNot, BoolType.Instance);
+            _C.EmitJumpIfZero(skipLabel);
+            _C.EmitValue(node.RHS);
+            _C.EmitBinaryOp(BinaryOperator.LogicalOr, BoolType.Instance);
+            _C.Label(skipLabel);
+        }
+        else
+        {
+            EmitValueAndPromote(node.LHS, operandsType);
+            EmitValueAndPromote(node.RHS, operandsType);
+            _C.EmitBinaryOp(node.Operator, operandsType);
+        }
+
+        void EmitValueAndPromote(IExpression expr, TypeInfo targetType)
+        {
+            _C.EmitValue(expr);
+            if (expr.Semantics.Type is IntType && targetType is FloatType) // only valid promotion, INT -> FLOAT
+            {
+                _C.EmitCastIntToFloat();
+            }
+        }
     }
 
     public override void Visit(NameExpression node)

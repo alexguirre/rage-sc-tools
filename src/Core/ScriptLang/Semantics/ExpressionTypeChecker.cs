@@ -80,14 +80,12 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
         }
 
         TypeInfo INT = IntType.Instance,
-                    FLOAT = FloatType.Instance,
-                    BOOL = BoolType.Instance,
-                    STRING = StringType.Instance,
-                    VECTOR = VectorType.Instance,
-                    NULL = NullType.Instance;
+                 FLOAT = FloatType.Instance,
+                 BOOL = BoolType.Instance,
+                 VECTOR = VectorType.Instance;
 
         if (node.Operator is BinaryOperator.Add or BinaryOperator.Subtract or
-                                BinaryOperator.Multiply or BinaryOperator.Divide)
+                             BinaryOperator.Multiply or BinaryOperator.Divide)
         {
             return CheckBinaryOp(s, node, (lhs, rhs),
             //   LHS  op RHS  -> Result
@@ -119,7 +117,7 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
             {
                 return SetBinaryOpResultType(node, BOOL);
             }
-            else if (lhs is HandleType && rhs is HandleType)
+            else if (lhs is HandleType || rhs is HandleType)
             {
                 bool isComparableHandle = (lhs == rhs) || lhs.IsPromotableTo(rhs) || rhs.IsPromotableTo(lhs);
                 if (isComparableHandle)
@@ -132,9 +130,7 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
             //   LHS  op RHS  -> Result
                 (INT,    INT,    BOOL),
                 (FLOAT,  FLOAT,  BOOL),
-                (BOOL,   BOOL,   BOOL),
-                (STRING, NULL,   BOOL),
-                (NULL,   STRING, BOOL));
+                (BOOL,   BOOL,   BOOL));
         }
         else if (node.Operator is BinaryOperator.LessThan or BinaryOperator.LessThanOrEqual or
                                     BinaryOperator.GreaterThan or BinaryOperator.GreaterThanOrEqual)
@@ -166,8 +162,8 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
             var (lhs, rhs) = typePair;
 
             var match = typePatterns.FirstOrDefault(p => (lhs == p.LHS && rhs == p.RHS) ||
-                                                            (lhs == p.LHS && rhs.IsPromotableTo(p.RHS)) ||
-                                                            (lhs.IsPromotableTo(p.LHS) && rhs == p.RHS));
+                                                         (lhs == p.LHS && rhs.IsPromotableTo(p.RHS)) ||
+                                                         (lhs.IsPromotableTo(p.LHS) && rhs == p.RHS));
             if (match == default)
             {
                 return BinaryOperatorNotSupportedError(s, node, typePair);

@@ -693,12 +693,141 @@ public sealed partial class CodeEmitter
         }
     }
 
+    public void EmitUnaryOp(UnaryOperator unaryOp, TypeInfo operandType)
+    {
+        switch (operandType)
+        {
+            case IntType: EmitUnaryOpInt(unaryOp); break;
+            case FloatType: EmitUnaryOpFloat(unaryOp); break;
+            case BoolType: EmitUnaryOpBool(unaryOp); break;
+            case VectorType: EmitUnaryOpVector(unaryOp); break;
+            default: throw new ArgumentException($"Type '{operandType.ToPrettyString()}' does not support any unary operator", nameof(operandType));
+        }
+    }
+
+    private void EmitUnaryOpInt(UnaryOperator unaryOp)
+    {
+        _ = unaryOp switch
+        {
+            UnaryOperator.Negate => instEmitter.EmitINeg(),
+            UnaryOperator.LogicalNot => instEmitter.EmitINot(),
+            _ => throw new ArgumentException($"Unary operator '{unaryOp}' is not supported for INT type", nameof(unaryOp)),
+        };
+    }
+
+    private void EmitUnaryOpFloat(UnaryOperator unaryOp)
+    {
+        _ = unaryOp switch
+        {
+            UnaryOperator.Negate => instEmitter.EmitFNeg(),
+            _ => throw new ArgumentException($"Unary operator '{unaryOp}' is not supported for FLOAT type", nameof(unaryOp)),
+        };
+    }
+
+    private void EmitUnaryOpBool(UnaryOperator unaryOp)
+    {
+        _ = unaryOp switch
+        {
+            UnaryOperator.LogicalNot => instEmitter.EmitINot(),
+            _ => throw new ArgumentException($"Unary operator '{unaryOp}' is not supported for BOOL type", nameof(unaryOp)),
+        };
+    }
+
+    private void EmitUnaryOpVector(UnaryOperator unaryOp)
+    {
+        _ = unaryOp switch
+        {
+            UnaryOperator.Negate => instEmitter.EmitVNeg(),
+            _ => throw new ArgumentException($"Unary operator '{unaryOp}' is not supported for VECTOR type", nameof(unaryOp)),
+        };
+    }
+
+    public void EmitBinaryOp(BinaryOperator binaryOp, TypeInfo operandsType)
+    {
+        switch (operandsType)
+        {
+            case IntType: EmitBinaryOpInt(binaryOp); break;
+            case FloatType: EmitBinaryOpFloat(binaryOp); break;
+            case BoolType: EmitBinaryOpBool(binaryOp); break;
+            case VectorType: EmitBinaryOpVector(binaryOp); break;
+            default: throw new ArgumentException($"Type '{operandsType.ToPrettyString()}' does not support any binary operator", nameof(operandsType));
+        }
+    }
+
+    private void EmitBinaryOpInt(BinaryOperator binaryOp)
+    {
+        _ = binaryOp switch
+        {
+            BinaryOperator.Add => instEmitter.EmitIAdd(),
+            BinaryOperator.Subtract => instEmitter.EmitISub(),
+            BinaryOperator.Multiply => instEmitter.EmitIMul(),
+            BinaryOperator.Divide => instEmitter.EmitIDiv(),
+            BinaryOperator.Modulo => instEmitter.EmitIMod(),
+            BinaryOperator.And => instEmitter.EmitIAnd(),
+            BinaryOperator.Xor => instEmitter.EmitIXor(),
+            BinaryOperator.Or => instEmitter.EmitIOr(),
+            BinaryOperator.Equals => instEmitter.EmitIEq(),
+            BinaryOperator.NotEquals => instEmitter.EmitINe(),
+            BinaryOperator.LessThan => instEmitter.EmitILt(),
+            BinaryOperator.LessThanOrEqual => instEmitter.EmitILe(),
+            BinaryOperator.GreaterThan => instEmitter.EmitIGt(),
+            BinaryOperator.GreaterThanOrEqual => instEmitter.EmitIGe(),
+            _ => throw new ArgumentException($"Binary operator '{binaryOp}' is not supported for INT type", nameof(binaryOp)),
+        };
+    }
+
+    private void EmitBinaryOpFloat(BinaryOperator binaryOp)
+    {
+        _ = binaryOp switch
+        {
+            BinaryOperator.Add => instEmitter.EmitFAdd(),
+            BinaryOperator.Subtract => instEmitter.EmitFSub(),
+            BinaryOperator.Multiply => instEmitter.EmitFMul(),
+            BinaryOperator.Divide => instEmitter.EmitFDiv(),
+            BinaryOperator.Modulo => instEmitter.EmitFMod(),
+            BinaryOperator.Equals => instEmitter.EmitFEq(),
+            BinaryOperator.NotEquals => instEmitter.EmitFNe(),
+            BinaryOperator.LessThan => instEmitter.EmitFLt(),
+            BinaryOperator.LessThanOrEqual => instEmitter.EmitFLe(),
+            BinaryOperator.GreaterThan => instEmitter.EmitFGt(),
+            BinaryOperator.GreaterThanOrEqual => instEmitter.EmitFGe(),
+            _ => throw new ArgumentException($"Binary operator '{binaryOp}' is not supported for FLOAT type", nameof(binaryOp)),
+        };
+    }
+
+    private void EmitBinaryOpBool(BinaryOperator binaryOp)
+    {
+        _ = binaryOp switch
+        {
+            BinaryOperator.LogicalAnd => instEmitter.EmitIAnd(),
+            BinaryOperator.LogicalOr => instEmitter.EmitIOr(),
+            BinaryOperator.Equals => instEmitter.EmitIEq(),
+            BinaryOperator.NotEquals => instEmitter.EmitINe(),
+            _ => throw new ArgumentException($"Binary operator '{binaryOp}' is not supported for BOOL type", nameof(binaryOp)),
+        };
+    }
+
+    private void EmitBinaryOpVector(BinaryOperator binaryOp)
+    {
+        _ = binaryOp switch
+        {
+            BinaryOperator.Add => instEmitter.EmitVAdd(),
+            BinaryOperator.Subtract => instEmitter.EmitVSub(),
+            BinaryOperator.Multiply => instEmitter.EmitVMul(),
+            BinaryOperator.Divide => instEmitter.EmitVDiv(),
+            _ => throw new ArgumentException($"Binary operator '{binaryOp}' is not supported for VECTOR type", nameof(binaryOp)),
+        };
+    }
+
     public void EmitCastIntToFloat() => instEmitter.EmitI2F();
     public void EmitCastFloatToInt() => instEmitter.EmitF2I();
     public void EmitCastFloatToVector() => instEmitter.EmitF2V();
 
     public void EmitCatch() => instEmitter.EmitCatch();
     public void EmitThrow() => instEmitter.EmitThrow();
+
+    public void EmitDup() => instEmitter.EmitDup();
+    public void EmitDrop() => instEmitter.EmitDrop();
 
     public void EmitPushString(string value)
     {

@@ -28,10 +28,6 @@ public sealed partial class BinaryExpression : BaseExpression
     public BinaryOperator Operator { get; }
     public IExpression LHS => (IExpression)Children[0];
     public IExpression RHS => (IExpression)Children[1];
-    /// <summary>
-    /// Gets or sets the label used to implement the short-circuiting logic of <see cref="BinaryOperator.LogicalAnd"/> and <see cref="BinaryOperator.LogicalOr"/>.
-    /// </summary>
-    public string? ShortCircuitLabel { get; set; }
 
     public BinaryExpression(Token operatorToken, IExpression lhs, IExpression rhs)
         : base(OfTokens(operatorToken), OfChildren(lhs, rhs))
@@ -51,25 +47,25 @@ public sealed partial class BinaryExpression : BaseExpression
 
 public static class BinaryOperatorExtensions
 {
-    public static string ToHumanString(this BinaryOperator op)
+    public static TokenKind ToToken(this BinaryOperator op)
         => op switch
         {
-            BinaryOperator.Add => "+",
-            BinaryOperator.Subtract => "-",
-            BinaryOperator.Multiply => "*",
-            BinaryOperator.Divide => "/",
-            BinaryOperator.Modulo => "%",
-            BinaryOperator.And => "&",
-            BinaryOperator.Xor => "^",
-            BinaryOperator.Or => "|",
-            BinaryOperator.Equals => "==",
-            BinaryOperator.NotEquals => "<>",
-            BinaryOperator.LessThan => "<",
-            BinaryOperator.LessThanOrEqual => "<=",
-            BinaryOperator.GreaterThan => ">",
-            BinaryOperator.GreaterThanOrEqual => ">=",
-            BinaryOperator.LogicalAnd => "AND",
-            BinaryOperator.LogicalOr => "OR",
+            BinaryOperator.Add => TokenKind.Plus,
+            BinaryOperator.Subtract => TokenKind.Minus,
+            BinaryOperator.Multiply => TokenKind.Asterisk,
+            BinaryOperator.Divide => TokenKind.Slash,
+            BinaryOperator.Modulo => TokenKind.Percent,
+            BinaryOperator.And => TokenKind.Ampersand,
+            BinaryOperator.Xor => TokenKind.Caret,
+            BinaryOperator.Or => TokenKind.Bar,
+            BinaryOperator.Equals => TokenKind.EqualsEquals,
+            BinaryOperator.NotEquals => TokenKind.LessThanGreaterThan,
+            BinaryOperator.LessThan => TokenKind.LessThan,
+            BinaryOperator.LessThanOrEqual => TokenKind.LessThanEquals,
+            BinaryOperator.GreaterThan => TokenKind.GreaterThan,
+            BinaryOperator.GreaterThanOrEqual => TokenKind.GreaterThanEquals,
+            BinaryOperator.LogicalAnd => TokenKind.AND,
+            BinaryOperator.LogicalOr => TokenKind.OR,
             _ => throw new ArgumentOutOfRangeException(nameof(op))
         };
 

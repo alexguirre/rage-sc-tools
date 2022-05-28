@@ -330,6 +330,7 @@ public sealed class SemanticsAnalyzer : AstVisitor
             CannotConvertTypeError(conditionType, BoolType.Instance, node.Condition.Location);
         }
 
+        AddLabelsToIf(node);
         EnterScope();
         VisitBody(node.Then);
         ExitScope();
@@ -551,6 +552,15 @@ public sealed class SemanticsAnalyzer : AstVisitor
         @case.Semantics = @case.Semantics with
         {
             Label = labelGen.NextLabel(),
+        };
+    }
+
+    private void AddLabelsToIf(IfStatement @if)
+    {
+        @if.Semantics = @if.Semantics with
+        {
+            ElseLabel = labelGen.NextLabel(),
+            EndLabel = labelGen.NextLabel(),
         };
     }
 

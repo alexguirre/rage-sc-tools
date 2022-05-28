@@ -225,6 +225,7 @@ public partial class CodeEmitter
         public InstructionReference EmitVSub() => EmitInst(Opcode.VSUB);
         public InstructionReference EmitVMul() => EmitInst(Opcode.VMUL);
         public InstructionReference EmitVDiv() => EmitInst(Opcode.VDIV);
+        public InstructionReference EmitVNeg() => EmitInst(Opcode.VNEG);
         public InstructionReference EmitIAnd() => EmitInst(Opcode.IAND);
         public InstructionReference EmitIOr() => EmitInst(Opcode.IOR);
         public InstructionReference EmitIXor() => EmitInst(Opcode.IXOR);
