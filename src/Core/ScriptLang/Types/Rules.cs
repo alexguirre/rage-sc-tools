@@ -1,6 +1,6 @@
-﻿using System.Linq;
+﻿namespace ScTools.ScriptLang.Types;
 
-namespace ScTools.ScriptLang.Types;
+using System.Linq;
 
 internal static class Rules
 {

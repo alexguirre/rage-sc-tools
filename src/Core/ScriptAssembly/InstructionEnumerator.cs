@@ -1,5 +1,4 @@
-﻿
-namespace ScTools.ScriptAssembly;
+﻿namespace ScTools.ScriptAssembly;
 
 using ScTools.GameFiles;
 using ScTools.GameFiles.Five;

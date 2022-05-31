@@ -1,8 +1,8 @@
-﻿using System;
+﻿namespace ScTools.ScriptAssembly;
+
+using System;
 using System.Buffers.Binary;
 using System.Text;
-
-namespace ScTools.ScriptAssembly;
 
 /// <summary>
 /// Instruction set used with <see cref="GameFiles.ScriptNY"/>.

@@ -1,5 +1,4 @@
-﻿
-namespace ScTools.ScriptLang.CodeGen;
+﻿namespace ScTools.ScriptLang.CodeGen;
 
 using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.Types;

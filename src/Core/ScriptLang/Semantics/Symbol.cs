@@ -1,6 +1,6 @@
-﻿using ScTools.ScriptLang.Types;
+﻿namespace ScTools.ScriptLang.Semantics;
 
-namespace ScTools.ScriptLang.Semantics;
+using ScTools.ScriptLang.Types;
 
 public interface ISymbol
 {
