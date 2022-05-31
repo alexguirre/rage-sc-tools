@@ -33,88 +33,83 @@ public class StaticsTests : SemanticsTestsBase
     }
 
     [Theory]
-    [InlineData("1", 1, typeof(IntType))]
-    [InlineData("NULL", 0, typeof(NullType))]
-    [InlineData("`foo` - 1", 0x238678DD - 1, typeof(IntType))]
-    [InlineData("(1 + 2 * 3) & 0xFE", (1 + 2 * 3) & 0xFE, typeof(IntType))]
-    public void IntInitializerExpressionIsEvaluated(string initializerExpr, int expected, Type expectedConstantType)
+    [InlineData("1")]
+    [InlineData("NULL")]
+    [InlineData("`foo` - 1")]
+    [InlineData("(1 + 2 * 3) & 0xFE")]
+    public void IntInitializerExpressionIsEvaluated(string initializerExpr)
     {
-        // TODO: static initializers are no longer constant-evaluated
         var s = Analyze(
             @$"INT foo = {initializerExpr}"
         );
 
         False(s.Diagnostics.HasErrors);
-        AssertStaticWithInitializer(s, "foo", IntType.Instance, expected, (TypeInfo)Activator.CreateInstance(expectedConstantType)!);
+        AssertStatic(s, "foo", IntType.Instance, hasInitializer: true);
     }
 
     [Theory]
-    [InlineData("1.5", 1.5f, typeof(FloatType))]
-    [InlineData("1", 1.0f, typeof(IntType))]
-    [InlineData("NULL", 0.0f, typeof(NullType))]
-    [InlineData("1.0 + 2.0 * 3.0", 1.0f + 2.0f * 3.0f, typeof(FloatType))]
-    [InlineData("1 + 2 * 3", (float)(1 + 2 * 3), typeof(IntType))] // INT expression is promoted to FLOAT
-    public void FloatInitializerExpressionIsEvaluated(string initializerExpr, float expected, Type expectedConstantType)
+    [InlineData("1.5")]
+    [InlineData("1")]
+    [InlineData("NULL")]
+    [InlineData("1.0 + 2.0 * 3.0")]
+    [InlineData("1 + 2 * 3")] // INT expression is promoted to FLOAT
+    public void FloatInitializerExpressionIsEvaluated(string initializerExpr)
     {
-        // TODO: static initializers are no longer constant-evaluated
         var s = Analyze(
             @$"FLOAT foo = {initializerExpr}"
         );
 
         False(s.Diagnostics.HasErrors);
-        AssertStaticWithInitializer(s, "foo", FloatType.Instance, expected, (TypeInfo)Activator.CreateInstance(expectedConstantType)!);
+        AssertStatic(s, "foo", FloatType.Instance, hasInitializer: true);
     }
 
     [Theory]
-    [InlineData("TRUE", true, typeof(BoolType))]
-    [InlineData("FALSE", false, typeof(BoolType))]
-    [InlineData("NULL", false, typeof(NullType))]
-    [InlineData("1", true, typeof(IntType))]
-    [InlineData("0", false, typeof(IntType))]
-    [InlineData("1+1", true, typeof(IntType))]
-    [InlineData("TRUE AND FALSE", false, typeof(BoolType))]
-    [InlineData("1 == 0 OR TRUE AND 1", true, typeof(BoolType))]
-    public void BoolInitializerExpressionIsEvaluated(string initializerExpr, bool expected, Type expectedConstantType)
+    [InlineData("TRUE")]
+    [InlineData("FALSE")]
+    [InlineData("NULL")]
+    [InlineData("1")]
+    [InlineData("0")]
+    [InlineData("1+1")]
+    [InlineData("TRUE AND FALSE")]
+    [InlineData("1 == 0 OR TRUE AND 1")]
+    public void BoolInitializerExpressionIsEvaluated(string initializerExpr)
     {
-        // TODO: static initializers are no longer constant-evaluated
         var s = Analyze(
             @$"BOOL foo = {initializerExpr}"
         );
 
         False(s.Diagnostics.HasErrors);
-        AssertStaticWithInitializer(s, "foo", BoolType.Instance, expected, (TypeInfo)Activator.CreateInstance(expectedConstantType)!);
+        AssertStatic(s, "foo", BoolType.Instance, hasInitializer: true);
     }
 
     [Theory]
-    [InlineData("'hello'", "hello", typeof(StringType))]
-    [InlineData("''", "", typeof(StringType))]
-    [InlineData("'a\\nb'", "a\nb", typeof(StringType))]
-    [InlineData("NULL", null, typeof(NullType))]
-    public void StringInitializerExpressionIsEvaluated(string initializerExpr, string? expected, Type expectedConstantType)
+    [InlineData("'hello'")]
+    [InlineData("''")]
+    [InlineData("'a\\nb'")]
+    [InlineData("NULL")]
+    public void StringInitializerExpressionIsEvaluated(string initializerExpr)
     {
-        // TODO: static initializers are no longer constant-evaluated
         var s = Analyze(
             @$"STRING foo = {initializerExpr}"
         );
 
         False(s.Diagnostics.HasErrors);
-        AssertStaticWithInitializer(s, "foo", StringType.Instance, expected, (TypeInfo)Activator.CreateInstance(expectedConstantType)!);
+        AssertStatic(s, "foo", StringType.Instance, hasInitializer: true);
     }
 
     [Theory]
-    [InlineData("<<0.0,0.0,0.0>>", 0.0f, 0.0f, 0.0f)]
-    [InlineData("<<0,0,0>>", 0.0f, 0.0f, 0.0f)]
-    [InlineData("<<1.0,2.0,3.0>> + <<2.0,2.0,2.0>> * <<3.0,3.0,3.0>>", 7.0f, 8.0f, 9.0f)]
-    [InlineData("<<1,2,3>> + <<2,2,2>> * <<3,3,3>>", 7.0f, 8.0f, 9.0f)]
-    public void VectorInitializerExpressionIsEvaluated(string initializerExpr, float expectedX, float expectedY, float expectedZ)
+    [InlineData("<<0.0,0.0,0.0>>")]
+    [InlineData("<<0,0,0>>")]
+    [InlineData("<<1.0,2.0,3.0>> + <<2.0,2.0,2.0>> * <<3.0,3.0,3.0>>")]
+    [InlineData("<<1,2,3>> + <<2,2,2>> * <<3,3,3>>")]
+    public void VectorInitializerExpressionIsEvaluated(string initializerExpr)
     {
-        // TODO: static initializers are no longer constant-evaluated
         var s = Analyze(
             @$"VECTOR foo = {initializerExpr}"
         );
 
         False(s.Diagnostics.HasErrors);
-        AssertStaticWithInitializerVec(s, "foo", expectedX, expectedY, expectedZ);
+        AssertStatic(s, "foo", VectorType.Instance, hasInitializer: true);
     }
 
     [Theory]
@@ -133,32 +128,29 @@ public class StaticsTests : SemanticsTestsBase
     [MemberData(nameof(GetAllHandleTypes))]
     public void HandleTypesWithNullInitializerAreAllowed(HandleType handleType)
     {
-        // TODO: static initializers are no longer constant-evaluated
         var s = Analyze(
             @$"{HandleType.KindToTypeName(handleType.Kind)} foo = NULL"
         );
 
         False(s.Diagnostics.HasErrors);
-        AssertStaticWithInitializer(s, "foo", handleType, 0, NullType.Instance);
+        AssertStatic(s, "foo", handleType, hasInitializer: true);
     }
 
     [Theory]
     [MemberData(nameof(GetAllTextLabelTypes64Bit))]
     public void TextLabelTypesWithInitializerAreAllowed(TextLabelType tlType)
     {
-        // TODO: static initializers are no longer constant-evaluated
         var s = Analyze(
             @$"{TextLabelType.GetTypeNameForLength(tlType.Length)} foo = 'hello'"
         );
 
         False(s.Diagnostics.HasErrors);
-        AssertStaticWithInitializer(s, "foo", tlType, "hello", StringType.Instance);
+        AssertStatic(s, "foo", tlType, hasInitializer: true);
     }
 
     [Fact]
-    public void CannotInitializeToFunctionInvocation()
+    public void CanInitializeToFunctionInvocation()
     {
-        // TODO: initializing to function invocation is now allowed
         var s = Analyze(
             @$"FUNC INT foo()
                 RETURN 1
@@ -167,50 +159,45 @@ public class StaticsTests : SemanticsTestsBase
                INT bar = foo()"
         );
 
+        False(s.Diagnostics.HasErrors);
         AssertStatic(s, "bar", IntType.Instance, hasInitializer: true);
-
-        CheckError(ErrorCode.SemanticInitializerExpressionIsNotConstant, (5, 26), (5, 30), s.Diagnostics);
     }
 
     [Fact]
-    public void CannotInitializeToOtherStaticVariable()
+    public void CanInitializeToOtherStaticVariable()
     {
-        // TODO: initializing to a previous static var is now allowed
         var s = Analyze(
             @$"INT foo = 1
                INT bar = foo"
         );
 
-        AssertStaticWithInitializer(s, "foo", IntType.Instance, 1);
+        False(s.Diagnostics.HasErrors);
+        AssertStatic(s, "foo", IntType.Instance, hasInitializer: true);
         AssertStatic(s, "bar", IntType.Instance, hasInitializer: true);
-
-        CheckError(ErrorCode.SemanticInitializerExpressionIsNotConstant, (2, 26), (2, 28), s.Diagnostics);
     }
 
     [Fact]
     public void CanInitializeToConstant()
     {
-        // TODO: static initializers are no longer constant-evaluated
         var s = Analyze(
             @$"CONST INT foo = 1
                INT bar = foo"
         );
 
         False(s.Diagnostics.HasErrors);
-        AssertStaticWithInitializer(s, "bar", IntType.Instance, 1);
+        AssertStatic(s, "bar", IntType.Instance, hasInitializer: true);
     }
 
     [Fact]
     public void CanInitializeTextLabelToString()
     {
-        // TODO: static initializers are no longer constant-evaluated
         var s = Analyze(
             @$"CONST STRING foo = 'hello'
                TEXT_LABEL_63 bar = foo"
         );
 
         False(s.Diagnostics.HasErrors);
-        AssertStaticWithInitializer(s, "bar", new TextLabelType(64, 8), "hello", StringType.Instance);
+        AssertStatic(s, "bar", new TextLabelType(64, 8), hasInitializer: true);
     }
 
     [Fact]
@@ -242,8 +229,7 @@ public class StaticsTests : SemanticsTestsBase
 
         False(s.Diagnostics.HasErrors);
         True(s.GetTypeSymbolUnchecked("MYENUM", out var enumTy));
-        // TODO: static initializers are no longer constant-evaluated
-        AssertStaticWithInitializer(s, "foo", enumTy!, 1, IntType.Instance);
+        AssertStatic(s, "foo", enumTy!, hasInitializer: true);
     }
 
     [Fact]
@@ -272,7 +258,7 @@ public class StaticsTests : SemanticsTestsBase
         );
 
         False(s.Diagnostics.HasErrors);
-        AssertStatic(s, "foo", new FunctionType(VoidType.Instance, ImmutableArray<ParameterInfo>.Empty));
+        AssertStatic(s, "foo", new FunctionType(VoidType.Instance, ImmutableArray<ParameterInfo>.Empty), hasInitializer: true);
     }
 
     [Fact]
@@ -294,8 +280,7 @@ public class StaticsTests : SemanticsTestsBase
         );
 
         False(s.Diagnostics.HasErrors);
-        // TODO: static initializers are no longer constant-evaluated
-        AssertStaticWithInitializer(s, "foo", AnyType.Instance, 1, IntType.Instance);
+        AssertStatic(s, "foo", AnyType.Instance, hasInitializer: true);
     }
 
     [Fact]
@@ -313,10 +298,10 @@ public class StaticsTests : SemanticsTestsBase
         AssertStatic(s, "foo3", new ArrayType(new ArrayType(new ArrayType(IntType.Instance, 30), 20), 10));
     }
 
-    [Fact]
+    // TODO: IncompleteArrayTypesAreNotAllowed
+    [Fact(Skip = "Incomplete array type is not yet supported")]
     public void IncompleteArrayTypesAreNotAllowed()
     {
-        // TODO: represent 'incomplete' arrays in type systems
         var s = Analyze(
             @"INT foo[]"
         );
@@ -342,47 +327,6 @@ public class StaticsTests : SemanticsTestsBase
             }
             Equal(expectedType, constVar.Semantics.ValueType);
             Null(constVar.Semantics.ConstantValue);
-        }
-    }
-
-    private static void AssertStaticWithInitializer<T>(SemanticsAnalyzer s, string varName, TypeInfo expectedType, T expectedValue, TypeInfo? constantExpectedType = null)
-    {
-        True(s.GetSymbolUnchecked(varName, out var declaration));
-        True(declaration is VarDeclaration);
-        if (declaration is VarDeclaration constVar)
-        {
-            Equal(VarKind.Static, constVar.Kind);
-            NotNull(constVar.Initializer);
-            Equal(expectedType, constVar.Semantics.ValueType);
-            NotNull(constVar.Semantics.ConstantValue);
-            Equal(constantExpectedType ?? expectedType, constVar.Semantics.ConstantValue!.Type);
-            switch (expectedValue)
-            {
-                case int v: Equal(v, constVar.Semantics.ConstantValue!.IntValue); break;
-                case float v: Equal(v, constVar.Semantics.ConstantValue!.FloatValue); break;
-                case bool v: Equal(v, constVar.Semantics.ConstantValue!.BoolValue); break;
-                case string v: Equal(v, constVar.Semantics.ConstantValue!.StringValue); break;
-                case null: Null(constVar.Semantics.ConstantValue!.StringValue); break;
-                default: throw new NotImplementedException();
-            }
-        }
-    }
-
-    private static void AssertStaticWithInitializerVec(SemanticsAnalyzer s, string varName, float expectedX, float expectedY, float expectedZ)
-    {
-        True(s.GetSymbolUnchecked(varName, out var declaration));
-        True(declaration is VarDeclaration);
-        if (declaration is VarDeclaration constVar)
-        {
-            Equal(VarKind.Static, constVar.Kind);
-            NotNull(constVar.Initializer);
-            Equal(VectorType.Instance, constVar.Semantics.ValueType);
-            NotNull(constVar.Semantics.ConstantValue);
-            Equal(VectorType.Instance, constVar.Semantics.ConstantValue!.Type);
-            var (x, y, z) = constVar.Semantics.ConstantValue!.VectorValue;
-            Equal(expectedX, x);
-            Equal(expectedY, y);
-            Equal(expectedZ, z);
         }
     }
 }

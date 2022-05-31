@@ -1163,7 +1163,6 @@
             CompileMain(
             source: @"
                 TEXT_LABEL_31 tl31
-                STRING s = tl31
                 TEST(tl31)
             ",
             sourceStatics: @"
@@ -1171,11 +1170,7 @@
                 ENDPROC
             ",
             expectedAssembly: @"
-                ENTER 0, 7
-
-                ; STRING s = tl31
-                LOCAL_U8 2
-                LOCAL_U8_STORE 6
+                ENTER 0, 6
 
                 ; TEST(tl31)
                 LOCAL_U8 2
@@ -1237,49 +1232,6 @@
 
                 .string
                 .str 'hello world'
-            ");
-        }
-
-        [Fact]
-        public void TestTextLabelAssignInt()
-        {
-            CompileMain(
-            source: @"
-                TEXT_LABEL_7 tl7 = 123456
-                TEXT_LABEL_15 tl15 = 123456
-                TEXT_LABEL_31 tl31 = 123456
-                TEXT_LABEL_63 tl63 = 123456
-                TEXT_LABEL_127 tl127 = 123456
-            ",
-            expectedAssembly: @"
-                ENTER 0, 33
-
-                ; TEXT_LABEL_7 tl7 = 123456
-                PUSH_CONST_U24 123456
-                LOCAL_U8 2
-                TEXT_LABEL_ASSIGN_INT 8
-
-                ; TEXT_LABEL_15 tl15 = 123456
-                PUSH_CONST_U24 123456
-                LOCAL_U8 3
-                TEXT_LABEL_ASSIGN_INT 16
-
-                ; TEXT_LABEL_31 tl31 = 123456
-                PUSH_CONST_U24 123456
-                LOCAL_U8 5
-                TEXT_LABEL_ASSIGN_INT 32
-
-                ; TEXT_LABEL_63 tl63 = 123456
-                PUSH_CONST_U24 123456
-                LOCAL_U8 9
-                TEXT_LABEL_ASSIGN_INT 64
-
-                ; TEXT_LABEL_127 tl127 = 123456
-                PUSH_CONST_U24 123456
-                LOCAL_U8 17
-                TEXT_LABEL_ASSIGN_INT 128
-
-                LEAVE 0, 0
             ");
         }
 
@@ -1513,7 +1465,7 @@
             ",
             sourceStatics: @"
                 PROC TEST(TEXT_LABEL_31 tl)
-                    APPEND(tl, 1234)
+                    TEXT_LABEL_APPEND_INT(tl, 1234)
                 ENDPROC
             ",
             expectedAssembly: @"

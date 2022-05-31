@@ -189,6 +189,7 @@ public partial class CodeEmitter
                         codeBuffer.Update(first, newOpBytes);
                         break;
                     case Opcode.PUSH_CONST_U8_U8:
+                        newOpBytes[1] = codeBuffer.GetByte(first, 2);
                         var newPushU8Bytes = codeBuffer.GetBytes(first);
                         newPushU8Bytes[0] = (byte)Opcode.PUSH_CONST_U8;
                         newPushU8Bytes.RemoveAt(newPushU8Bytes.Count - 1);
@@ -196,6 +197,7 @@ public partial class CodeEmitter
                         codeBuffer.InsertAfter(first, newOpBytes);
                         break;
                     case Opcode.PUSH_CONST_U8_U8_U8:
+                        newOpBytes[1] = codeBuffer.GetByte(first, 3);
                         var newPushU8U8Bytes = codeBuffer.GetBytes(first);
                         newPushU8U8Bytes[0] = (byte)Opcode.PUSH_CONST_U8_U8;
                         newPushU8U8Bytes.RemoveAt(newPushU8U8Bytes.Count - 1);
