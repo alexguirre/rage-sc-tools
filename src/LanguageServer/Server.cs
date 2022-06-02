@@ -4,6 +4,7 @@ using System;
 using System.IO;
 using System.Threading;
 
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.LanguageServer.Protocol;
 
 using Newtonsoft.Json.Linq;
@@ -15,24 +16,31 @@ using System.Linq;
 using System.Threading.Tasks;
 using ScTools.ScriptLang;
 using ScTools.ScriptLang.Semantics;
+using ScTools.LanguageServer.Services;
 
-internal sealed partial class Server : IDisposable
+public interface IServer
 {
-    private readonly Target target;
+    void WaitForExit();
+    void Exit();
+    Task SendNotificationAsync<TIn>(LspNotification<TIn> method, TIn param);
+}
+
+internal sealed partial class Server : IServer, IDisposable
+{
     private readonly HeaderDelimitedMessageHandler messageHandler;
     private readonly JsonRpc rpc;
     private readonly ManualResetEvent disconnectEvent = new(initialState: false);
-    private readonly TraceSource traceSource;
-    private readonly TraceSource rpcTraceSource;
+    private readonly ILspRequestHandlerDispatcher handlerDispatcher;
 
-    public Server(Stream sender, Stream receiver)
+    public Server(IServerIOProvider io, ILspRequestHandlerDispatcher handlerDispatcher)
     {
-        traceSource = new TraceSource("ScTools.LanguageServer.Server", SourceLevels.Verbose | SourceLevels.ActivityTracing);
-        rpcTraceSource = new TraceSource("ScTools.LanguageServer.Server[RPC]", SourceLevels.Verbose | SourceLevels.ActivityTracing);
+        this.handlerDispatcher = handlerDispatcher;
 
-        target = new(this, rpcTraceSource);
-        messageHandler = new(sender, receiver);
-        rpc = new(messageHandler, target);
+        var rpcTraceSource = new TraceSource("ScTools.LanguageServer.Server[RPC]", SourceLevels.Verbose | SourceLevels.ActivityTracing);
+
+        messageHandler = new(io.Sender, io.Receiver);
+        rpc = new(messageHandler, this);
+        handlerDispatcher.RegisterRpcMethods(rpc);
         rpc.Disconnected += OnRpcDisconnected;
         rpc.ActivityTracingStrategy = new CorrelationManagerTracingStrategy
         {
@@ -63,45 +71,16 @@ internal sealed partial class Server : IDisposable
         disconnectEvent.Dispose();
     }
 
-    public void OnTextDocumentOpened(TextDocumentItem textDocument)
-    {
-        traceSource.TraceEvent(TraceEventType.Information, 0, $"Document opened: {textDocument.Uri.AbsolutePath}");
-
-        SendDiagnostics(textDocument.Uri, textDocument.Text);
-    }
-
-    public void OnTextDocumentChanged(DidChangeTextDocumentParams didChangeTextDocument)
-    {
-        traceSource.TraceEvent(TraceEventType.Information, 0, $"Document changed: {didChangeTextDocument.TextDocument.Uri.AbsolutePath}");
-
-        SendDiagnostics(didChangeTextDocument.TextDocument.Uri, didChangeTextDocument.ContentChanges[0].Text);
-    }
-
-    public void OnTextDocumentClosed(TextDocumentIdentifier textDocument)
-    {
-        traceSource.TraceEvent(TraceEventType.Information, 0, $"Document closed: {textDocument.Uri.AbsolutePath}");
-    }
-
-    public void SendDiagnostics(Uri uri, string sourceText)
-    {
-        var diagnosticsReport = new DiagnosticsReport();
-        var lexer = new Lexer(uri.AbsolutePath, sourceText, diagnosticsReport);
-        var parser = new Parser(lexer, diagnosticsReport);
-        var compilationUnit = parser.ParseCompilationUnit();
-        var sema = new SemanticsAnalyzer(diagnosticsReport);
-        compilationUnit.Accept(sema);
-
-        var param = new PublishDiagnosticParams
-        {
-            Uri = uri,
-            Diagnostics = diagnosticsReport.AllDiagnostics.Select(d => d.ToLspDiagnostic()).ToArray(),
-        };
-
-        _ = SendMethodNotificationAsync(Methods.TextDocumentPublishDiagnostics, param);
-    }
-
-    private Task SendMethodNotificationAsync<TIn>(LspNotification<TIn> method, TIn param)
+    public Task SendNotificationAsync<TIn>(LspNotification<TIn> method, TIn param)
     {
         return rpc.NotifyWithParameterObjectAsync(method.Name, param);
+    }
+
+    [JsonRpcMethod(Methods.InitializeName)]
+    public InitializeResult InitializeHandler(JToken arg)
+    {
+        var capabilities = new ServerCapabilities();
+        handlerDispatcher.AddProvidedCapabilities(capabilities);
+        return new InitializeResult { Capabilities = capabilities };
     }
 }

@@ -4,6 +4,11 @@ using System;
 using System.CommandLine;
 using System.Diagnostics;
 
+using Microsoft.Extensions.DependencyInjection;
+
+using ScTools.LanguageServer.Handlers;
+using ScTools.LanguageServer.Services;
+
 internal static class Program
 {
     private static int Main(string[] args)
@@ -23,11 +28,16 @@ internal static class Program
             Debugger.Launch();
         }
 
-        using var stdin = Console.OpenStandardInput();
-        using var stdout = Console.OpenStandardOutput();
+        var services = new ServiceCollection()
+            .AddLspRequestHandlers()
+            .AddSingleton<ILspRequestHandlerDispatcher, LspRequestHandlerDispatcher>()
+            .AddSingleton<ITextDocumentTracker, TextDocumentTracker>()
+            .AddSingleton<IDiagnosticsPublisher, DiagnosticsPublisher>()
+            .AddSingleton<IServerIOProvider, ServerStandardIOProvider>()
+            .AddSingleton<IServer, Server>();
+        using var serviceProvider = services.BuildServiceProvider();
 
-        using var server = new Server(stdout, stdin);
-
+        var server = serviceProvider.GetRequiredService<IServer>();
         server.WaitForExit();
     }
 }
