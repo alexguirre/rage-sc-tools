@@ -9,5 +9,6 @@ public static class ServiceCollectionExtensions
                    .AddSingleton<ILspRequestHandler, DidChangeDocumentHandler>()
                    .AddSingleton<ILspRequestHandler, DidCloseDocumentHandler>()
                    .AddSingleton<ILspRequestHandler, HoverHandler>()
-                   .AddSingleton<ILspRequestHandler, DocumentSymbolHandler>();
+                   .AddSingleton<ILspRequestHandler, DocumentSymbolHandler>()
+                   .AddSingleton<ILspRequestHandler, RenameHandler>();
 }
