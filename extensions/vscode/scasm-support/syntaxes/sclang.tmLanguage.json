@@ -19,6 +19,9 @@
 		},
 		{
 			"include": "#comments"
+		},
+		{
+			"include": "#preprocessor"
 		}
 	],
 	"repository": {
@@ -83,6 +86,15 @@
 					"begin": "//",
 					"end": "\\n",
 					"name": "comment.line.sclang"
+				}
+			]
+		},
+		"preprocessor": {
+			"patterns": [
+				{
+					"begin": "#",
+					"end": "\\s",
+					"name": "keyword.control.directive.sclang"
 				}
 			]
 		}
