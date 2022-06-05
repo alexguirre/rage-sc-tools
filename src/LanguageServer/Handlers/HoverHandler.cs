@@ -7,7 +7,7 @@ using ScTools.LanguageServer.Services;
 using System.Threading;
 using System.Threading.Tasks;
 
-public class HoverHandler : ILspRequestHandler<TextDocumentPositionParams, Hover>
+public class HoverHandler : ILspRequestHandler<TextDocumentPositionParams, Hover?>
 {
     private readonly ITextDocumentTracker textDocumentTracker;
 
@@ -23,9 +23,14 @@ public class HoverHandler : ILspRequestHandler<TextDocumentPositionParams, Hover
         capabilities.HoverProvider = true;
     }
 
-    public Task<Hover> HandleAsync(TextDocumentPositionParams param, CancellationToken cancellationToken)
+    public async Task<Hover?> HandleAsync(TextDocumentPositionParams param, CancellationToken cancellationToken)
     {
-        var ast = textDocumentTracker.GetDocumentAst(param.TextDocument.Uri);
+        var ast = await textDocumentTracker.GetDocumentAstAsync(param.TextDocument.Uri);
+        if (ast is null)
+        {
+            return null;
+        }
+
         var node = AstNodeLocator.Locate(ast, ProtocolConversions.FromLspPosition(param.Position));
 
         var result = new Hover
@@ -39,6 +44,6 @@ public class HoverHandler : ILspRequestHandler<TextDocumentPositionParams, Hover
                                    ProtocolConversions.ToLspRange(node.Location),
         };
 
-        return Task.FromResult(result);
+        return result;
     }
 }

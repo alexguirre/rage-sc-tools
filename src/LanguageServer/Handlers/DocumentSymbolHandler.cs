@@ -29,16 +29,20 @@ public class DocumentSymbolHandler : ILspRequestHandler<DocumentSymbolParams, Do
         capabilities.DocumentSymbolProvider = true;
     }
 
-    public Task<DocumentSymbol[]> HandleAsync(DocumentSymbolParams param, CancellationToken cancellationToken)
+    public async Task<DocumentSymbol[]> HandleAsync(DocumentSymbolParams param, CancellationToken cancellationToken)
     {
-        var ast = textDocumentTracker.GetDocumentAst(param.TextDocument.Uri);
+        var ast = await textDocumentTracker.GetDocumentAstAsync(param.TextDocument.Uri);
+        if (ast is null)
+        {
+            return Array.Empty<DocumentSymbol>();
+        }
 
         var symbols = new List<DocumentSymbol>(ast.Declarations.Length);
         foreach (var decl in ast.Declarations)
         {
             symbols.Add(decl.Accept(nodeToSymbol));
         }
-        return Task.FromResult(symbols.ToArray());
+        return symbols.ToArray();
     }
 
     private class NodeToDocumentSymbol : AstVisitor<DocumentSymbol>

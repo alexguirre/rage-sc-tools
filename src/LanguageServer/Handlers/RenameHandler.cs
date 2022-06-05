@@ -29,10 +29,14 @@ public class RenameHandler : ILspRequestHandler<RenameParams, WorkspaceEdit?>
         capabilities.RenameProvider = true;
     }
 
-    public Task<WorkspaceEdit?> HandleAsync(RenameParams param, CancellationToken cancellationToken)
+    public async Task<WorkspaceEdit?> HandleAsync(RenameParams param, CancellationToken cancellationToken)
     {
         var pos = ProtocolConversions.FromLspPosition(param.Position);
-        var ast = textDocumentTracker.GetDocumentAst(param.TextDocument.Uri);
+        var ast = await textDocumentTracker.GetDocumentAstAsync(param.TextDocument.Uri);
+        if (ast is null)
+        {
+            return null;
+        }
         var node = AstNodeLocator.Locate(ast, pos);
 
         IDeclaration? declToRename = null;
@@ -47,7 +51,7 @@ public class RenameHandler : ILspRequestHandler<RenameParams, WorkspaceEdit?>
 
         if (declToRename == null)
         {
-            return Task.FromResult<WorkspaceEdit?>(null);
+            return null;
         }
 
         var edits = new List<TextEdit>();
@@ -65,7 +69,7 @@ public class RenameHandler : ILspRequestHandler<RenameParams, WorkspaceEdit?>
             }
         };
 
-        return Task.FromResult<WorkspaceEdit?>(result);
+        return result;
 
         static void SearchAllChanges(INode where, IDeclaration decl, List<TextEdit> changes, string newName)
         {
