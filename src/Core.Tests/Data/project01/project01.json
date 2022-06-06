@@ -1,0 +1,22 @@
+{
+  "buildConfigurations": {
+    "Debug": {
+      "target": {
+        "game": "GTAV",
+        "platform": "x64"
+      },
+      "defines": [
+        "MY_DEBUG"
+      ]
+    },
+    "Release": {
+      "target": {
+        "game": "GTAV",
+        "platform": "x64"
+      },
+      "defines": [
+        "MY_RELEASE"
+      ]
+    }
+  }
+}

@@ -1,0 +1,4 @@
+﻿
+FUNC INT ADD(INT a, INT b)
+	RETURN a + b
+ENDFUNC
