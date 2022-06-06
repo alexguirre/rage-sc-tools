@@ -1,13 +1,13 @@
 ﻿namespace ScTools.LanguageServer;
 
-using System;
 using System.CommandLine;
 using System.Diagnostics;
 
-using Microsoft.Extensions.DependencyInjection;
-
 using ScTools.LanguageServer.Handlers;
 using ScTools.LanguageServer.Services;
+
+//using Serilog;
+//using Serilog.Extensions;
 
 internal static class Program
 {
@@ -27,8 +27,12 @@ internal static class Program
         {
             Debugger.Launch();
         }
-
         var services = new ServiceCollection()
+            .AddLogging(logging => 
+                logging.AddDebug()
+                       /*.AddSerilog(new LoggerConfiguration()
+                            .WriteTo.File("log.txt")
+                            .CreateLogger())*/)
             .AddLspRequestHandlers()
             .AddSingleton<ILspRequestHandlerDispatcher, LspRequestHandlerDispatcher>()
             .AddSingleton<ITextDocumentTracker, TextDocumentTracker>()

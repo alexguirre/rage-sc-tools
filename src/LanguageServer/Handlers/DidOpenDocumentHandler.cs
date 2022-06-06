@@ -1,11 +1,6 @@
 ﻿namespace ScTools.LanguageServer.Handlers;
 
-using Microsoft.VisualStudio.LanguageServer.Protocol;
-
 using ScTools.LanguageServer.Services;
-
-using System.Threading;
-using System.Threading.Tasks;
 
 public class DidOpenDocumentHandler : ILspRequestHandler<DidOpenTextDocumentParams, object?>
 {

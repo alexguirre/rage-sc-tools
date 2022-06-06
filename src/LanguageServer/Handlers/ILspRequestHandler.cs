@@ -1,12 +1,6 @@
 ﻿namespace ScTools.LanguageServer.Handlers;
 
-using Microsoft.VisualStudio.LanguageServer.Protocol;
-
 using Newtonsoft.Json.Linq;
-
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 
 public interface ILspRequestHandler
 {

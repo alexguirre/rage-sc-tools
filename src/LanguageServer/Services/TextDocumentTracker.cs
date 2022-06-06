@@ -4,12 +4,6 @@ using ScTools.ScriptLang;
 using ScTools.ScriptLang.Ast;
 using ScTools.ScriptLang.Semantics;
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Threading;
-using System.Threading.Tasks;
-
 public interface ITextDocumentTracker
 {
     Task<CompilationUnit?> GetDocumentAstAsync(Uri uri);
@@ -20,11 +14,13 @@ public interface ITextDocumentTracker
 
 public class TextDocumentTracker : ITextDocumentTracker
 {
+    private readonly ILogger<TextDocumentTracker> logger;
     private IDiagnosticsPublisher diagnosticsPublisher;
     private readonly Dictionary<Uri, ScriptFile> files = new();
 
-    public TextDocumentTracker(IDiagnosticsPublisher diagnosticsPublisher)
+    public TextDocumentTracker(IDiagnosticsPublisher diagnosticsPublisher, ILogger<TextDocumentTracker> logger)
     {
+        this.logger = logger;
         this.diagnosticsPublisher = diagnosticsPublisher;
     }
 
@@ -38,7 +34,7 @@ public class TextDocumentTracker : ITextDocumentTracker
         throw new ArgumentException($"Unknown document '{uri.AbsolutePath}'", nameof(uri));
     }
 
-    private async Task SendDiagnostics(Uri uri)
+    private async Task SendDiagnosticsAsync(Uri uri)
     {
         var d = await files[uri].GetDiagnosticsAsync();
         if (d is not null)
@@ -47,26 +43,28 @@ public class TextDocumentTracker : ITextDocumentTracker
         }
     }
 
-    public async Task OpenDocumentAsync(Uri uri, string text)
+    public Task OpenDocumentAsync(Uri uri, string text)
     {
-        Debug.WriteLine($">> Document opened: {uri.AbsolutePath}");
+        logger.LogInformation("Opening document '{file}'", uri.AbsolutePath);
         files[uri] = new ScriptFile(uri, text);
-        await SendDiagnostics(uri);
+        _ = SendDiagnosticsAsync(uri);
+        return Task.CompletedTask;
     }
 
-    public async Task UpdateDocumentAsync(Uri uri, string text)
+    public Task UpdateDocumentAsync(Uri uri, string text)
     {
-        Debug.WriteLine($">> Document updated: {uri.AbsolutePath}");
+        logger.LogInformation("Updating document '{file}'", uri.AbsolutePath);
         if (files.TryGetValue(uri, out var file))
         {
             file.UpdateText(text);
-            await SendDiagnostics(uri);
+            _ = SendDiagnosticsAsync(uri);
         }
+        return Task.CompletedTask;
     }
 
     public Task CloseDocumentAsync(Uri uri)
     {
-        Debug.WriteLine($">> Document closed: {uri.AbsolutePath}");
+        logger.LogInformation("Closing document '{file}'", uri.AbsolutePath);
         if (files.Remove(uri, out var file))
         {
             file.Dispose();

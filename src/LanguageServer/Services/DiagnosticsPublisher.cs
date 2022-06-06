@@ -1,15 +1,5 @@
 ﻿namespace ScTools.LanguageServer.Services;
 
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.VisualStudio.LanguageServer.Protocol;
-
-using ScTools.ScriptLang;
-using ScTools.ScriptLang.Semantics;
-
-using System;
-using System.Linq;
-using System.Threading.Tasks;
-
 public interface IDiagnosticsPublisher
 {
     Task SendDiagnosticsAsync(Uri uri, DiagnosticsReport diagnostics);

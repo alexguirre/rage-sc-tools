@@ -1,21 +1,8 @@
 ﻿namespace ScTools.LanguageServer;
 
-using System;
-using System.IO;
-using System.Threading;
-
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.VisualStudio.LanguageServer.Protocol;
-
 using Newtonsoft.Json.Linq;
 
 using StreamJsonRpc;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
-using ScTools.ScriptLang;
-using ScTools.ScriptLang.Semantics;
 using ScTools.LanguageServer.Services;
 
 public interface IServer
@@ -27,13 +14,15 @@ public interface IServer
 
 internal sealed partial class Server : IServer, IDisposable
 {
+    private readonly ILogger<Server> logger;
     private readonly HeaderDelimitedMessageHandler messageHandler;
     private readonly JsonRpc rpc;
     private readonly ManualResetEvent disconnectEvent = new(initialState: false);
     private readonly ILspRequestHandlerDispatcher handlerDispatcher;
 
-    public Server(IServerIOProvider io, ILspRequestHandlerDispatcher handlerDispatcher)
+    public Server(IServerIOProvider io, ILspRequestHandlerDispatcher handlerDispatcher, ILogger<Server> logger)
     {
+        this.logger = logger;
         this.handlerDispatcher = handlerDispatcher;
 
         var rpcTraceSource = new TraceSource("ScTools.LanguageServer.Server[RPC]", SourceLevels.Verbose | SourceLevels.ActivityTracing);
@@ -81,6 +70,7 @@ internal sealed partial class Server : IServer, IDisposable
     {
         var capabilities = new ServerCapabilities();
         handlerDispatcher.AddProvidedCapabilities(capabilities);
+        logger.LogInformation("Initialize with capabilities: {capabilities}", capabilities);
         return new InitializeResult { Capabilities = capabilities };
     }
 }

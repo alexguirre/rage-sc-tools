@@ -1,18 +1,10 @@
-﻿using ScTools.LanguageServer.Handlers;
-
-using StreamJsonRpc;
-
-using System;
-using System.Diagnostics;
-using System.Linq;
-namespace ScTools.LanguageServer.Services;
-
-using Microsoft.VisualStudio.LanguageServer.Protocol;
+﻿namespace ScTools.LanguageServer.Services;
 
 using Newtonsoft.Json.Linq;
 
-using System.Collections.Generic;
-using System.Collections.Immutable;
+using ScTools.LanguageServer.Handlers;
+
+using StreamJsonRpc;
 
 public readonly record struct LspRequestReceivedEventArgs(ILspRequestHandler Handler, JToken Request);
 public readonly record struct LspRequestHandledEventArgs(ILspRequestHandler Handler, object? Response);

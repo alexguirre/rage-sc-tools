@@ -1,16 +1,9 @@
 ﻿namespace ScTools.LanguageServer.Handlers;
 
-using Microsoft.VisualStudio.LanguageServer.Protocol;
-
 using ScTools.LanguageServer.Services;
 using ScTools.ScriptLang.Ast;
 using ScTools.ScriptLang.Ast.Declarations;
-
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+using ScTools.ScriptLang.Ast.Errors;
 
 public class DocumentSymbolHandler : ILspRequestHandler<DocumentSymbolParams, DocumentSymbol[]>
 {
@@ -37,16 +30,23 @@ public class DocumentSymbolHandler : ILspRequestHandler<DocumentSymbolParams, Do
             return Array.Empty<DocumentSymbol>();
         }
 
-        var symbols = new List<DocumentSymbol>(ast.Declarations.Length);
+        var symbols = new List<DocumentSymbol>(capacity: ast.Declarations.Length);
         foreach (var decl in ast.Declarations)
         {
-            symbols.Add(decl.Accept(nodeToSymbol));
-        }
+            var symbol = decl.Accept(nodeToSymbol);
+            if (symbol is not null)
+            {
+                symbols.Add(symbol);
+            }
+        }            
         return symbols.ToArray();
     }
 
-    private class NodeToDocumentSymbol : AstVisitor<DocumentSymbol>
+    private class NodeToDocumentSymbol : AstVisitor<DocumentSymbol?>
     {
+        public override DocumentSymbol? Visit(ErrorDeclaration node)
+            => null;
+
         public override DocumentSymbol Visit(EnumDeclaration node)
             => new()
             {

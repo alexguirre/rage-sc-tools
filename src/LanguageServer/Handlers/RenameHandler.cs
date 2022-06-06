@@ -1,17 +1,10 @@
 ﻿namespace ScTools.LanguageServer.Handlers;
 
-using Microsoft.VisualStudio.LanguageServer.Protocol;
-
 using ScTools.LanguageServer.Services;
 using ScTools.ScriptLang;
 using ScTools.ScriptLang.Ast;
 using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.Ast.Expressions;
-
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Threading;
-using System.Threading.Tasks;
 
 public class RenameHandler : ILspRequestHandler<RenameParams, WorkspaceEdit?>
 {

@@ -1,6 +1,5 @@
 ﻿namespace ScTools.LanguageServer.Services;
 
-using System;
 using System.IO;
 
 public class ServerStandardIOProvider : IServerIOProvider
