@@ -74,7 +74,7 @@ public class SourceFile : IDisposable
                 var parser = new Parser(lexer, diagnosticsReport);
                 var compilationUnit = parser.ParseCompilationUnit();
                 ct.ThrowIfCancellationRequested();
-                var sema = new SemanticsAnalyzer(diagnosticsReport);
+                var sema = new SemanticsAnalyzer(diagnosticsReport, usingResolver: Project);
                 compilationUnit.Accept(sema);
                 ct.ThrowIfCancellationRequested();
                 return new AnalysisResult(diagnosticsReport, compilationUnit);

@@ -1,10 +1,13 @@
 ﻿namespace ScTools.ScriptLang.Workspace;
 
+using ScTools.ScriptLang.Ast;
+using ScTools.ScriptLang.Semantics;
+
 using System.Collections.Concurrent;
 using System.IO;
 using System.Text.Json;
 
-public class Project : IDisposable
+public class Project : IDisposable, IUsingResolver
 {
     private readonly ConcurrentDictionary<string, SourceFile> sources = new();
     private bool isDisposed;
@@ -25,6 +28,7 @@ public class Project : IDisposable
         RootDirectory = rootDirectoryPath;
         Configuration = config;
         BuildConfigurationName = config.BuildConfigurations.First().Name;
+        Debug.Assert(buildConfiguration is not null, "BuildConfigurationName setter should have set buildConfiguration field");
     }
 
     public async Task<SourceFile> AddSourceFile(string filePath, CancellationToken cancellationToken = default)
@@ -85,5 +89,18 @@ public class Project : IDisposable
         var project = new Project(rootDir, config);
         await project.OpenSourceFilesFromRoot(cancellationToken).ConfigureAwait(false);
         return project;
+    }
+
+    async Task<UsingResolveResult> IUsingResolver.ResolveUsingAsync(string filePath)
+    {
+        var absoluteFilePath = Path.Combine(RootDirectory, filePath);
+        if (!sources.TryGetValue(absoluteFilePath, out var sourceFile))
+        {
+            return new(UsingResolveStatus.NotFound, Ast: null);
+        }
+
+        // TODO: check cyclic dependencies
+        var ast = await sourceFile.GetAstAsync().ConfigureAwait(false);
+        return new(UsingResolveStatus.Valid, ast);
     }
 }

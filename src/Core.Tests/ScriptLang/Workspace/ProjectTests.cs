@@ -26,7 +26,8 @@ public class ProjectTests
         using var project = await Project.OpenProjectAsync("./Data/project01/project01.json");
         var sources = project.Sources;
         var asts = await Task.WhenAll(sources.Select(kvp => kvp.Value.GetAstAsync()));
-        var diagnostics = await Task.WhenAll(sources.Select(kvp => kvp.Value.GetDiagnosticsAsync()));
+        var diagnostics = await Task.WhenAll(sources.Select(kvp => kvp.Value.GetDiagnosticsAsync()))!;
+        var allDiagnostics = DiagnosticsReport.Combine(diagnostics.Where(d => d is not null)!);
         ;
     }
 }

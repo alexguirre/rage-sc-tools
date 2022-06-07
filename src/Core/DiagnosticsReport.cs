@@ -54,4 +54,15 @@ public sealed class DiagnosticsReport
             dest.WriteLine(d);
         }
     }
+
+    public static DiagnosticsReport Combine(IEnumerable<DiagnosticsReport> diagnosticsReports)
+    {
+        var result = new DiagnosticsReport();
+        result.diagnostics.Capacity = diagnosticsReports.Sum(d => d.diagnostics.Count);
+        foreach (var diagnosticsReport in diagnosticsReports)
+        {
+            result.diagnostics.AddRange(diagnosticsReport.diagnostics);
+        }
+        return result;
+    }
 }

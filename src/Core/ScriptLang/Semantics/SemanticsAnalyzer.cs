@@ -17,6 +17,7 @@ using System.Diagnostics.CodeAnalysis;
 public sealed class SemanticsAnalyzer : AstVisitor
 {
     // helpers
+    private readonly IUsingResolver? usingResolver;
     private readonly TypeFactory typeFactory;
     private readonly ExpressionTypeChecker exprTypeChecker = new();
     private readonly LabelGenerator labelGen = new();
@@ -37,8 +38,9 @@ public sealed class SemanticsAnalyzer : AstVisitor
 
     public DiagnosticsReport Diagnostics { get; }
 
-    public SemanticsAnalyzer(DiagnosticsReport diagnostics)
+    public SemanticsAnalyzer(DiagnosticsReport diagnostics, IUsingResolver? usingResolver = null)
     {
+        this.usingResolver = usingResolver;
         Diagnostics = diagnostics;
         typeFactory = new(this);
 
@@ -72,7 +74,25 @@ public sealed class SemanticsAnalyzer : AstVisitor
 
     public override void Visit(CompilationUnit node)
     {
+        node.Usings.ForEach(@using => @using.Accept(this));
         node.Declarations.ForEach(decl => decl.Accept(this));
+    }
+
+    public override void Visit(UsingDirective node)
+    {
+        Debug.Assert(usingResolver is not null, "usingResolver must be set if USING directives exist");
+        var resolveResult = usingResolver.ResolveUsingAsync(node.Path).Result;
+        if (resolveResult.Status is UsingResolveStatus.Valid)
+        {
+            Debug.Assert(resolveResult.Ast is not null);
+            // import all symbols from the resolved USING
+            resolveResult.Ast.Declarations.ForEach(AddSymbol);
+        }
+        else
+        {
+            // TODO: report error about invalid USING
+            throw new Exception("USING ERROR!!!!!");
+        }
     }
 
     public override void Visit(EnumDeclaration node)
