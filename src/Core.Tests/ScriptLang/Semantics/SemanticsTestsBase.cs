@@ -34,15 +34,15 @@ public abstract class SemanticsTestsBase
         return new(lexer, lexer.Diagnostics);
     }
 
-    protected static SemanticsAnalyzer Analyze(string source)
-        => AnalyzeAndAst(source).Semantics;
+    protected static SemanticsAnalyzer Analyze(string source, IUsingResolver? usingResolver = null)
+        => AnalyzeAndAst(source, usingResolver).Semantics;
 
-    protected static (SemanticsAnalyzer Semantics, CompilationUnit Ast) AnalyzeAndAst(string source)
+    protected static (SemanticsAnalyzer Semantics, CompilationUnit Ast) AnalyzeAndAst(string source, IUsingResolver? usingResolver = null)
     {
         var p = ParserFor(source);
 
         var u = p.ParseCompilationUnit();
-        var s = new SemanticsAnalyzer(p.Diagnostics);
+        var s = new SemanticsAnalyzer(p.Diagnostics, usingResolver);
         u.Accept(s);
         return (s, u);
     }

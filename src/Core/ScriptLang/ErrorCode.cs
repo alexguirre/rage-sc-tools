@@ -49,6 +49,7 @@ public enum ErrorCode
     SemanticSwitchCaseValueIsNotConstant = 0x2018,
     SemanticDuplicateSwitchCase = 0x2019,
     SemanticTypeNotAllowedInSwitch = 0x201A,
+    SemanticUsingNotFound = 0x201B,
 
     // Preprocessor errors   0x3000 - 0x3FFF
     PreprocessorDirectiveWrongPlacement = 0x3000,

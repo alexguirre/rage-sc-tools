@@ -23,6 +23,7 @@ public sealed class SemanticsAnalyzer : AstVisitor
     private readonly LabelGenerator labelGen = new();
 
     // context
+    private readonly HashSet<CompilationUnit> imports = new();
     private readonly SymbolTable<ISymbol> symbols = new();
     private readonly SymbolTable<Label> labels = new();
     private readonly TypeRegistry typeRegistry = new();
@@ -80,18 +81,25 @@ public sealed class SemanticsAnalyzer : AstVisitor
 
     public override void Visit(UsingDirective node)
     {
-        Debug.Assert(usingResolver is not null, "usingResolver must be set if USING directives exist");
-        var resolveResult = usingResolver.ResolveUsingAsync(node.Path).Result;
-        if (resolveResult.Status is UsingResolveStatus.Valid)
+        node.Semantics = node.Semantics with { ImportedCompilationUnit = null };
+        if (usingResolver is null)
         {
-            Debug.Assert(resolveResult.Ast is not null);
-            // import all symbols from the resolved USING
-            resolveResult.Ast.Declarations.ForEach(AddSymbol);
+            return;
         }
-        else
+
+        var resolveResult = usingResolver.ResolveUsingAsync(node.Path).Result;
+        switch (resolveResult.Status)
         {
-            // TODO: report error about invalid USING
-            throw new Exception("USING ERROR!!!!!");
+            case UsingResolveStatus.Valid:
+                Debug.Assert(resolveResult.Ast is not null);
+                node.Semantics = node.Semantics with { ImportedCompilationUnit = resolveResult.Ast };
+                Import(resolveResult.Ast);
+                break;
+            case UsingResolveStatus.NotFound:
+                UsingNotFoundError(node);
+                break;
+            case UsingResolveStatus.CyclicDependency: // TODO: add error for UsingResolveStatus.CyclicDependency
+                throw new NotImplementedException("UsingResolveStatus.CyclicDependency not handled");
         }
     }
 
@@ -653,6 +661,19 @@ public sealed class SemanticsAnalyzer : AstVisitor
         }
     }
 
+    /// <summary>
+    /// Brings all symbols in the specified compilation unit into scope for this compilation unit.
+    /// </summary>
+    private void Import(CompilationUnit compilationUnit)
+    {
+        if (!imports.Add(compilationUnit))
+        {
+             return;
+        }
+
+        compilationUnit.Declarations.ForEach(AddSymbol);
+    }
+
     public bool GetSymbol(NameExpression expr, [MaybeNullWhen(false)] out ISymbol symbol) => GetSymbol(expr.Name, expr.Location, out symbol);
     public bool GetSymbol(Token identifier, [MaybeNullWhen(false)] out ISymbol symbol) => GetSymbol(identifier.Lexeme.ToString(), identifier.Location, out symbol);
     public bool GetSymbol(string name, SourceRange location, [MaybeNullWhen(false)] out ISymbol symbol)
@@ -764,5 +785,7 @@ public sealed class SemanticsAnalyzer : AstVisitor
         => Error(ErrorCode.SemanticDuplicateSwitchCase, $"Duplicate switch DEFAULT case", @case.Tokens[0].Location);
     internal void TypeNotAllowedInSwitchError(SwitchStatement switchStmt)
         => Error(ErrorCode.SemanticTypeNotAllowedInSwitch, $"Type '{switchStmt.Expression.Type!.ToPrettyString()}' is not allowed in SWITCH statement", switchStmt.Expression.Location);
+    internal void UsingNotFoundError(UsingDirective usingDirective)
+        => Error(ErrorCode.SemanticUsingNotFound, $"File '{usingDirective.Path.Escape()}' not found in USING directive", usingDirective.PathToken.Location);
     #endregion Errors
 }

@@ -2,9 +2,13 @@
 
 using System.Diagnostics;
 
-public sealed partial class UsingDirective : BaseNode
+public record struct UsingDirectiveSemantics(CompilationUnit? ImportedCompilationUnit);
+
+public sealed partial class UsingDirective : BaseNode, ISemanticNode<UsingDirectiveSemantics>
 {
-    public string Path => Tokens[1].GetStringLiteral();
+    public Token PathToken => Tokens[1];
+    public string Path => PathToken.GetStringLiteral();
+    public UsingDirectiveSemantics Semantics { get; set; }
 
     public UsingDirective(Token usingKeyword, Token pathString)
         : base(OfTokens(usingKeyword, pathString), OfChildren())
