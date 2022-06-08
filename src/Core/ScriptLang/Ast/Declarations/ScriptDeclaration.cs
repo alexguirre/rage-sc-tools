@@ -40,5 +40,5 @@ public sealed partial class ScriptDeclaration : BaseNode, IDeclaration, ISemanti
     }
 
     public override string DebuggerDisplay =>
-        $@"{nameof(ScriptDeclaration)} {{ {nameof(Name)} = {Name}, {nameof(Parameters)} = [{string.Join(", ", Parameters.Select(a => a.DebuggerDisplay))}, {nameof(Body)} = [{string.Join(", ", Body.Select(a => a.DebuggerDisplay))}] }}";
+        $@"{nameof(ScriptDeclaration)} {{ {nameof(Name)} = {Name}, {nameof(Parameters)} = [{string.Join(", ", Parameters.Select(a => a.DebuggerDisplay))}], {nameof(Body)} = [{string.Join(", ", Body.Select(a => a.DebuggerDisplay))}] }}";
 }
