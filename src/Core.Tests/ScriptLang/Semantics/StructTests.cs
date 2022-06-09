@@ -5,12 +5,6 @@ using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.Semantics;
 using ScTools.ScriptLang.Types;
 
-using System.Linq;
-
-using Xunit;
-
-using static Xunit.Assert;
-
 public class StructTests : SemanticsTestsBase
 {
     [Fact]

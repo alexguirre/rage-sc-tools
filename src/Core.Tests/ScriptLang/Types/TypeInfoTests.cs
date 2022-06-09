@@ -4,15 +4,6 @@ using ScTools.ScriptLang;
 using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.Types;
 
-using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Linq;
-
-using Xunit;
-
-using static Xunit.Assert;
-
 public class TypeInfoTests
 {
     [Theory]

@@ -4,11 +4,6 @@ using ScTools.ScriptLang;
 using ScTools.ScriptLang.Ast.Errors;
 using ScTools.ScriptLang.Ast.Expressions;
 
-using System.Linq;
-
-using Xunit;
-using static Xunit.Assert;
-
 public partial class ParserTests
 {
     public class Expressions
@@ -26,13 +21,13 @@ public partial class ParserTests
                   NULL"
             );
 
-            AssertParseExpression(p, n => n is NameExpression { Name: "hello" });
-            AssertParseExpression(p, n => n is IntLiteralExpression { Value: 123 });
-            AssertParseExpression(p, n => n is FloatLiteralExpression { Value: 12.5e2f });
-            AssertParseExpression(p, n => n is StringLiteralExpression { Value: "hello\nworld" });
-            AssertParseExpression(p, n => n is BoolLiteralExpression { Value: true });
-            AssertParseExpression(p, n => n is BoolLiteralExpression { Value: false });
-            AssertParseExpression(p, n => n is NullExpression);
+            ParseExpressionAndAssert(p, n => n is NameExpression { Name: "hello" });
+            ParseExpressionAndAssert(p, n => n is IntLiteralExpression { Value: 123 });
+            ParseExpressionAndAssert(p, n => n is FloatLiteralExpression { Value: 12.5e2f });
+            ParseExpressionAndAssert(p, n => n is StringLiteralExpression { Value: "hello\nworld" });
+            ParseExpressionAndAssert(p, n => n is BoolLiteralExpression { Value: true });
+            ParseExpressionAndAssert(p, n => n is BoolLiteralExpression { Value: false });
+            ParseExpressionAndAssert(p, n => n is NullExpression);
             NoErrorsAndIsAtEOF(p);
         }
 
@@ -42,7 +37,7 @@ public partial class ParserTests
             var p = ParserFor(
                 @"NOT hello"
             );
-            AssertParseExpression(p, n => n is UnaryExpression
+            ParseExpressionAndAssert(p, n => n is UnaryExpression
             {
                 Operator: UnaryOperator.LogicalNot,
                 SubExpression: NameExpression { Name: "hello" }
@@ -52,7 +47,7 @@ public partial class ParserTests
             p = ParserFor(
                 @"-world"
             );
-            AssertParseExpression(p, n => n is UnaryExpression
+            ParseExpressionAndAssert(p, n => n is UnaryExpression
             {
                 Operator: UnaryOperator.Negate,
                 SubExpression: NameExpression { Name: "world" }
@@ -67,7 +62,7 @@ public partial class ParserTests
                 @"<<1,2.5,<<3,4,5>>>>"
             );
 
-            AssertParseExpression(p, n => n is VectorExpression
+            ParseExpressionAndAssert(p, n => n is VectorExpression
             {
                 X: IntLiteralExpression { Value: 1 },
                 Y: FloatLiteralExpression { Value: 2.5f },
@@ -159,7 +154,7 @@ public partial class ParserTests
                 @"((25))"
             );
 
-            AssertParseExpression(p, n => n is IntLiteralExpression { Value: 25 });
+            ParseExpressionAndAssert(p, n => n is IntLiteralExpression { Value: 25 });
             NoErrorsAndIsAtEOF(p);
         }
 
@@ -170,7 +165,7 @@ public partial class ParserTests
                 @"foo.bar.baz"
             );
 
-            AssertParseExpression(p, n => n is FieldAccessExpression
+            ParseExpressionAndAssert(p, n => n is FieldAccessExpression
             {
                 FieldName: "baz",
                 SubExpression: FieldAccessExpression
@@ -189,7 +184,7 @@ public partial class ParserTests
                 @"foo.bar.baz * hello . world"
             );
 
-            AssertParseExpression(p, n => n is BinaryExpression
+            ParseExpressionAndAssert(p, n => n is BinaryExpression
             {
                 Operator: BinaryOperator.Multiply,
                 LHS: FieldAccessExpression
@@ -218,7 +213,7 @@ public partial class ParserTests
                   a + b[1]"
             );
 
-            AssertParseExpression(p, n => n is IndexingExpression
+            ParseExpressionAndAssert(p, n => n is IndexingExpression
             {
                 Array: NameExpression { Name: "foo" },
                 Index: BinaryExpression
@@ -228,7 +223,7 @@ public partial class ParserTests
                     RHS: IntLiteralExpression { Value: 2 },
                 }
             });
-            AssertParseExpression(p, n => n is BinaryExpression
+            ParseExpressionAndAssert(p, n => n is BinaryExpression
             {
                 Operator: BinaryOperator.Add,
                 LHS: NameExpression { Name: "a" },
@@ -243,7 +238,7 @@ public partial class ParserTests
             p = ParserFor(
                 @"(a + b)[1]"
             );
-            AssertParseExpression(p, n => n is IndexingExpression
+            ParseExpressionAndAssert(p, n => n is IndexingExpression
             {
                 Array: BinaryExpression
                 {
@@ -300,7 +295,7 @@ public partial class ParserTests
                 @"2 * -3 + 4"
             );
 
-            AssertParseExpression(p, n => n is BinaryExpression
+            ParseExpressionAndAssert(p, n => n is BinaryExpression
             {
                 Operator: BinaryOperator.Add,
                 LHS: BinaryExpression
@@ -325,7 +320,7 @@ public partial class ParserTests
                 @"2 + -3 * 4"
             );
 
-            AssertParseExpression(p, n => n is BinaryExpression
+            ParseExpressionAndAssert(p, n => n is BinaryExpression
             {
                 Operator: BinaryOperator.Add,
                 LHS: IntLiteralExpression { Value: 2 },
@@ -350,7 +345,7 @@ public partial class ParserTests
                 @"2 * (-3 + 4)"
             );
 
-            AssertParseExpression(p, n => n is BinaryExpression
+            ParseExpressionAndAssert(p, n => n is BinaryExpression
             {
                 Operator: BinaryOperator.Multiply,
                 LHS: IntLiteralExpression { Value: 2 },
@@ -376,7 +371,7 @@ public partial class ParserTests
             );
 
             // (((NOT a) AND b) OR c) OR (d == e)
-            AssertParseExpression(p, n => n is BinaryExpression
+            ParseExpressionAndAssert(p, n => n is BinaryExpression
             {
                 Operator: BinaryOperator.LogicalOr,
                 LHS: BinaryExpression
@@ -412,7 +407,7 @@ public partial class ParserTests
             );
 
             // (NOT (a AND b)) OR ((c OR d) == e)
-            AssertParseExpression(p, n => n is BinaryExpression
+            ParseExpressionAndAssert(p, n => n is BinaryExpression
             {
                 Operator: BinaryOperator.LogicalOr,
                 LHS: UnaryExpression
@@ -448,7 +443,7 @@ public partial class ParserTests
             );
 
             // (2 & -3) | 4
-            AssertParseExpression(p, n => n is BinaryExpression
+            ParseExpressionAndAssert(p, n => n is BinaryExpression
             {
                 Operator: BinaryOperator.Or,
                 LHS: BinaryExpression
@@ -473,7 +468,7 @@ public partial class ParserTests
                 @"2 & (-3 | 4)"
             );
 
-            AssertParseExpression(p, n => n is BinaryExpression
+            ParseExpressionAndAssert(p, n => n is BinaryExpression
             {
                 Operator: BinaryOperator.And,
                 LHS: IntLiteralExpression { Value: 2 },
@@ -499,7 +494,7 @@ public partial class ParserTests
             );
 
             // (a <= b) <> (-c > d)
-            AssertParseExpression(p, n => n is BinaryExpression
+            ParseExpressionAndAssert(p, n => n is BinaryExpression
             {
                 Operator: BinaryOperator.NotEquals,
                 LHS: BinaryExpression
@@ -530,7 +525,7 @@ public partial class ParserTests
             );
 
             // a OR (b AND (c | (d ^ (e & (f == (g > (h + (i * j))))))))
-            AssertParseExpression(p, n => n is BinaryExpression
+            ParseExpressionAndAssert(p, n => n is BinaryExpression
             {
                 Operator: BinaryOperator.LogicalOr,
                 LHS: NameExpression { Name: "a" },

@@ -7,12 +7,6 @@ using ScTools.ScriptLang.Ast.Statements;
 using ScTools.ScriptLang.Semantics;
 using ScTools.ScriptLang.Types;
 
-using System;
-
-using Xunit;
-
-using static Xunit.Assert;
-
 public class StatementsTests : SemanticsTestsBase
 {
     [Fact]
@@ -24,9 +18,9 @@ public class StatementsTests : SemanticsTestsBase
                 ENDWHILE
               ENDPROC"
         );
-
+        
         False(s.Diagnostics.HasErrors);
-        var whileStmt = (WhileStatement)((FunctionDeclaration)ast.Declarations[0]).Body[0];
+        var whileStmt = ast.FindFirstNodeOfType<WhileStatement>();
         True(whileStmt.Condition.Semantics is { Type: BoolType, ValueKind: ValueKind.RValue | ValueKind.Constant });
     }
 
@@ -41,7 +35,7 @@ public class StatementsTests : SemanticsTestsBase
         );
 
         False(s.Diagnostics.HasErrors);
-        var whileStmt = (WhileStatement)((FunctionDeclaration)ast.Declarations[0]).Body[0];
+        var whileStmt = ast.FindFirstNodeOfType<WhileStatement>();
         True(whileStmt.Condition.Semantics is { Type: IntType, ValueKind: ValueKind.RValue | ValueKind.Constant });
     }
 
@@ -56,7 +50,7 @@ public class StatementsTests : SemanticsTestsBase
         );
 
         False(s.Diagnostics.HasErrors);
-        var whileStmt = (WhileStatement)((FunctionDeclaration)ast.Declarations[0]).Body[0];
+        var whileStmt = ast.FindFirstNodeOfType<WhileStatement>();
         True(whileStmt.Condition.Semantics is { Type: BoolType, ValueKind: ValueKind.RValue | ValueKind.Assignable | ValueKind.Addressable });
     }
 
@@ -72,7 +66,7 @@ public class StatementsTests : SemanticsTestsBase
         );
 
         False(s.Diagnostics.HasErrors);
-        var whileStmt = (WhileStatement)((FunctionDeclaration)ast.Declarations[1]).Body[0];
+        var whileStmt = ast.FindFirstNodeOfType<WhileStatement>();
         True(whileStmt.Condition.Semantics is { Type: BoolType, ValueKind: ValueKind.RValue | ValueKind.Assignable | ValueKind.Addressable });
     }
 
@@ -88,7 +82,7 @@ public class StatementsTests : SemanticsTestsBase
         );
 
         False(s.Diagnostics.HasErrors);
-        var whileStmt = (WhileStatement)((FunctionDeclaration)ast.Declarations[0]).Body[1];
+        var whileStmt = ast.FindFirstNodeOfType<WhileStatement>();
         True(whileStmt.Condition.Semantics is { Type: BoolType, ValueKind: ValueKind.RValue | ValueKind.Assignable | ValueKind.Addressable });
     }
 
@@ -104,8 +98,8 @@ public class StatementsTests : SemanticsTestsBase
         );
 
         False(s.Diagnostics.HasErrors);
-        var whileStmt = (WhileStatement)((FunctionDeclaration)ast.Declarations[0]).Body[0];
-        var breakStmt = (BreakStatement)whileStmt.Body[0];
+        var whileStmt = ast.FindFirstNodeOfType<WhileStatement>();
+        var breakStmt = whileStmt.FindFirstNodeOfType<BreakStatement>();
         True(whileStmt.Condition.Semantics is { Type: BoolType, ValueKind: ValueKind.RValue | ValueKind.Constant });
         True(whileStmt.Semantics is { ExitLabel: not null, BeginLabel: not null, ContinueLabel: not null });
         Same(whileStmt, breakStmt.Semantics.EnclosingStatement);
@@ -122,7 +116,7 @@ public class StatementsTests : SemanticsTestsBase
         );
 
         False(s.Diagnostics.HasErrors);
-        var repStmt = (RepeatStatement)((FunctionDeclaration)ast.Declarations[0]).Body[0];
+        var repStmt = ast.FindFirstNodeOfType<RepeatStatement>();
         True(repStmt.Limit.Semantics is { Type: IntType, ValueKind: ValueKind.RValue | ValueKind.Constant });
         True(repStmt.Counter.Semantics is { Type: IntType, ValueKind: ValueKind.RValue | ValueKind.Addressable | ValueKind.Assignable, Symbol: VarDeclaration { Kind: VarKind.Local } });
     }
@@ -139,8 +133,8 @@ public class StatementsTests : SemanticsTestsBase
         );
 
         False(s.Diagnostics.HasErrors);
-        var nVarDecl = (VarDeclaration)((FunctionDeclaration)ast.Declarations[0]).Body[0];
-        var repStmt = (RepeatStatement)((FunctionDeclaration)ast.Declarations[0]).Body[1];
+        var nVarDecl = ast.FindFirstNodeOfType<VarDeclaration>();
+        var repStmt = ast.FindFirstNodeOfType<RepeatStatement>();
         True(repStmt.Limit.Semantics is { Type: IntType, ValueKind: ValueKind.RValue | ValueKind.Addressable | ValueKind.Assignable });
         Equal(nVarDecl, ((NameExpression)repStmt.Limit).Semantics.Symbol);
         True(repStmt.Counter.Semantics is { Type: IntType, ValueKind: ValueKind.RValue | ValueKind.Addressable | ValueKind.Assignable, Symbol: VarDeclaration { Kind: VarKind.Local } });
@@ -157,7 +151,7 @@ public class StatementsTests : SemanticsTestsBase
         );
 
         False(s.Diagnostics.HasErrors);
-        var ifStmt = (IfStatement)((FunctionDeclaration)ast.Declarations[0]).Body[0];
+        var ifStmt = ast.FindFirstNodeOfType<IfStatement>();
         True(ifStmt.Condition.Semantics is { Type: BoolType, ValueKind: ValueKind.RValue | ValueKind.Constant });
     }
 
@@ -172,7 +166,7 @@ public class StatementsTests : SemanticsTestsBase
         );
 
         False(s.Diagnostics.HasErrors);
-        var ifStmt = (IfStatement)((FunctionDeclaration)ast.Declarations[0]).Body[0];
+        var ifStmt = ast.FindFirstNodeOfType<IfStatement>();
         True(ifStmt.Condition.Semantics is { Type: IntType, ValueKind: ValueKind.RValue | ValueKind.Constant });
     }
 
@@ -187,7 +181,7 @@ public class StatementsTests : SemanticsTestsBase
         );
 
         False(s.Diagnostics.HasErrors);
-        var ifStmt = (IfStatement)((FunctionDeclaration)ast.Declarations[0]).Body[0];
+        var ifStmt = ast.FindFirstNodeOfType<IfStatement>();
         True(ifStmt.Condition.Semantics is { Type: BoolType, ValueKind: ValueKind.RValue | ValueKind.Assignable | ValueKind.Addressable });
     }
 
@@ -203,7 +197,7 @@ public class StatementsTests : SemanticsTestsBase
         );
 
         False(s.Diagnostics.HasErrors);
-        var ifStmt = (IfStatement)((FunctionDeclaration)ast.Declarations[1]).Body[0];
+        var ifStmt = ast.FindFirstNodeOfType<IfStatement>();
         True(ifStmt.Condition.Semantics is { Type: BoolType, ValueKind: ValueKind.RValue | ValueKind.Assignable | ValueKind.Addressable });
     }
 
@@ -219,7 +213,7 @@ public class StatementsTests : SemanticsTestsBase
         );
 
         False(s.Diagnostics.HasErrors);
-        var ifStmt = (IfStatement)((FunctionDeclaration)ast.Declarations[0]).Body[1];
+        var ifStmt = ast.FindFirstNodeOfType<IfStatement>();
         True(ifStmt.Condition.Semantics is { Type: BoolType, ValueKind: ValueKind.RValue | ValueKind.Assignable | ValueKind.Addressable });
     }
 
@@ -276,7 +270,7 @@ public class StatementsTests : SemanticsTestsBase
         );
 
         False(s.Diagnostics.HasErrors);
-        var @goto = (GotoStatement)((FunctionDeclaration)ast.Declarations[0]).Body[0];
+        var @goto = ast.FindFirstNodeOfType<GotoStatement>();
         NotNull(@goto.Label);
         Equal("label", @goto.Label!.Name);
         Equal("label", @goto.TargetLabel);
@@ -297,8 +291,8 @@ public class StatementsTests : SemanticsTestsBase
         );
 
         False(s.Diagnostics.HasErrors);
-        var @if = (IfStatement)((FunctionDeclaration)ast.Declarations[0]).Body[0];
-        var @goto = (GotoStatement)((FunctionDeclaration)ast.Declarations[0]).Body[1];
+        var @if = ast.FindFirstNodeOfType<IfStatement>();
+        var @goto = ast.FindFirstNodeOfType<GotoStatement>();
         NotNull(@if.Label);
         Equal("label", @if.Label!.Name);
         Null(@goto.Label);
@@ -320,8 +314,8 @@ public class StatementsTests : SemanticsTestsBase
         );
 
         False(s.Diagnostics.HasErrors);
-        var @goto = (GotoStatement)((FunctionDeclaration)ast.Declarations[0]).Body[0];
-        var @if = (IfStatement)((FunctionDeclaration)ast.Declarations[0]).Body[1];
+        var @if = ast.FindFirstNodeOfType<IfStatement>();
+        var @goto = ast.FindFirstNodeOfType<GotoStatement>();
         NotNull(@if.Label);
         Equal("label", @if.Label!.Name);
         Null(@goto.Label);
@@ -346,10 +340,10 @@ public class StatementsTests : SemanticsTestsBase
         );
 
         False(s.Diagnostics.HasErrors);
-        var @goto = (GotoStatement)((FunctionDeclaration)ast.Declarations[0]).Body[0];
-        var gotoNested = (GotoStatement)((FunctionDeclaration)ast.Declarations[0]).Body[1];
-        var emptyStmt = (EmptyStatement)((FunctionDeclaration)ast.Declarations[0]).Body[^1];
-        var nestedEmptyStmt = (EmptyStatement)((IfStatement)((FunctionDeclaration)ast.Declarations[0]).Body[2]).Then[0];
+        var @goto = ast.FindNthNodeOfType<GotoStatement>(1);
+        var gotoNested = ast.FindNthNodeOfType<GotoStatement>(2);
+        var emptyStmt = ast.FindNthNodeOfType<EmptyStatement>(2);
+        var nestedEmptyStmt = ast.FindNthNodeOfType<EmptyStatement>(1);
 
         NotNull(emptyStmt.Label);
         Equal("label", emptyStmt.Label!.Name);
@@ -521,7 +515,7 @@ public class StatementsTests : SemanticsTestsBase
         );
 
         False(s.Diagnostics.HasErrors);
-        var switchStmt = (SwitchStatement)((FunctionDeclaration)ast.Declarations[0]).Body[0];
+        var switchStmt = ast.FindFirstNodeOfType<SwitchStatement>();
         var case1 = (ValueSwitchCase)switchStmt.Cases[0];
         var breakStmt = (BreakStatement)case1.Body[0];
         True(switchStmt.Expression.Semantics is { Type: IntType, ValueKind: ValueKind.RValue | ValueKind.Constant });
@@ -585,7 +579,7 @@ public class StatementsTests : SemanticsTestsBase
         );
 
         False(s.Diagnostics.HasErrors);
-        var switchStmt = (SwitchStatement)((FunctionDeclaration)ast.Declarations[0]).Body[0];
+        var switchStmt = ast.FindFirstNodeOfType<SwitchStatement>();
         var case1 = (ValueSwitchCase)switchStmt.Cases[0];
         var case2 = (ValueSwitchCase)switchStmt.Cases[1];
         var case3 = (ValueSwitchCase)switchStmt.Cases[2];
@@ -701,8 +695,8 @@ public class StatementsTests : SemanticsTestsBase
         );
 
         False(s.Diagnostics.HasErrors);
-        var enumDecl = (EnumDeclaration)ast.Declarations[0];
-        var switchStmt = (SwitchStatement)((FunctionDeclaration)ast.Declarations[1]).Body[0];
+        var enumDecl = ast.FindFirstNodeOfType<EnumDeclaration>();
+        var switchStmt = ast.FindFirstNodeOfType<SwitchStatement>();
         var case1 = (ValueSwitchCase)switchStmt.Cases[0];
         var case2 = (ValueSwitchCase)switchStmt.Cases[1];
         var case3 = (ValueSwitchCase)switchStmt.Cases[2];

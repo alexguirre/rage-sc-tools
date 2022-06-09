@@ -6,12 +6,6 @@ using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.Semantics;
 using ScTools.ScriptLang.Types;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
-using static Xunit.Assert;
-
 public abstract class SemanticsTestsBase
 {
     public static IEnumerable<object[]> GetAllHandleTypes() => HandleType.All.Select(h => new object[] { h });

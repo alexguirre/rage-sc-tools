@@ -1,18 +1,11 @@
 ﻿namespace ScTools.Tests.ScriptLang.Parser;
 
-using System;
-using System.Collections.Immutable;
-using System.Linq;
-
 using ScTools.ScriptLang;
 using ScTools.ScriptLang.Ast;
 using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.Ast.Errors;
 using ScTools.ScriptLang.Ast.Expressions;
 using ScTools.ScriptLang.Ast.Statements;
-
-using Xunit;
-using static Xunit.Assert;
 
 public partial class ParserTests
 {
@@ -27,7 +20,7 @@ public partial class ParserTests
         False(node is IError);
         True(predicate(node));
     }
-    private static void AssertParseExpression(Parser p, Predicate<IExpression> predicate)
+    private static void ParseExpressionAndAssert(Parser p, Predicate<IExpression> predicate)
     {
         True(p.IsPossibleExpression());
         var expr = p.ParseExpression();

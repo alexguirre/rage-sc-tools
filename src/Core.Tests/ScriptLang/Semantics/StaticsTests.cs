@@ -5,13 +5,6 @@ using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.Semantics;
 using ScTools.ScriptLang.Types;
 
-using System;
-using System.Collections.Immutable;
-
-using Xunit;
-
-using static Xunit.Assert;
-
 public class StaticsTests : SemanticsTestsBase
 {
     [Theory]

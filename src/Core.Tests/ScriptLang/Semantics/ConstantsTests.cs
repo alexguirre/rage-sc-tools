@@ -1,15 +1,7 @@
 ﻿namespace ScTools.Tests.ScriptLang.Semantics;
 
 using ScTools.ScriptLang;
-using ScTools.ScriptLang.Ast.Declarations;
-using ScTools.ScriptLang.Semantics;
 using ScTools.ScriptLang.Types;
-
-using System;
-
-using Xunit;
-
-using static Xunit.Assert;
 
 public class ConstantsTests : SemanticsTestsBase
 {

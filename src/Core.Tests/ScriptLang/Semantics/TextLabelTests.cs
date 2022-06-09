@@ -3,10 +3,6 @@
 using ScTools.ScriptLang;
 using ScTools.ScriptLang.Types;
 
-using Xunit;
-
-using static Xunit.Assert;
-
 public class TextLabelTests : SemanticsTestsBase
 {
     // Unclear what the syntax for text labels would be in the original language, so we are doing most operations through intrinsics.

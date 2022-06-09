@@ -6,9 +6,6 @@ using ScTools.ScriptLang.Ast.Errors;
 using ScTools.ScriptLang.Ast.Expressions;
 using ScTools.ScriptLang.Ast.Statements;
 
-using Xunit;
-using static Xunit.Assert;
-
 public partial class ParserTests
 {
     public class Statements

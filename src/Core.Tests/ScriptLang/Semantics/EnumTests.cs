@@ -5,10 +5,6 @@ using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.Semantics;
 using ScTools.ScriptLang.Types;
 
-using Xunit;
-
-using static Xunit.Assert;
-
 public class EnumTests : SemanticsTestsBase
 {
     // TODO: support HASH_ENUM
@@ -141,7 +137,7 @@ public class EnumTests : SemanticsTestsBase
 
         False(s.GetTypeSymbolUnchecked("foo", out _));
 
-        AssertEnum(s, "A", new EnumType((EnumDeclaration)ast.Declarations[1]), 0);
+        AssertEnum(s, "A", new EnumType(ast.FindFirstNodeOfType<EnumDeclaration>()), 0);
     }
 
     [Fact]
