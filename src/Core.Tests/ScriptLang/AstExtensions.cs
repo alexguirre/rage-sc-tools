@@ -1,9 +1,17 @@
 ﻿namespace ScTools.Tests.ScriptLang;
 
 using ScTools.ScriptLang.Ast;
+using ScTools.ScriptLang.Ast.Expressions;
+using ScTools.ScriptLang.Semantics;
 
 internal static class AstExtensions
 {
+    public static ISymbol? GetNameSymbol(this IExpression expression)
+    {
+        var nameExpr = IsType<NameExpression>(expression);
+        return nameExpr.Semantics.Symbol;
+    }
+
     public static T FindFirstNodeOfType<T>(this INode parent) where T : class, INode
         => FindNthNodeOfType<T>(parent, n: 1);
 

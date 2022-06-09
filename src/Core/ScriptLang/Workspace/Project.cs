@@ -31,6 +31,17 @@ public class Project : IDisposable, IUsingResolver
         Debug.Assert(buildConfiguration is not null, "BuildConfigurationName setter should have set buildConfiguration field");
     }
 
+    public SourceFile? GetSourceFile(string filePath)
+    {
+        var absoluteFilePath = Path.Combine(RootDirectory, filePath);
+        if (sources.TryGetValue(absoluteFilePath, out var sourceFile))
+        {
+            return sourceFile;
+        }
+
+        return null;
+    }
+
     public async Task<SourceFile> AddSourceFile(string filePath, CancellationToken cancellationToken = default)
     {
         filePath = Path.GetFullPath(filePath);
