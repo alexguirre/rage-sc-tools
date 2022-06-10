@@ -1,9 +1,13 @@
 ﻿namespace ScTools.Tests.ScriptLang.Workspace;
 
+using ScTools.GameFiles;
 using ScTools.ScriptLang.Ast;
 using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.Ast.Expressions;
 using ScTools.ScriptLang.Workspace;
+
+using System.IO;
+using System.Text;
 
 public class ProjectTests
 {
@@ -41,21 +45,52 @@ public class ProjectTests
         var myScript = project.GetSourceFile("my_script.sc");
         NotNull(myScript);
 
-        var myMathAst = await myMath!.GetAstAsync();
-        var myScriptAst = await myScript!.GetAstAsync();
+        var myMathAst = (await myMath!.GetAstAsync())!;
+        NotNull(myMathAst);
+        var myScriptAst = (await myScript!.GetAstAsync())!;
+        NotNull(myScriptAst);
 
         False((await myMath!.GetDiagnosticsAsync())!.HasErrors);
         False((await myScript!.GetDiagnosticsAsync())!.HasErrors);
 
-        var addFuncDecl = myMathAst!.FindFirstNodeOfType<FunctionDeclaration>();
-        var importedStaticDecl = myMathAst!.FindFirstNodeOfType<VarDeclaration>();
-        var addFuncInvocation = myScriptAst!.FindFirstNodeOfType<InvocationExpression>();
-        var myStaticDecl = myScriptAst!.FindFirstNodeOfType<VarDeclaration>();
+        var addFuncDecl = myMathAst.FindFirstNodeOfType<FunctionDeclaration>();
+        var importedStaticDecl = myMathAst.FindFirstNodeOfType<VarDeclaration>();
+        var addFuncInvocation = myScriptAst.FindFirstNodeOfType<InvocationExpression>();
+        var myStaticDecl = myScriptAst.FindFirstNodeOfType<VarDeclaration>();
         Same(addFuncDecl, addFuncInvocation.Callee.GetNameSymbol());
         Same(importedStaticDecl, addFuncInvocation.Arguments[0].GetNameSymbol());
         Same(myStaticDecl, addFuncInvocation.Arguments[1].GetNameSymbol());
     }
 
+    [Fact]
+    public async Task CanCompileScriptThatRequiresMultipleSourceFiles()
+    {
+        using var project = await OpenTestProjectAsync(1);
+        var myScript = project.GetSourceFile("my_script.sc")!;
+        NotNull(myScript);
+
+        var compilation = (await myScript.CompileAsync())!;
+        NotNull(compilation);
+
+        False(compilation.Diagnostics.HasErrors);
+
+        Single(compilation.Scripts);
+        AssertAgainstExpectedAssembly(1, "my_script_expected_assembly.gtav.scasm", compilation.Scripts[0]);
+    }
+
     private static Task<Project> OpenTestProjectAsync(int id)
         => Project.OpenProjectAsync($"./Data/project{id:00}/project{id:00}.json");
+
+    private static void AssertAgainstExpectedAssembly(int projectId, string expectedAssemblyFileName, IScript compiledScript)
+    {
+        var expectedAssemblyPath = $"./Data/project{projectId:00}/{expectedAssemblyFileName}";
+
+        using var expectedAssemblyReader = new StreamReader(expectedAssemblyPath, Encoding.UTF8);
+        var expectedAssembler = ScTools.ScriptAssembly.Assembler.Assemble(expectedAssemblyReader, expectedAssemblyFileName, options: new() { IncludeFunctionNames = true });
+
+        var compiledScriptGTAV = IsType<ScTools.GameFiles.Five.Script>(compiledScript); // TODO: support other script formats
+        string sourceDump = compiledScriptGTAV.DumpToString(), expectedDump = expectedAssembler.OutputScript.DumpToString();
+
+        Util.AssertScriptsAreEqual(compiledScriptGTAV, expectedAssembler.OutputScript);
+    }
 }

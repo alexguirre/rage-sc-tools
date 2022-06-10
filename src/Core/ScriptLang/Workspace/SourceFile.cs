@@ -1,5 +1,6 @@
 ﻿namespace ScTools.ScriptLang.Workspace;
 
+using ScTools.GameFiles;
 using ScTools.ScriptLang.Ast;
 using ScTools.ScriptLang.Semantics;
 
@@ -8,6 +9,7 @@ using System.IO;
 public class SourceFile : IDisposable
 {
     private record AnalysisResult(DiagnosticsReport Diagnostics, CompilationUnit Ast);
+    public record CompilationResult(DiagnosticsReport Diagnostics, CompilationUnit Ast, IScript[] Scripts);
 
     private bool isDisposed;
     private CancellationTokenSource? analyzeTaskCts;
@@ -40,6 +42,22 @@ public class SourceFile : IDisposable
     {
         var result = await AnalyzeAsync(cancellationToken).ConfigureAwait(false);
         return result?.Diagnostics;
+    }
+
+    public async Task<CompilationResult?> CompileAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await AnalyzeAsync(cancellationToken).ConfigureAwait(false);
+        if (result is null)
+        {
+            return null;
+        }
+
+        var scripts = Array.Empty<GameFiles.Five.Script>();
+        if (!result.Diagnostics.HasErrors)
+        {
+            scripts = await Task.Run(() => CodeGen.ScriptCompiler.Compile(result.Ast), cancellationToken).ConfigureAwait(false);
+        }
+        return new(result.Diagnostics, result.Ast, scripts);
     }
 
     private void CancelAnalysis()

@@ -14,7 +14,7 @@ using CodeWalker.GameFiles;
 /// <remarks>
 /// GTA IV does not support <see cref="MagicUnencrypted"/>.
 /// </remarks>
-public class ScriptNY
+public class ScriptNY : IScript
 {
     public const uint MagicUnencrypted = 0x0E524353,         // "SCR\x0E"
                       MagicEncrypted = 0x0E726373,           // "scr\x0E"

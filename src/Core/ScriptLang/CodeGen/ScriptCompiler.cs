@@ -14,6 +14,7 @@ internal static class ScriptCompiler
     {
         var scripts = new List<Script>();
         var staticAllocator = new VarAllocator();
+        AddImportedStatics(staticAllocator, compilationUnit);
         foreach (var decl in compilationUnit.Declarations)
         {
             if (decl is VarDeclaration { Kind: VarKind.Static } staticVar)
@@ -58,5 +59,33 @@ internal static class ScriptCompiler
         result.StringsLength = result.StringsPages?.Length ?? 0;
 
         return result;
+    }
+
+    private static void AddImportedStatics(VarAllocator staticAllocator, CompilationUnit compilationUnit)
+    {
+        var importedSet = new HashSet<CompilationUnit>();
+        AddImportedStaticsRecursive(staticAllocator, compilationUnit, importedSet);
+
+        static void AddImportedStaticsRecursive(VarAllocator staticAllocator, CompilationUnit compilationUnit, HashSet<CompilationUnit> importedSet)
+        {
+            if (!importedSet.Add(compilationUnit))
+            {
+                // already imported
+                return;
+            }
+
+            foreach (var import in compilationUnit.Usings.Select(u => u.Semantics.ImportedCompilationUnit!).Where(i => i is not null))
+            {
+                AddImportedStatics(staticAllocator, import);
+
+                foreach (var decl in import.Declarations)
+                {
+                    if (decl is VarDeclaration { Kind: VarKind.Static } staticVar)
+                    {
+                        staticAllocator.Allocate(staticVar);
+                    }
+                }
+            }
+        }
     }
 }

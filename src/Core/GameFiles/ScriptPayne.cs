@@ -11,7 +11,7 @@ using CodeWalker.GameFiles;
 /// <summary>
 /// Version 16 and 17. Used in Max Payne 3.
 /// </summary>
-public class ScriptPayne
+public class ScriptPayne : IScript
 {
     public const uint MagicEncryptedV16 = 0x10726373,           // "scr\x10"
                       MagicEncryptedCompressedV16 = 0x10726353; // "Scr\x10"

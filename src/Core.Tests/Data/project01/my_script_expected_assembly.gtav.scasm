@@ -1,0 +1,28 @@
+﻿.script_name 'my_script'
+.static
+iImportedStatic: .int 0
+iMyStatic:       .int 0
+
+.code
+SCRIPT:
+	ENTER 0, 3
+	; static initializers
+	PUSH_CONST_2
+	STATIC_U8_STORE iImportedStatic
+	PUSH_CONST_1
+	STATIC_U8_STORE iMyStatic
+
+	; script code
+	STATIC_U8_LOAD iImportedStatic
+	STATIC_U8_LOAD iMyStatic
+	CALL ADD
+	LOCAL_U8_STORE 2
+
+	LEAVE 0, 0
+	
+ADD:
+	ENTER 2, 4
+	LOCAL_U8_LOAD 0
+	LOCAL_U8_LOAD 1
+	IADD
+	LEAVE 2, 1

@@ -15,7 +15,7 @@ using ScTools.ScriptAssembly;
 /// <summary>
 /// "Resource Era" Version 2. Used in Red Dead Redemption.
 /// </summary>
-public class ScriptRDR2
+public class ScriptRDR2 : IScript
 {
     public const uint MaxPageLength = 0x4000;
 

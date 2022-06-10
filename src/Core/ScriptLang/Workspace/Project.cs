@@ -62,7 +62,7 @@ public class Project : IDisposable, IUsingResolver
 
     private async Task OpenSourceFilesFromRoot(CancellationToken cancellationToken)
     {
-        Debug.Assert(sources.Count == 0);
+        Debug.Assert(sources.IsEmpty);
         var sourceFilesTasks = Directory.EnumerateFiles(RootDirectory, "*.sc*", SearchOption.AllDirectories)
                                        .Where(path => Path.GetExtension(path) is ".sc" or ".sch")
                                        .Select(path => AddSourceFile(path, cancellationToken));
