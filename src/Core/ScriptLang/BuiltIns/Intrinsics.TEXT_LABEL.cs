@@ -79,7 +79,7 @@ public static partial class Intrinsics
         public override ExpressionSemantics InvocationTypeCheck(InvocationExpression node, SemanticsAnalyzer semantics, ExpressionTypeChecker exprTypeChecker)
             => TypeCheckInvocationWithTextLabelRefParameter(this, node, semantics, exprTypeChecker, StringType.Instance);
 
-        public override void CodeGen(InvocationExpression node, CodeEmitter c)
+        public override void CodeGen(InvocationExpression node, ICodeEmitter c)
             => c.EmitTextLabelAssignString(destinationTextLabel: node.Arguments[0], sourceString: node.Arguments[1]);
     }
 
@@ -99,7 +99,7 @@ public static partial class Intrinsics
         public override ExpressionSemantics InvocationTypeCheck(InvocationExpression node, SemanticsAnalyzer semantics, ExpressionTypeChecker exprTypeChecker)
             => TypeCheckInvocationWithTextLabelRefParameter(this, node, semantics, exprTypeChecker, IntType.Instance);
 
-        public override void CodeGen(InvocationExpression node, CodeEmitter c)
+        public override void CodeGen(InvocationExpression node, ICodeEmitter c)
             => c.EmitTextLabelAssignInt(destinationTextLabel: node.Arguments[0], sourceInt: node.Arguments[1]);
     }
 
@@ -119,7 +119,7 @@ public static partial class Intrinsics
         public override ExpressionSemantics InvocationTypeCheck(InvocationExpression node, SemanticsAnalyzer semantics, ExpressionTypeChecker exprTypeChecker)
             => TypeCheckInvocationWithTextLabelRefParameter(this, node, semantics, exprTypeChecker, StringType.Instance);
 
-        public override void CodeGen(InvocationExpression node, CodeEmitter c)
+        public override void CodeGen(InvocationExpression node, ICodeEmitter c)
             => c.EmitTextLabelAppendString(destinationTextLabel: node.Arguments[0], sourceString: node.Arguments[1]);
     }
     
@@ -139,7 +139,7 @@ public static partial class Intrinsics
         public override ExpressionSemantics InvocationTypeCheck(InvocationExpression node, SemanticsAnalyzer semantics, ExpressionTypeChecker exprTypeChecker)
             => TypeCheckInvocationWithTextLabelRefParameter(this, node, semantics, exprTypeChecker, IntType.Instance);
 
-        public override void CodeGen(InvocationExpression node, CodeEmitter c)
+        public override void CodeGen(InvocationExpression node, ICodeEmitter c)
             => c.EmitTextLabelAppendInt(destinationTextLabel: node.Arguments[0], sourceInt: node.Arguments[1]);
     }
 }

@@ -42,7 +42,7 @@ public static partial class Intrinsics
             return new(IntType.Instance, ValueKind.RValue, ArgumentKind.None);
         }
 
-        public override void CodeGen(InvocationExpression node, CodeEmitter c)
+        public override void CodeGen(InvocationExpression node, ICodeEmitter c)
         {
             c.EmitValue(node.Arguments[0]);
         }

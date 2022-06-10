@@ -1,4 +1,4 @@
-﻿namespace ScTools.ScriptLang.CodeGen;
+﻿namespace ScTools.ScriptLang.CodeGen.Targets.Five;
 
 using System;
 using System.Collections.Generic;

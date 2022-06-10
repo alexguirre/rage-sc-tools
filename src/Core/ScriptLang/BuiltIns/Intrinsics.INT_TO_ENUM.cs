@@ -63,7 +63,7 @@ public static partial class Intrinsics
             return ConstantValue.Int(v.IntValue);
         }
 
-        public override void CodeGen(InvocationExpression node, CodeEmitter c)
+        public override void CodeGen(InvocationExpression node, ICodeEmitter c)
         {
             c.EmitValue(node.Arguments[1]);
         }

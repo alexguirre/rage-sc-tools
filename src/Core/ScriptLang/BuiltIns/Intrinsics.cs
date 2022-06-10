@@ -27,7 +27,7 @@ public interface IIntrinsic : ISymbol
     /// <summary>
     /// Generates the code for the invocation. Can be assumed that <see cref="InvocationTypeCheck"/> was successful.
     /// </summary>
-    void CodeGen(InvocationExpression node, CodeEmitter codeEmitter);
+    void CodeGen(InvocationExpression node, ICodeEmitter codeEmitter);
 }
 
 public static partial class Intrinsics
@@ -100,7 +100,7 @@ public static partial class Intrinsics
             ThrowCannotBeConstantEvaluated(this);
             return null;
         }
-        public abstract void CodeGen(InvocationExpression node, CodeEmitter codeEmitter);
+        public abstract void CodeGen(InvocationExpression node, ICodeEmitter codeEmitter);
 
         protected void UsagePrecondition(InvocationExpression node, [CallerArgumentExpression("node")] string? paramName = null)
             => IntrinsicUsagePrecondition(this, node, paramName);

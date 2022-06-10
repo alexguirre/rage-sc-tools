@@ -16,10 +16,10 @@ using ScTools.ScriptLang.Types;
 /// </summary>
 internal sealed class ValueEmitter : AstVisitor
 {
-    private readonly CodeEmitter _C;
+    private readonly ICodeEmitter _C;
     private readonly Semantics.LabelGenerator shortCircuitLabelGen = new() { Prefix = "vsc_lbl" };
 
-    public ValueEmitter(CodeEmitter codeEmitter) => _C = codeEmitter;
+    public ValueEmitter(ICodeEmitter codeEmitter) => _C = codeEmitter;
 
     public override void Visit(IntLiteralExpression node) => _C.EmitPushInt(node.Value);
     public override void Visit(FloatLiteralExpression node) => _C.EmitPushFloat(node.Value);
@@ -67,7 +67,7 @@ internal sealed class ValueEmitter : AstVisitor
             _C.EmitIndirectCall();
         }
 
-        static void EmitArgs(CodeEmitter c, InvocationExpression invocation)
+        static void EmitArgs(ICodeEmitter c, InvocationExpression invocation)
             => invocation.Arguments.ForEach(arg => c.EmitArg(arg));
     }
 

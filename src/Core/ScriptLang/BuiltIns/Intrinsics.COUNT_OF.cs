@@ -49,7 +49,7 @@ public static partial class Intrinsics
             return ConstantValue.Int(arrType.Length);
         }
 
-        public override void CodeGen(InvocationExpression node, CodeEmitter c)
+        public override void CodeGen(InvocationExpression node, ICodeEmitter c)
         {
             var arrType = (ArrayType)node.Arguments[0].Type!;
             c.EmitPushInt(arrType.Length);

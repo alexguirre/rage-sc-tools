@@ -52,10 +52,10 @@ public class SourceFile : IDisposable
             return null;
         }
 
-        var scripts = Array.Empty<GameFiles.Five.Script>();
+        var scripts = Array.Empty<IScript>();
         if (!result.Diagnostics.HasErrors)
         {
-            scripts = await Task.Run(() => CodeGen.ScriptCompiler.Compile(result.Ast), cancellationToken).ConfigureAwait(false);
+            scripts = await Task.Run(() => CodeGen.ScriptCompiler.Compile(result.Ast, Project.BuildConfiguration.Target), cancellationToken).ConfigureAwait(false);
         }
         return new(result.Diagnostics, result.Ast, scripts);
     }

@@ -10,6 +10,7 @@ using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.CodeGen;
 using ScTools.ScriptLang.Semantics;
 using ScTools.ScriptLang.Types;
+using ScTools.ScriptLang.Workspace;
 
 using Xunit;
 
@@ -78,15 +79,16 @@ public abstract class CodeGenTestsBase
         u.Accept(s);
         Assert.False(d.HasErrors);
 
-        var compiledScripts = ScriptCompiler.Compile(u);
+        var compiledScripts = ScriptCompiler.Compile(u, new(Game.GTAV, Platform.x64));
         Assert.False(d.HasErrors);
         var compiledScript = Assert.Single(compiledScripts);
+        var compiledScriptGTAV = IsType<GameFiles.Five.Script>(compiledScript);
 
         using var expectedAssemblyReader = new StringReader(expectedAssembly);
         var expectedAssembler = ScTools.ScriptAssembly.Assembler.Assemble(expectedAssemblyReader, "test_expected.scasm", nativeDB, options: new() { IncludeFunctionNames = true });
 
-        string sourceDump = compiledScript.DumpToString(), expectedDump = expectedAssembler.OutputScript.DumpToString();
+        string sourceDump = compiledScriptGTAV.DumpToString(), expectedDump = expectedAssembler.OutputScript.DumpToString();
 
-        Util.AssertScriptsAreEqual(compiledScript, expectedAssembler.OutputScript);
+        Util.AssertScriptsAreEqual(compiledScriptGTAV, expectedAssembler.OutputScript);
     }
 }

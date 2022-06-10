@@ -33,7 +33,7 @@ public static partial class Intrinsics
             return null;
         }
 
-        public override void CodeGen(InvocationExpression node, CodeEmitter c)
+        public override void CodeGen(InvocationExpression node, ICodeEmitter c)
         {
             c.EmitValue(node.Arguments[0]);
             c.EmitThrow();

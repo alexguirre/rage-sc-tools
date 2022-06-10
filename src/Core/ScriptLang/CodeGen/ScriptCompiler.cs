@@ -1,6 +1,6 @@
 ﻿namespace ScTools.ScriptLang.CodeGen;
 
-using ScTools.GameFiles.Five;
+using ScTools.GameFiles;
 using ScTools.ScriptLang.Ast;
 using ScTools.ScriptLang.Ast.Declarations;
 
@@ -10,9 +10,9 @@ using System.Diagnostics;
 
 internal static class ScriptCompiler
 {
-    public static Script[] Compile(CompilationUnit compilationUnit)
+    public static IScript[] Compile(CompilationUnit compilationUnit, Workspace.BuildTarget target)
     {
-        var scripts = new List<Script>();
+        var scripts = new List<IScript>();
         var staticAllocator = new VarAllocator();
         AddImportedStatics(staticAllocator, compilationUnit);
         foreach (var decl in compilationUnit.Declarations)
@@ -23,42 +23,17 @@ internal static class ScriptCompiler
             }
             else if (decl is ScriptDeclaration scriptDecl)
             {
-                scripts.Add(CompileScript(scriptDecl, staticAllocator));
+                scripts.Add(CompileScript(scriptDecl, staticAllocator, target));
             }
         }
 
         return scripts.ToArray();
     }
 
-    private static Script CompileScript(ScriptDeclaration scriptDecl, VarAllocator statics)
+    private static IScript CompileScript(ScriptDeclaration scriptDecl, VarAllocator statics, Workspace.BuildTarget target)
     {
-        var result = new Script()
-        {
-            Name = scriptDecl.Name,
-            NameHash = scriptDecl.Name.ToLowercaseHash(),
-            GlobalsSignature = 0, // TODO: include a way to set the hash in the SCRIPT declaration
-        };
-
-        var codeEmitter = new CodeEmitter(statics);
-        codeEmitter.EmitScript(scriptDecl);
-
-        result.CodePages = codeEmitter.ToCodePages();
-        result.CodeLength = result.CodePages?.Length ?? 0;
-
-        //OutputScript.GlobalsPages = globalSegmentBuilder.Length != 0 ? globalSegmentBuilder.ToPages<ScriptValue>() : null;
-        //OutputScript.GlobalsLength = OutputScript.GlobalsPages?.Length ?? 0;
-
-        result.Statics = codeEmitter.GetStaticSegment(out var argsCount);
-        result.StaticsCount = (uint)(result.Statics?.Length ?? 0);
-        result.ArgsCount = (uint)argsCount;
-
-        result.Natives = Array.Empty<ulong>();
-        result.NativesCount = 0;
-
-        result.StringsPages = codeEmitter.Strings.ByteLength != 0 ? codeEmitter.Strings.ToPages() : null;
-        result.StringsLength = result.StringsPages?.Length ?? 0;
-
-        return result;
+        var codeEmitter = CodeEmitterFactory.CreateForTarget(target, new(statics));
+        return codeEmitter.EmitScript(scriptDecl);
     }
 
     private static void AddImportedStatics(VarAllocator staticAllocator, CompilationUnit compilationUnit)

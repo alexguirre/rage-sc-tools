@@ -1,4 +1,4 @@
-﻿namespace ScTools.ScriptLang.CodeGen;
+﻿namespace ScTools.ScriptLang.CodeGen.Targets.Five;
 
 using System;
 using System.Collections.Generic;
@@ -14,7 +14,7 @@ using ScTools.ScriptLang.Ast.Statements;
 using ScTools.ScriptLang.Semantics;
 using ScTools.ScriptLang.Types;
 
-public sealed partial class CodeEmitter
+public sealed partial class CodeEmitter : ICodeEmitter
 {
     private enum LabelReferenceKind { Relative, Absolute }
     private record struct LabelReference(InstructionReference Instruction, int OperandOffset, LabelReferenceKind Kind);
@@ -55,9 +55,9 @@ public sealed partial class CodeEmitter
         addressEmitter = new(this);
     }
 
-    public ScriptPageTable<byte> ToCodePages() => codeBuffer.ToCodePages(labels);
+    private ScriptPageTable<byte> ToCodePages() => codeBuffer.ToCodePages(labels);
 
-    public ScriptValue64[] GetStaticSegment(out int numScriptParams)
+    private ScriptValue64[] GetStaticSegment(out int numScriptParams)
     {
         var staticsBuffer = new ScriptValue64[statics.AllocatedSize];
 
@@ -75,7 +75,7 @@ public sealed partial class CodeEmitter
         return staticsBuffer;
     }
 
-    public void EmitScript(ScriptDeclaration script)
+    public IScript EmitScript(ScriptDeclaration script)
     {
         EmitScriptEntryPoint(script);
 
@@ -85,9 +85,37 @@ public sealed partial class CodeEmitter
         }
 
         new PatternOptimizer().Optimize(codeBuffer);
+
+        return FinalizeScript(script);
     }
 
-    public void EmitScriptEntryPoint(ScriptDeclaration script)
+    private IScript FinalizeScript(ScriptDeclaration script)
+    {
+        var codePages = ToCodePages();
+        var statics = GetStaticSegment(out var argsCount);
+        //var globals = globalSegmentBuilder.Length != 0 ? globalSegmentBuilder.ToPages<ScriptValue>() : null;
+        var natives = Array.Empty<ulong>();
+        var strings = Strings.ByteLength != 0 ? Strings.ToPages() : null;
+        return new Script
+        {
+            Name = script.Name,
+            NameHash = script.Name.ToLowercaseHash(),
+            GlobalsSignature = 0, // TODO: include a way to set the hash in the SCRIPT declaration
+            CodePages = codePages,
+            CodeLength = codePages?.Length ?? 0,
+            //GlobalsPages = globals,
+            //GlobalsLength = globals?.Length ?? 0,
+            Statics = statics,
+            StaticsCount = (uint)(statics?.Length ?? 0),
+            ArgsCount = (uint)argsCount,
+            Natives = natives,
+            NativesCount = (uint)(natives?.Length ?? 0),
+            StringsPages = strings,
+            StringsLength = strings?.Length ?? 0,
+        };
+    }
+
+    private void EmitScriptEntryPoint(ScriptDeclaration script)
     {
         var staticsWithoutScriptParamsSize = statics.AllocatedSize;
         script.Parameters.ForEach(p => statics.Allocate(p));
@@ -95,8 +123,8 @@ public sealed partial class CodeEmitter
 
         EmitFunctionCommon("SCRIPT", script.Parameters, script.Body, VoidType.Instance, isScriptEntryPoint: true);
     }
-
-    public void EmitFunction(FunctionDeclaration function)
+    
+    private void EmitFunction(FunctionDeclaration function)
     {
         Label(function.Name, isFunctionLabel: true);
         EmitFunctionCommon(function.Name, function.Parameters, function.Body, ((FunctionType)function.Semantics.ValueType!).Return, isScriptEntryPoint: false);
@@ -903,7 +931,8 @@ public sealed partial class CodeEmitter
             });
     }
 
-    public void Label(string name, bool isFunctionLabel = false)
+    public void Label(string name) => Label(name, isFunctionLabel: false);
+    private void Label(string name, bool isFunctionLabel = false)
     {
         var nameToIndex = isFunctionLabel ? functionLabelNameToIndex : localLabelNameToIndex;
 

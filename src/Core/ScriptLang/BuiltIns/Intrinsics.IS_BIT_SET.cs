@@ -34,7 +34,7 @@ public static partial class Intrinsics
             return ConstantValue.Bool((value & (1 << position)) != 0);
         }
 
-        public override void CodeGen(InvocationExpression node, CodeEmitter codeEmitter)
+        public override void CodeGen(InvocationExpression node, ICodeEmitter codeEmitter)
             => throw new System.NotImplementedException();
     }
 }

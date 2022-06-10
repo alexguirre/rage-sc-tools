@@ -2,6 +2,8 @@
 
 using ScTools.LanguageServer.Services;
 
+using LspRange = Microsoft.VisualStudio.LanguageServer.Protocol.Range;
+
 public class HoverHandler : ILspRequestHandler<TextDocumentPositionParams, Hover?>
 {
     private readonly ITextDocumentTracker textDocumentTracker;
@@ -35,7 +37,7 @@ public class HoverHandler : ILspRequestHandler<TextDocumentPositionParams, Hover
                 Kind = MarkupKind.Markdown,
                 Value = node?.DebuggerDisplay ?? $"<no AST node at this position ({param.Position.Line}, {param.Position.Character})>",
             },
-            Range = node is null ? new Range { Start = param.Position, End = param.Position } :
+            Range = node is null ? new LspRange { Start = param.Position, End = param.Position } :
                                    ProtocolConversions.ToLspRange(node.Location),
         };
 

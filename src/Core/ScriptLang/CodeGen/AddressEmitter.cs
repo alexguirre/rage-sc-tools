@@ -13,9 +13,9 @@ using ScTools.ScriptLang.Ast.Expressions;
 /// </summary>
 internal sealed class AddressEmitter : AstVisitor
 {
-    private readonly CodeEmitter _C;
+    private readonly ICodeEmitter _C;
 
-    public AddressEmitter(CodeEmitter codeEmitter) => _C = codeEmitter;
+    public AddressEmitter(ICodeEmitter codeEmitter) => _C = codeEmitter;
 
     public override void Visit(NameExpression node)
     {

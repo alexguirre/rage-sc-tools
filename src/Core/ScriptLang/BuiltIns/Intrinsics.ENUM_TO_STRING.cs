@@ -57,7 +57,7 @@ public static partial class Intrinsics
             return ConstantValue.String(member?.Name ?? EnumNotFound);
         }
 
-        public override void CodeGen(InvocationExpression node, CodeEmitter c)
+        public override void CodeGen(InvocationExpression node, ICodeEmitter c)
         {
             c.EmitValue(node.Arguments[0]);
             c.EmitCall(GetEnumToStringFunction((EnumType)node.Arguments[0].Type!));

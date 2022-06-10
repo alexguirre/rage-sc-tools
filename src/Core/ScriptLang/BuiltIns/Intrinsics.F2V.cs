@@ -32,7 +32,7 @@ public static partial class Intrinsics
             return ConstantValue.Vector(value.FloatValue, value.FloatValue, value.FloatValue);
         }
 
-        public override void CodeGen(InvocationExpression node, CodeEmitter c)
+        public override void CodeGen(InvocationExpression node, ICodeEmitter c)
         {
             c.EmitValue(node.Arguments[0]);
             c.EmitCastFloatToVector();

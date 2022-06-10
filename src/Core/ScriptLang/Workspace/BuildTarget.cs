@@ -2,7 +2,10 @@
 
 using System.Text.Json.Serialization;
 
-public readonly record struct BuildTarget(Game Game, Platform Platform);
+public readonly record struct BuildTarget(Game Game, Platform Platform)
+{
+    public string ToDisplayString() => $"{Game}-{Platform}";
+}
 
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum Game

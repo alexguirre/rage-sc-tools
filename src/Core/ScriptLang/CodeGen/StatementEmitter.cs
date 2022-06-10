@@ -15,9 +15,9 @@ using ScTools.ScriptLang.Types;
 /// </summary>
 internal sealed class StatementEmitter : AstVisitor
 {
-    private readonly CodeEmitter _C;
+    private readonly ICodeEmitter _C;
 
-    public StatementEmitter(CodeEmitter codeEmitter) => _C = codeEmitter;
+    public StatementEmitter(ICodeEmitter codeEmitter) => _C = codeEmitter;
 
     public override void Visit(VarDeclaration node)
     {

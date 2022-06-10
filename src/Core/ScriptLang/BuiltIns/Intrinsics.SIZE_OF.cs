@@ -38,7 +38,7 @@ public static partial class Intrinsics
         public override ConstantValue ConstantEval(InvocationExpression node, SemanticsAnalyzer semantics)
             => ConstantValue.Int(GetTypeFromArgument(node).SizeOf);
 
-        public override void CodeGen(InvocationExpression node, CodeEmitter c)
+        public override void CodeGen(InvocationExpression node, ICodeEmitter c)
             => c.EmitPushInt(GetTypeFromArgument(node).SizeOf);
 
         private static TypeInfo GetTypeFromArgument(InvocationExpression node)
