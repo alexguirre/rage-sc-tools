@@ -1,10 +1,5 @@
 ﻿namespace ScTools.ScriptLang.CodeGen.Targets.Five;
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Text;
-
 using ScTools.ScriptAssembly;
 
 public partial class CodeEmitter
@@ -318,7 +313,7 @@ public partial class CodeEmitter
             EmitU16(frameSize);
             if (IncludeFunctionNames && name is not null)
             {
-                var nameBytes = Encoding.UTF8.GetBytes(name).AsSpan();
+                var nameBytes = System.Text.Encoding.UTF8.GetBytes(name).AsSpan();
                 nameBytes = nameBytes[..Math.Min(nameBytes.Length, byte.MaxValue - 1)]; // limit length to 255 bytes (including null terminators)
                 EmitU8((byte)(nameBytes.Length + 1));
                 EmitBytes(nameBytes);

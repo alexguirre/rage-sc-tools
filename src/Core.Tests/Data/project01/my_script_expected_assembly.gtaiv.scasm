@@ -1,0 +1,39 @@
+﻿.script_name 'my_script'
+.static
+iImportedStatic: .int 0
+iMyStatic:       .int 0
+
+.code
+SCRIPT:
+	ENTER 0, 3
+	; static initializers
+	PUSH_CONST_2
+	PUSH_CONST_0   ; iImportedStatic
+	STATIC
+	STORE
+	PUSH_CONST_1
+	PUSH_CONST_1   ; iMyStatic
+	STATIC
+	STORE
+
+	; script code
+	PUSH_CONST_0   ; iImportedStatic
+	STATIC
+	LOAD
+	PUSH_CONST_1   ; iMyStatic
+	STATIC
+	LOAD
+	CALL ADD
+	LOCAL_2
+	STORE
+
+	LEAVE 0, 0
+	
+ADD:
+	ENTER 2, 4
+	LOCAL_0
+	LOAD
+	LOCAL_1
+	LOAD
+	IADD
+	LEAVE 2, 1

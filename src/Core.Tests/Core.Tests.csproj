@@ -38,6 +38,9 @@
     <None Update="Data\project01\my_script.sc">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Data\project01\my_script_expected_assembly.gtaiv.scasm">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Data\project01\my_script_expected_assembly.gtav.scasm">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

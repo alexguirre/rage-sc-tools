@@ -17,6 +17,15 @@
       "defines": [
         "MY_RELEASE"
       ]
+    },
+    "Release-GTAIV": {
+      "target": {
+        "game": "GTAIV",
+        "platform": "x86"
+      },
+      "defines": [
+        "MY_RELEASE"
+      ]
     }
   }
 }

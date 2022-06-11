@@ -1,9 +1,5 @@
 ﻿namespace ScTools.ScriptLang.CodeGen.Targets.Five;
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-
 using ScTools.ScriptAssembly;
 
 public partial class CodeEmitter

@@ -69,6 +69,7 @@ public class ProjectTests
         var myScript = project.GetSourceFile("my_script.sc")!;
         NotNull(myScript);
 
+
         var compilation = (await myScript.CompileAsync())!;
         NotNull(compilation);
 
@@ -76,6 +77,17 @@ public class ProjectTests
 
         Single(compilation.Scripts);
         AssertAgainstExpectedAssembly(1, "my_script_expected_assembly.gtav.scasm", compilation.Scripts[0]);
+
+
+        project.BuildConfigurationName = "Release-GTAIV";
+        compilation = (await myScript.CompileAsync())!;
+        NotNull(compilation);
+
+        False(compilation.Diagnostics.HasErrors);
+
+        Single(compilation.Scripts);
+        AssertAgainstExpectedAssembly(1, "my_script_expected_assembly.gtaiv.scasm", compilation.Scripts[0]);
+
     }
 
     private static Task<Project> OpenTestProjectAsync(int id)
@@ -86,11 +98,19 @@ public class ProjectTests
         var expectedAssemblyPath = $"./Data/project{projectId:00}/{expectedAssemblyFileName}";
 
         using var expectedAssemblyReader = new StreamReader(expectedAssemblyPath, Encoding.UTF8);
-        var expectedAssembler = ScTools.ScriptAssembly.Assembler.Assemble(expectedAssemblyReader, expectedAssemblyFileName, options: new() { IncludeFunctionNames = true });
+        if (compiledScript is GameFiles.Five.Script compiledScriptGTAV)
+        {
+            var expectedAssembler = ScTools.ScriptAssembly.Assembler.Assemble(expectedAssemblyReader, expectedAssemblyFileName, options: new() { IncludeFunctionNames = true });
 
-        var compiledScriptGTAV = IsType<ScTools.GameFiles.Five.Script>(compiledScript); // TODO: support other script formats
-        string sourceDump = compiledScriptGTAV.DumpToString(), expectedDump = expectedAssembler.OutputScript.DumpToString();
+            string sourceDump = compiledScriptGTAV.DumpToString(), expectedDump = expectedAssembler.OutputScript.DumpToString();
 
-        Util.AssertScriptsAreEqual(compiledScriptGTAV, expectedAssembler.OutputScript);
+            Util.AssertScriptsAreEqual(compiledScriptGTAV, expectedAssembler.OutputScript);
+        }
+        else if (compiledScript is ScriptNY compiledScriptGTAIV)
+        {
+            string sourceDump = compiledScriptGTAIV.DumpToString();
+            // TODO: NY assembly
+            ;
+        }
     }
 }

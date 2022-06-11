@@ -1,7 +1,6 @@
-﻿namespace ScTools.ScriptLang.CodeGen.Targets.Five;
+﻿namespace ScTools.ScriptLang.CodeGen.Targets.NY;
 
 using ScTools.GameFiles;
-using ScTools.GameFiles.Five;
 using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.Ast.Expressions;
 using ScTools.ScriptLang.Ast.Statements;
@@ -10,8 +9,7 @@ using ScTools.ScriptLang.Types;
 
 public sealed partial class CodeEmitter : ICodeEmitter
 {
-    private enum LabelReferenceKind { Relative, Absolute }
-    private record struct LabelReference(InstructionReference Instruction, int OperandOffset, LabelReferenceKind Kind);
+    private record struct LabelReference(InstructionReference Instruction, int OperandOffset);
     private record struct LabelInfo(InstructionReference? Instruction, List<LabelReference> UnresolvedReferences);
 
     private readonly StatementEmitter stmtEmitter;
@@ -49,11 +47,11 @@ public sealed partial class CodeEmitter : ICodeEmitter
         addressEmitter = new(this);
     }
 
-    private ScriptPageTable<byte> ToCodePages() => codeBuffer.ToCodePages(labels);
+    private byte[] ToCodeBuffer() => codeBuffer.ToCodeBuffer(labels);
 
-    private ScriptValue64[] GetStaticSegment(out int numScriptParams)
+    private ScriptValue32[] GetStaticSegment(out int numScriptParams)
     {
-        var staticsBuffer = new ScriptValue64[statics.AllocatedSize];
+        var staticsBuffer = new ScriptValue32[statics.AllocatedSize];
 
         foreach (var s in statics)
         {
@@ -78,34 +76,24 @@ public sealed partial class CodeEmitter : ICodeEmitter
             EmitFunction(function);
         }
 
-        new PatternOptimizer().Optimize(codeBuffer);
-
         return FinalizeScript(script);
     }
 
     private IScript FinalizeScript(ScriptDeclaration script)
     {
-        var codePages = ToCodePages();
+        var code = ToCodeBuffer();
         var statics = GetStaticSegment(out var argsCount);
         //var globals = globalSegmentBuilder.Length != 0 ? globalSegmentBuilder.ToPages<ScriptValue>() : null;
-        var natives = Array.Empty<ulong>();
-        var strings = Strings.ByteLength != 0 ? Strings.ToPages() : null;
-        return new Script
+        return new ScriptNY
         {
-            Name = script.Name,
-            NameHash = script.Name.ToLowercaseHash(),
             GlobalsSignature = 0, // TODO: include a way to set the hash in the SCRIPT declaration
-            CodePages = codePages,
-            CodeLength = codePages?.Length ?? 0,
+            Code = code,
+            CodeLength = (uint)(code?.Length ?? 0),
             //GlobalsPages = globals,
             //GlobalsLength = globals?.Length ?? 0,
             Statics = statics,
             StaticsCount = (uint)(statics?.Length ?? 0),
             ArgsCount = (uint)argsCount,
-            Natives = natives,
-            NativesCount = (uint)(natives?.Length ?? 0),
-            StringsPages = strings,
-            StringsLength = strings?.Length ?? 0,
         };
     }
 
@@ -147,7 +135,7 @@ public sealed partial class CodeEmitter : ICodeEmitter
         AllocateFrameSpace(2);
 
         // prologue (frame size is not yet known, it is updated after emitting the function code)
-        var enter = instEmitter.EmitEnter(currentFunctionArgCount, frameSize: 0, name);
+        var enter = instEmitter.EmitEnter(currentFunctionArgCount, frameSize: 0);
 
         if (isScriptEntryPoint)
         {
@@ -168,7 +156,7 @@ public sealed partial class CodeEmitter : ICodeEmitter
         Debug.Assert(currentFunctionFrame.AllocatedSize <= ushort.MaxValue, $"Function frame size is too big");
         var oldFlushStrategy = instEmitter.FlushStrategy;
         instEmitter.FlushStrategy = new InstructionEmitter.UpdateFlushStrategy(codeBuffer, enter);
-        instEmitter.EmitEnter(currentFunctionArgCount, (ushort)currentFunctionFrame.AllocatedSize, name);
+        instEmitter.EmitEnter(currentFunctionArgCount, (ushort)currentFunctionFrame.AllocatedSize);
         instEmitter.FlushStrategy = oldFlushStrategy;
     }
 
@@ -239,27 +227,23 @@ public sealed partial class CodeEmitter : ICodeEmitter
     public void EmitJump(string label)
     {
         var inst = instEmitter.EmitJ(0);
-        ReferenceLabel(label, inst, 1, LabelReferenceKind.Relative, isFunctionLabel: false);
+        ReferenceLabel(label, inst, 1, isFunctionLabel: false);
     }
     public void EmitJumpIfZero(string label)
     {
         var inst = instEmitter.EmitJZ(0);
-        ReferenceLabel(label, inst, 1, LabelReferenceKind.Relative, isFunctionLabel: false);
+        ReferenceLabel(label, inst, 1, isFunctionLabel: false);
     }
 
     public void EmitCall(FunctionDeclaration function)
     {
         var inst = instEmitter.EmitCall(0);
-        ReferenceLabel(function.Name, inst, 1, LabelReferenceKind.Absolute, isFunctionLabel: true);
+        ReferenceLabel(function.Name, inst, 1, isFunctionLabel: true);
         OnFunctionFound(function);
     }
 
     public void EmitFunctionAddress(FunctionDeclaration function)
-    {
-        var inst = instEmitter.EmitPushConstU24(0);
-        ReferenceLabel(function.Name, inst, 1, LabelReferenceKind.Absolute, isFunctionLabel: true);
-        OnFunctionFound(function);
-    }
+        => throw new NotSupportedException("Function pointers are not supported");
 
     public void EmitNativeCall(NativeFunctionDeclaration nativeFunction)
     {
@@ -268,13 +252,11 @@ public sealed partial class CodeEmitter : ICodeEmitter
         var returnCount = funcType.Return.SizeOf;
         Debug.Assert(argCount <= byte.MaxValue);
         Debug.Assert(returnCount <= byte.MaxValue);
-        instEmitter.EmitNative((byte)argCount, (byte)returnCount, 0); // TODO: convert native name to index
+        instEmitter.EmitNative((byte)argCount, (byte)returnCount, nativeFunction.Name.ToLowercaseHash());
     }
 
     public void EmitIndirectCall()
-    {
-        instEmitter.EmitCallIndirect();
-    }
+        => throw new NotSupportedException("Function pointers are not supported");
 
     public void EmitSwitch(IEnumerable<ValueSwitchCase> valueCases)
     {
@@ -283,9 +265,9 @@ public sealed partial class CodeEmitter : ICodeEmitter
         for (int i = 0; i < cases.Length; i++)
         {
             var @case = cases[i];
-            var valueOffset = 2 + i * 6;
+            var valueOffset = 2 + i * 8;
             var labelOffset = valueOffset + 4;
-            ReferenceLabel(@case.Semantics.Label!, inst, labelOffset, LabelReferenceKind.Relative, isFunctionLabel: false);
+            ReferenceLabel(@case.Semantics.Label!, inst, labelOffset, isFunctionLabel: false);
         }
     }
 
@@ -419,94 +401,39 @@ public sealed partial class CodeEmitter : ICodeEmitter
         EmitAddress(expr.Array);
 
         var itemSize = expr.Semantics.Type!.SizeOf;
-        switch (itemSize)
-        {
-            case >= byte.MinValue and <= byte.MaxValue:
-                instEmitter.EmitArrayU8((byte)itemSize);
-                break;
-
-            case >= ushort.MinValue and <= ushort.MaxValue:
-                instEmitter.EmitArrayU16((ushort)itemSize);
-                break;
-
-            default:
-                Debug.Assert(false, $"Array item size too big (itemSize: {itemSize})");
-                break;
-        }
+        EmitPushInt(itemSize); // TODO: VERIFY THIS IS THE CORRECT ORDER ARRAY OPCODE
+        instEmitter.EmitArray();
     }
 
     public void EmitOffset(int offset)
     {
-        switch (offset)
-        {
-            case 0:
-                // offset doesn't change, don't need to emit anything
-                break;
-
-            case >= byte.MinValue and <= byte.MaxValue:
-                instEmitter.EmitIOffsetU8((byte)offset);
-                break;
-
-            case >= short.MinValue and <= short.MaxValue:
-                instEmitter.EmitIOffsetS16((short)offset);
-                break;
-
-            default:
-                EmitPushInt(offset);
-                instEmitter.EmitIOffset();
-                break;
-        }
+        EmitPushInt(offset);
+        instEmitter.EmitIAdd();
     }
 
     private void EmitGlobalAddress(VarDeclaration declaration)
     {
         throw new NotImplementedException(nameof(EmitGlobalAddress));
         // TODO: EmitGlobal
-        //switch (varDecl.Address)
-        //{
-        //    case >= 0 and <= 0x0000FFFF:
-        //        CG.Emit(Opcode.GLOBAL_U16, varDecl.Address);
-        //        break;
-
-        //    case >= 0 and <= 0x00FFFFFF:
-        //        CG.Emit(Opcode.GLOBAL_U24, varDecl.Address);
-        //        break;
-
-        //    default: Debug.Assert(false, "Global var address too big"); break;
-        //}
     }
     private void EmitStaticAddress(VarDeclaration declaration)
     {
         int address = statics.OffsetOf(declaration);
-
-        switch (address)
-        {
-            case >= byte.MinValue and <= byte.MaxValue:
-                instEmitter.EmitStaticU8((byte)address);
-                break;
-
-            case >= ushort.MinValue and <= ushort.MaxValue:
-                instEmitter.EmitStaticU16((ushort)address);
-                break;
-
-            default: Debug.Assert(false, "Static var address too big"); break;
-        }
+        EmitPushInt(address);
+        instEmitter.EmitStatic();
     }
     private void EmitScriptParameterAddress(VarDeclaration declaration) => EmitStaticAddress(declaration);
     private void EmitLocalAddress(VarDeclaration declaration)
     {
         var address = currentFunctionFrame.OffsetOf(declaration);
-        switch (address)
+        if (address is >= 0 and <= 7)
         {
-            case >= byte.MinValue and <= byte.MaxValue:
-                instEmitter.EmitLocalU8((byte)address);
-                break;
-
-            case >= ushort.MinValue and <= ushort.MaxValue:
-                instEmitter.EmitLocalU16((ushort)address);
-                break;
-
-            default: Debug.Assert(false, "Local var address too big"); break;
+            instEmitter.EmitLocalN(address);
+        }
+        else
+        {
+            EmitPushInt(address);
+            instEmitter.EmitLocal();
         }
     }
     private void EmitParameterAddress(VarDeclaration declaration)
@@ -514,19 +441,8 @@ public sealed partial class CodeEmitter : ICodeEmitter
         if (declaration.IsReference)
         {
             // parameter passed by reference, the address is its value
-            var paramAddress = currentFunctionFrame.OffsetOf(declaration);
-            switch (paramAddress)
-            {
-                case >= byte.MinValue and <= byte.MaxValue:
-                    instEmitter.EmitLocalU8Load((byte)paramAddress);
-                    break;
-
-                case >= ushort.MinValue and <= ushort.MaxValue:
-                    instEmitter.EmitLocalU16Load((ushort)paramAddress);
-                    break;
-
-                default: Debug.Assert(false, "Parameter address too big"); break;
-            }
+            EmitLocalAddress(declaration);
+            instEmitter.EmitLoad();
         }
         else
         {
@@ -643,7 +559,7 @@ public sealed partial class CodeEmitter : ICodeEmitter
         }
     }
 
-    private static void StaticDefaultInit(Span<ScriptValue64> dest, TypeInfo type)
+    private static void StaticDefaultInit(Span<ScriptValue32> dest, TypeInfo type)
     {
         Debug.Assert(dest.Length == type.SizeOf);
         switch (type)
@@ -654,7 +570,7 @@ public sealed partial class CodeEmitter : ICodeEmitter
         }
     }
 
-    private static void StaticDefaultInitStruct(Span<ScriptValue64> dest, StructType structTy)
+    private static void StaticDefaultInitStruct(Span<ScriptValue32> dest, StructType structTy)
     {
         foreach (var (field, fieldDecl) in structTy.Fields.Zip(structTy.Declaration.Fields))
         {
@@ -700,7 +616,7 @@ public sealed partial class CodeEmitter : ICodeEmitter
         }
     }
 
-    private static void StaticDefaultInitArray(Span<ScriptValue64> dest, ArrayType arrayTy)
+    private static void StaticDefaultInitArray(Span<ScriptValue32> dest, ArrayType arrayTy)
     {
         // write array size
         dest[0].AsInt32 = arrayTy.Length;
@@ -851,63 +767,29 @@ public sealed partial class CodeEmitter : ICodeEmitter
     public void EmitDup() => instEmitter.EmitDup();
     public void EmitDrop() => instEmitter.EmitDrop();
 
-    public void EmitPushString(string value)
+    public void EmitPushString(string value) => instEmitter.EmitString(value);
+    public void EmitPushNull()
     {
-        var offset = Strings.GetOffsetOf(value);
-        EmitPushInt(offset);
-        instEmitter.EmitString();
+        instEmitter.EmitNull();
+        instEmitter.EmitLoad();
     }
-
-    public void EmitPushNull() => EmitPushInt(0);
     public void EmitPushBool(bool value) => EmitPushInt(value ? 1 : 0);
     public void EmitPushInt(int value)
     {
         switch (value)
         {
-            case -1: instEmitter.EmitPushConstM1(); break;
-            case 0: instEmitter.EmitPushConst0(); break;
-            case 1: instEmitter.EmitPushConst1(); break;
-            case 2: instEmitter.EmitPushConst2(); break;
-            case 3: instEmitter.EmitPushConst3(); break;
-            case 4: instEmitter.EmitPushConst4(); break;
-            case 5: instEmitter.EmitPushConst5(); break;
-            case 6: instEmitter.EmitPushConst6(); break;
-            case 7: instEmitter.EmitPushConst7(); break;
-
-            case >= byte.MinValue and <= byte.MaxValue:
-                instEmitter.EmitPushConstU8((byte)value);
+            case >= -16 and <= 159:
+                instEmitter.EmitPushConstN(value);
                 break;
-
             case >= short.MinValue and <= short.MaxValue:
-                instEmitter.EmitPushConstS16((short)value);
+                instEmitter.EmitPushConstU16(unchecked((ushort)value));
                 break;
-
-            case >= 0 and <= 0x00FFFFFF:
-                instEmitter.EmitPushConstU24(unchecked((uint)value));
-                break;
-
             default:
                 instEmitter.EmitPushConstU32(unchecked((uint)value));
                 break;
         }
     }
-
-    public void EmitPushFloat(float value)
-    {
-        switch (value)
-        {
-            case -1.0f: instEmitter.EmitPushConstFM1(); break;
-            case 0.0f: instEmitter.EmitPushConstF0(); break;
-            case 1.0f: instEmitter.EmitPushConstF1(); break;
-            case 2.0f: instEmitter.EmitPushConstF2(); break;
-            case 3.0f: instEmitter.EmitPushConstF3(); break;
-            case 4.0f: instEmitter.EmitPushConstF4(); break;
-            case 5.0f: instEmitter.EmitPushConstF5(); break;
-            case 6.0f: instEmitter.EmitPushConstF6(); break;
-            case 7.0f: instEmitter.EmitPushConstF7(); break;
-            default: instEmitter.EmitPushConstF(value); break;
-        }
-    }
+    public void EmitPushFloat(float value) => instEmitter.EmitPushConstF(value);
 
     public void EmitPushConst(ConstantValue value)
     {
@@ -948,19 +830,19 @@ public sealed partial class CodeEmitter : ICodeEmitter
         }
     }
 
-    private void ReferenceLabel(string label, InstructionReference instruction, int operandOffset, LabelReferenceKind kind, bool isFunctionLabel)
+    private void ReferenceLabel(string label, InstructionReference instruction, int operandOffset, bool isFunctionLabel)
     {
         var nameToIndex = isFunctionLabel ? functionLabelNameToIndex : localLabelNameToIndex;
 
         if (nameToIndex.TryGetValue(label, out var idx))
         {
-            labels[idx].UnresolvedReferences.Add(new(instruction, operandOffset, kind));
+            labels[idx].UnresolvedReferences.Add(new(instruction, operandOffset));
         }
         else
         {
             // first time this label is referenced
             nameToIndex.Add(label, labels.Count);
-            labels.Add(new(Instruction: null, UnresolvedReferences: new() { new(instruction, operandOffset, kind) }));
+            labels.Add(new(Instruction: null, UnresolvedReferences: new() { new(instruction, operandOffset) }));
         }
     }
 
