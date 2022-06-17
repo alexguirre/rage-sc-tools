@@ -4,10 +4,11 @@ using System.Collections.Generic;
 
 using ScTools.GameFiles.Five;
 using ScTools.ScriptAssembly;
+using ScTools.ScriptAssembly.Targets.Five;
 
 public sealed class StringsTable
 {
-    private readonly SegmentBuilder segmentBuilder = new(Assembler.GetAddressingUnitByteSize(Assembler.Segment.String), isPaged: true);
+    private readonly SegmentBuilder segmentBuilder = new(Assembler.GetSegmentAlignment(Assembler.Segment.String), isPaged: true);
     private readonly Dictionary<string, int> stringToOffset = new();
 
     public int ByteLength => segmentBuilder.Length;

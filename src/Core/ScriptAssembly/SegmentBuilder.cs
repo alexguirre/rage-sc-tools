@@ -11,23 +11,23 @@ public class SegmentBuilder : IDisposable
 {
     private bool disposed;
 
-    public int AddressingUnitByteSize { get; }
+    public int Alignment { get; }
     public bool IsPaged { get; }
     public MemoryStream RawData { get; }
     public Span<byte> RawDataBuffer => RawData.GetBuffer().AsSpan(0, ByteLength);
     public BinaryWriter RawWriter { get; }
 
     public int ByteLength => (int)RawData.Length;
-    public int Length => (ByteLength - 1 + AddressingUnitByteSize) / AddressingUnitByteSize;
+    public int Length => (ByteLength - 1 + Alignment) / Alignment;
 
-    public SegmentBuilder(int addressingUnitByteSize, bool isPaged)
+    public SegmentBuilder(int alignment, bool isPaged)
     {
-        if (addressingUnitByteSize < 1)
+        if (alignment < 1)
         {
-            throw new ArgumentOutOfRangeException(nameof(addressingUnitByteSize), "Alignment must be at least 1");
+            throw new ArgumentOutOfRangeException(nameof(alignment), "Alignment must be at least 1");
         }
 
-        AddressingUnitByteSize = addressingUnitByteSize;
+        Alignment = alignment;
         IsPaged = isPaged;
         RawData = new MemoryStream();
         RawWriter = new BinaryWriter(RawData, Encoding.UTF8, leaveOpen: true);
@@ -136,12 +136,12 @@ public class SegmentBuilder : IDisposable
 
     private void Align()
     {
-        if (AddressingUnitByteSize == 1)
+        if (Alignment == 1)
         {
             return;
         }
 
-        var padding = (AddressingUnitByteSize - (RawData.Length % AddressingUnitByteSize)) % AddressingUnitByteSize;
+        var padding = (Alignment - (RawData.Length % Alignment)) % Alignment;
         if (padding > 0)
         {
             RawWriter.Write(new byte[padding]);
@@ -155,7 +155,7 @@ public class SegmentBuilder : IDisposable
             return true;
         }
 
-        var dataLength = (dataByteSize - 1 + AddressingUnitByteSize) / AddressingUnitByteSize;
+        var dataLength = (dataByteSize - 1 + Alignment) / Alignment;
         var offset = Length & (Script.MaxPageLength - 1);
         var lengthAfterWrite = offset + dataLength;
         return lengthAfterWrite <= Script.MaxPageLength;
@@ -171,14 +171,14 @@ public class SegmentBuilder : IDisposable
             return;
         }
 
-        var dataLength = (dataByteSize - 1 + AddressingUnitByteSize) / AddressingUnitByteSize;
+        var dataLength = (dataByteSize - 1 + Alignment) / Alignment;
         var offset = Length & (Script.MaxPageLength - 1);
         var lengthAfterWrite = offset + dataLength;
         if (lengthAfterWrite > Script.MaxPageLength)
         {
             // the data doesn't fit in the current page, skip until the next one (zeroed out)
             var len = Script.MaxPageLength - offset;
-            RawWriter.Write(new byte[len * AddressingUnitByteSize]);
+            RawWriter.Write(new byte[len * Alignment]);
         }
     }
 

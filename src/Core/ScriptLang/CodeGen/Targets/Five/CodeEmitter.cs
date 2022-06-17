@@ -2,6 +2,8 @@
 
 using ScTools.GameFiles;
 using ScTools.GameFiles.Five;
+using ScTools.ScriptAssembly.Targets;
+using ScTools.ScriptAssembly.Targets.Five;
 using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.Ast.Expressions;
 using ScTools.ScriptLang.Ast.Statements;
@@ -10,16 +12,11 @@ using ScTools.ScriptLang.Types;
 
 public sealed partial class CodeEmitter : ICodeEmitter
 {
-    private enum LabelReferenceKind { Relative, Absolute }
-    private record struct LabelReference(InstructionReference Instruction, int OperandOffset, LabelReferenceKind Kind);
-    private record struct LabelInfo(InstructionReference? Instruction, List<LabelReference> UnresolvedReferences);
-
     private readonly StatementEmitter stmtEmitter;
     private readonly ValueEmitter valueEmitter;
     private readonly AddressEmitter addressEmitter;
-    private const bool IncludeFunctionNames = true;
 
-    private readonly CodeBuffer codeBuffer;
+    private readonly InstructionBuffer instBuffer;
     private readonly InstructionEmitter instEmitter;
 
     private readonly HashSet<FunctionDeclaration> usedFunctions = new();
@@ -41,15 +38,15 @@ public sealed partial class CodeEmitter : ICodeEmitter
     public CodeEmitter(VarAllocator statics)
     {
         this.statics = new(statics);
-        codeBuffer = new();
-        instEmitter = new(new InstructionEmitter.AppendFlushStrategy(codeBuffer));
+        instBuffer = new();
+        instEmitter = new(new AppendInstructionFlushStrategy(instBuffer));
 
         stmtEmitter = new(this);
         valueEmitter = new(this);
         addressEmitter = new(this);
     }
-
-    private ScriptPageTable<byte> ToCodePages() => codeBuffer.ToCodePages(labels);
+    
+    private ScriptPageTable<byte> ToCodePages() => instBuffer.Finish(labels);
 
     private ScriptValue64[] GetStaticSegment(out int numScriptParams)
     {
@@ -78,7 +75,7 @@ public sealed partial class CodeEmitter : ICodeEmitter
             EmitFunction(function);
         }
 
-        new PatternOptimizer().Optimize(codeBuffer);
+        new PatternOptimizer().Optimize(instBuffer);
 
         return FinalizeScript(script);
     }
@@ -167,7 +164,7 @@ public sealed partial class CodeEmitter : ICodeEmitter
         // update frame size in ENTER instruction
         Debug.Assert(currentFunctionFrame.AllocatedSize <= ushort.MaxValue, $"Function frame size is too big");
         var oldFlushStrategy = instEmitter.FlushStrategy;
-        instEmitter.FlushStrategy = new InstructionEmitter.UpdateFlushStrategy(codeBuffer, enter);
+        instEmitter.FlushStrategy = new UpdateInstructionFlushStrategy(instBuffer, enter);
         instEmitter.EmitEnter(currentFunctionArgCount, (ushort)currentFunctionFrame.AllocatedSize, name);
         instEmitter.FlushStrategy = oldFlushStrategy;
     }
@@ -279,7 +276,7 @@ public sealed partial class CodeEmitter : ICodeEmitter
     public void EmitSwitch(IEnumerable<ValueSwitchCase> valueCases)
     {
         var cases = valueCases.OrderBy(c => c.Semantics.Value!.Value).ToArray();
-        var inst = instEmitter.EmitSwitch(cases.Select(c => unchecked((uint)c.Semantics.Value!.Value)).ToArray());
+        var inst = instEmitter.EmitSwitch(cases.Select(c => (unchecked((uint)c.Semantics.Value!.Value), (short)0)).ToArray());
         for (int i = 0; i < cases.Length; i++)
         {
             var @case = cases[i];

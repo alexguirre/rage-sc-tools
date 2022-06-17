@@ -6,6 +6,7 @@
 
     using ScTools.GameFiles;
     using ScTools.ScriptAssembly;
+    using ScTools.ScriptAssembly.Targets.Five;
     using ScTools.ScriptLang;
 
     using Xunit;

@@ -1,6 +1,8 @@
 ﻿namespace ScTools.ScriptLang.CodeGen.Targets.NY;
 
 using ScTools.GameFiles;
+using ScTools.ScriptAssembly.Targets;
+using ScTools.ScriptAssembly.Targets.NY;
 using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.Ast.Expressions;
 using ScTools.ScriptLang.Ast.Statements;
@@ -9,15 +11,12 @@ using ScTools.ScriptLang.Types;
 
 public sealed partial class CodeEmitter : ICodeEmitter
 {
-    private record struct LabelReference(InstructionReference Instruction, int OperandOffset);
-    private record struct LabelInfo(InstructionReference? Instruction, List<LabelReference> UnresolvedReferences);
-
     private readonly StatementEmitter stmtEmitter;
     private readonly ValueEmitter valueEmitter;
     private readonly AddressEmitter addressEmitter;
     private const bool IncludeFunctionNames = true;
 
-    private readonly CodeBuffer codeBuffer;
+    private readonly InstructionBuffer instBuffer;
     private readonly InstructionEmitter instEmitter;
 
     private readonly HashSet<FunctionDeclaration> usedFunctions = new();
@@ -39,15 +38,15 @@ public sealed partial class CodeEmitter : ICodeEmitter
     public CodeEmitter(VarAllocator statics)
     {
         this.statics = new(statics);
-        codeBuffer = new();
-        instEmitter = new(new InstructionEmitter.AppendFlushStrategy(codeBuffer));
+        instBuffer = new();
+        instEmitter = new(new AppendInstructionFlushStrategy(instBuffer));
 
         stmtEmitter = new(this);
         valueEmitter = new(this);
         addressEmitter = new(this);
     }
 
-    private byte[] ToCodeBuffer() => codeBuffer.ToCodeBuffer(labels);
+    private byte[] ToCodeBuffer() => instBuffer.Finish(labels);
 
     private ScriptValue32[] GetStaticSegment(out int numScriptParams)
     {
@@ -155,7 +154,7 @@ public sealed partial class CodeEmitter : ICodeEmitter
         // update frame size in ENTER instruction
         Debug.Assert(currentFunctionFrame.AllocatedSize <= ushort.MaxValue, $"Function frame size is too big");
         var oldFlushStrategy = instEmitter.FlushStrategy;
-        instEmitter.FlushStrategy = new InstructionEmitter.UpdateFlushStrategy(codeBuffer, enter);
+        instEmitter.FlushStrategy = new UpdateInstructionFlushStrategy(instBuffer, enter);
         instEmitter.EmitEnter(currentFunctionArgCount, (ushort)currentFunctionFrame.AllocatedSize);
         instEmitter.FlushStrategy = oldFlushStrategy;
     }

@@ -17,7 +17,7 @@ public class Parser
     internal const string MissingIdentifierLexeme = "<unknown>";
     internal const string MissingUsingPathLexeme = "<unknown>";
     internal const int MissingGlobalBlockIndex = -1;
-    public static StringComparer CaseInsensitiveComparer => ScriptAssembly.Assembler.CaseInsensitiveComparer;
+    public static StringComparer CaseInsensitiveComparer => StringComparer.OrdinalIgnoreCase;
 
     private readonly IEnumerator<Token> tokenEnumerator;
     private readonly Queue<Token> lookAheadTokens = new();

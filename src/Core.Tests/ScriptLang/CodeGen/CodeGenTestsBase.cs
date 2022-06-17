@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 
 using ScTools.GameFiles;
+using ScTools.ScriptAssembly.Targets.Five;
 using ScTools.ScriptLang;
 using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.CodeGen;
@@ -85,7 +86,7 @@ public abstract class CodeGenTestsBase
         var compiledScriptGTAV = IsType<GameFiles.Five.Script>(compiledScript);
 
         using var expectedAssemblyReader = new StringReader(expectedAssembly);
-        var expectedAssembler = ScTools.ScriptAssembly.Assembler.Assemble(expectedAssemblyReader, "test_expected.scasm", nativeDB, options: new() { IncludeFunctionNames = true });
+        var expectedAssembler = Assembler.Assemble(expectedAssemblyReader, "test_expected.scasm", nativeDB, options: new() { IncludeFunctionNames = true });
 
         string sourceDump = compiledScriptGTAV.DumpToString(), expectedDump = expectedAssembler.OutputScript.DumpToString();
 

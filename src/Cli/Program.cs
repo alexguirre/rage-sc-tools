@@ -18,6 +18,7 @@ using System.Collections.Generic;
 //using ScTools.ScriptLang.Semantics;
 using ScTools.ScriptLang.CodeGen;
 using ScTools.GameFiles;
+using ScTools.ScriptAssembly.Targets.Five;
 
 internal static class Program
 {

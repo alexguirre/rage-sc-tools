@@ -9,6 +9,7 @@ using System.Linq;
 using System.Diagnostics;
 
 using ScTools.GameFiles.Five;
+using ScTools.ScriptAssembly.Targets.Five;
 
 public class Disassembler
 {

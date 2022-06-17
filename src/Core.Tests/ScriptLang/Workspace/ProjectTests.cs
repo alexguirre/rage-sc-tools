@@ -1,6 +1,7 @@
 ﻿namespace ScTools.Tests.ScriptLang.Workspace;
 
 using ScTools.GameFiles;
+using ScTools.ScriptAssembly.Targets.Five;
 using ScTools.ScriptLang.Ast;
 using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.Ast.Expressions;
@@ -100,7 +101,7 @@ public class ProjectTests
         using var expectedAssemblyReader = new StreamReader(expectedAssemblyPath, Encoding.UTF8);
         if (compiledScript is GameFiles.Five.Script compiledScriptGTAV)
         {
-            var expectedAssembler = ScTools.ScriptAssembly.Assembler.Assemble(expectedAssemblyReader, expectedAssemblyFileName, options: new() { IncludeFunctionNames = true });
+            var expectedAssembler = Assembler.Assemble(expectedAssemblyReader, expectedAssemblyFileName, options: new() { IncludeFunctionNames = true });
 
             string sourceDump = compiledScriptGTAV.DumpToString(), expectedDump = expectedAssembler.OutputScript.DumpToString();
 

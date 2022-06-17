@@ -62,7 +62,7 @@ public class Parser
     }
 
     internal const string MissingIdentifierLexeme = "<unknown>";
-    public static StringComparer CaseInsensitiveComparer => Assembler.CaseInsensitiveComparer;
+    public static StringComparer CaseInsensitiveComparer => StringComparer.OrdinalIgnoreCase;
 
     private readonly IEnumerator<Token> tokenEnumerator;
     private readonly Queue<Token> lookAheadTokens = new();
