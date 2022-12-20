@@ -2,7 +2,7 @@
 
 using ScTools.GameFiles;
 using ScTools.GameFiles.Five;
-
+using ScTools.ScriptAssembly.Targets.Five;
 using System;
 
 public readonly ref struct Instruction<TOpcode> where TOpcode : struct, Enum

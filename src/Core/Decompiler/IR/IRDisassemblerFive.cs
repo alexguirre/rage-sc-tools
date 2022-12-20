@@ -10,6 +10,7 @@ using ScTools.GameFiles;
 using ScTools.ScriptAssembly;
 using System.Collections.Immutable;
 using ScTools.GameFiles.Five;
+using ScTools.ScriptAssembly.Targets.Five;
 
 public sealed class IRDisassemblerFive
 {

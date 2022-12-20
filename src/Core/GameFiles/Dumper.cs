@@ -6,6 +6,7 @@ using System.Text;
 using System.Runtime.CompilerServices;
 using ScTools.GameFiles.Five;
 using ScTools.ScriptAssembly;
+using ScTools.ScriptAssembly.Targets.Five;
 
 public static class Dumper
 {

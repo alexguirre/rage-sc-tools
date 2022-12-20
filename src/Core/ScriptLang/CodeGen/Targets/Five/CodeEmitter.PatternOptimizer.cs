@@ -1,6 +1,5 @@
 ﻿namespace ScTools.ScriptLang.CodeGen.Targets.Five;
 
-using ScTools.ScriptAssembly;
 using ScTools.ScriptAssembly.Targets;
 using ScTools.ScriptAssembly.Targets.Five;
 

@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using ScTools.GameFiles;
 using ScTools.ScriptAssembly;
 using System.Collections.Immutable;
+using ScTools.ScriptAssembly.Targets.Five;
 
 public sealed class IRDisassemblerRDR2
 {

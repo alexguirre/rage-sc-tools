@@ -1,4 +1,6 @@
-﻿namespace ScTools.Tests.ScriptLang.CodeGen;
+﻿using ScTools.ScriptAssembly.Targets.Five;
+
+namespace ScTools.Tests.ScriptLang.CodeGen;
 
 using System.Collections.Generic;
 using System.IO;
@@ -14,8 +16,6 @@ using ScTools.ScriptLang.Types;
 using ScTools.ScriptLang.Workspace;
 
 using Xunit;
-
-using Opcode = ScTools.ScriptAssembly.Opcode;
 
 public abstract class CodeGenTestsBase
 {

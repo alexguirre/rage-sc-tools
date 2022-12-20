@@ -315,7 +315,7 @@ public static class OpcodeNYExtensions
     public static string Mnemonic(this OpcodeNY opcode) => opcode.ToString();
 
     /// <returns>
-    /// The byte size of a instruction with this <paramref name="opcode"/>; or, <c>0</c> if the size is variable (i.e. <paramref name="opcode"/> is <see cref="Opcode.SWITCH"/> or <see cref="Opcode.STRING"/>).
+    /// The byte size of a instruction with this <paramref name="opcode"/>; or, <c>0</c> if the size is variable (i.e. <paramref name="opcode"/> is <see cref="OpcodeNY.SWITCH"/> or <see cref="OpcodeNY.STRING"/>).
     /// </returns>
     public static int ConstantByteSize(this OpcodeNY opcode)
         => opcode switch
@@ -483,7 +483,7 @@ public static class OpcodeNYExtensions
     }
 
     /// <returns>
-    /// The number of operands required by <see cref="opcode"/>; or, <c>-1</c> if it accepts a variable number of operands (i.e. <paramref name="opcode"/> is <see cref="Opcode.SWITCH"/>).
+    /// The number of operands required by <see cref="opcode"/>; or, <c>-1</c> if it accepts a variable number of operands (i.e. <paramref name="opcode"/> is <see cref="OpcodeNY.SWITCH"/>).
     /// </returns>
     public static int NumberOfOperands(this OpcodeNY opcode)
         => opcode switch

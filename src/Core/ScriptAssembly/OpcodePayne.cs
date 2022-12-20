@@ -282,7 +282,7 @@ public static class OpcodePayneExtensions
 
 
     /// <returns>
-    /// The number of operands required by <see cref="opcode"/>; or, <c>-1</c> if it accepts a variable number of operands (i.e. <paramref name="opcode"/> is <see cref="Opcode.SWITCH"/>).
+    /// The number of operands required by <see cref="opcode"/>; or, <c>-1</c> if it accepts a variable number of operands (i.e. <paramref name="opcode"/> is <see cref="OpcodePayne.SWITCH"/>).
     /// </returns>
     public static int NumberOfOperands(this OpcodePayne opcode)
         => opcode switch

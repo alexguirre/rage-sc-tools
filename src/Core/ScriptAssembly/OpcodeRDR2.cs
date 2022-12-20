@@ -195,7 +195,7 @@ public static class OpcodeRDR2Extensions
     public static string Mnemonic(this OpcodeRDR2 opcode) => opcode.ToString();
 
     /// <returns>
-    /// The number of operands required by <see cref="opcode"/>; or, <c>-1</c> if it accepts a variable number of operands (i.e. <paramref name="opcode"/> is <see cref="Opcode.SWITCH"/>).
+    /// The number of operands required by <see cref="opcode"/>; or, <c>-1</c> if it accepts a variable number of operands (i.e. <paramref name="opcode"/> is <see cref="OpcodeRDR2.SWITCH"/>).
     /// </returns>
     public static bool HasOperands(this OpcodeRDR2 opcode) => opcode.ConstantByteSize() != 1;
 
