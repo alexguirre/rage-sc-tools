@@ -1,7 +1,7 @@
 {
   "version": 1,
   "dependencies": {
-    "net6.0": {
+    "net7.0": {
       "Microsoft.DotNet.ILCompiler": {
         "type": "Direct",
         "requested": "[6.0.0-*, )",
@@ -951,19 +951,19 @@
       "sc-tools": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.Extensions.FileSystemGlobbing": "5.0.0",
-          "ScTools.Core": "1.0.0",
-          "System.CommandLine": "2.0.0-beta1.20574.7"
+          "Microsoft.Extensions.FileSystemGlobbing": "[5.0.0, )",
+          "ScTools.Core": "[1.0.0, )",
+          "System.CommandLine": "[2.0.0-beta1.20574.7, )"
         }
       },
       "ScTools.Core": {
         "type": "Project",
         "dependencies": {
-          "SharpDX.Mathematics": "4.2.0"
+          "SharpDX.Mathematics": "[4.2.0, )"
         }
       }
     },
-    "net6.0/win-x64": {
+    "net7.0/win-x64": {
       "Microsoft.DotNet.ILCompiler": {
         "type": "Direct",
         "requested": "[6.0.0-*, )",

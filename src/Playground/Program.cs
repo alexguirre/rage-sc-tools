@@ -58,11 +58,11 @@
         {
             using var r = new StreamReader(filePath);
             var d = new DiagnosticsReport();
-            var lexer = new Lexer(filePath, r.ReadToEnd(), d);
+            var lexer = new ScriptLang.Lexer(filePath, r.ReadToEnd(), d);
             var tokens = lexer.ToArray();
             foreach (var token in tokens)
             {
-                Console.WriteLine($"{token.Kind}\t=\t`{token.Lexeme.Span.Escape()}`");
+                //Console.WriteLine($"{token.Kind}\t=\t`{token.Lexeme.Span.Escape()}`");
             }
             Console.WriteLine();
             d.PrintAll(Console.Out);
