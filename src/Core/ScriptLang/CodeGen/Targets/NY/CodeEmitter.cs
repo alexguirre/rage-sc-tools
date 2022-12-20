@@ -33,8 +33,6 @@ public sealed partial class CodeEmitter : ICodeEmitter
     private readonly VarAllocator currentFunctionFrame = new();
     private TypeInfo? currentFunctionReturnType = null;
 
-    public StringsTable Strings { get; } = new();
-
     public CodeEmitter(VarAllocator statics)
     {
         this.statics = new(statics);
