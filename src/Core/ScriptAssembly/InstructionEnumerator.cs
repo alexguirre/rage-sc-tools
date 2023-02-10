@@ -3,6 +3,7 @@
 using ScTools.GameFiles;
 using ScTools.GameFiles.Five;
 using ScTools.ScriptAssembly.Targets.Five;
+using ScTools.ScriptAssembly.Targets.NY;
 using System;
 
 public readonly ref struct Instruction<TOpcode> where TOpcode : struct, Enum
@@ -55,7 +56,7 @@ public ref struct InstructionEnumerator<TOpcode> where TOpcode : struct, Enum
 
 public static class InstructionEnumeratorScriptExtensions
 {
-    public static InstructionEnumerator<OpcodeNY> EnumerateInstructions(this ScriptNY script)
+    public static InstructionEnumerator<Opcode> EnumerateInstructions(this ScriptNY script)
         => new(script.Code, OpcodeNYExtensions.GetInstructionSpan);
     public static InstructionEnumerator<OpcodePayne> EnumerateInstructions(this ScriptPayne script)
         => new(script.Code, OpcodePayneExtensions.GetInstructionSpan);

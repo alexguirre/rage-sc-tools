@@ -1,4 +1,6 @@
-﻿namespace ScTools.ScriptAssembly;
+﻿namespace ScTools.ScriptAssembly.Targets.NY;
+
+using ScTools.ScriptAssembly.Targets.Five;
 
 using System;
 using System.Buffers.Binary;
@@ -7,7 +9,7 @@ using System.Text;
 /// <summary>
 /// Instruction set used with <see cref="GameFiles.ScriptNY"/>.
 /// </summary>
-public enum OpcodeNY : byte
+public enum Opcode : byte
 {
     IADD = 0x01,
     ISUB = 0x02,
@@ -300,47 +302,82 @@ public enum OpcodeNY : byte
     PUSH_CONST_159 = 0xFF,
 }
 
-public static class OpcodeNYExtensions
+public abstract class OpcodeTraits : IOpcodeTraits<Opcode>
 {
-    public static bool IsInvalid(this OpcodeNY opcode)
-        => opcode is < OpcodeNY.IADD or (> OpcodeNY._XPROTECT_REF and < OpcodeNY.PUSH_CONST_M16);
+    public const int NumberOfOpcodes = 256;
 
-    public static bool IsJump(this OpcodeNY opcode)
-        => opcode is OpcodeNY.J or OpcodeNY.JZ or OpcodeNY.JNZ;
+    static int IOpcodeTraits<Opcode>.NumberOfOpcodes => NumberOfOpcodes;
 
-    public static bool IsControlFlow(this OpcodeNY opcode)
-        => IsJump(opcode) ||
-            opcode is OpcodeNY.LEAVE or OpcodeNY.CALL or OpcodeNY.SWITCH or OpcodeNY.THROW;
-
-    public static string Mnemonic(this OpcodeNY opcode) => opcode.ToString();
-
-    /// <returns>
-    /// The byte size of a instruction with this <paramref name="opcode"/>; or, <c>0</c> if the size is variable (i.e. <paramref name="opcode"/> is <see cref="OpcodeNY.SWITCH"/> or <see cref="OpcodeNY.STRING"/>).
-    /// </returns>
-    public static int ConstantByteSize(this OpcodeNY opcode)
+    public static int ConstantByteSize(Opcode opcode)
         => opcode switch
         {
-            OpcodeNY.TEXT_LABEL_ASSIGN_STRING or
-            OpcodeNY.TEXT_LABEL_ASSIGN_INT or
-            OpcodeNY.TEXT_LABEL_APPEND_STRING or
-            OpcodeNY.TEXT_LABEL_APPEND_INT => 2,
+            Opcode.TEXT_LABEL_ASSIGN_STRING or
+            Opcode.TEXT_LABEL_ASSIGN_INT or
+            Opcode.TEXT_LABEL_APPEND_STRING or
+            Opcode.TEXT_LABEL_APPEND_INT => 2,
 
-            OpcodeNY.PUSH_CONST_U16 or
-            OpcodeNY.LEAVE => 3,
+            Opcode.PUSH_CONST_U16 or
+            Opcode.LEAVE => 3,
 
-            OpcodeNY.ENTER => 4,
+            Opcode.ENTER => 4,
 
-            OpcodeNY.J or
-            OpcodeNY.JZ or
-            OpcodeNY.JNZ or
-            OpcodeNY.PUSH_CONST_U32 or
-            OpcodeNY.PUSH_CONST_F or
-            OpcodeNY.CALL => 5,
+            Opcode.J or
+            Opcode.JZ or
+            Opcode.JNZ or
+            Opcode.PUSH_CONST_U32 or
+            Opcode.PUSH_CONST_F or
+            Opcode.CALL => 5,
 
-            OpcodeNY.NATIVE => 7,
+            Opcode.NATIVE => 7,
 
-            OpcodeNY.SWITCH or
-            OpcodeNY.STRING => 0,
+            Opcode.SWITCH or
+            Opcode.STRING => 0,
+
+            _ => 1,
+        };
+}
+
+public static class OpcodeNYExtensions
+{
+    public static bool IsInvalid(this Opcode opcode)
+        => opcode is < Opcode.IADD or > Opcode._XPROTECT_REF and < Opcode.PUSH_CONST_M16;
+
+    public static bool IsJump(this Opcode opcode)
+        => opcode is Opcode.J or Opcode.JZ or Opcode.JNZ;
+
+    public static bool IsControlFlow(this Opcode opcode)
+        => opcode.IsJump() ||
+            opcode is Opcode.LEAVE or Opcode.CALL or Opcode.SWITCH or Opcode.THROW;
+
+    public static string Mnemonic(this Opcode opcode) => opcode.ToString();
+
+    /// <returns>
+    /// The byte size of a instruction with this <paramref name="opcode"/>; or, <c>0</c> if the size is variable (i.e. <paramref name="opcode"/> is <see cref="Opcode.SWITCH"/> or <see cref="Opcode.STRING"/>).
+    /// </returns>
+    public static int ConstantByteSize(this Opcode opcode)
+        => opcode switch
+        {
+            Opcode.TEXT_LABEL_ASSIGN_STRING or
+            Opcode.TEXT_LABEL_ASSIGN_INT or
+            Opcode.TEXT_LABEL_APPEND_STRING or
+            Opcode.TEXT_LABEL_APPEND_INT => 2,
+
+            Opcode.PUSH_CONST_U16 or
+            Opcode.LEAVE => 3,
+
+            Opcode.ENTER => 4,
+
+            Opcode.J or
+            Opcode.JZ or
+            Opcode.JNZ or
+            Opcode.PUSH_CONST_U32 or
+            Opcode.PUSH_CONST_F or
+            Opcode.CALL => 5,
+
+            Opcode.NATIVE => 7,
+
+            Opcode.SWITCH or
+            Opcode.STRING => 0,
 
             _ => 1,
         };
@@ -348,7 +385,7 @@ public static class OpcodeNYExtensions
     /// <returns>
     /// The length in bytes of an instruction with this <paramref name="opcode"/> and <paramref name="bytecode"/>.
     /// </returns>
-    public static int ByteSize(this OpcodeNY opcode, ReadOnlySpan<byte> bytecode)
+    public static int ByteSize(this Opcode opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
         return ByteSize(bytecode);
@@ -359,11 +396,11 @@ public static class OpcodeNYExtensions
     /// </returns>
     public static int ByteSize(ReadOnlySpan<byte> bytecode)
     {
-        var opcode = (OpcodeNY)bytecode[0];
+        var opcode = (Opcode)bytecode[0];
         var s = opcode switch
         {
-            OpcodeNY.SWITCH => 8 * bytecode[1] + 2,
-            OpcodeNY.STRING => bytecode[1] + 2,
+            Opcode.SWITCH => 8 * bytecode[1] + 2,
+            Opcode.STRING => bytecode[1] + 2,
             _ => opcode.ConstantByteSize(),
         };
 
@@ -372,18 +409,18 @@ public static class OpcodeNYExtensions
 
     public static ReadOnlySpan<byte> GetInstructionSpan(ReadOnlySpan<byte> code, int address)
     {
-        var opcode = (OpcodeNY)code[address];
+        var opcode = (Opcode)code[address];
         var inst = code[address..];
         var instLength = opcode.ByteSize(inst);
         return inst[..instLength]; // trim to instruction length
     }
 
-    public static string GetStringOperand(this OpcodeNY opcode, ReadOnlySpan<byte> bytecode)
+    public static string GetStringOperand(this Opcode opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
-        ThrowIfNotExpectedOpcode(OpcodeNY.STRING, bytecode);
+        ThrowIfNotExpectedOpcode(Opcode.STRING, bytecode);
 
-        if (opcode is OpcodeNY.STRING)
+        if (opcode is Opcode.STRING)
         {
             return Encoding.UTF8.GetString(bytecode[2..^1]);
         }
@@ -393,11 +430,11 @@ public static class OpcodeNYExtensions
         }
     }
 
-    public static ushort GetU16Operand(this OpcodeNY opcode, ReadOnlySpan<byte> bytecode)
+    public static ushort GetU16Operand(this Opcode opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
 
-        if (opcode is OpcodeNY.PUSH_CONST_U16)
+        if (opcode is Opcode.PUSH_CONST_U16)
         {
             return BinaryPrimitives.ReadUInt16LittleEndian(bytecode[1..]);
         }
@@ -407,13 +444,13 @@ public static class OpcodeNYExtensions
         }
     }
 
-    public static uint GetU32Operand(this OpcodeNY opcode, ReadOnlySpan<byte> bytecode)
+    public static uint GetU32Operand(this Opcode opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
 
-        if (opcode is OpcodeNY.PUSH_CONST_U32 or
-                      OpcodeNY.J or OpcodeNY.JZ or OpcodeNY.JNZ or
-                      OpcodeNY.CALL)
+        if (opcode is Opcode.PUSH_CONST_U32 or
+                      Opcode.J or Opcode.JZ or Opcode.JNZ or
+                      Opcode.CALL)
         {
             return BinaryPrimitives.ReadUInt32LittleEndian(bytecode[1..]);
         }
@@ -423,11 +460,11 @@ public static class OpcodeNYExtensions
         }
     }
 
-    public static float GetFloatOperand(this OpcodeNY opcode, ReadOnlySpan<byte> bytecode)
+    public static float GetFloatOperand(this Opcode opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
 
-        if (opcode is OpcodeNY.PUSH_CONST_F)
+        if (opcode is Opcode.PUSH_CONST_F)
         {
             return BinaryPrimitives.ReadSingleLittleEndian(bytecode[1..]);
         }
@@ -437,45 +474,45 @@ public static class OpcodeNYExtensions
         }
     }
 
-    public static int GetSwitchNumberOfCases(this OpcodeNY opcode, ReadOnlySpan<byte> bytecode)
+    public static int GetSwitchNumberOfCases(this Opcode opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
-        ThrowIfNotExpectedOpcode(OpcodeNY.SWITCH, bytecode);
+        ThrowIfNotExpectedOpcode(Opcode.SWITCH, bytecode);
         return bytecode[1];
     }
 
-    public static SwitchCasesEnumerator GetSwitchOperands(this OpcodeNY opcode, ReadOnlySpan<byte> bytecode)
+    public static SwitchCasesEnumerator GetSwitchOperands(this Opcode opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
         return new(bytecode);
     }
 
-    public static (byte ParamCount, ushort FrameSize) GetEnterOperands(this OpcodeNY opcode, ReadOnlySpan<byte> bytecode)
+    public static (byte ParamCount, ushort FrameSize) GetEnterOperands(this Opcode opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
-        ThrowIfNotExpectedOpcode(OpcodeNY.ENTER, bytecode);
+        ThrowIfNotExpectedOpcode(Opcode.ENTER, bytecode);
         return (bytecode[1], BinaryPrimitives.ReadUInt16LittleEndian(bytecode[2..]));
     }
 
-    public static (byte ParamCount, byte ReturnCount) GetLeaveOperands(this OpcodeNY opcode, ReadOnlySpan<byte> bytecode)
+    public static (byte ParamCount, byte ReturnCount) GetLeaveOperands(this Opcode opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
-        ThrowIfNotExpectedOpcode(OpcodeNY.LEAVE, bytecode);
+        ThrowIfNotExpectedOpcode(Opcode.LEAVE, bytecode);
         return (bytecode[1], bytecode[2]);
     }
 
-    public static (byte ParamCount, byte ReturnCount, uint CommandHash) GetNativeOperands(this OpcodeNY opcode, ReadOnlySpan<byte> bytecode)
+    public static (byte ParamCount, byte ReturnCount, uint CommandHash) GetNativeOperands(this Opcode opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
-        ThrowIfNotExpectedOpcode(OpcodeNY.NATIVE, bytecode);
+        ThrowIfNotExpectedOpcode(Opcode.NATIVE, bytecode);
         return (bytecode[1], bytecode[2], BinaryPrimitives.ReadUInt32LittleEndian(bytecode[3..]));
     }
 
-    public static byte GetTextLabelLength(this OpcodeNY opcode, ReadOnlySpan<byte> bytecode)
+    public static byte GetTextLabelLength(this Opcode opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
-        if ((OpcodeNY)bytecode[0] is not (OpcodeNY.TEXT_LABEL_ASSIGN_STRING or OpcodeNY.TEXT_LABEL_ASSIGN_INT or
-                                          OpcodeNY.TEXT_LABEL_APPEND_STRING or OpcodeNY.TEXT_LABEL_APPEND_INT))
+        if ((Opcode)bytecode[0] is not (Opcode.TEXT_LABEL_ASSIGN_STRING or Opcode.TEXT_LABEL_ASSIGN_INT or
+                                          Opcode.TEXT_LABEL_APPEND_STRING or Opcode.TEXT_LABEL_APPEND_INT))
         {
             throw new ArgumentException($"The instruction opcode is not a TEXT_LABEL_ASSIGN/APPEND opcode.", nameof(bytecode));
         }
@@ -483,35 +520,35 @@ public static class OpcodeNYExtensions
     }
 
     /// <returns>
-    /// The number of operands required by <see cref="opcode"/>; or, <c>-1</c> if it accepts a variable number of operands (i.e. <paramref name="opcode"/> is <see cref="OpcodeNY.SWITCH"/>).
+    /// The number of operands required by <see cref="opcode"/>; or, <c>-1</c> if it accepts a variable number of operands (i.e. <paramref name="opcode"/> is <see cref="Opcode.SWITCH"/>).
     /// </returns>
-    public static int NumberOfOperands(this OpcodeNY opcode)
+    public static int NumberOfOperands(this Opcode opcode)
         => opcode switch
         {
-            OpcodeNY.LEAVE or
-            OpcodeNY.ENTER => 2,
+            Opcode.LEAVE or
+            Opcode.ENTER => 2,
 
-            OpcodeNY.J or
-            OpcodeNY.JZ or
-            OpcodeNY.JNZ or
-            OpcodeNY.PUSH_CONST_U16 or
-            OpcodeNY.PUSH_CONST_U32 or
-            OpcodeNY.PUSH_CONST_F or
-            OpcodeNY.CALL or
-            OpcodeNY.NATIVE => 7,
+            Opcode.J or
+            Opcode.JZ or
+            Opcode.JNZ or
+            Opcode.PUSH_CONST_U16 or
+            Opcode.PUSH_CONST_U32 or
+            Opcode.PUSH_CONST_F or
+            Opcode.CALL or
+            Opcode.NATIVE => 7,
 
-            OpcodeNY.TEXT_LABEL_ASSIGN_STRING or
-            OpcodeNY.TEXT_LABEL_ASSIGN_INT or
-            OpcodeNY.TEXT_LABEL_APPEND_STRING or
-            OpcodeNY.TEXT_LABEL_APPEND_INT or
-            OpcodeNY.STRING => 1,
-            
-            OpcodeNY.SWITCH => -1,
+            Opcode.TEXT_LABEL_ASSIGN_STRING or
+            Opcode.TEXT_LABEL_ASSIGN_INT or
+            Opcode.TEXT_LABEL_APPEND_STRING or
+            Opcode.TEXT_LABEL_APPEND_INT or
+            Opcode.STRING => 1,
+
+            Opcode.SWITCH => -1,
 
             _ => 0,
         };
 
-    internal static void ThrowIfOpcodeDoesNotMatch(OpcodeNY opcode, ReadOnlySpan<byte> bytecode)
+    internal static void ThrowIfOpcodeDoesNotMatch(Opcode opcode, ReadOnlySpan<byte> bytecode)
     {
         if ((byte)opcode != bytecode[0])
         {
@@ -519,7 +556,7 @@ public static class OpcodeNYExtensions
         }
     }
 
-    internal static void ThrowIfNotExpectedOpcode(OpcodeNY expectedOpcode, ReadOnlySpan<byte> bytecode)
+    internal static void ThrowIfNotExpectedOpcode(Opcode expectedOpcode, ReadOnlySpan<byte> bytecode)
     {
         if (bytecode[0] != (byte)expectedOpcode)
         {
@@ -537,7 +574,7 @@ public static class OpcodeNYExtensions
 
         public SwitchCasesEnumerator(ReadOnlySpan<byte> bytecode)
         {
-            ThrowIfNotExpectedOpcode(OpcodeNY.SWITCH, bytecode);
+            ThrowIfNotExpectedOpcode(Opcode.SWITCH, bytecode);
 
             this.bytecode = bytecode;
             current = default;

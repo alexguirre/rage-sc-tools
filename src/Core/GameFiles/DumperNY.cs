@@ -5,6 +5,7 @@ using System.IO;
 using System.Text;
 using System.Buffers.Binary;
 using ScTools.ScriptAssembly;
+using ScTools.ScriptAssembly.Targets.NY;
 
 public static class DumperNY
 {
@@ -104,7 +105,7 @@ public static class DumperNY
     private static void DisassembleInstructionAt(StringBuilder sb, ScriptNY sc, uint ip)
     {
         var inst = sc.Code.AsSpan((int)ip, (int)SizeOf(sc, ip));
-        var opcode = (OpcodeNY)inst[0];
+        var opcode = (Opcode)inst[0];
 
         if (opcode.IsInvalid())
         {
@@ -116,50 +117,50 @@ public static class DumperNY
 
         switch (opcode)
         {
-            case OpcodeNY.STRING:
+            case Opcode.STRING:
                 var str = Encoding.UTF8.GetString(inst[2..^1]).Escape();
                 sb.Append($" '{str}'");
                 break;
 
-            case OpcodeNY.PUSH_CONST_U16:
+            case Opcode.PUSH_CONST_U16:
                 var u16 = BinaryPrimitives.ReadUInt16LittleEndian(inst[1..]);
                 sb.Append($" {u16} (0x{u16:X})");
                 break;
 
-            case OpcodeNY.PUSH_CONST_U32:
+            case Opcode.PUSH_CONST_U32:
                 var u32 = BinaryPrimitives.ReadUInt32LittleEndian(inst[1..]);
                 sb.Append($" {unchecked((int)u32)} (0x{u32:X})");
                 break;
 
-            case OpcodeNY.PUSH_CONST_F:
+            case Opcode.PUSH_CONST_F:
                 var f = BinaryPrimitives.ReadSingleLittleEndian(inst[1..]);
                 sb.Append($" {f}");
                 break;
 
-            case OpcodeNY.J:
-            case OpcodeNY.JZ:
-            case OpcodeNY.JNZ:
-            case OpcodeNY.CALL:
+            case Opcode.J:
+            case Opcode.JZ:
+            case Opcode.JNZ:
+            case Opcode.CALL:
                 var addr = BinaryPrimitives.ReadUInt32LittleEndian(inst[1..]);
                 sb.Append($" {addr:000000}");
                 break;
 
-            case OpcodeNY.SWITCH:
+            case Opcode.SWITCH:
                 foreach (var c in opcode.GetSwitchOperands(inst))
                 {
                     sb.Append($" {c.Value}:{c.JumpAddress:000000}");
                 }
                 break;
 
-            case OpcodeNY.ENTER:
+            case Opcode.ENTER:
                 sb.Append($" {inst[1]} {BinaryPrimitives.ReadUInt16LittleEndian(inst[2..])}");
                 break;
 
-            case OpcodeNY.LEAVE:
+            case Opcode.LEAVE:
                 sb.Append($" {inst[1]} {inst[2]}");
                 break;
 
-            case OpcodeNY.NATIVE:
+            case Opcode.NATIVE:
                 sb.Append($" {inst[1]} {inst[2]} 0x{BinaryPrimitives.ReadUInt32LittleEndian(inst[3..]):X8}");
                 break;
 
@@ -178,14 +179,14 @@ public static class DumperNY
 
     public static uint SizeOf(ScriptNY sc, uint ip)
     {
-        OpcodeNY opcode = (OpcodeNY)sc.Code![ip];
+        Opcode opcode = (Opcode)sc.Code![ip];
         uint s = (uint)opcode.ConstantByteSize();
         if (s == 0)
         {
             s = opcode switch
             {
-                OpcodeNY.SWITCH => 8 * (uint)sc.Code![ip + 1] + 2,
-                OpcodeNY.STRING => (uint)sc.Code![ip + 1] + 2,
+                Opcode.SWITCH => 8 * (uint)sc.Code![ip + 1] + 2,
+                Opcode.STRING => (uint)sc.Code![ip + 1] + 2,
                 _ => 1,
             };
         }

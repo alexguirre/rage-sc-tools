@@ -3,9 +3,7 @@
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 
-using ScTools.ScriptAssembly;
-
-internal class InstructionBuffer : InstructionBuffer<OpcodeNY, LabelInfo, byte[]>
+internal class InstructionBuffer : InstructionBuffer<Opcode, LabelInfo, byte[]>
 {
     public override byte[] Finish(IEnumerable<LabelInfo> labels)
     {

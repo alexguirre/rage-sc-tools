@@ -11,6 +11,7 @@ using System.Diagnostics;
 using ScTools.GameFiles;
 using System.Buffers.Binary;
 using System.Text;
+using ScTools.ScriptAssembly.Targets.NY;
 
 public class DisassemblerNY
 {
@@ -207,7 +208,7 @@ public class DisassemblerNY
 
     private void DisassembleInstruction(TextWriter w, int ip, ReadOnlySpan<byte> inst)
     {
-        var opcode = (OpcodeNY)inst[0];
+        var opcode = (Opcode)inst[0];
 
         w.Write("\t\t");
         w.Write(opcode.ToString());
@@ -218,24 +219,24 @@ public class DisassemblerNY
 
         switch (opcode)
         {
-            case OpcodeNY.LEAVE:
+            case Opcode.LEAVE:
                 var leave = opcode.GetLeaveOperands(inst);
                 w.Write($" {leave.ParamCount}, {leave.ReturnCount}");
                 break;
-            case OpcodeNY.ENTER:
+            case Opcode.ENTER:
                 var enter = opcode.GetEnterOperands(inst);
                 w.Write($" {enter.ParamCount}, {enter.FrameSize}");
                 break;
-            case OpcodeNY.PUSH_CONST_U16:
+            case Opcode.PUSH_CONST_U16:
                 w.Write(opcode.GetU16Operand(inst));
                 break;
-            case OpcodeNY.PUSH_CONST_U32:
+            case Opcode.PUSH_CONST_U32:
                 w.Write(opcode.GetU32Operand(inst));
                 break;
-            case OpcodeNY.PUSH_CONST_F:
+            case Opcode.PUSH_CONST_F:
                 w.Write(opcode.GetFloatOperand(inst).ToString("G9", CultureInfo.InvariantCulture));
                 break;
-            case OpcodeNY.NATIVE:
+            case Opcode.NATIVE:
                 var native = opcode.GetNativeOperands(inst);
                 if (nativeCommands.TryGetValue(native.CommandHash, out var nativeName))
                 {
@@ -246,10 +247,10 @@ public class DisassemblerNY
                     w.Write($"{native.ParamCount}, {native.ReturnCount}, 0x{native.CommandHash:X8}");
                 }
                 break;
-            case OpcodeNY.J:
-            case OpcodeNY.JZ:
-            case OpcodeNY.JNZ:
-            case OpcodeNY.CALL:
+            case Opcode.J:
+            case Opcode.JZ:
+            case Opcode.JNZ:
+            case Opcode.CALL:
                 var addr = opcode.GetU32Operand(inst);
                 if (codeLabels.TryGetValue((int)addr, out var label))
                 {
@@ -260,7 +261,7 @@ public class DisassemblerNY
                     w.Write(addr);
                 }
                 break;
-            case OpcodeNY.SWITCH:
+            case Opcode.SWITCH:
                 var firstCase = true;
                 foreach (var c in opcode.GetSwitchOperands(inst))
                 {
@@ -280,13 +281,13 @@ public class DisassemblerNY
                     }
                 }
                 break;
-            case OpcodeNY.STRING:
+            case Opcode.STRING:
                 w.Write($"'{opcode.GetStringOperand(inst).Escape()}'");
                 break;
-            case OpcodeNY.TEXT_LABEL_ASSIGN_STRING:
-            case OpcodeNY.TEXT_LABEL_ASSIGN_INT:
-            case OpcodeNY.TEXT_LABEL_APPEND_STRING:
-            case OpcodeNY.TEXT_LABEL_APPEND_INT:
+            case Opcode.TEXT_LABEL_ASSIGN_STRING:
+            case Opcode.TEXT_LABEL_ASSIGN_INT:
+            case Opcode.TEXT_LABEL_APPEND_STRING:
+            case Opcode.TEXT_LABEL_APPEND_INT:
                 w.Write($"{opcode.GetTextLabelLength(inst)}");
                 break;
         }
@@ -304,19 +305,19 @@ public class DisassemblerNY
             {
                 switch (inst.Opcode)
                 {
-                    case OpcodeNY.J:
-                    case OpcodeNY.JZ:
-                    case OpcodeNY.JNZ:
+                    case Opcode.J:
+                    case Opcode.JZ:
+                    case Opcode.JNZ:
                         var jumpAddress = inst.Opcode.GetU32Operand(inst.Bytes);
                         AddLabel(codeLabels, (int)jumpAddress);
                         break;
-                    case OpcodeNY.SWITCH:
+                    case Opcode.SWITCH:
                         foreach (var c in inst.Opcode.GetSwitchOperands(inst.Bytes))
                         {
                             AddLabel(codeLabels, c.JumpAddress);
                         }
                         break;
-                    case OpcodeNY.ENTER:
+                    case Opcode.ENTER:
                         var funcAddress = inst.Address;
                         var funcName = funcAddress == 0 ? "main" : null;
                         AddFuncLabel(codeLabels, funcAddress, funcName);
