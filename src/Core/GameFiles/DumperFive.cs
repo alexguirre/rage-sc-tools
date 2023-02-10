@@ -8,16 +8,24 @@ using ScTools.GameFiles.Five;
 using ScTools.ScriptAssembly;
 using ScTools.ScriptAssembly.Targets.Five;
 
-public static class Dumper
+public interface IDumperFive
 {
-    public static string DumpToString(this Script sc)
+    string DumpToString(Script sc);
+    void Dump(Script sc, in DumpOptions options);
+}
+
+public class DumperFive<TOpcode, TOpcodeTraits> : IDumperFive
+    where TOpcode : struct, Enum
+    where TOpcodeTraits : IOpcodeTraitsFive<TOpcode>
+{
+    public string DumpToString(Script sc)
     {
         using var sw = new StringWriter();
         Dump(sc, DumpOptions.Default(sw));
         return sw.ToString();
     }
 
-    public static void Dump(this Script sc, in DumpOptions options)
+    public void Dump(Script sc, in DumpOptions options)
     {
         sc = sc ?? throw new ArgumentNullException(nameof(sc));
         var w = options.Sink;
@@ -135,15 +143,15 @@ public static class Dumper
     private static void DisassembleInstructionAt(StringBuilder sb, Script sc, uint ip)
     {
         byte inst = sc.IP(ip);
-        if (inst >= OpcodeExtensions.NumberOfOpcodes)
+        if (inst >= TOpcodeTraits.NumberOfOpcodes)
         {
             return;
         }
 
-        sb.Append(((Opcode)inst).ToString());
+        sb.Append(Unsafe.As<byte, TOpcode>(ref inst).ToString());
 
         ip++;
-        foreach (char f in OpcodesFormats[inst])
+        foreach (char f in TOpcodeTraits.DumpOpcodeFormats[inst])
         {
             switch (f)
             {
@@ -293,150 +301,28 @@ public static class Dumper
 
     public static uint SizeOf(Script sc, uint ip)
     {
-        Opcode opcode = (Opcode)sc.IP(ip);
-        uint s = (uint)opcode.ConstantByteSize();
+        var opcode = Unsafe.As<byte, TOpcode>(ref sc.IP(ip));
+        uint s = (uint)TOpcodeTraits.ConstantByteSize(opcode);
         if (s == 0)
         {
-            s = opcode switch
+            if (EqualityComparer<TOpcode>.Default.Equals(opcode, TOpcodeTraits.ENTER))
             {
-                Opcode.ENTER => (uint)sc.IP(ip + 4) + 5,
-                Opcode.SWITCH => 6 * (uint)sc.IP(ip + 1) + 2,
-                _ => 1//throw new InvalidOperationException($"Unknown instruction 0x{inst:X} at IP {ip}"),
-            };
+                s = (uint)sc.IP(ip + 4) + 5;
+            }
+            else if (EqualityComparer<TOpcode>.Default.Equals(opcode, TOpcodeTraits.SWITCH))
+            {
+                s = 6 * (uint)sc.IP(ip + 1) + 2;
+            }
+            else
+            {
+                s = 1;//throw new InvalidOperationException($"Unknown instruction 0x{inst:X} at IP {ip}")
+            }
         }
 
         return s;
     }
-
-    private static readonly string[] OpcodesFormats = new string[OpcodeExtensions.NumberOfOpcodes]
-    {
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "b",
-        "bb",
-        "bbb",
-        "d",
-        "f",
-        "",
-        "",
-        "bbb",
-        "bs$",
-        "bb",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "b",
-        "b",
-        "b",
-        "b",
-        "b",
-        "b",
-        "b",
-        "b",
-        "b",
-        "b",
-        "b",
-        "",
-        "b",
-        "b",
-        "b",
-        "s",
-        "s",
-        "s",
-        "s",
-        "s",
-        "s",
-        "h",
-        "h",
-        "h",
-        "h",
-        "h",
-        "h",
-        "h",
-        "h",
-        "h",
-        "h",
-        "h",
-        "h",
-        "R",
-        "R",
-        "R",
-        "R",
-        "R",
-        "R",
-        "R",
-        "R",
-        "a",
-        "a",
-        "a",
-        "a",
-        "a",
-        "S",
-        "",
-        "",
-        "b",
-        "b",
-        "b",
-        "b",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-    };
 }
+
+public class DumperFiveV10 : DumperFive<OpcodeV10, OpcodeTraitsV10> { }
+public class DumperFiveV11 : DumperFive<OpcodeV11, OpcodeTraitsV11> { }
+public class DumperFiveV12 : DumperFive<OpcodeV12, OpcodeTraitsV12> { }

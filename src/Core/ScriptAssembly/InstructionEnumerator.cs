@@ -61,6 +61,6 @@ public static class InstructionEnumeratorScriptExtensions
         => new(script.Code, OpcodePayneExtensions.GetInstructionSpan);
     public static InstructionEnumerator<OpcodeRDR2> EnumerateInstructions(this ScriptRDR2 script)
         => new(script.MergeCodePages(), OpcodeRDR2Extensions.GetInstructionSpan);
-    public static InstructionEnumerator<Opcode> EnumerateInstructions(this Script script)
+    public static InstructionEnumerator<OpcodeV10> EnumerateInstructions(this Script script)
         => new(script.MergeCodePages(), OpcodeExtensions.GetInstructionSpan);
 }

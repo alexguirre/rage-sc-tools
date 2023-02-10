@@ -269,10 +269,10 @@ public sealed class IRDisassemblerRDR2
             case OpcodeRDR2.TEXT_LABEL_COPY: script.AppendInstruction(new IRTextLabelCopy(ip)); break;
             case OpcodeRDR2.CALLINDIRECT: script.AppendInstruction(new IRCallIndirect(ip)); break;
             case >= OpcodeRDR2.PUSH_CONST_M1 and <= OpcodeRDR2.PUSH_CONST_7:
-                script.AppendInstruction(new IRPushInt(ip, (int)opcode - (int)Opcode.PUSH_CONST_0));
+                script.AppendInstruction(new IRPushInt(ip, (int)opcode - (int)OpcodeRDR2.PUSH_CONST_0));
                 break;
             case >= OpcodeRDR2.PUSH_CONST_FM1 and <= OpcodeRDR2.PUSH_CONST_F7:
-                script.AppendInstruction(new IRPushFloat(ip, (int)opcode - (int)Opcode.PUSH_CONST_F0));
+                script.AppendInstruction(new IRPushFloat(ip, (int)opcode - (int)OpcodeRDR2.PUSH_CONST_F0));
                 break;
 
             case OpcodeRDR2.CATCH: script.AppendInstruction(new IRCatch(ip)); break;

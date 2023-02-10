@@ -43,6 +43,7 @@ internal static class Program
             new Option("--no-bytes", "Do not include the instruction bytes in the disassembly."),
             new Option("--no-offsets", "Do not include the instruction offsets in the disassembly."),
             new Option("--no-instructions", "Do not include the instruction textual representation in the disassembly."),
+            new Option<int?>("--version", "File version of the input YSC files. If not specified, the latest version is expected."),
         };
         dump.Handler = CommandHandler.Create<DumpOptions>(Dump);
 
@@ -258,6 +259,9 @@ internal static class Program
 
     private static void Compile(CompileOptions options)
     {
+        Console.Error.WriteLine("'compile' command not supported");
+        return;
+
         static void Print(string str)
         {
             lock (Console.Out)
@@ -503,7 +507,7 @@ internal static class Program
             if (CanOutput())
             {
                 OutputFile("original_disassembly.txt", originalDisassembly);
-                OutputFile("original_dump.txt", originalScript.DumpToString());
+                //OutputFile("original_dump.txt", originalScript.DumpToString());
             }
 
             Assembler reassembled;
@@ -541,7 +545,7 @@ internal static class Program
             if (CanOutput())
             {
                 OutputFile("new_disassembly.txt", newDisassembly);
-                OutputFile("new_dump.txt", newScript.DumpToString());
+                //OutputFile("new_dump.txt", newScript.DumpToString());
             }
 
             var sc1 = originalScript;
@@ -639,10 +643,13 @@ internal static class Program
         public bool NoBytes { get; set; }
         public bool NoOffsets { get; set; }
         public bool NoInstructions { get; set; }
+        public int? Version { get; set; }
     }
 
     private static void Dump(DumpOptions o)
     {
+        var version = o.Version ?? 12;
+
         Parallel.ForEach(o.Input.SelectMany(i => i.Matches), inputFile =>
         {
             var fileData =  File.ReadAllBytes(inputFile.FullName);
@@ -658,7 +665,16 @@ internal static class Program
                 _ => new StreamWriter(Path.Combine(o.Output.FullName, Path.ChangeExtension(inputFile.Name, "txt")))
             };
 
-            sc.Dump(new(Sink: w, IncludeMetadata: !o.NoMetadata, IncludeDisassembly: !o.NoDisassembly,
+            IDumperFive dumper = version switch
+            {
+                10 => new DumperFiveV10(),
+                11 => new DumperFiveV11(),
+                12 => new DumperFiveV12(),
+
+                _ => throw new ArgumentException($"Unknown GTA5 script version {version}")
+            };
+            
+            dumper.Dump(sc, new(Sink: w, IncludeMetadata: !o.NoMetadata, IncludeDisassembly: !o.NoDisassembly,
                         IncludeOffsets: !o.NoOffsets, IncludeBytes: !o.NoBytes, IncludeInstructions: !o.NoInstructions));
         });
     }

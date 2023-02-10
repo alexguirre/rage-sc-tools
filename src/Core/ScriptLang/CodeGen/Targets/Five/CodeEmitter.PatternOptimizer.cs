@@ -12,20 +12,20 @@ public partial class CodeEmitter
     {
         private readonly IPattern[] patterns = new IPattern[]
         {
-            new CombinedStoreOrLoadPattern(Opcode.LOCAL_U8, Opcode.LOCAL_U8_STORE, Opcode.LOCAL_U8_LOAD),
-            new CombinedStoreOrLoadPattern(Opcode.LOCAL_U16, Opcode.LOCAL_U16_STORE, Opcode.LOCAL_U16_LOAD),
+            new CombinedStoreOrLoadPattern(OpcodeV10.LOCAL_U8, OpcodeV10.LOCAL_U8_STORE, OpcodeV10.LOCAL_U8_LOAD),
+            new CombinedStoreOrLoadPattern(OpcodeV10.LOCAL_U16, OpcodeV10.LOCAL_U16_STORE, OpcodeV10.LOCAL_U16_LOAD),
 
-            new CombinedStoreOrLoadPattern(Opcode.STATIC_U8, Opcode.STATIC_U8_STORE, Opcode.STATIC_U8_LOAD),
-            new CombinedStoreOrLoadPattern(Opcode.STATIC_U16, Opcode.STATIC_U16_STORE, Opcode.STATIC_U16_LOAD),
+            new CombinedStoreOrLoadPattern(OpcodeV10.STATIC_U8, OpcodeV10.STATIC_U8_STORE, OpcodeV10.STATIC_U8_LOAD),
+            new CombinedStoreOrLoadPattern(OpcodeV10.STATIC_U16, OpcodeV10.STATIC_U16_STORE, OpcodeV10.STATIC_U16_LOAD),
 
-            new CombinedStoreOrLoadPattern(Opcode.GLOBAL_U16, Opcode.GLOBAL_U16_STORE, Opcode.GLOBAL_U16_LOAD),
-            new CombinedStoreOrLoadPattern(Opcode.GLOBAL_U24, Opcode.GLOBAL_U24_STORE, Opcode.GLOBAL_U24_LOAD),
+            new CombinedStoreOrLoadPattern(OpcodeV10.GLOBAL_U16, OpcodeV10.GLOBAL_U16_STORE, OpcodeV10.GLOBAL_U16_LOAD),
+            new CombinedStoreOrLoadPattern(OpcodeV10.GLOBAL_U24, OpcodeV10.GLOBAL_U24_STORE, OpcodeV10.GLOBAL_U24_LOAD),
 
-            new CombinedStoreOrLoadPattern(Opcode.IOFFSET_U8, Opcode.IOFFSET_U8_STORE, Opcode.IOFFSET_U8_LOAD),
-            new CombinedStoreOrLoadPattern(Opcode.IOFFSET_S16, Opcode.IOFFSET_S16_STORE, Opcode.IOFFSET_S16_LOAD),
+            new CombinedStoreOrLoadPattern(OpcodeV10.IOFFSET_U8, OpcodeV10.IOFFSET_U8_STORE, OpcodeV10.IOFFSET_U8_LOAD),
+            new CombinedStoreOrLoadPattern(OpcodeV10.IOFFSET_S16, OpcodeV10.IOFFSET_S16_STORE, OpcodeV10.IOFFSET_S16_LOAD),
 
-            new CombinedStoreOrLoadPattern(Opcode.ARRAY_U8, Opcode.ARRAY_U8_STORE, Opcode.ARRAY_U8_LOAD),
-            new CombinedStoreOrLoadPattern(Opcode.ARRAY_U16, Opcode.ARRAY_U16_STORE, Opcode.ARRAY_U16_LOAD),
+            new CombinedStoreOrLoadPattern(OpcodeV10.ARRAY_U8, OpcodeV10.ARRAY_U8_STORE, OpcodeV10.ARRAY_U8_LOAD),
+            new CombinedStoreOrLoadPattern(OpcodeV10.ARRAY_U16, OpcodeV10.ARRAY_U16_STORE, OpcodeV10.ARRAY_U16_LOAD),
 
             new AddMulS16Pattern(),
             new AddMulU8Pattern(),
@@ -85,11 +85,11 @@ public partial class CodeEmitter
 
         private sealed class CombinedStoreOrLoadPattern : IPattern
         {
-            public Opcode Target { get; }
-            public Opcode StoreReplacement { get; }
-            public Opcode LoadReplacement { get; }
+            public OpcodeV10 Target { get; }
+            public OpcodeV10 StoreReplacement { get; }
+            public OpcodeV10 LoadReplacement { get; }
 
-            public CombinedStoreOrLoadPattern(Opcode target, Opcode storeReplacement, Opcode loadReplacement)
+            public CombinedStoreOrLoadPattern(OpcodeV10 target, OpcodeV10 storeReplacement, OpcodeV10 loadReplacement)
             {
                 Target = target;
                 StoreReplacement = storeReplacement;
@@ -105,12 +105,12 @@ public partial class CodeEmitter
                 }
 
                 var second = GetFirstNonEmptyInstruction(instBuffer, first.Index + 1);
-                if (second is null || instBuffer.GetOpcode(second) is not (Opcode.STORE or Opcode.LOAD))
+                if (second is null || instBuffer.GetOpcode(second) is not (OpcodeV10.STORE or OpcodeV10.LOAD))
                 {
                     return false;
                 }
 
-                var replacement = instBuffer.GetOpcode(second) switch { Opcode.STORE => StoreReplacement, Opcode.LOAD => LoadReplacement, _ => throw new NotSupportedException() };
+                var replacement = instBuffer.GetOpcode(second) switch { OpcodeV10.STORE => StoreReplacement, OpcodeV10.LOAD => LoadReplacement, _ => throw new NotSupportedException() };
 
                 var newBytes = instBuffer.GetBytes(first);
                 newBytes[0] = (byte)replacement;
@@ -128,18 +128,18 @@ public partial class CodeEmitter
             public bool MatchAndOptimize(InstructionBuffer instBuffer, InstructionReference instruction)
             {
                 var first = GetFirstNonEmptyInstruction(instBuffer, instruction.Index);
-                if (first is null || instBuffer.GetOpcode(first) is not Opcode.PUSH_CONST_S16)
+                if (first is null || instBuffer.GetOpcode(first) is not OpcodeV10.PUSH_CONST_S16)
                 {
                     return false;
                 }
 
                 var second = GetFirstNonEmptyInstruction(instBuffer, first.Index + 1);
-                if (second is null || instBuffer.GetOpcode(second) is not (Opcode.IADD or Opcode.IMUL))
+                if (second is null || instBuffer.GetOpcode(second) is not (OpcodeV10.IADD or OpcodeV10.IMUL))
                 {
                     return false;
                 }
 
-                var replacement = instBuffer.GetOpcode(second) switch { Opcode.IADD => Opcode.IADD_S16, Opcode.IMUL => Opcode.IMUL_S16, _ => throw new NotImplementedException() };
+                var replacement = instBuffer.GetOpcode(second) switch { OpcodeV10.IADD => OpcodeV10.IADD_S16, OpcodeV10.IMUL => OpcodeV10.IMUL_S16, _ => throw new NotImplementedException() };
 
                 var newBytes = instBuffer.GetBytes(first);
                 newBytes[0] = (byte)replacement;
@@ -157,46 +157,46 @@ public partial class CodeEmitter
             public bool MatchAndOptimize(InstructionBuffer instBuffer, InstructionReference instruction)
             {
                 var first = GetFirstNonEmptyInstruction(instBuffer, instruction.Index);
-                if (first is null || instBuffer.GetOpcode(first) is not (Opcode.PUSH_CONST_U8
-                                                                        or Opcode.PUSH_CONST_U8_U8
-                                                                        or Opcode.PUSH_CONST_U8_U8_U8
-                                                                        or (>= Opcode.PUSH_CONST_0 and <= Opcode.PUSH_CONST_7)))
+                if (first is null || instBuffer.GetOpcode(first) is not (OpcodeV10.PUSH_CONST_U8
+                                                                        or OpcodeV10.PUSH_CONST_U8_U8
+                                                                        or OpcodeV10.PUSH_CONST_U8_U8_U8
+                                                                        or (>= OpcodeV10.PUSH_CONST_0 and <= OpcodeV10.PUSH_CONST_7)))
                 {
                     return false;
                 }
 
                 var second = GetFirstNonEmptyInstruction(instBuffer, first.Index + 1);
-                if (second is null || instBuffer.GetOpcode(second) is not (Opcode.IADD or Opcode.IMUL))
+                if (second is null || instBuffer.GetOpcode(second) is not (OpcodeV10.IADD or OpcodeV10.IMUL))
                 {
                     return false;
                 }
 
-                var replacement = instBuffer.GetOpcode(second) switch { Opcode.IADD => Opcode.IADD_U8, Opcode.IMUL => Opcode.IMUL_U8, _ => throw new NotImplementedException() };
+                var replacement = instBuffer.GetOpcode(second) switch { OpcodeV10.IADD => OpcodeV10.IADD_U8, OpcodeV10.IMUL => OpcodeV10.IMUL_U8, _ => throw new NotImplementedException() };
                 var newOpBytes = new List<byte>(capacity: 2) { (byte)replacement, 0 };
 
                 instBuffer.Remove(second);
                 switch (instBuffer.GetOpcode(first))
                 {
-                    case >= Opcode.PUSH_CONST_0 and <= Opcode.PUSH_CONST_7:
-                        newOpBytes[1] = instBuffer.GetOpcode(first) - Opcode.PUSH_CONST_0;
+                    case >= OpcodeV10.PUSH_CONST_0 and <= OpcodeV10.PUSH_CONST_7:
+                        newOpBytes[1] = instBuffer.GetOpcode(first) - OpcodeV10.PUSH_CONST_0;
                         instBuffer.Update(first, newOpBytes);
                         break;
-                    case Opcode.PUSH_CONST_U8:
+                    case OpcodeV10.PUSH_CONST_U8:
                         newOpBytes[1] = instBuffer.GetByte(first, 1);
                         instBuffer.Update(first, newOpBytes);
                         break;
-                    case Opcode.PUSH_CONST_U8_U8:
+                    case OpcodeV10.PUSH_CONST_U8_U8:
                         newOpBytes[1] = instBuffer.GetByte(first, 2);
                         var newPushU8Bytes = instBuffer.GetBytes(first);
-                        newPushU8Bytes[0] = (byte)Opcode.PUSH_CONST_U8;
+                        newPushU8Bytes[0] = (byte)OpcodeV10.PUSH_CONST_U8;
                         newPushU8Bytes.RemoveAt(newPushU8Bytes.Count - 1);
                         instBuffer.Update(first, newPushU8Bytes);
                         instBuffer.InsertAfter(first, newOpBytes);
                         break;
-                    case Opcode.PUSH_CONST_U8_U8_U8:
+                    case OpcodeV10.PUSH_CONST_U8_U8_U8:
                         newOpBytes[1] = instBuffer.GetByte(first, 3);
                         var newPushU8U8Bytes = instBuffer.GetBytes(first);
-                        newPushU8U8Bytes[0] = (byte)Opcode.PUSH_CONST_U8_U8;
+                        newPushU8U8Bytes[0] = (byte)OpcodeV10.PUSH_CONST_U8_U8;
                         newPushU8U8Bytes.RemoveAt(newPushU8U8Bytes.Count - 1);
                         instBuffer.Update(first, newPushU8U8Bytes);
                         instBuffer.InsertAfter(first, newOpBytes);
@@ -215,13 +215,13 @@ public partial class CodeEmitter
             public bool MatchAndOptimize(InstructionBuffer instBuffer, InstructionReference instruction)
             {
                 var first = GetFirstNonEmptyInstruction(instBuffer, instruction.Index);
-                if (first is null || instBuffer.GetOpcode(first) is not (Opcode.PUSH_CONST_U8 or Opcode.PUSH_CONST_U8_U8))
+                if (first is null || instBuffer.GetOpcode(first) is not (OpcodeV10.PUSH_CONST_U8 or OpcodeV10.PUSH_CONST_U8_U8))
                 {
                     return false;
                 }
 
                 var second = GetFirstNonEmptyInstruction(instBuffer, first.Index + 1);
-                if (second is null || instBuffer.GetOpcode(second) is not Opcode.PUSH_CONST_U8)
+                if (second is null || instBuffer.GetOpcode(second) is not OpcodeV10.PUSH_CONST_U8)
                 {
                     return false;
                 }
@@ -229,12 +229,12 @@ public partial class CodeEmitter
                 List<byte> newBytes = instBuffer.GetBytes(first);
                 switch (instBuffer.GetOpcode(first))
                 {
-                    case Opcode.PUSH_CONST_U8:
-                        newBytes[0] = (byte)Opcode.PUSH_CONST_U8_U8;
+                    case OpcodeV10.PUSH_CONST_U8:
+                        newBytes[0] = (byte)OpcodeV10.PUSH_CONST_U8_U8;
                         newBytes.Add(instBuffer.GetByte(second, 1));
                         break;
-                    case Opcode.PUSH_CONST_U8_U8:
-                        newBytes[0] = (byte)Opcode.PUSH_CONST_U8_U8_U8;
+                    case OpcodeV10.PUSH_CONST_U8_U8:
+                        newBytes[0] = (byte)OpcodeV10.PUSH_CONST_U8_U8_U8;
                         newBytes.Add(instBuffer.GetByte(second, 1));
                         break;
                 }
@@ -253,18 +253,18 @@ public partial class CodeEmitter
             public bool MatchAndOptimize(InstructionBuffer instBuffer, InstructionReference instruction)
             {
                 var first = GetFirstNonEmptyInstruction(instBuffer, instruction.Index);
-                if (first is null || instBuffer.GetOpcode(first) is not (>= Opcode.IEQ and <= Opcode.ILE))
+                if (first is null || instBuffer.GetOpcode(first) is not (>= OpcodeV10.IEQ and <= OpcodeV10.ILE))
                 {
                     return false;
                 }
 
                 var second = GetFirstNonEmptyInstruction(instBuffer, first.Index + 1);
-                if (second is null || instBuffer.GetOpcode(second) is not Opcode.JZ)
+                if (second is null || instBuffer.GetOpcode(second) is not OpcodeV10.JZ)
                 {
                     return false;
                 }
 
-                var replacement = instBuffer.GetOpcode(first) - Opcode.IEQ + Opcode.IEQ_JZ;
+                var replacement = instBuffer.GetOpcode(first) - OpcodeV10.IEQ + OpcodeV10.IEQ_JZ;
 
                 var newBytes = instBuffer.GetBytes(second);
                 newBytes[0] = (byte)replacement;

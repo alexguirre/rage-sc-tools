@@ -26,27 +26,27 @@ public abstract class CodeGenTestsBase
     {
         switch (value)
         {
-            case -1: return Opcode.PUSH_CONST_M1.ToString();
-            case 0: return Opcode.PUSH_CONST_0.ToString();
-            case 1: return Opcode.PUSH_CONST_1.ToString();
-            case 2: return Opcode.PUSH_CONST_2.ToString();
-            case 3: return Opcode.PUSH_CONST_3.ToString();
-            case 4: return Opcode.PUSH_CONST_4.ToString();
-            case 5: return Opcode.PUSH_CONST_5.ToString();
-            case 6: return Opcode.PUSH_CONST_6.ToString();
-            case 7: return Opcode.PUSH_CONST_7.ToString();
+            case -1: return OpcodeV10.PUSH_CONST_M1.ToString();
+            case 0: return OpcodeV10.PUSH_CONST_0.ToString();
+            case 1: return OpcodeV10.PUSH_CONST_1.ToString();
+            case 2: return OpcodeV10.PUSH_CONST_2.ToString();
+            case 3: return OpcodeV10.PUSH_CONST_3.ToString();
+            case 4: return OpcodeV10.PUSH_CONST_4.ToString();
+            case 5: return OpcodeV10.PUSH_CONST_5.ToString();
+            case 6: return OpcodeV10.PUSH_CONST_6.ToString();
+            case 7: return OpcodeV10.PUSH_CONST_7.ToString();
 
             case >= byte.MinValue and <= byte.MaxValue:
-                return $"{Opcode.PUSH_CONST_U8} {(byte)value}";
+                return $"{OpcodeV10.PUSH_CONST_U8} {(byte)value}";
 
             case >= short.MinValue and <= short.MaxValue:
-                return $"{Opcode.PUSH_CONST_S16} {(short)value}";
+                return $"{OpcodeV10.PUSH_CONST_S16} {(short)value}";
 
             case >= 0 and <= 0x00FFFFFF:
-                return $"{Opcode.PUSH_CONST_U24} {unchecked((uint)value)}";
+                return $"{OpcodeV10.PUSH_CONST_U24} {unchecked((uint)value)}";
 
             default:
-                return $"{Opcode.PUSH_CONST_U32} {unchecked((uint)value)}";
+                return $"{OpcodeV10.PUSH_CONST_U32} {unchecked((uint)value)}";
         }
     }
 
@@ -88,7 +88,8 @@ public abstract class CodeGenTestsBase
         using var expectedAssemblyReader = new StringReader(expectedAssembly);
         var expectedAssembler = Assembler.Assemble(expectedAssemblyReader, "test_expected.scasm", nativeDB, options: new() { IncludeFunctionNames = true });
 
-        string sourceDump = compiledScriptGTAV.DumpToString(), expectedDump = expectedAssembler.OutputScript.DumpToString();
+        string sourceDump = new DumperFiveV12().DumpToString(compiledScriptGTAV);
+        string expectedDump = new DumperFiveV12().DumpToString(expectedAssembler.OutputScript);
 
         Util.AssertScriptsAreEqual(compiledScriptGTAV, expectedAssembler.OutputScript);
     }

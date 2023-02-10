@@ -1,10 +1,12 @@
 ﻿namespace ScTools.ScriptAssembly.Targets.Five;
 
+using ScTools.GameFiles;
+
 using System;
 using System.Buffers.Binary;
 using System.Text;
 
-public enum Opcode : byte
+public enum OpcodeV10 : byte
 {
     NOP = 0x00,
     IADD = 0x01,
@@ -414,34 +416,501 @@ public enum OpcodeV12 : byte
     IBITTEST = 0x82,
 }
 
+public abstract class OpcodeTraitsV10 : IOpcodeTraitsFive<OpcodeV10>
+{
+    public const int NumberOfOpcodes = 127;
+
+    static int IOpcodeTraits<OpcodeV10>.NumberOfOpcodes => NumberOfOpcodes;
+    public static OpcodeV10 ENTER => OpcodeV10.ENTER;
+
+    public static OpcodeV10 SWITCH => OpcodeV10.SWITCH;
+
+    public static string[] DumpOpcodeFormats => dumpOpcodeFormats;
+
+    public static int ConstantByteSize(OpcodeV10 opcode)
+        => (int)opcode < NumberOfOpcodes ? ByteSizeTable[(int)opcode] : 1;
+
+    private static readonly byte[] ByteSizeTable = new byte[NumberOfOpcodes]
+    {
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        1,1,1,1,1,2,3,4,5,5,1,1,4,0,3,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,1,
+        2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,
+        4,4,0,1,1,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    };
+
+
+    private static readonly string[] dumpOpcodeFormats = new string[NumberOfOpcodes]
+    {
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "b",
+        "bb",
+        "bbb",
+        "d",
+        "f",
+        "",
+        "",
+        "bbb",
+        "bs$",
+        "bb",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "b",
+        "b",
+        "b",
+        "b",
+        "b",
+        "b",
+        "b",
+        "b",
+        "b",
+        "b",
+        "b",
+        "",
+        "b",
+        "b",
+        "b",
+        "s",
+        "s",
+        "s",
+        "s",
+        "s",
+        "s",
+        "h",
+        "h",
+        "h",
+        "h",
+        "h",
+        "h",
+        "h",
+        "h",
+        "h",
+        "h",
+        "h",
+        "h",
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "a",
+        "a",
+        "a",
+        "a",
+        "a",
+        "S",
+        "",
+        "",
+        "b",
+        "b",
+        "b",
+        "b",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+    };
+}
+
+public abstract class OpcodeTraitsV11 : IOpcodeTraitsFive<OpcodeV11>
+{
+    public const int NumberOfOpcodes = 128;
+
+    static int IOpcodeTraits<OpcodeV11>.NumberOfOpcodes => NumberOfOpcodes;
+    public static OpcodeV11 ENTER => OpcodeV11.ENTER;
+
+    public static OpcodeV11 SWITCH => OpcodeV11.SWITCH;
+
+    public static string[] DumpOpcodeFormats => dumpOpcodeFormats;
+
+    public static int ConstantByteSize(OpcodeV11 opcode)
+        => (int)opcode < NumberOfOpcodes ? ByteSizeTable[(int)opcode] : 1;
+
+    private static readonly byte[] ByteSizeTable = new byte[NumberOfOpcodes]
+    {
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        1,1,1,1,1,2,3,4,5,5,1,1,4,0,3,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,1,
+        2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,
+        4,4,0,1,1,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    };
+
+
+    private static readonly string[] dumpOpcodeFormats = new string[NumberOfOpcodes]
+    {
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "b",
+        "bb",
+        "bbb",
+        "d",
+        "f",
+        "",
+        "",
+        "bbb",
+        "bs$",
+        "bb",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "b",
+        "b",
+        "b",
+        "b",
+        "b",
+        "b",
+        "b",
+        "b",
+        "b",
+        "b",
+        "b",
+        "",
+        "b",
+        "b",
+        "b",
+        "s",
+        "s",
+        "s",
+        "s",
+        "s",
+        "s",
+        "h",
+        "h",
+        "h",
+        "h",
+        "h",
+        "h",
+        "h",
+        "h",
+        "h",
+        "h",
+        "h",
+        "h",
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "a",
+        "a",
+        "a",
+        "a",
+        "a",
+        "S",
+        "",
+        "",
+        "b",
+        "b",
+        "b",
+        "b",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+    };
+}
+
+public abstract class OpcodeTraitsV12 : IOpcodeTraitsFive<OpcodeV12>
+{
+    public const int NumberOfOpcodes = 131;
+
+    static int IOpcodeTraits<OpcodeV12>.NumberOfOpcodes => NumberOfOpcodes;
+    public static OpcodeV12 ENTER => OpcodeV12.ENTER;
+    public static OpcodeV12 SWITCH => OpcodeV12.SWITCH;
+
+    public static string[] DumpOpcodeFormats => dumpOpcodeFormats;
+
+    public static int ConstantByteSize(OpcodeV12 opcode)
+        => (int)opcode < NumberOfOpcodes ? ByteSizeTable[(int)opcode] : 1;
+
+    private static readonly byte[] ByteSizeTable = new byte[NumberOfOpcodes]
+    {
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        1,1,1,1,1,2,3,4,5,5,1,1,4,0,3,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,1,
+        2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,
+        4,4,4,4,4,0,1,1,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    };
+
+
+    private static readonly string[] dumpOpcodeFormats = new string[NumberOfOpcodes]
+    {
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "b",
+        "bb",
+        "bbb",
+        "d",
+        "f",
+        "",
+        "",
+        "bbb",
+        "bs$",
+        "bb",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "b",
+        "b",
+        "b",
+        "b",
+        "b",
+        "b",
+        "b",
+        "b",
+        "b",
+        "b",
+        "b",
+        "",
+        "b",
+        "b",
+        "b",
+        "s",
+        "s",
+        "s",
+        "s",
+        "s",
+        "s",
+        "h",
+        "h",
+        "h",
+        "h",
+        "h",
+        "h",
+        "h",
+        "h",
+        "h",
+        "h",
+        "h",
+        "h",
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "a",
+        "a",
+        "a",
+        "a",
+        "a",
+        "a",
+        "a",
+        "a",
+        "S",
+        "",
+        "",
+        "b",
+        "b",
+        "b",
+        "b",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+    };
+}
+
 public static class OpcodeExtensions
 {
     public const int NumberOfOpcodes = 128;
 
-    public static bool IsInvalid(this Opcode opcode)
+    public static bool IsInvalid(this OpcodeV10 opcode)
         => (byte)opcode is >= NumberOfOpcodes;
 
-    public static bool IsJump(this Opcode opcode)
-        => opcode is Opcode.J or Opcode.JZ or
-                     Opcode.IEQ_JZ or Opcode.INE_JZ or Opcode.IGT_JZ or
-                     Opcode.IGE_JZ or Opcode.ILT_JZ or Opcode.ILE_JZ;
+    public static bool IsJump(this OpcodeV10 opcode)
+        => opcode is OpcodeV10.J or OpcodeV10.JZ or
+                     OpcodeV10.IEQ_JZ or OpcodeV10.INE_JZ or OpcodeV10.IGT_JZ or
+                     OpcodeV10.IGE_JZ or OpcodeV10.ILT_JZ or OpcodeV10.ILE_JZ;
 
-    public static bool IsControlFlow(this Opcode opcode)
+    public static bool IsControlFlow(this OpcodeV10 opcode)
         => opcode.IsJump() ||
-           opcode is Opcode.LEAVE or Opcode.CALL or Opcode.SWITCH or Opcode.THROW or Opcode.CALLINDIRECT;
-
-    public static string Mnemonic(this Opcode opcode) => opcode.ToString();
+           opcode is OpcodeV10.LEAVE or OpcodeV10.CALL or OpcodeV10.SWITCH or OpcodeV10.THROW or OpcodeV10.CALLINDIRECT;
 
     /// <returns>
     /// The byte size of a instruction with this <paramref name="opcode"/>; or, <c>0</c> if the size is variable (i.e. <paramref name="opcode"/> is <see cref="Opcode.CALL"/> or <see cref="Opcode.SWITCH"/>).
     /// </returns>
-    public static int ConstantByteSize(this Opcode opcode)
+    public static int ConstantByteSize(this OpcodeV10 opcode)
         => (int)opcode < NumberOfOpcodes ? ByteSizeTable[(int)opcode] : 1;
 
     /// <returns>
     /// The length in bytes of an instruction with this <paramref name="opcode"/> and <paramref name="bytecode"/>.
     /// </returns>
-    public static int ByteSize(this Opcode opcode, ReadOnlySpan<byte> bytecode)
+    public static int ByteSize(this OpcodeV10 opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
         return ByteSize(bytecode);
@@ -452,11 +921,11 @@ public static class OpcodeExtensions
     /// </returns>
     public static int ByteSize(ReadOnlySpan<byte> bytecode)
     {
-        var opcode = (Opcode)bytecode[0];
+        var opcode = (OpcodeV10)bytecode[0];
         var s = opcode switch
         {
-            Opcode.ENTER => bytecode[4] + 5,
-            Opcode.SWITCH => 6 * bytecode[1] + 2,
+            OpcodeV10.ENTER => bytecode[4] + 5,
+            OpcodeV10.SWITCH => 6 * bytecode[1] + 2,
             _ => opcode.ConstantByteSize(),
         };
 
@@ -465,13 +934,13 @@ public static class OpcodeExtensions
 
     public static ReadOnlySpan<byte> GetInstructionSpan(ReadOnlySpan<byte> code, int address)
     {
-        var opcode = (Opcode)code[address];
+        var opcode = (OpcodeV10)code[address];
         var inst = code[address..];
         var instLength = opcode.ByteSize(inst);
         return inst[..instLength]; // trim to instruction length
     }
 
-    public static byte GetU8Operand(this Opcode opcode, ReadOnlySpan<byte> bytecode, int operandIndex = 0)
+    public static byte GetU8Operand(this OpcodeV10 opcode, ReadOnlySpan<byte> bytecode, int operandIndex = 0)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
 
@@ -486,7 +955,7 @@ public static class OpcodeExtensions
         //}
     }
 
-    public static short GetS16Operand(this Opcode opcode, ReadOnlySpan<byte> bytecode)
+    public static short GetS16Operand(this OpcodeV10 opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
 
@@ -501,7 +970,7 @@ public static class OpcodeExtensions
         //}
     }
 
-    public static ushort GetU16Operand(this Opcode opcode, ReadOnlySpan<byte> bytecode)
+    public static ushort GetU16Operand(this OpcodeV10 opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
 
@@ -516,7 +985,7 @@ public static class OpcodeExtensions
         //}
     }
 
-    public static uint GetU24Operand(this Opcode opcode, ReadOnlySpan<byte> bytecode)
+    public static uint GetU24Operand(this OpcodeV10 opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
 
@@ -535,7 +1004,7 @@ public static class OpcodeExtensions
         //}
     }
 
-    public static uint GetU32Operand(this Opcode opcode, ReadOnlySpan<byte> bytecode)
+    public static uint GetU32Operand(this OpcodeV10 opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
 
@@ -550,10 +1019,10 @@ public static class OpcodeExtensions
         //}
     }
 
-    public static float GetFloatOperand(this Opcode opcode, ReadOnlySpan<byte> bytecode)
+    public static float GetFloatOperand(this OpcodeV10 opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
-        if (opcode is not Opcode.PUSH_CONST_F)
+        if (opcode is not OpcodeV10.PUSH_CONST_F)
         {
             throw new ArgumentException($"The opcode {opcode} does not have a FLOAT operand.", nameof(opcode));
         }
@@ -561,30 +1030,30 @@ public static class OpcodeExtensions
         return BinaryPrimitives.ReadSingleLittleEndian(bytecode[1..]);
     }
 
-    public static int GetSwitchNumberOfCases(this Opcode opcode, ReadOnlySpan<byte> bytecode)
+    public static int GetSwitchNumberOfCases(this OpcodeV10 opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
-        ThrowIfNotExpectedOpcode(Opcode.SWITCH, bytecode);
+        ThrowIfNotExpectedOpcode(OpcodeV10.SWITCH, bytecode);
         return bytecode[1];
     }
 
-    public static SwitchCasesEnumerator GetSwitchOperands(this Opcode opcode, ReadOnlySpan<byte> bytecode)
+    public static SwitchCasesEnumerator GetSwitchOperands(this OpcodeV10 opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
         return new(bytecode);
     }
 
-    public static (byte ParamCount, ushort FrameSize) GetEnterOperands(this Opcode opcode, ReadOnlySpan<byte> bytecode)
+    public static (byte ParamCount, ushort FrameSize) GetEnterOperands(this OpcodeV10 opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
-        ThrowIfNotExpectedOpcode(Opcode.ENTER, bytecode);
+        ThrowIfNotExpectedOpcode(OpcodeV10.ENTER, bytecode);
         return (bytecode[1], BinaryPrimitives.ReadUInt16LittleEndian(bytecode[2..]));
     }
 
-    public static string? GetEnterFunctionName(this Opcode opcode, ReadOnlySpan<byte> bytecode)
+    public static string? GetEnterFunctionName(this OpcodeV10 opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
-        ThrowIfNotExpectedOpcode(Opcode.ENTER, bytecode);
+        ThrowIfNotExpectedOpcode(OpcodeV10.ENTER, bytecode);
 
         if (bytecode[4] > 0)
         {
@@ -597,17 +1066,17 @@ public static class OpcodeExtensions
         return null;
     }
 
-    public static (byte ParamCount, byte ReturnCount) GetLeaveOperands(this Opcode opcode, ReadOnlySpan<byte> bytecode)
+    public static (byte ParamCount, byte ReturnCount) GetLeaveOperands(this OpcodeV10 opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
-        ThrowIfNotExpectedOpcode(Opcode.LEAVE, bytecode);
+        ThrowIfNotExpectedOpcode(OpcodeV10.LEAVE, bytecode);
         return (bytecode[1], bytecode[2]);
     }
 
-    public static (byte ParamCount, byte ReturnCount, ushort CommandIndex) GetNativeOperands(this Opcode opcode, ReadOnlySpan<byte> bytecode)
+    public static (byte ParamCount, byte ReturnCount, ushort CommandIndex) GetNativeOperands(this OpcodeV10 opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
-        ThrowIfNotExpectedOpcode(Opcode.NATIVE, bytecode);
+        ThrowIfNotExpectedOpcode(OpcodeV10.NATIVE, bytecode);
 
         var paramReturnCounts = bytecode[0];
         var nativeIndexHi = bytecode[2];
@@ -620,18 +1089,18 @@ public static class OpcodeExtensions
         return ((byte)paramCount, (byte)returnCount, (ushort)nativeIndex);
     }
 
-    public static byte GetTextLabelLength(this Opcode opcode, ReadOnlySpan<byte> bytecode)
+    public static byte GetTextLabelLength(this OpcodeV10 opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
-        if ((Opcode)bytecode[0] is not (Opcode.TEXT_LABEL_ASSIGN_STRING or Opcode.TEXT_LABEL_ASSIGN_INT or
-                                        Opcode.TEXT_LABEL_APPEND_STRING or Opcode.TEXT_LABEL_APPEND_INT))
+        if ((OpcodeV10)bytecode[0] is not (OpcodeV10.TEXT_LABEL_ASSIGN_STRING or OpcodeV10.TEXT_LABEL_ASSIGN_INT or
+                                        OpcodeV10.TEXT_LABEL_APPEND_STRING or OpcodeV10.TEXT_LABEL_APPEND_INT))
         {
             throw new ArgumentException($"The instruction opcode is not a TEXT_LABEL_ASSIGN/APPEND opcode.", nameof(bytecode));
         }
         return bytecode[1];
     }
 
-    internal static void ThrowIfOpcodeDoesNotMatch(Opcode opcode, ReadOnlySpan<byte> bytecode)
+    internal static void ThrowIfOpcodeDoesNotMatch(OpcodeV10 opcode, ReadOnlySpan<byte> bytecode)
     {
         if ((byte)opcode != bytecode[0])
         {
@@ -639,7 +1108,7 @@ public static class OpcodeExtensions
         }
     }
 
-    internal static void ThrowIfNotExpectedOpcode(Opcode expectedOpcode, ReadOnlySpan<byte> bytecode)
+    internal static void ThrowIfNotExpectedOpcode(OpcodeV10 expectedOpcode, ReadOnlySpan<byte> bytecode)
     {
         if (bytecode[0] != (byte)expectedOpcode)
         {
@@ -661,7 +1130,7 @@ public static class OpcodeExtensions
 
         public SwitchCasesEnumerator(ReadOnlySpan<byte> bytecode)
         {
-            ThrowIfNotExpectedOpcode(Opcode.SWITCH, bytecode);
+            ThrowIfNotExpectedOpcode(OpcodeV10.SWITCH, bytecode);
 
             this.bytecode = bytecode;
             current = default;
@@ -692,9 +1161,9 @@ public static class OpcodeExtensions
     }
 
     /// <returns>
-    /// The number of operands required by <see cref="opcode"/>; or, <c>-1</c> if it accepts a variable number of operands (i.e. <paramref name="opcode"/> is <see cref="Opcode.SWITCH"/>).
+    /// The number of operands required by <see cref="opcode"/>; or, <c>-1</c> if it accepts a variable number of operands (i.e. <paramref name="opcode"/> is <see cref="OpcodeV10.SWITCH"/>).
     /// </returns>
-    public static int NumberOfOperands(this Opcode opcode)
+    public static int NumberOfOperands(this OpcodeV10 opcode)
         => (int)opcode < NumberOfOpcodes ? NumberOfOperandsTable[(int)opcode] : throw new ArgumentException($"Unknown opcode '{opcode}'", nameof(opcode));
 
     private static readonly sbyte[] NumberOfOperandsTable = new sbyte[NumberOfOpcodes]

@@ -11,8 +11,9 @@ public class YscFile : GameFile, PackedFile
     /// <summary>
     /// v10: release version
     /// v11: IS_BIT_SET native replaced with IBITTEST opcode, since b2612
+    /// v12: added STATIC_U24, STATIC_U24_LOAD and STATIC_U24_STORE, since b2802
     /// </summary>
-    public const int FileVersion = 10;
+    public const int FileVersion = 12;
 
     public Script Script { get; set; }
 

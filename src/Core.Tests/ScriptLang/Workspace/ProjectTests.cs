@@ -103,7 +103,8 @@ public class ProjectTests
         {
             var expectedAssembler = Assembler.Assemble(expectedAssemblyReader, expectedAssemblyFileName, options: new() { IncludeFunctionNames = true });
 
-            string sourceDump = compiledScriptGTAV.DumpToString(), expectedDump = expectedAssembler.OutputScript.DumpToString();
+            string sourceDump = new DumperFiveV12().DumpToString(compiledScriptGTAV);
+            string expectedDump = new DumperFiveV12().DumpToString(expectedAssembler.OutputScript);
 
             Util.AssertScriptsAreEqual(compiledScriptGTAV, expectedAssembler.OutputScript);
         }

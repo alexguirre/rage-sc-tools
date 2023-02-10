@@ -53,8 +53,8 @@ getMyFloat: ENTER 0, 2
 
             using var finalAsm = Util.Assemble(disassembly);
 
-            var initialDump = initialAsm.OutputScript.DumpToString();
-            var finalDump = finalAsm.OutputScript.DumpToString();
+            var initialDump = new DumperFiveV12().DumpToString(initialAsm.OutputScript);
+            var finalDump = new DumperFiveV12().DumpToString(finalAsm.OutputScript);
 
             Assert.Equal(initialDump, finalDump);
             Util.AssertScriptsAreEqual(initialAsm.OutputScript, finalAsm.OutputScript);

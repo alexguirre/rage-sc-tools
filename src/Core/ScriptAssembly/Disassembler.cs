@@ -260,7 +260,7 @@ public class Disassembler
 
     private void DisassembleInstruction(TextWriter w, InstructionContext ctx, uint ip, ReadOnlySpan<byte> inst)
     {
-        var opcode = (Opcode)inst[0];
+        var opcode = (OpcodeV10)inst[0];
         inst = inst[1..];
 
         w.Write("\t\t");
@@ -272,40 +272,40 @@ public class Disassembler
 
         switch (opcode)
         {
-            case Opcode.PUSH_CONST_U8:
+            case OpcodeV10.PUSH_CONST_U8:
                 if (!TryWriteStringLabel(this, w, ctx, inst[0]))
                 {
                     w.Write(inst[0]);
                 }
                 inst = inst[1..];
                 break;
-            case Opcode.ARRAY_U8:
-            case Opcode.ARRAY_U8_LOAD:
-            case Opcode.ARRAY_U8_STORE:
-            case Opcode.LOCAL_U8:
-            case Opcode.LOCAL_U8_LOAD:
-            case Opcode.LOCAL_U8_STORE:
-            case Opcode.IADD_U8:
-            case Opcode.IMUL_U8:
-            case Opcode.IOFFSET_U8:
-            case Opcode.IOFFSET_U8_LOAD:
-            case Opcode.IOFFSET_U8_STORE:
-            case Opcode.TEXT_LABEL_ASSIGN_STRING:
-            case Opcode.TEXT_LABEL_ASSIGN_INT:
-            case Opcode.TEXT_LABEL_APPEND_STRING:
-            case Opcode.TEXT_LABEL_APPEND_INT:
+            case OpcodeV10.ARRAY_U8:
+            case OpcodeV10.ARRAY_U8_LOAD:
+            case OpcodeV10.ARRAY_U8_STORE:
+            case OpcodeV10.LOCAL_U8:
+            case OpcodeV10.LOCAL_U8_LOAD:
+            case OpcodeV10.LOCAL_U8_STORE:
+            case OpcodeV10.IADD_U8:
+            case OpcodeV10.IMUL_U8:
+            case OpcodeV10.IOFFSET_U8:
+            case OpcodeV10.IOFFSET_U8_LOAD:
+            case OpcodeV10.IOFFSET_U8_STORE:
+            case OpcodeV10.TEXT_LABEL_ASSIGN_STRING:
+            case OpcodeV10.TEXT_LABEL_ASSIGN_INT:
+            case OpcodeV10.TEXT_LABEL_APPEND_STRING:
+            case OpcodeV10.TEXT_LABEL_APPEND_INT:
                 w.Write(inst[0]);
                 inst = inst[1..];
                 break;
-            case Opcode.STATIC_U8:
-            case Opcode.STATIC_U8_LOAD:
-            case Opcode.STATIC_U8_STORE:
+            case OpcodeV10.STATIC_U8:
+            case OpcodeV10.STATIC_U8_LOAD:
+            case OpcodeV10.STATIC_U8_STORE:
                 var staticU8 = inst[0];
                 w.Write(staticsLabels.TryGetValue(staticU8, out var staticU8Label) ? staticU8Label : staticU8);
                 inst = inst[1..];
                 break;
-            case Opcode.PUSH_CONST_U8_U8:
-            case Opcode.LEAVE:
+            case OpcodeV10.PUSH_CONST_U8_U8:
+            case OpcodeV10.LEAVE:
                 w.Write(inst[0]);
                 w.Write(", ");
                 if (!TryWriteStringLabel(this, w, ctx, inst[1]))
@@ -314,7 +314,7 @@ public class Disassembler
                 }
                 inst = inst[2..];
                 break;
-            case Opcode.PUSH_CONST_U8_U8_U8:
+            case OpcodeV10.PUSH_CONST_U8_U8_U8:
                 w.Write(inst[0]);
                 w.Write(", ");
                 w.Write(inst[1]);
@@ -325,7 +325,7 @@ public class Disassembler
                 }
                 inst = inst[3..];
                 break;
-            case Opcode.PUSH_CONST_U32:
+            case OpcodeV10.PUSH_CONST_U32:
                 var u32Value = MemoryMarshal.Read<uint>(inst);
                 if (!TryWriteStringLabel(this, w, ctx, u32Value))
                 {
@@ -333,11 +333,11 @@ public class Disassembler
                 }
                 inst = inst[4..];
                 break;
-            case Opcode.PUSH_CONST_F:
+            case OpcodeV10.PUSH_CONST_F:
                 w.Write(MemoryMarshal.Read<float>(inst).ToString("R", CultureInfo.InvariantCulture));
                 inst = inst[4..];
                 break;
-            case Opcode.NATIVE:
+            case OpcodeV10.NATIVE:
                 var argReturn = inst[0];
                 var nativeIndexHi = inst[1];
                 var nativeIndexLo = inst[2];
@@ -359,14 +359,14 @@ public class Disassembler
                 }
                 inst = inst[3..];
                 break;
-            case Opcode.ENTER:
+            case OpcodeV10.ENTER:
                 w.Write(inst[0]);
                 w.Write(", ");
                 w.Write(MemoryMarshal.Read<ushort>(inst[1..]));
                 var nameLen = inst[3];
                 inst = inst[(4 + nameLen)..];
                 break;
-            case Opcode.PUSH_CONST_S16:
+            case OpcodeV10.PUSH_CONST_S16:
             {
                 var s16Value = MemoryMarshal.Read<short>(inst);
                 if (!TryWriteStringLabel(this, w, ctx, (uint)s16Value))
@@ -376,66 +376,66 @@ public class Disassembler
                 inst = inst[2..];
                 break;
             }
-            case Opcode.IADD_S16:
-            case Opcode.IMUL_S16:
-            case Opcode.IOFFSET_S16:
-            case Opcode.IOFFSET_S16_LOAD:
-            case Opcode.IOFFSET_S16_STORE:
+            case OpcodeV10.IADD_S16:
+            case OpcodeV10.IMUL_S16:
+            case OpcodeV10.IOFFSET_S16:
+            case OpcodeV10.IOFFSET_S16_LOAD:
+            case OpcodeV10.IOFFSET_S16_STORE:
                 w.Write(MemoryMarshal.Read<short>(inst));
                 inst = inst[2..];
                 break;
-            case Opcode.ARRAY_U16:
-            case Opcode.ARRAY_U16_LOAD:
-            case Opcode.ARRAY_U16_STORE:
-            case Opcode.LOCAL_U16:
-            case Opcode.LOCAL_U16_LOAD:
-            case Opcode.LOCAL_U16_STORE:
-            case Opcode.GLOBAL_U16:
-            case Opcode.GLOBAL_U16_LOAD:
-            case Opcode.GLOBAL_U16_STORE:
+            case OpcodeV10.ARRAY_U16:
+            case OpcodeV10.ARRAY_U16_LOAD:
+            case OpcodeV10.ARRAY_U16_STORE:
+            case OpcodeV10.LOCAL_U16:
+            case OpcodeV10.LOCAL_U16_LOAD:
+            case OpcodeV10.LOCAL_U16_STORE:
+            case OpcodeV10.GLOBAL_U16:
+            case OpcodeV10.GLOBAL_U16_LOAD:
+            case OpcodeV10.GLOBAL_U16_STORE:
                 w.Write(MemoryMarshal.Read<ushort>(inst));
                 inst = inst[2..];
                 break;
-            case Opcode.STATIC_U16:
-            case Opcode.STATIC_U16_LOAD:
-            case Opcode.STATIC_U16_STORE:
+            case OpcodeV10.STATIC_U16:
+            case OpcodeV10.STATIC_U16_LOAD:
+            case OpcodeV10.STATIC_U16_STORE:
                 var staticU16 = MemoryMarshal.Read<ushort>(inst);
                 w.Write(staticsLabels.TryGetValue(staticU16, out var staticU16Label) ? staticU16Label : staticU16);
                 inst = inst[2..];
                 break;
-            case Opcode.J:
-            case Opcode.JZ:
-            case Opcode.IEQ_JZ:
-            case Opcode.INE_JZ:
-            case Opcode.IGT_JZ:
-            case Opcode.IGE_JZ:
-            case Opcode.ILT_JZ:
-            case Opcode.ILE_JZ:
+            case OpcodeV10.J:
+            case OpcodeV10.JZ:
+            case OpcodeV10.IEQ_JZ:
+            case OpcodeV10.INE_JZ:
+            case OpcodeV10.IGT_JZ:
+            case OpcodeV10.IGE_JZ:
+            case OpcodeV10.ILT_JZ:
+            case OpcodeV10.ILE_JZ:
                 var jumpOffset = MemoryMarshal.Read<short>(inst);
                 var jumpAddress = ip + 3 + jumpOffset;
                 w.Write(codeLabels.TryGetValue((uint)jumpAddress, out var label) ? label : jumpOffset);
                 inst = inst[2..];
                 break;
-            case Opcode.CALL:
-            case Opcode.GLOBAL_U24:
-            case Opcode.GLOBAL_U24_LOAD:
-            case Opcode.GLOBAL_U24_STORE:
-            case Opcode.PUSH_CONST_U24:
+            case OpcodeV10.CALL:
+            case OpcodeV10.GLOBAL_U24:
+            case OpcodeV10.GLOBAL_U24_LOAD:
+            case OpcodeV10.GLOBAL_U24_STORE:
+            case OpcodeV10.PUSH_CONST_U24:
             {
                 var lo = inst[0];
                 var mi = inst[1];
                 var hi = inst[2];
 
                 var value = (hi << 16) | (mi << 8) | lo;
-                if (!(opcode is Opcode.CALL && TryWriteFuncLabel(this, w, (uint)value)) &&
-                    !(opcode is Opcode.PUSH_CONST_U24 && (TryWriteStringLabel(this, w, ctx, (uint)value) || (hasIndirectCalls && TryWriteFuncLabel(this, w, (uint)value)))))
+                if (!(opcode is OpcodeV10.CALL && TryWriteFuncLabel(this, w, (uint)value)) &&
+                    !(opcode is OpcodeV10.PUSH_CONST_U24 && (TryWriteStringLabel(this, w, ctx, (uint)value) || (hasIndirectCalls && TryWriteFuncLabel(this, w, (uint)value)))))
                 {
                     w.Write(value);
                 }
                 inst = inst[3..];
                 break;
             }
-            case Opcode.SWITCH:
+            case OpcodeV10.SWITCH:
                 var caseCount = inst[0];
                 inst = inst[1..];
                 for (int i = 0; i < caseCount; i++, inst = inst[6..])
@@ -451,16 +451,16 @@ public class Disassembler
                     w.Write("{0}:{1}", caseValue, codeLabels.TryGetValue((uint)caseJumpToAddress, out var caseLabel) ? caseLabel : caseJumpToOffset);
                 }
                 break;
-            case Opcode.PUSH_CONST_0:
-            case Opcode.PUSH_CONST_1:
-            case Opcode.PUSH_CONST_2:
-            case Opcode.PUSH_CONST_3:
-            case Opcode.PUSH_CONST_4:
-            case Opcode.PUSH_CONST_5:
-            case Opcode.PUSH_CONST_6:
-            case Opcode.PUSH_CONST_7:
+            case OpcodeV10.PUSH_CONST_0:
+            case OpcodeV10.PUSH_CONST_1:
+            case OpcodeV10.PUSH_CONST_2:
+            case OpcodeV10.PUSH_CONST_3:
+            case OpcodeV10.PUSH_CONST_4:
+            case OpcodeV10.PUSH_CONST_5:
+            case OpcodeV10.PUSH_CONST_6:
+            case OpcodeV10.PUSH_CONST_7:
             {
-                var value = opcode - Opcode.PUSH_CONST_0;
+                var value = opcode - OpcodeV10.PUSH_CONST_0;
                 if (TryGetStringIndex(this, w, ctx, value, out int strIndex))
                 {
                     w.Write("\t; string ref: {0}", stringsTable[strIndex].Label);
@@ -474,7 +474,7 @@ public class Disassembler
         static bool TryGetStringIndex(Disassembler self, TextWriter w, in InstructionContext ctx, uint strId, out int strIndex)
         {
             var next = ctx.Next();
-            if (next.IsValid && next.Opcode is Opcode.STRING && self.stringIndicesById.TryGetValue(strId, out strIndex))
+            if (next.IsValid && next.Opcode is OpcodeV10.STRING && self.stringIndicesById.TryGetValue(strId, out strIndex))
             {
                 return true;
             }
@@ -588,14 +588,14 @@ public class Disassembler
             {
                 switch (inst.Opcode)
                 {
-                    case Opcode.J:
-                    case Opcode.JZ:
-                    case Opcode.IEQ_JZ:
-                    case Opcode.INE_JZ:
-                    case Opcode.IGT_JZ:
-                    case Opcode.IGE_JZ:
-                    case Opcode.ILT_JZ:
-                    case Opcode.ILE_JZ:
+                    case OpcodeV10.J:
+                    case OpcodeV10.JZ:
+                    case OpcodeV10.IEQ_JZ:
+                    case OpcodeV10.INE_JZ:
+                    case OpcodeV10.IGT_JZ:
+                    case OpcodeV10.IGE_JZ:
+                    case OpcodeV10.ILT_JZ:
+                    case OpcodeV10.ILE_JZ:
                         // ignore labels that come after a LEAVE instruction,
                         // R* compiler inserts them sometimes with the next function or label as target, bug?
                         if (addressAfterLastLeaveInst != inst.Address)
@@ -605,7 +605,7 @@ public class Disassembler
                             AddLabel(codeLabels, (uint)jumpAddress);
                         }
                         break;
-                    case Opcode.SWITCH:
+                    case OpcodeV10.SWITCH:
                         var caseCount = inst.Bytes[1];
                         for (int i = 0; i < caseCount; i++)
                         {
@@ -616,7 +616,7 @@ public class Disassembler
                             AddLabel(codeLabels, (uint)caseJumpToAddress);
                         }
                         break;
-                    case Opcode.ENTER:
+                    case OpcodeV10.ENTER:
                         var funcAddress = inst.Address;
                         // Functions at page boundaries may not start with an ENTER instruction, they have NOPs and a J before
                         // the ENTER to skip the page boundary.
@@ -633,10 +633,10 @@ public class Disassembler
                                             (funcAddress == 0 ? "main" : null);
                         AddFuncLabel(codeLabels, funcAddress, funcName);
                         break;
-                    case Opcode.LEAVE:
-                        addressAfterLastLeaveInst = (uint)(inst.Address + Opcode.LEAVE.ConstantByteSize());
+                    case OpcodeV10.LEAVE:
+                        addressAfterLastLeaveInst = (uint)(inst.Address + OpcodeV10.LEAVE.ConstantByteSize());
                         break;
-                    case Opcode.CALLINDIRECT:
+                    case OpcodeV10.CALLINDIRECT:
                         hasIndirectCalls = true;
                         break;
                 }
@@ -659,13 +659,13 @@ public class Disassembler
             {
                 uint? staticAddress = inst.Opcode switch
                 {
-                    Opcode.STATIC_U8 or
-                    Opcode.STATIC_U8_LOAD or
-                    Opcode.STATIC_U8_STORE => inst.Bytes[1],
+                    OpcodeV10.STATIC_U8 or
+                    OpcodeV10.STATIC_U8_LOAD or
+                    OpcodeV10.STATIC_U8_STORE => inst.Bytes[1],
 
-                    Opcode.STATIC_U16 or
-                    Opcode.STATIC_U16_LOAD or
-                    Opcode.STATIC_U16_STORE => MemoryMarshal.Read<ushort>(inst.Bytes[1..]),
+                    OpcodeV10.STATIC_U16 or
+                    OpcodeV10.STATIC_U16_LOAD or
+                    OpcodeV10.STATIC_U16_STORE => MemoryMarshal.Read<ushort>(inst.Bytes[1..]),
 
                     _ => null,
                 };
@@ -733,7 +733,7 @@ public class Disassembler
         public bool IsValid => Bytes.Length > 0;
         public uint Address { get; init; }
         public ReadOnlySpan<byte> Bytes { get; init; }
-        public Opcode Opcode => (Opcode)Bytes[0];
+        public OpcodeV10 Opcode => (OpcodeV10)Bytes[0];
         public CB PreviousCB { get; init; }
         public CB NextCB { get; init; }
 
