@@ -19,12 +19,12 @@ public abstract class PreprocessorTests<TToken, TTokenKind, TErrorCode>
     protected abstract IPreprocessor<TToken, TTokenKind, TErrorCode> CreatePreprocessor(DiagnosticsReport diagnostics);
 
     [Fact]
-    public void IfDefWithDefined()
+    public void IfEvaluatesToTrue()
     {
         var (tokens, diag) = Preprocess(
             @"
             aaa
-            #ifdef FOO
+            #if FOO
             bbb
             #endif
             ccc",
@@ -45,12 +45,12 @@ public abstract class PreprocessorTests<TToken, TTokenKind, TErrorCode>
     }
 
     [Fact]
-    public void IfDefWithUndefined()
+    public void IfEvaluatesToFalse()
     {
         var (tokens, diag) = Preprocess(
             @"
             aaa
-            #ifdef FOO
+            #if FOO
             bbb
             #endif
             ccc");
@@ -68,12 +68,12 @@ public abstract class PreprocessorTests<TToken, TTokenKind, TErrorCode>
     }
 
     [Fact]
-    public void IfNotDefWithDefined()
+    public void IfNotEvaluatesToFalse()
     {
         var (tokens, diag) = Preprocess(
             @"
             aaa
-            #ifndef FOO
+            #if NOT FOO
             bbb
             #endif
             ccc",
@@ -92,12 +92,12 @@ public abstract class PreprocessorTests<TToken, TTokenKind, TErrorCode>
     }
 
     [Fact]
-    public void IfNotDefWithUndefined()
+    public void IfNotEvaluatesToTrue()
     {
         var (tokens, diag) = Preprocess(
             @"
             aaa
-            #ifndef FOO
+            #if NOT FOO
             bbb
             #endif
             ccc");
@@ -117,244 +117,34 @@ public abstract class PreprocessorTests<TToken, TTokenKind, TErrorCode>
     }
 
     [Fact]
-    public void ElseBranchTaken()
+    public void NestedIfs()
     {
         var (tokens, diag) = Preprocess(
             @"
-            #ifdef FOO
-            aaa
-            #else
-            bbb
-            #endif");
-
-        False(diag.HasErrors);
-        False(diag.HasWarnings);
-
-        Equal(4, tokens.Length);
-
-        TokenIsEOS(tokens[0]);
-        TokenEqual(TokenKindIdentifier, "bbb", (5, 13), (5, 15), tokens[1]);
-        TokenIsEOS(tokens[2]);
-        TokenIsEOF(tokens.Last());
-    }
-
-    [Fact]
-    public void ElseBranchNotTaken()
-    {
-        var (tokens, diag) = Preprocess(
-            @"
-            #ifndef FOO
-            ccc
-            #else
-            ddd
-            #endif");
-
-        False(diag.HasErrors);
-        False(diag.HasWarnings);
-
-        Equal(4, tokens.Length);
-
-        TokenIsEOS(tokens[0]);
-        TokenEqual(TokenKindIdentifier, "ccc", (3, 13), (3, 15), tokens[1]);
-        TokenIsEOS(tokens[2]);
-        TokenIsEOF(tokens.Last());
-    }
-
-    [Fact]
-    public void ElifBranchTaken()
-    {
-        var (tokens, diag) = Preprocess(
-            @"
-            #ifdef FOO
-            aaa
-            #elifdef BAR
-            bbb
-            #elifdef BAZ
-            ccc
-            #else
-            ddd
-            #endif",
-            new[] { "BAR" });
-
-        False(diag.HasErrors);
-        False(diag.HasWarnings);
-
-        Equal(4, tokens.Length);
-
-        TokenIsEOS(tokens[0]);
-        TokenEqual(TokenKindIdentifier, "bbb", (5, 13), (5, 15), tokens[1]);
-        TokenIsEOS(tokens[2]);
-        TokenIsEOF(tokens.Last());
-    }
-
-    [Fact]
-    public void ElifBranchNotTaken()
-    {
-        var (tokens, diag) = Preprocess(
-            @"
-            #ifdef FOO
-            aaa
-            #elifdef BAR
-            bbb
-            #elifdef BAZ
-            ccc
-            #else
-            ddd
-            #endif");
-
-        False(diag.HasErrors);
-        False(diag.HasWarnings);
-
-        Equal(4, tokens.Length);
-
-        TokenIsEOS(tokens[0]);
-        TokenEqual(TokenKindIdentifier, "ddd", (9, 13), (9, 15), tokens[1]);
-        TokenIsEOS(tokens[2]);
-        TokenIsEOF(tokens.Last());
-    }
-
-    [Fact]
-    public void ElifNotBranchTaken()
-    {
-        var (tokens, diag) = Preprocess(
-            @"
-            #ifdef FOO
-            aaa
-            #elifndef BAR
-            bbb
-            #elifndef BAZ
-            ccc
-            #else
-            ddd
-            #endif");
-
-        False(diag.HasErrors);
-        False(diag.HasWarnings);
-
-        Equal(4, tokens.Length);
-
-        TokenIsEOS(tokens[0]);
-        TokenEqual(TokenKindIdentifier, "bbb", (5, 13), (5, 15), tokens[1]);
-        TokenIsEOS(tokens[2]);
-        TokenIsEOF(tokens.Last());
-    }
-
-    [Fact]
-    public void ElifNotBranchNotTaken()
-    {
-        var (tokens, diag) = Preprocess(
-            @"
-            #ifdef FOO
-            aaa
-            #elifndef BAR
-            bbb
-            #elifndef BAZ
-            ccc
-            #else
-            ddd
-            #endif",
-            new[] { "BAR", "BAZ" });
-
-        False(diag.HasErrors);
-        False(diag.HasWarnings);
-
-        Equal(4, tokens.Length);
-
-        TokenIsEOS(tokens[0]);
-        TokenEqual(TokenKindIdentifier, "ddd", (9, 13), (9, 15), tokens[1]);
-        TokenIsEOS(tokens[2]);
-        TokenIsEOF(tokens.Last());
-    }
-
-    [Theory]
-    [InlineData("FOO")]
-    [InlineData(null)]
-    public void Undef(string? definition)
-    {
-        var (tokens, diag) = Preprocess(
-            @"
-            #undef FOO
-            #ifdef FOO
-            aaa
-            #endif
-            #ifndef FOO
-            bbb
-            #endif",
-            definition is null ? null : new[] { definition });
-
-        False(diag.HasErrors);
-        False(diag.HasWarnings);
-
-        Equal(4, tokens.Length);
-
-        TokenIsEOS(tokens[0]);
-        TokenEqual(TokenKindIdentifier, "bbb", (7, 13), (7, 15), tokens[1]);
-        TokenIsEOS(tokens[2]);
-        TokenIsEOF(tokens.Last());
-    }
-
-    [Theory]
-    [InlineData("FOO")]
-    [InlineData(null)]
-    public void Define(string? definition)
-    {
-        var (tokens, diag) = Preprocess(
-            @"
-            #define FOO
-            #ifdef FOO
-            aaa
-            #endif
-            #ifndef FOO
-            bbb
-            #endif",
-            definition is null ? null : new[] { definition });
-
-        False(diag.HasErrors);
-        False(diag.HasWarnings);
-
-        Equal(4, tokens.Length);
-
-        TokenIsEOS(tokens[0]);
-        TokenEqual(TokenKindIdentifier, "aaa", (4, 13), (4, 15), tokens[1]);
-        TokenIsEOS(tokens[2]);
-        TokenIsEOF(tokens.Last());
-    }
-
-    [Fact]
-    public void NestedIfsEnabled()
-    {
-        var (tokens, diag) = Preprocess(
-            @"
-            #ifdef FOO
+            #if FOO
                 aaa
-                #ifdef BAR
+                #if BAR
                     bbb
                 #endif
-                #ifdef BAZ
+                #if BAZ
                     ccc
-                #elifdef BAR
-                    ddd
-                #else
-                    eee
                 #endif
-                fff
+                ddd
             #endif",
             new[] { "FOO", "BAR" });
 
         False(diag.HasErrors);
         False(diag.HasWarnings);
 
-        Equal(10, tokens.Length);
+        Equal(8, tokens.Length);
 
         TokenIsEOS(tokens[0]);
         TokenEqual(TokenKindIdentifier, "aaa", (3, 17), (3, 19), tokens[1]);
         TokenIsEOS(tokens[2]);
         TokenEqual(TokenKindIdentifier, "bbb", (5, 21), (5, 23), tokens[3]);
         TokenIsEOS(tokens[4]);
-        TokenEqual(TokenKindIdentifier, "ddd", (10, 21), (10, 23), tokens[5]);
+        TokenEqual(TokenKindIdentifier, "ddd", (10, 17), (10, 19), tokens[5]);
         TokenIsEOS(tokens[6]);
-        TokenEqual(TokenKindIdentifier, "fff", (14, 17), (14, 19), tokens[7]);
-        TokenIsEOS(tokens[8]);
         TokenIsEOF(tokens.Last());
     }
 
@@ -363,16 +153,12 @@ public abstract class PreprocessorTests<TToken, TTokenKind, TErrorCode>
     {
         var (tokens, diag) = Preprocess(
             @"
-            #ifdef FOO
+            #if FOO
                 aaa
-                #ifdef BAR
+                #if BAR
                     bbb
-                #elifdef BAZ
-                    ccc
-                #else
-                    ddd
                 #endif
-                eee
+                ccc
             #endif");
 
         False(diag.HasErrors);
@@ -385,83 +171,29 @@ public abstract class PreprocessorTests<TToken, TTokenKind, TErrorCode>
     }
 
     [Fact]
-    public void SpacesBeforeDirectiveNameAreAllowed()
+    public void InlineIfIsAllowed()
     {
         var (tokens, diag) = Preprocess(
             @"
-            #   undef FOO");
+            aaa #if FOO bbb ccc #endif ddd
+            eee #if NOT FOO fff ggg #endif hhh",
+            new[] { "FOO" });
 
         False(diag.HasErrors);
         False(diag.HasWarnings);
 
-        Equal(2, tokens.Length); // EOS+EOF
+        Equal(9, tokens.Length);
 
         TokenIsEOS(tokens[0]);
+        TokenEqual(TokenKindIdentifier, "aaa", (2, 13), (2, 15), tokens[1]);
+        TokenEqual(TokenKindIdentifier, "bbb", (2, 25), (2, 27), tokens[2]);
+        TokenEqual(TokenKindIdentifier, "ccc", (2, 29), (2, 31), tokens[3]);
+        TokenEqual(TokenKindIdentifier, "ddd", (2, 40), (2, 42), tokens[4]);
+        TokenIsEOS(tokens[5]);
+        TokenEqual(TokenKindIdentifier, "eee", (3, 13), (3, 15), tokens[6]);
+        TokenEqual(TokenKindIdentifier, "hhh", (3, 44), (3, 46), tokens[7]);
         TokenIsEOF(tokens.Last());
     }
-
-    [Fact]
-    public void MacroExpansion()
-    {
-        var (tokens, diag) = Preprocess(
-            @"
-            #define FOO aaa
-
-            FOO FOO");
-
-        False(diag.HasErrors);
-        False(diag.HasWarnings);
-
-        Equal(4, tokens.Length);
-
-        TokenIsEOS(tokens[0]);
-        TokenEqual(TokenKindIdentifier, "aaa", (2, 25), (2, 27), tokens[1]);
-        TokenEqual(TokenKindIdentifier, "aaa", (2, 25), (2, 27), tokens[2]);
-        TokenIsEOF(tokens.Last());
-    }
-
-    [Fact]
-    public void MacroExpansionWithLineContinuation()
-    {
-        var (tokens, diag) = Preprocess(
-            @"
-            #define FOO aaa\
-                bbb
-
-            FOO");
-
-        False(diag.HasErrors);
-        False(diag.HasWarnings);
-
-        Equal(4, tokens.Length);
-
-        TokenIsEOS(tokens[0]);
-        TokenEqual(TokenKindIdentifier, "aaa", (2, 25), (2, 27), tokens[1]);
-        TokenEqual(TokenKindIdentifier, "bbb", (3, 17), (3, 19), tokens[2]);
-        TokenIsEOF(tokens.Last());
-    }
-
-    [Fact]
-    public void MacroInsideMacroExpansion()
-    {
-        var (tokens, diag) = Preprocess(
-            @"
-            #define FOO BAR
-            #define BAR aaa FOO
-
-            BAR");
-
-        False(diag.HasErrors);
-        False(diag.HasWarnings);
-
-        Equal(4, tokens.Length);
-
-        TokenIsEOS(tokens[0]);
-        TokenEqual(TokenKindIdentifier, "aaa", (3, 25), (3, 27), tokens[1]);
-        TokenEqual(TokenKindIdentifier, "BAR", (2, 25), (2, 27), tokens[2]);
-        TokenIsEOF(tokens.Last());
-    }
-
 
     private static void CheckError(TErrorCode expectedError, (int Line, int Column) expectedStart, (int Line, int Column) expectedEnd, DiagnosticsReport diagnostics)
     {
