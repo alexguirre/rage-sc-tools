@@ -128,10 +128,14 @@ public class Parser
     }
 
     public bool IsPossibleEnumDeclaration()
-        => Peek(0).Kind is TokenKind.ENUM;
+        => Peek(0).Kind is TokenKind.ENUM or TokenKind.STRICT_ENUM or TokenKind.HASH_ENUM;
     public EnumDeclaration ParseEnumDeclaration()
     {
-        ExpectOrMissing(TokenKind.ENUM, out var enumKeyword);
+        Token enumKeyword;
+        if (!ExpectEither(TokenKind.ENUM, TokenKind.STRICT_ENUM, TokenKind.HASH_ENUM, out enumKeyword))
+        {
+            enumKeyword = Missing(TokenKind.ENUM);
+        }
         ExpectOrMissing(TokenKind.Identifier, out var nameIdent, MissingIdentifier);
         ExpectEOS();
 
@@ -1039,6 +1043,9 @@ public class Parser
     private void UnexpectedTokenError(TokenKind expectedTokenA, TokenKind expectedTokenB)
         => Error(ErrorCode.ParserUnexpectedToken, $"Unexpected token '{Current.Kind}', expected '{expectedTokenA}' or '{expectedTokenB}'", Current.Location);
 
+    private void UnexpectedTokenError(TokenKind expectedTokenA, TokenKind expectedTokenB, TokenKind expectedTokenC)
+        => Error(ErrorCode.ParserUnexpectedToken, $"Unexpected token '{Current.Kind}', expected '{expectedTokenA}', '{expectedTokenB}' or '{expectedTokenC}'", Current.Location);
+
     private void UnexpectedTokenExpectedAssignmentError()
         => Error(ErrorCode.ParserUnexpectedToken, $"Unexpected token '{Current.Kind}', expected assignment operator", Current.Location);
 
@@ -1172,6 +1179,16 @@ public class Parser
         }
 
         UnexpectedTokenError(tokenA, tokenB);
+        return false;
+    }
+    private bool ExpectEither(TokenKind tokenA, TokenKind tokenB, TokenKind tokenC, out Token t)
+    {
+        if (Accept(tokenA, out t) || Accept(tokenB, out t) || Accept(tokenC, out t))
+        {
+            return true;
+        }
+
+        UnexpectedTokenError(tokenA, tokenB, tokenC);
         return false;
     }
 }

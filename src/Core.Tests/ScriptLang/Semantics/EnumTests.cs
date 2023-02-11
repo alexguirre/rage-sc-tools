@@ -7,7 +7,6 @@ using ScTools.ScriptLang.Types;
 
 public class EnumTests : SemanticsTestsBase
 {
-    // TODO: support HASH_ENUM
     [Fact]
     public void MembersWithoutInitializersGetAssignedIncrementingValues()
     {
@@ -180,6 +179,61 @@ public class EnumTests : SemanticsTestsBase
         );
 
         CheckError(ErrorCode.SemanticInitializerExpressionIsNotConstant, (6, 21), (6, 25), s.Diagnostics);
+    }
+
+    [Fact]
+    public void HashEnumValuesAreHashes()
+    {
+        var s = Analyze(
+            @"HASH_ENUM foo
+                AAA, BBB, CCC
+              ENDENUM"
+        );
+
+        False(s.Diagnostics.HasErrors);
+        True(s.GetTypeSymbolUnchecked("foo", out var ty));
+        var enumTy = (EnumType)ty!;
+        True(enumTy.IsHash);
+        AssertEnum(s, "AAA", enumTy, unchecked((int)"AAA".ToLowercaseHash()));
+        AssertEnum(s, "BBB", enumTy, unchecked((int)"BBB".ToLowercaseHash()));
+        AssertEnum(s, "CCC", enumTy, unchecked((int)"CCC".ToLowercaseHash()));
+    }
+
+    [Fact]
+    public void HashEnumValueWithInitializer()
+    {
+        var s = Analyze(
+            @"HASH_ENUM foo
+                AAA = 123, BBB, CCC
+              ENDENUM"
+        );
+
+        False(s.Diagnostics.HasErrors);
+        True(s.GetTypeSymbolUnchecked("foo", out var ty));
+        var enumTy = (EnumType)ty!;
+        True(enumTy.IsHash);
+        AssertEnum(s, "AAA", enumTy, 123);
+        AssertEnum(s, "BBB", enumTy, unchecked((int)"BBB".ToLowercaseHash()));
+        AssertEnum(s, "CCC", enumTy, unchecked((int)"CCC".ToLowercaseHash()));
+    }
+
+    // TODO: support STRICT_ENUM specific behaviour
+    [Fact]
+    public void StrictEnum()
+    {
+        var s = Analyze(
+            @"STRICT_ENUM foo
+                A, B, C
+              ENDENUM"
+        );
+
+        False(s.Diagnostics.HasErrors);
+        True(s.GetTypeSymbolUnchecked("foo", out var ty));
+        var enumTy = (EnumType)ty!;
+        True(enumTy.IsStrict);
+        AssertEnum(s, "A", enumTy, 0);
+        AssertEnum(s, "B", enumTy, 1);
+        AssertEnum(s, "C", enumTy, 2);
     }
 
     private static void AssertEnum(SemanticsAnalyzer s, string memberName, EnumType expectedEnumType, int expectedValue)

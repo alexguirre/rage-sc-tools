@@ -64,6 +64,8 @@ public enum TokenKind
     STRUCT,
     ENDSTRUCT,
     ENUM,
+    HASH_ENUM,
+    STRICT_ENUM,
     ENDENUM,
     TYPEDEF,
     NATIVE,
@@ -152,6 +154,8 @@ public static class TokenLexemes
     public const string STRUCT = nameof(TokenKind.STRUCT);
     public const string ENDSTRUCT = nameof(TokenKind.ENDSTRUCT);
     public const string ENUM = nameof(TokenKind.ENUM);
+    public const string HASH_ENUM = nameof(TokenKind.HASH_ENUM);
+    public const string STRICT_ENUM = nameof(TokenKind.STRICT_ENUM);
     public const string ENDENUM = nameof(TokenKind.ENDENUM);
     public const string TYPEDEF = nameof(TokenKind.TYPEDEF);
     public const string NATIVE = nameof(TokenKind.NATIVE);
@@ -235,6 +239,8 @@ public static class TokenKindExtensions
             TokenKind.STRUCT => TokenLexemes.STRUCT,
             TokenKind.ENDSTRUCT => TokenLexemes.ENDSTRUCT,
             TokenKind.ENUM => TokenLexemes.ENUM,
+            TokenKind.HASH_ENUM => TokenLexemes.HASH_ENUM,
+            TokenKind.STRICT_ENUM => TokenLexemes.STRICT_ENUM,
             TokenKind.ENDENUM => TokenLexemes.ENDENUM,
             TokenKind.TYPEDEF => TokenLexemes.TYPEDEF,
             TokenKind.NATIVE => TokenLexemes.NATIVE,

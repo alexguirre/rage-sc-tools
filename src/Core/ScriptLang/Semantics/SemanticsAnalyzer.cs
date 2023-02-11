@@ -139,10 +139,20 @@ public sealed class SemanticsAnalyzer : AstVisitor
 
         if (value is null)
         {
-            // fallback to incremental numeration if there is no initializer or it had an error
-            value = previousEnumMember is null ?
-                ConstantValue.Int(0) :
-                ConstantValue.Int(previousEnumMember.Semantics.ConstantValue!.IntValue + 1);
+            // fallback if there is no inititalizer or it had an error
+            var enumTy = (EnumType)node.Semantics.ValueType;
+            if (enumTy.IsHash)
+            {
+                // name hashed
+                value = ConstantValue.Int(unchecked((int)node.NameToken.Lexeme.ToLowercaseHash()));
+            }
+            else
+            {
+                // incremental numeration
+                value = previousEnumMember is null ?
+                    ConstantValue.Int(0) :
+                    ConstantValue.Int(previousEnumMember.Semantics.ConstantValue!.IntValue + 1);
+            }
         }
 
         node.Semantics = node.Semantics with { ConstantValue = value };

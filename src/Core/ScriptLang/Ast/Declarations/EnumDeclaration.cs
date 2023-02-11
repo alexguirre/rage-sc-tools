@@ -11,10 +11,13 @@ public sealed partial class EnumDeclaration : BaseTypeDeclaration
     public override Token NameToken => Tokens[1];
     public ImmutableArray<EnumMemberDeclaration> Members { get; }
 
+    public bool IsStrict => Tokens[0].Kind is TokenKind.STRICT_ENUM;
+    public bool IsHash => Tokens[0].Kind is TokenKind.HASH_ENUM;
+
     public EnumDeclaration(Token enumKeyword, Token nameIdentifier, Token endenumKeyword, IEnumerable<EnumMemberDeclaration> members)
         : base(OfTokens(enumKeyword, nameIdentifier, endenumKeyword), OfChildren(members))
     {
-        Debug.Assert(enumKeyword.Kind is TokenKind.ENUM);
+        Debug.Assert(enumKeyword.Kind is TokenKind.ENUM or TokenKind.STRICT_ENUM or TokenKind.HASH_ENUM);
         Debug.Assert(nameIdentifier.Kind is TokenKind.Identifier);
         Debug.Assert(endenumKeyword.Kind is TokenKind.ENDENUM);
 

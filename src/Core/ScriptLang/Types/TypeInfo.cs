@@ -105,6 +105,8 @@ public sealed record EnumType(EnumDeclaration Declaration) : TypeInfo
 {
     public override int SizeOf { get; } = 1;
     public override ImmutableArray<FieldInfo> Fields => ImmutableArray<FieldInfo>.Empty;
+    public bool IsStrict => Declaration.IsStrict;
+    public bool IsHash => Declaration.IsHash;
 
     public override string ToPrettyString() => Declaration.Name;
     public override TReturn Accept<TReturn>(ITypeVisitor<TReturn> visitor) => visitor.Visit(this);
