@@ -97,7 +97,7 @@ public class IntrinsicsTests : CodeGenTestsBase
     [InlineData("MYSTRUCT", "STRUCT MYSTRUCT\nINT a, b\nVECTOR c\nENDSTRUCT", 5)]
     [InlineData("MYENUM", "ENUM MYENUM\nENDENUM", 1)]
     [InlineData("MYENUM", "ENUM MYENUM\nA,B\nENDENUM", 1)]
-    [InlineData("MYFUNCPTR", "PROCPTR MYFUNCPTR()", 1)]
+    [InlineData("MYFUNCPTR", "TYPEDEF PROC MYFUNCPTR()", 1)]
     public void SizeOfWithUserTypes(string typeName, string typeDecl, int expectedSize)
     {
         CompileScript(

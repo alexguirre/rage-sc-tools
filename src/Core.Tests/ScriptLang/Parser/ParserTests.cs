@@ -153,10 +153,10 @@ public partial class ParserTests
             bodyChecker(funcDecl.Body);
         }
     }
-    private static void AssertFunctionPointerDeclaration(INode node, string name, Predicate<TypeName?> returnTypePredicate, Action<ImmutableArray<VarDeclaration>> parametersChecker)
+    private static void AssertFunctionTypeDefDeclaration(INode node, string name, Predicate<TypeName?> returnTypePredicate, Action<ImmutableArray<VarDeclaration>> parametersChecker)
     {
-        True(node is FunctionPointerTypeDeclaration);
-        if (node is FunctionPointerTypeDeclaration funcPtrDecl)
+        True(node is FunctionTypeDefDeclaration);
+        if (node is FunctionTypeDefDeclaration funcPtrDecl)
         {
             Equal(name, funcPtrDecl.Name);
             True(returnTypePredicate(funcPtrDecl.ReturnType));

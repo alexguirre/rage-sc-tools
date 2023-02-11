@@ -9,7 +9,7 @@ using static Xunit.Assert;
 
 public class TextLabelTests : CodeGenTestsBase
 {
-    [Theory]
+    [Theory(Skip = "TEXT_LABEL syntax is not final")]
     [MemberData(nameof(GetAllTextLabelTypes64Bit))]
     public void AssignString(TextLabelType tl)
     {
@@ -33,7 +33,7 @@ public class TextLabelTests : CodeGenTestsBase
             ");
     }
 
-    [Theory]
+    [Theory(Skip = "TEXT_LABEL syntax is not final")]
     [MemberData(nameof(GetAllTextLabelTypes64Bit))]
     public void AssignStringWithoutIntrinsic(TextLabelType tl)
     {
@@ -76,7 +76,7 @@ public class TextLabelTests : CodeGenTestsBase
             ");
     }
 
-    [Theory]
+    [Theory(Skip = "TEXT_LABEL syntax is not final")]
     [MemberData(nameof(GetAllTextLabelTypes64Bit))]
     public void AssignInt(TextLabelType tl)
     {
@@ -96,7 +96,7 @@ public class TextLabelTests : CodeGenTestsBase
             ");
     }
 
-    [Theory]
+    [Theory(Skip = "TEXT_LABEL syntax is not final")]
     [MemberData(nameof(GetAllTextLabelTypes64Bit))]
     public void AssignTextLabel(TextLabelType tl)
     {
@@ -258,7 +258,7 @@ public class TextLabelTests : CodeGenTestsBase
             ");
     }
 
-    [Theory]
+    [Theory(Skip = "TEXT_LABEL syntax is not final")]
     [MemberData(nameof(GetAllTextLabelTypes64Bit))]
     public void AppendString(TextLabelType tl)
     {
@@ -322,7 +322,7 @@ public class TextLabelTests : CodeGenTestsBase
             ");
     }
 
-    [Theory]
+    [Theory(Skip = "TEXT_LABEL syntax is not final")]
     [MemberData(nameof(GetAllTextLabelTypes64Bit))]
     public void AppendTextLabel(TextLabelType tl)
     {

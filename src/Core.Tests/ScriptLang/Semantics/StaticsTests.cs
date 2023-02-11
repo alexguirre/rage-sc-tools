@@ -226,10 +226,10 @@ public class StaticsTests : SemanticsTestsBase
     }
 
     [Fact]
-    public void FunctionPointerTypesAreAllowed()
+    public void FunctionTypeDefsAreAllowed()
     {
         var s = Analyze(
-            @$"PROCPTR FOOHANDLER()
+            @$"TYPEDEF PROC FOOHANDLER()
 
                FOOHANDLER foo"
         );
@@ -239,10 +239,10 @@ public class StaticsTests : SemanticsTestsBase
     }
 
     [Fact]
-    public void FunctionPointersAreAllowed()
+    public void FunctionTypeDefsWithInitializerAreAllowed()
     {
         var s = Analyze(
-            @$"PROCPTR FOOHANDLER()
+            @$"TYPEDEF PROC FOOHANDLER()
 
                PROC CUSTOM_HANDLER()
                ENDPROC

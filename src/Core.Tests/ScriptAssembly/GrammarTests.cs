@@ -13,8 +13,6 @@
             .script_name 'my_script'
             .globals_signature 0x1234ABCD
 
-    #define MY_DEFAULT_VALUE 4.0
-
             .global_block 1
             .global     ; segment for global variables, the integer is the block ID
 gInt:       .int 10
@@ -28,14 +26,14 @@ myInt2:     .int 0xF
 myIntArray: .int 5, 1, 2, 3, 4, 5
 
 myFloatArray:
-    #define  MY_FLOAT_ARRAY_SIZE 10
-            .int MY_FLOAT_ARRAY_SIZE
-            .float MY_FLOAT_ARRAY_SIZE dup (1)
+            ; MY_FLOAT_ARRAY_SIZE = 10
+            .int 10
+            .float 10 dup (1)
 
 myVector:   .float 1.0, 2.0, 3.0
 
 myOtherVector:
-            .float 3 dup (MY_DEFAULT_VALUE)
+            .float 3 dup (4.0)
 
 randomData: .int 2 dup (22, 7 dup (33))
 emptySpace: .int 16 dup (0)
@@ -102,10 +100,10 @@ func1_label3:
             PUSH_CONST_S16 1000
             NATIVE 1, 0, WAIT
 
-     #define  MY_TEST_CONST 16
-            PUSH_CONST_U8 MY_TEST_CONST     ; constants as operands
-            PUSH_CONST_U8_U8 MY_TEST_CONST, MY_TEST_CONST
-            PUSH_CONST_U8_U8_U8 MY_TEST_CONST, MY_TEST_CONST, MY_TEST_CONST
+            ; MY_TEST_CONST = 16
+            PUSH_CONST_U8 16
+            PUSH_CONST_U8_U8 16, 16
+            PUSH_CONST_U8_U8_U8 16, 16, 16
             DROP
             DROP
             DROP
@@ -125,8 +123,8 @@ func1_label3:
             PUSH_CONST_U8 256       ; warning: possible loss of data
             DROP
 
-     #define MY_TEST_FLOAT 12.34
-            PUSH_CONST_F MY_TEST_FLOAT
+            ; MY_TEST_FLOAT = 12.34
+            PUSH_CONST_F 12.34
             PUSH_CONST_F 8
             PUSH_CONST_F 8.9
             DROP
@@ -145,11 +143,8 @@ func1_label3:
             DROP
             DROP
 
-     #define CASE_1_VALUE 1
-     #define CASE_2_VALUE 2
-
             PUSH_CONST_U8 1
-            SWITCH CASE_1_VALUE:case1, CASE_2_VALUE:case2, 3:case3, 4:0
+            SWITCH 1:case1, 2:case2, 3:case3, 4:0
 caseDefault:
             PUSH_CONST_U8 0
             J switchEnd

@@ -89,9 +89,9 @@ public class Parser
             {
                 decls.Add(ParseFunctionDeclaration());
             }
-            else if (IsPossibleFunctionPointerDeclaration())
+            else if (IsPossibleFunctionTypeDefDeclaration())
             {
-                decls.Add(ParseFunctionPointerDeclaration());
+                decls.Add(ParseFunctionTypeDefDeclaration());
             }
             else if (IsPossibleNativeFunctionDeclaration())
             {
@@ -286,25 +286,27 @@ public class Parser
                    returnType, @params, body);
     }
 
-    public bool IsPossibleFunctionPointerDeclaration()
-        => Peek(0).Kind is TokenKind.FUNCPTR or TokenKind.PROCPTR;
-    public FunctionPointerTypeDeclaration ParseFunctionPointerDeclaration()
+    public bool IsPossibleFunctionTypeDefDeclaration()
+        => Peek(0).Kind is TokenKind.TYPEDEF;
+    public FunctionTypeDefDeclaration ParseFunctionTypeDefDeclaration()
     {
-        Token procOrFuncPtrKeyword;
-        if (!ExpectEither(TokenKind.FUNCPTR, TokenKind.PROCPTR, out procOrFuncPtrKeyword))
+        ExpectOrMissing(TokenKind.TYPEDEF, out var typedefKeyword);
+        
+        Token procOrFuncKeyword;
+        if (!ExpectEither(TokenKind.FUNC, TokenKind.PROC, out procOrFuncKeyword))
         {
-            procOrFuncPtrKeyword = Missing(TokenKind.PROCPTR);
+            procOrFuncKeyword = Missing(TokenKind.PROC);
         }
 
         Token nameIdent;
         TypeName? returnType;
-        if (procOrFuncPtrKeyword.Kind is TokenKind.FUNCPTR)
+        if (procOrFuncKeyword.Kind is TokenKind.FUNC)
         {
             ExpectOrMissing(TokenKind.Identifier, out var returnTypeIdent, MissingIdentifier);
             returnType = new(returnTypeIdent);
             ExpectOrMissing(TokenKind.Identifier, out nameIdent, MissingIdentifier);
         }
-        else // PROCPTR
+        else // PROC
         {
             returnType = null;
             ExpectOrMissing(TokenKind.Identifier, out nameIdent, MissingIdentifier);
@@ -313,7 +315,7 @@ public class Parser
         (IEnumerable<VarDeclaration> @params, Token openParen, Token closeParen) = ParseParameterList();
         ExpectEOS();
 
-        return new(procOrFuncPtrKeyword, nameIdent, openParen, closeParen, returnType, @params);
+        return new(typedefKeyword, procOrFuncKeyword, nameIdent, openParen, closeParen, returnType, @params);
     }
 
     public bool IsPossibleNativeFunctionDeclaration()

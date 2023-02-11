@@ -627,14 +627,14 @@ public partial class ParserTests
         }
 
         [Fact]
-        public void FunctionPointerDeclaration()
+        public void FunctionTypeDefDeclaration()
         {
             var p = ParserFor(
-                @"FUNCPTR BOOL foo(INT a, FLOAT b)"
+                @"TYPEDEF FUNC BOOL foo(INT a, FLOAT b)"
             );
 
-            True(p.IsPossibleFunctionPointerDeclaration());
-            AssertFunctionPointerDeclaration(p.ParseFunctionPointerDeclaration(), "foo",
+            True(p.IsPossibleFunctionTypeDefDeclaration());
+            AssertFunctionTypeDefDeclaration(p.ParseFunctionTypeDefDeclaration(), "foo",
                 retTy => retTy is TypeName { Name: "BOOL" },
                 @params => Collection(@params,
                     _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
@@ -643,15 +643,65 @@ public partial class ParserTests
         }
 
         [Fact]
-        public void FunctionPointerDeclarationWithParametersWithInitializers()
+        public void FunctionTypeDefDeclarationWithParametersWithInitializers()
         {
             var p = ParserFor(
-                @"FUNCPTR BOOL foo(INT a = 1, FLOAT b = 3.0)"
+                @"TYPEDEF FUNC BOOL foo(INT a = 1, FLOAT b = 3.0)"
             );
 
-            True(p.IsPossibleFunctionPointerDeclaration());
-            AssertFunctionPointerDeclaration(p.ParseFunctionPointerDeclaration(), "foo",
+            True(p.IsPossibleFunctionTypeDefDeclaration());
+            AssertFunctionTypeDefDeclaration(p.ParseFunctionTypeDefDeclaration(), "foo",
                 retTy => retTy is TypeName { Name: "BOOL" },
+                @params => Collection(@params,
+                    _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter, Initializer: IntLiteralExpression { Value: 1 } }),
+                    _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter, Initializer: FloatLiteralExpression { Value: 3.0f } })));
+
+            CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 29), (1, 31), p.Diagnostics);
+            CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 42), (1, 46), p.Diagnostics);
+
+            True(p.IsAtEOF);
+        }
+
+        [Fact]
+        public void FunctionTypeDefWithNoParameters()
+        {
+            var p = ParserFor(
+                @"TYPEDEF FUNC BOOL foo()"
+            );
+
+            True(p.IsPossibleFunctionTypeDefDeclaration());
+            AssertFunctionTypeDefDeclaration(p.ParseFunctionTypeDefDeclaration(), "foo",
+                retTy => retTy is TypeName { Name: "BOOL" },
+                @params => Empty(@params));
+            NoErrorsAndIsAtEOF(p);
+        }
+
+        [Fact]
+        public void ProcedureTypeDefDeclaration()
+        {
+            var p = ParserFor(
+                @"TYPEDEF PROC foo(INT a, FLOAT b)"
+            );
+
+            True(p.IsPossibleFunctionTypeDefDeclaration());
+            AssertFunctionTypeDefDeclaration(p.ParseFunctionTypeDefDeclaration(), "foo",
+                retTy => retTy is null,
+                @params => Collection(@params,
+                    _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
+                    _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter })));
+            NoErrorsAndIsAtEOF(p);
+        }
+
+        [Fact]
+        public void ProcedureTypeDefDeclarationWithParametersWithInitializers()
+        {
+            var p = ParserFor(
+                @"TYPEDEF PROC foo(INT a = 1, FLOAT b = 3.0)"
+            );
+
+            True(p.IsPossibleFunctionTypeDefDeclaration());
+            AssertFunctionTypeDefDeclaration(p.ParseFunctionTypeDefDeclaration(), "foo",
+                retTy => retTy is null,
                 @params => Collection(@params,
                     _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter, Initializer: IntLiteralExpression { Value: 1 } }),
                     _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter, Initializer: FloatLiteralExpression { Value: 3.0f } })));
@@ -663,64 +713,14 @@ public partial class ParserTests
         }
 
         [Fact]
-        public void FunctionPointerWithNoParameters()
+        public void ProcedureTypeDefWithNoParameters()
         {
             var p = ParserFor(
-                @"FUNCPTR BOOL foo()"
+                @"TYPEDEF PROC foo()"
             );
 
-            True(p.IsPossibleFunctionPointerDeclaration());
-            AssertFunctionPointerDeclaration(p.ParseFunctionPointerDeclaration(), "foo",
-                retTy => retTy is TypeName { Name: "BOOL" },
-                @params => Empty(@params));
-            NoErrorsAndIsAtEOF(p);
-        }
-
-        [Fact]
-        public void ProcedurePointerDeclaration()
-        {
-            var p = ParserFor(
-                @"PROCPTR foo(INT a, FLOAT b)"
-            );
-
-            True(p.IsPossibleFunctionPointerDeclaration());
-            AssertFunctionPointerDeclaration(p.ParseFunctionPointerDeclaration(), "foo",
-                retTy => retTy is null,
-                @params => Collection(@params,
-                    _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
-                    _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter })));
-            NoErrorsAndIsAtEOF(p);
-        }
-
-        [Fact]
-        public void ProcedurePointerDeclarationWithParametersWithInitializers()
-        {
-            var p = ParserFor(
-                @"PROCPTR foo(INT a = 1, FLOAT b = 3.0)"
-            );
-
-            True(p.IsPossibleFunctionPointerDeclaration());
-            AssertFunctionPointerDeclaration(p.ParseFunctionPointerDeclaration(), "foo",
-                retTy => retTy is null,
-                @params => Collection(@params,
-                    _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter, Initializer: IntLiteralExpression { Value: 1 } }),
-                    _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter, Initializer: FloatLiteralExpression { Value: 3.0f } })));
-
-            CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 19), (1, 21), p.Diagnostics);
-            CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 32), (1, 36), p.Diagnostics);
-
-            True(p.IsAtEOF);
-        }
-
-        [Fact]
-        public void ProcedurePointerWithNoParameters()
-        {
-            var p = ParserFor(
-                @"PROCPTR foo()"
-            );
-
-            True(p.IsPossibleFunctionPointerDeclaration());
-            AssertFunctionPointerDeclaration(p.ParseFunctionPointerDeclaration(), "foo",
+            True(p.IsPossibleFunctionTypeDefDeclaration());
+            AssertFunctionTypeDefDeclaration(p.ParseFunctionTypeDefDeclaration(), "foo",
                 retTy => retTy is null,
                 @params => Empty(@params));
             NoErrorsAndIsAtEOF(p);

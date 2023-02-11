@@ -92,7 +92,7 @@ internal sealed class TypeFactory
             return node.Semantics.ValueType;
         }
 
-        public override TypeInfo Visit(FunctionPointerTypeDeclaration node, SemanticsAnalyzer s)
+        public override TypeInfo Visit(FunctionTypeDefDeclaration node, SemanticsAnalyzer s)
         {
             if (node.Semantics.DeclaredType is null)
             {

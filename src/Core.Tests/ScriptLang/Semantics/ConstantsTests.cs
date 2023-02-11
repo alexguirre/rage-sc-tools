@@ -220,10 +220,10 @@ public class ConstantsTests : SemanticsTestsBase
     }
 
     [Fact]
-    public void FunctionPointerTypesAreNotAllowed()
+    public void FunctionTypeDefsAreNotAllowed()
     {
         var s = Analyze(
-            @$"PROCPTR FOOHANDLER()
+            @$"TYPEDEF PROC FOOHANDLER()
 
                PROC CUSTOM_HANDLER()
                ENDPROC

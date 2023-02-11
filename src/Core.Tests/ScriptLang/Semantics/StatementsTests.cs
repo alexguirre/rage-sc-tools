@@ -656,10 +656,10 @@ public class StatementsTests : SemanticsTestsBase
     }
 
     [Fact]
-    public void SwitchDoesNotWorkWithFunctionPointers()
+    public void SwitchDoesNotWorkWithFunctionTypeDefs()
     {
         var (s, _) = AnalyzeAndAst(
-            $@"FUNCPTR INT MY_FUNC()
+            $@"TYPEDEF FUNC INT MY_FUNC()
 
               PROC foo(MY_FUNC f)
                 SWITCH f

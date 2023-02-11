@@ -175,7 +175,7 @@ public sealed class SemanticsAnalyzer : AstVisitor
         currentFunctionReturnType = null;
     }
 
-    public override void Visit(FunctionPointerTypeDeclaration node)
+    public override void Visit(FunctionTypeDefDeclaration node)
     {
         AddSymbol(node);
 

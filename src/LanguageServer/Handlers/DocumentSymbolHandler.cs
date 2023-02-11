@@ -116,7 +116,7 @@ public class DocumentSymbolHandler : ILspRequestHandler<DocumentSymbolParams, Do
                 SelectionRange = ProtocolConversions.ToLspRange(node.NameToken.Location),
             };
 
-        public override DocumentSymbol Visit(FunctionPointerTypeDeclaration node)
+        public override DocumentSymbol Visit(FunctionTypeDefDeclaration node)
             => new()
             {
                 Name = node.Name,

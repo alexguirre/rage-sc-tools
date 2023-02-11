@@ -13,8 +13,6 @@
             .script_name 'my_script'
             .globals_signature 0x1234ABCD
 
-            #define MY_FLOAT_VALUE 4.5
-
             .code
 main:       ENTER 0, 2
             CALL getMyFloat
@@ -45,7 +43,7 @@ switchEnd:
             LEAVE 0, 0
 
 getMyFloat: ENTER 0, 2
-            PUSH_CONST_F MY_FLOAT_VALUE
+            PUSH_CONST_F 4.5
             LEAVE 0, 1
             ");
 
