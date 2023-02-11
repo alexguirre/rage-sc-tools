@@ -80,6 +80,10 @@ public abstract class PreprocessorBase<TToken, TTokenKind, TErrorCode> : IPrepro
         => Error(errorSet.UnexpectedToken, $"Unexpected token '{foundToken.Kind}', expected preprocessor directive", foundToken.Location);
     protected void UnknownDirectiveError(TToken foundToken)
         => Error(errorSet.UnknownDirective, $"Unknown preprocessor directive '{foundToken.Lexeme}'", foundToken.Location);
+    protected void ExpectedEndIfDirectiveError(TToken foundToken)
+        => Error(errorSet.OpenIfDirective, $"Expected #ENDIF directive", foundToken.Location);
+    protected void UnexpectedDirectiveError(TToken foundToken)
+        => Error(errorSet.UnexpectedDirective, $"Unexpected preprocessor directive '{foundToken.Lexeme}'", foundToken.Location);
 
     public IEnumerable<TToken> Preprocess(IEnumerable<TToken> tokens)
     {
@@ -111,8 +115,8 @@ public abstract class PreprocessorBase<TToken, TTokenKind, TErrorCode> : IPrepro
 
         if (!IsAtRoot)
         {
-            // TODO: error unclosed #if
-            throw new NotImplementedException(" TODO: error unclosed #if");
+            // unclosed #if directive
+            ExpectedEndIfDirectiveError(tokenEnumerator.Current);
         }
 
         if (!TokenKindEquals(prevTokenKind, tokenSet.EOF))
@@ -196,8 +200,8 @@ public abstract class PreprocessorBase<TToken, TTokenKind, TErrorCode> : IPrepro
     {
         if (IsAtRoot)
         {
-            // TODO: error #endif without #if
-            throw new NotImplementedException(" TODO: error #endif without #if");
+            // error #endif without #if
+            UnexpectedDirectiveError(tokenEnumerator.Current);
             return;
         }
 
@@ -213,9 +217,10 @@ public abstract class PreprocessorBase<TToken, TTokenKind, TErrorCode> : IPrepro
         TTokenKind EOS,
         TTokenKind EOF);
     public readonly record struct ErrorSet(
-        TErrorCode DirectiveWrongPlacement,
         TErrorCode UnknownDirective,
-        TErrorCode UnexpectedToken);
+        TErrorCode UnexpectedToken,
+        TErrorCode OpenIfDirective,
+        TErrorCode UnexpectedDirective);
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

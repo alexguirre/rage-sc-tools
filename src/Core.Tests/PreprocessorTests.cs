@@ -15,6 +15,9 @@ public abstract class PreprocessorTests<TToken, TTokenKind, TErrorCode>
     protected abstract TTokenKind TokenKindIdentifier { get; }
     protected abstract TTokenKind TokenKindEOS { get; }
     protected abstract TTokenKind TokenKindEOF { get; }
+    protected abstract TErrorCode ErrorCodeOpenIfDirective { get; }
+    protected abstract TErrorCode ErrorCodeUnexpectedDirective { get; }
+    protected abstract TErrorCode ErrorCodeUnknownDirective { get; }
     protected abstract ILexer<TToken, TTokenKind, TErrorCode> CreateLexer(string filePath, string source, DiagnosticsReport diagnostics);
     protected abstract IPreprocessor<TToken, TTokenKind, TErrorCode> CreatePreprocessor(DiagnosticsReport diagnostics);
 
@@ -195,6 +198,76 @@ public abstract class PreprocessorTests<TToken, TTokenKind, TErrorCode>
         TokenIsEOF(tokens.Last());
     }
 
+    [Fact]
+    public void ErrorOnIfWithoutEndIf()
+    {
+        var (tokens, diag) = Preprocess(
+            @"
+            aaa
+            #if FOO
+                bbb
+            ");
+
+        True(diag.HasErrors);
+        False(diag.HasWarnings);
+        Single(diag.Errors);
+
+        CheckError(ErrorCodeOpenIfDirective, (0, 0), (0, 0), diag); // at EOF
+
+        Equal(4, tokens.Length);
+
+        TokenIsEOS(tokens[0]);
+        TokenEqual(TokenKindIdentifier, "aaa", (2, 13), (2, 15), tokens[1]);
+        TokenIsEOS(tokens[2]);
+        TokenIsEOF(tokens.Last());
+    }
+
+    [Fact]
+    public void ErrorOnEndIfWithoutIf()
+    {
+        var (tokens, diag) = Preprocess(
+            @"
+            aaa
+            #endif
+            ");
+
+        True(diag.HasErrors);
+        False(diag.HasWarnings);
+        Single(diag.Errors);
+
+        CheckError(ErrorCodeUnexpectedDirective, (3, 14), (3, 18), diag);
+
+        Equal(4, tokens.Length);
+
+        TokenIsEOS(tokens[0]);
+        TokenEqual(TokenKindIdentifier, "aaa", (2, 13), (2, 15), tokens[1]);
+        TokenIsEOS(tokens[2]);
+        TokenIsEOF(tokens.Last());
+    }
+
+    [Fact]
+    public void ErrorOnUnknownDirective()
+    {
+        var (tokens, diag) = Preprocess(
+            @"
+            aaa
+            #foo
+            ");
+
+        True(diag.HasErrors);
+        False(diag.HasWarnings);
+        Single(diag.Errors);
+
+        CheckError(ErrorCodeUnknownDirective, (3, 14), (3, 16), diag);
+
+        Equal(4, tokens.Length);
+
+        TokenIsEOS(tokens[0]);
+        TokenEqual(TokenKindIdentifier, "aaa", (2, 13), (2, 15), tokens[1]);
+        TokenIsEOS(tokens[2]);
+        TokenIsEOF(tokens.Last());
+    }
+
     private static void CheckError(TErrorCode expectedError, (int Line, int Column) expectedStart, (int Line, int Column) expectedEnd, DiagnosticsReport diagnostics)
     {
         var expectedLocation = MakeSourceRange(expectedStart, expectedEnd);
@@ -234,6 +307,9 @@ public class PreprocessorTestsForScriptAssembly
     protected override ScTools.ScriptAssembly.TokenKind TokenKindIdentifier => ScTools.ScriptAssembly.TokenKind.Identifier;
     protected override ScTools.ScriptAssembly.TokenKind TokenKindEOS => ScTools.ScriptAssembly.TokenKind.EOS;
     protected override ScTools.ScriptAssembly.TokenKind TokenKindEOF => ScTools.ScriptAssembly.TokenKind.EOF;
+    protected override ScTools.ScriptAssembly.ErrorCode ErrorCodeOpenIfDirective => ScTools.ScriptAssembly.ErrorCode.PreprocessorOpenIfDirective;
+    protected override ScTools.ScriptAssembly.ErrorCode ErrorCodeUnexpectedDirective => ScTools.ScriptAssembly.ErrorCode.PreprocessorUnexpectedDirective;
+    protected override ScTools.ScriptAssembly.ErrorCode ErrorCodeUnknownDirective => ScTools.ScriptAssembly.ErrorCode.PreprocessorUnknownDirective;
     protected override ScTools.ScriptAssembly.Lexer CreateLexer(string filePath, string source, DiagnosticsReport diagnostics)
         => new(filePath, source, diagnostics);
     protected override ScTools.ScriptAssembly.Preprocessor CreatePreprocessor(DiagnosticsReport diagnostics)
@@ -248,6 +324,9 @@ public class PreprocessorTestsForScriptLang
     protected override ScTools.ScriptLang.TokenKind TokenKindIdentifier => ScTools.ScriptLang.TokenKind.Identifier;
     protected override ScTools.ScriptLang.TokenKind TokenKindEOS => ScTools.ScriptLang.TokenKind.EOS;
     protected override ScTools.ScriptLang.TokenKind TokenKindEOF => ScTools.ScriptLang.TokenKind.EOF;
+    protected override ScTools.ScriptLang.ErrorCode ErrorCodeOpenIfDirective => ScTools.ScriptLang.ErrorCode.PreprocessorOpenIfDirective;
+    protected override ScTools.ScriptLang.ErrorCode ErrorCodeUnexpectedDirective => ScTools.ScriptLang.ErrorCode.PreprocessorUnexpectedDirective;
+    protected override ScTools.ScriptLang.ErrorCode ErrorCodeUnknownDirective => ScTools.ScriptLang.ErrorCode.PreprocessorUnknownDirective;
     protected override ScTools.ScriptLang.Lexer CreateLexer(string filePath, string source, DiagnosticsReport diagnostics)
         => new(filePath, source, diagnostics);
     protected override ScTools.ScriptLang.Preprocessor CreatePreprocessor(DiagnosticsReport diagnostics)

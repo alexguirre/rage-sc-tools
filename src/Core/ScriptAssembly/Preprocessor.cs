@@ -7,9 +7,10 @@ public sealed class Preprocessor : PreprocessorBase<Token, TokenKind, ErrorCode>
             new(Hash: TokenKind.Hash,
                 EOS: TokenKind.EOS,
                 EOF: TokenKind.EOF),
-            new(DirectiveWrongPlacement: ErrorCode.PreprocessorDirectiveWrongPlacement,
-                UnknownDirective: ErrorCode.PreprocessorUnknownDirective,
-                UnexpectedToken: ErrorCode.PreprocessorUnexpectedToken))
+            new(UnknownDirective: ErrorCode.PreprocessorUnknownDirective,
+                UnexpectedToken: ErrorCode.PreprocessorUnexpectedToken,
+                OpenIfDirective: ErrorCode.PreprocessorOpenIfDirective,
+                UnexpectedDirective: ErrorCode.PreprocessorUnexpectedDirective))
     {
     }
 }
