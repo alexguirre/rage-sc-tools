@@ -15,7 +15,7 @@ public class IntrinsicsTests : SemanticsTestsBase
     public void SizeOfWithPrimitiveTypes(string typeName, int expectedSize)
     {
         var s = Analyze(
-            @$"CONST INT foo = SIZE_OF({typeName})"
+            @$"CONST_INT foo SIZE_OF({typeName})"
         );
 
         False(s.Diagnostics.HasErrors);
@@ -32,7 +32,7 @@ public class IntrinsicsTests : SemanticsTestsBase
     {
         var s = Analyze(
             @$"{typeDecl}
-               CONST INT foo = SIZE_OF({typeName})"
+               CONST_INT foo SIZE_OF({typeName})"
         );
 
         False(s.Diagnostics.HasErrors);
@@ -44,7 +44,7 @@ public class IntrinsicsTests : SemanticsTestsBase
     public void SizeOfWithHandleTypes(HandleType handleType)
     {
         var s = Analyze(
-            @$"CONST INT foo = SIZE_OF({HandleType.KindToTypeName(handleType.Kind)})"
+            @$"CONST_INT foo SIZE_OF({HandleType.KindToTypeName(handleType.Kind)})"
         );
 
         False(s.Diagnostics.HasErrors);
@@ -56,7 +56,7 @@ public class IntrinsicsTests : SemanticsTestsBase
     public void SizeOfWithTextLabelTypes(TextLabelType tlType)
     {
         var s = Analyze(
-            @$"CONST INT foo = SIZE_OF({TextLabelType.GetTypeNameForLength(tlType.Length)})"
+            @$"CONST_INT foo SIZE_OF({TextLabelType.GetTypeNameForLength(tlType.Length)})"
         );
 
         False(s.Diagnostics.HasErrors);
@@ -75,8 +75,8 @@ public class IntrinsicsTests : SemanticsTestsBase
         var s = Analyze(
             @$"{staticVarType} staticVar
                {staticVarType} staticArray[15]
-               CONST INT foo = SIZE_OF(staticVar)
-               CONST INT baz = SIZE_OF(staticArray)"
+               CONST_INT foo SIZE_OF(staticVar)
+               CONST_INT baz SIZE_OF(staticArray)"
         );
 
         False(s.Diagnostics.HasErrors);
@@ -94,30 +94,11 @@ public class IntrinsicsTests : SemanticsTestsBase
     {
         var s = Analyze(
             @$"INT staticArray[{lengthExpr}]
-               CONST INT foo = COUNT_OF(staticArray)"
+               CONST_INT foo COUNT_OF(staticArray)"
         );
 
         False(s.Diagnostics.HasErrors);
         AssertConst(s, "foo", IntType.Instance, expectedLength);
-    }
-
-    [Theory]
-    [InlineData("ENUM_TO_STRING(A)", "A")]
-    [InlineData("ENUM_TO_STRING(B)", "B")]
-    [InlineData("ENUM_TO_STRING(C)", "C")]
-    [InlineData("ENUM_TO_STRING(INT_TO_ENUM(MYENUM, -1))", "ENUM_NOT_FOUND")]
-    public void EnumToStringConstant(string initializer, string expectedString)
-    {
-        var s = Analyze(@$"
-                ENUM MYENUM
-                    A, B, C
-                ENDENUM
-
-                CONST STRING MYSTR = {initializer}
-            ");
-
-        False(s.Diagnostics.HasErrors);
-        AssertConst(s, "MYSTR", StringType.Instance, expectedString);
     }
 
     [Theory]

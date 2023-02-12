@@ -11,7 +11,7 @@ using System.Linq;
 public enum VarKind
 {
     /// <summary>
-    /// A static variable with the CONST modifier. Where used, it is replaced by its value at compile-time. Requires a non-null <see cref="VarDeclaration.Initializer"/>.
+    /// A CONST_INT or CONST_FLOAT declaration. Where used, it is replaced by its value at compile-time. Requires a non-null <see cref="VarDeclaration.Initializer"/>.
     /// </summary>
     Constant,
     /// <summary>

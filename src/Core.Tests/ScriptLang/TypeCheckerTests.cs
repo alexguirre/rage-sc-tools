@@ -303,11 +303,11 @@
                 SCRIPT test_script
                 ENDSCRIPT
 
-                CONST INT NUM_MY_ENUM_INT = ENUM_TO_INT(NUM_MY_ENUM)
-
                 ENUM MY_ENUM
                     MY_ENUM_A, MY_ENUM_B, NUM_MY_ENUM
                 ENDENUM
+
+                CONST_INT NUM_MY_ENUM_INT ENUM_TO_INT(NUM_MY_ENUM)
             ");
 
             Assert.False(d.HasErrors);

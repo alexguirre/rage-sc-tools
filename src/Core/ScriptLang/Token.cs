@@ -90,7 +90,8 @@ public enum TokenKind
     GOTO,
     SCRIPT_HASH,
     USING,
-    CONST,
+    CONST_INT,
+    CONST_FLOAT,
     GLOBAL,
     ENDGLOBAL,
 
@@ -180,7 +181,8 @@ public static class TokenLexemes
     public const string GOTO = nameof(TokenKind.GOTO);
     public const string SCRIPT_HASH = nameof(TokenKind.SCRIPT_HASH);
     public const string USING = nameof(TokenKind.USING);
-    public const string CONST = nameof(TokenKind.CONST);
+    public const string CONST_INT = nameof(TokenKind.CONST_INT);
+    public const string CONST_FLOAT = nameof(TokenKind.CONST_FLOAT);
     public const string GLOBAL = nameof(TokenKind.GLOBAL);
     public const string ENDGLOBAL = nameof(TokenKind.ENDGLOBAL);
 
@@ -265,7 +267,8 @@ public static class TokenKindExtensions
             TokenKind.GOTO => TokenLexemes.GOTO,
             TokenKind.SCRIPT_HASH => TokenLexemes.SCRIPT_HASH,
             TokenKind.USING => TokenLexemes.USING,
-            TokenKind.CONST => TokenLexemes.CONST,
+            TokenKind.CONST_INT => TokenLexemes.CONST_INT,
+            TokenKind.CONST_FLOAT => TokenLexemes.CONST_FLOAT,
             TokenKind.GLOBAL => TokenLexemes.GLOBAL,
             TokenKind.ENDGLOBAL => TokenLexemes.ENDGLOBAL,
             TokenKind.EOS => TokenLexemes.EOS,

@@ -47,24 +47,20 @@ public class Parser
     {
         var usings = new List<UsingDirective>();
         var decls = new List<IDeclaration>();
-
-        bool isInConstVarDeclaration = false;
-
+        
         Accept(TokenKind.EOS, out _); // ignore empty lines at the beginning
 
         while (!IsAtEOF)
         {
-            if (Accept(TokenKind.CONST, out _))
+            if (IsPossibleConstantDeclaration())
             {
-                isInConstVarDeclaration = true;
+                decls.Add(ParseConstantDeclaration());
             }
-
-            if (isInConstVarDeclaration || IsPossibleVarDeclaration())
+            else if (IsPossibleVarDeclaration())
             {
-                decls.Add(ParseVarDeclaration(isInConstVarDeclaration ? VarKind.Constant : VarKind.Static, allowMultipleDeclarations: true, allowInitializer: true, allowReferences: false));
+                decls.Add(ParseVarDeclaration(VarKind.Static, allowMultipleDeclarations: true, allowInitializer: true, allowReferences: false));
                 if (!isInsideCommaSeparatedVarDeclaration)
                 {
-                    isInConstVarDeclaration = false;
                     ExpectEOS();
                 }
             }
@@ -898,12 +894,33 @@ public class Parser
         }
     }
 
+    private bool IsPossibleConstantDeclaration()
+        => Peek(0).Kind is TokenKind.CONST_INT or TokenKind.CONST_FLOAT;
+
+    private VarDeclaration ParseConstantDeclaration()
+    {
+        Token constKeyword;
+        if (!ExpectEither(TokenKind.CONST_INT, TokenKind.CONST_FLOAT, out constKeyword))
+        {
+            constKeyword = Missing(TokenKind.CONST_INT);
+        }
+
+        ExpectOrMissing(TokenKind.Identifier, out var nameIdent, MissingIdentifier);
+        var expr = ParseExpression();
+        ExpectEOS();
+        return new(
+            new(Token.Identifier(constKeyword.Kind is TokenKind.CONST_INT ? "INT" : "FLOAT", constKeyword.Location)),
+            new VarDeclarator(nameIdent),
+            VarKind.Constant,
+            expr
+        );
+    }
+
     private bool IsPossibleVarDeclaration()
         => isInsideCommaSeparatedVarDeclaration ||
            Peek(0).Kind is TokenKind.Identifier && Peek(1).Kind is TokenKind.Identifier or TokenKind.Ampersand;
     private VarDeclaration ParseVarDeclaration(VarKind varKind, bool allowMultipleDeclarations, bool allowInitializer, bool allowReferences)
     {
-        // TODO: parse var initializers
         Token typeIdent;
         IVarDeclarator decl;
         if (isInsideCommaSeparatedVarDeclaration)

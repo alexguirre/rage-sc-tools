@@ -1653,17 +1653,13 @@
             source: @"
                 INT i = MY_INT
                 FLOAT f = MY_FLOAT
-                BOOL b = MY_BOOL
-                STRING s = MY_STRING
             ",
             sourceStatics: @"
-                CONST INT MY_INT = 1234
-                CONST FLOAT MY_FLOAT = 12.34
-                CONST BOOL MY_BOOL = TRUE
-                CONST STRING MY_STRING = 'hello'
+                CONST_INT MY_INT 1234
+                CONST_FLOAT MY_FLOAT 12.34
             ",
             expectedAssembly: @"
-                ENTER 0, 6
+                ENTER 0, 4
 
                 ; INT i = MY_INT
                 PUSH_CONST_S16 1234
@@ -1673,19 +1669,7 @@
                 PUSH_CONST_F 12.34
                 LOCAL_U8_STORE 3
 
-                ; BOOL b = MY_BOOL
-                PUSH_CONST_1
-                LOCAL_U8_STORE 4
-
-                ; STRING s = MY_STRING
-                PUSH_CONST_0
-                STRING
-                LOCAL_U8_STORE 5
-
                 LEAVE 0, 0
-
-                .string
-                .str 'hello'
             ");
         }
 
@@ -2019,11 +2003,11 @@
                 INT n = NUM_MY_ENUM_INT
             ",
             sourceStatics: @"
-                CONST INT NUM_MY_ENUM_INT = ENUM_TO_INT(NUM_MY_ENUM)
-
                 ENUM MY_ENUM
                     MY_ENUM_A, MY_ENUM_B, NUM_MY_ENUM
                 ENDENUM
+
+                CONST_INT NUM_MY_ENUM_INT ENUM_TO_INT(NUM_MY_ENUM)
             ",
             expectedAssembly: @"
                 ENTER 0, 3
@@ -2044,11 +2028,8 @@
                 INT n = MY_NUMBER
             ",
             sourceStatics: @"
-                CONST INT MY_NUMBER = COUNT_OF(MY_ENUM)
-
-                ENUM MY_ENUM
-                    MY_ENUM_A, MY_ENUM_B, MY_ENUM_C
-                ENDENUM
+                INT arr[3]
+                CONST_INT MY_NUMBER COUNT_OF(arr)
             ",
             expectedAssembly: @"
                 ENTER 0, 3
@@ -2058,6 +2039,9 @@
                 LOCAL_U8_STORE 2
 
                 LEAVE 0, 0
+
+                .static
+                .int 3, 0, 0, 0
             ");
         }
 
@@ -2069,7 +2053,7 @@
                 INT n = MY_INT
             ",
             sourceStatics: @"
-                CONST INT MY_INT = F2I(1.8)
+                CONST_INT MY_INT F2I(1.8)
             ",
             expectedAssembly: @"
                 ENTER 0, 3
@@ -2090,7 +2074,7 @@
                 FLOAT f = MY_FLOAT
             ",
             sourceStatics: @"
-                CONST FLOAT MY_FLOAT = I2F(2)
+                CONST_FLOAT MY_FLOAT I2F(2)
             ",
             expectedAssembly: @"
                 ENTER 0, 3
@@ -2111,7 +2095,7 @@
                 INT n = MY_INT
             ",
             sourceStatics: @"
-                CONST INT MY_INT = F2I(I2F(2))
+                CONST_INT MY_INT F2I(I2F(2))
             ",
             expectedAssembly: @"
                 ENTER 0, 3

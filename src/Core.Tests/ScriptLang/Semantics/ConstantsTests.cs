@@ -5,16 +5,6 @@ using ScTools.ScriptLang.Types;
 
 public class ConstantsTests : SemanticsTestsBase
 {
-    [Fact]
-    public void ConstantRequiresInitializer()
-    {
-        var s = Analyze(
-            @"CONST INT foo"
-        );
-
-        CheckError(ErrorCode.SemanticConstantWithoutInitializer, (1, 11), (1, 13), s.Diagnostics);
-    }
-
     [Theory]
     [InlineData("1", 1)]
     [InlineData("NULL", 0)]
@@ -26,7 +16,7 @@ public class ConstantsTests : SemanticsTestsBase
     public void IntInitializerExpressionIsEvaluated(string initializerExpr, int expected)
     {
         var s = Analyze(
-            @$"CONST INT foo = {initializerExpr}"
+            @$"CONST_INT foo {initializerExpr}"
         );
 
         False(s.Diagnostics.HasErrors);
@@ -44,74 +34,11 @@ public class ConstantsTests : SemanticsTestsBase
     public void FloatInitializerExpressionIsEvaluated(string initializerExpr, float expected)
     {
         var s = Analyze(
-            @$"CONST FLOAT foo = {initializerExpr}"
+            @$"CONST_FLOAT foo {initializerExpr}"
         );
 
         False(s.Diagnostics.HasErrors);
         AssertConst(s, "foo", FloatType.Instance, expected);
-    }
-
-    [Theory]
-    [InlineData("TRUE", true)]
-    [InlineData("FALSE", false)]
-    [InlineData("NULL", false)]
-    [InlineData("1", true)]
-    [InlineData("0", false)]
-    [InlineData("1+1", true)]
-    [InlineData("TRUE AND FALSE", false)]
-    [InlineData("1 == 0 OR TRUE AND 1", true)]
-    [InlineData("123 > 122", true)]
-    [InlineData("121 >= 122", false)]
-    [InlineData("123 < 122", false)]
-    [InlineData("123 <= 123", true)]
-    [InlineData("123.25 > 122.5", true)]
-    [InlineData("121.75 >= 122.5", false)]
-    [InlineData("123.25 < 122.5", false)]
-    [InlineData("123.5 <= 123.5", true)]
-    [InlineData("TRUE == TRUE", true)]
-    [InlineData("TRUE <> FALSE", true)]
-    [InlineData("IS_BIT_SET(1, 0)", true)]
-    [InlineData("IS_BIT_SET(2, 1)", true)]
-    [InlineData("IS_BIT_SET(2, 0)", false)]
-    public void BoolInitializerExpressionIsEvaluated(string initializerExpr, bool expected)
-    {
-        var s = Analyze(
-            @$"CONST BOOL foo = {initializerExpr}"
-        );
-
-        False(s.Diagnostics.HasErrors);
-        AssertConst(s, "foo", BoolType.Instance, expected);
-    }
-
-    [Theory]
-    [InlineData("'hello'", "hello")]
-    [InlineData("''", "")]
-    [InlineData("'a\\nb'", "a\nb")]
-    [InlineData("NULL", null)]
-    public void StringInitializerExpressionIsEvaluated(string initializerExpr, string expected)
-    {
-        var s = Analyze(
-            @$"CONST STRING foo = {initializerExpr}"
-        );
-
-        False(s.Diagnostics.HasErrors);
-        AssertConst(s, "foo", StringType.Instance, expected);
-    }
-
-    [Theory]
-    [InlineData("<<0.0,0.0,0.0>>", 0.0f, 0.0f, 0.0f)]
-    [InlineData("<<0,0,0>>", 0.0f, 0.0f, 0.0f)]
-    [InlineData("<<1.0,2.0,3.0>> + <<2.0,2.0,2.0>> * <<3.0,3.0,3.0>>", 7.0f, 8.0f, 9.0f)]
-    [InlineData("<<1,2,3>> + <<2,2,2>> * <<3,3,3>>", 7.0f, 8.0f, 9.0f)]
-    [InlineData("F2V(1.0)", 1.0f, 1.0f, 1.0f)]
-    public void VectorInitializerExpressionIsEvaluated(string initializerExpr, float expectedX, float expectedY, float expectedZ)
-    {
-        var s = Analyze(
-            @$"CONST VECTOR foo = {initializerExpr}"
-        );
-
-        False(s.Diagnostics.HasErrors);
-        AssertConstVec(s, "foo", expectedX, expectedY, expectedZ);
     }
 
     [Fact]
@@ -122,10 +49,10 @@ public class ConstantsTests : SemanticsTestsBase
                 RETURN 1
                ENDFUNC
 
-               CONST INT bar = foo()"
+               CONST_INT bar foo()"
         );
 
-        CheckError(ErrorCode.SemanticInitializerExpressionIsNotConstant, (5, 32), (5, 36), s.Diagnostics);
+        CheckError(ErrorCode.SemanticInitializerExpressionIsNotConstant, (5, 30), (5, 34), s.Diagnostics);
     }
 
     [Fact]
@@ -133,18 +60,18 @@ public class ConstantsTests : SemanticsTestsBase
     {
         var s = Analyze(
             @$"INT foo = 1
-               CONST INT bar = foo"
+               CONST_INT bar foo"
         );
 
-        CheckError(ErrorCode.SemanticInitializerExpressionIsNotConstant, (2, 32), (2, 34), s.Diagnostics);
+        CheckError(ErrorCode.SemanticInitializerExpressionIsNotConstant, (2, 30), (2, 32), s.Diagnostics);
     }
 
     [Fact]
     public void CanInitializeToConstant()
     {
         var s = Analyze(
-            @$"CONST INT foo = 1
-               CONST INT bar = foo"
+            @$"CONST_INT foo 1
+               CONST_INT bar foo"
         );
 
         False(s.Diagnostics.HasErrors);
@@ -156,115 +83,12 @@ public class ConstantsTests : SemanticsTestsBase
     public void CannotInitializeToConstantDefinedAfter()
     {
         var s = Analyze(
-            @$"CONST INT bar = foo
-               CONST INT foo = 1"
+            @$"CONST_INT bar foo
+               CONST_INT foo 1"
         );
 
         AssertConst(s, "foo", IntType.Instance, 1);
 
-        CheckError(ErrorCode.SemanticUndefinedSymbol, (1, 17), (1, 19), s.Diagnostics);
-    }
-
-    [Theory]
-    [MemberData(nameof(GetAllHandleTypes))]
-    public void HandleTypesAreNotAllowed(HandleType handleType)
-    {
-        var handleTypeName = HandleType.KindToTypeName(handleType.Kind);
-        var s = Analyze(
-            @$"CONST {handleTypeName} foo = NULL"
-        );
-
-        CheckError(ErrorCode.SemanticTypeNotAllowedInConstant, (1, 7), (1, 7 + handleTypeName.Length - 1), s.Diagnostics);
-    }
-
-    [Theory]
-    [MemberData(nameof(GetAllTextLabelTypes64Bit))]
-    public void TextLabelTypesAreNotAllowed(TextLabelType tlType)
-    {
-        var tlTypeName = TextLabelType.GetTypeNameForLength(tlType.Length);
-        var s = Analyze(
-            @$"CONST {tlTypeName} foo = ''"
-        );
-
-        CheckError(ErrorCode.SemanticTypeNotAllowedInConstant, (1, 7), (1, 7 + tlTypeName.Length - 1), s.Diagnostics);
-    }
-
-    [Fact]
-    public void StructTypesAreNotAllowed()
-    {
-        var s = Analyze(
-            @$"STRUCT MYDATA
-                INT a = 1
-               ENDSTRUCT
-
-               CONST MYDATA foo"
-        );
-
-        CheckError(ErrorCode.SemanticTypeNotAllowedInConstant, (5, 22), (5, 27), s.Diagnostics);
-    }
-
-    [Fact]
-    public void EnumTypesAreAllowed()
-    {
-        var s = Analyze(
-            @$"ENUM MYENUM
-                A = 1
-               ENDENUM
-
-               CONST MYENUM foo = A"
-        );
-
-        False(s.Diagnostics.HasErrors);
-        True(s.GetTypeSymbolUnchecked("MYENUM", out var enumTy));
-        AssertConst(s, "foo", enumTy!, 1);
-    }
-
-    [Fact]
-    public void FunctionTypeDefsAreNotAllowed()
-    {
-        var s = Analyze(
-            @$"TYPEDEF PROC FOOHANDLER()
-
-               PROC CUSTOM_HANDLER()
-               ENDPROC
-
-               CONST FOOHANDLER foo = CUSTOM_HANDLER"
-        );
-
-        CheckError(ErrorCode.SemanticTypeNotAllowedInConstant, (6, 22), (6, 31), s.Diagnostics);
-    }
-
-    [Fact]
-    public void ReferencesAreNotAllowed()
-    {
-        // This is now detected in the parser phase
-        var s = Analyze(
-            @$"CONST INT& foo"
-        );
-
-        CheckError(ErrorCode.ParserReferenceNotAllowed, (1, 10), (1, 10), s.Diagnostics);
-    }
-
-    [Fact]
-    public void AnyTypeIsNotAllowed()
-    {
-        var s = Analyze(
-            @$"CONST ANY foo = 1"
-        );
-
-        CheckError(ErrorCode.SemanticTypeNotAllowedInConstant, (1, 7), (1, 9), s.Diagnostics);
-    }
-
-    [Theory]
-    [InlineData("[10]")]
-    [InlineData("[10][20]")]
-    // TODO: [InlineData("[]", Skip = "Incomplete array types not yet supported")]
-    public void ArrayTypesAreNotAllowed(string arraySize)
-    {
-        var s = Analyze(
-            @$"CONST INT foo{arraySize}"
-        );
-
-        CheckError(ErrorCode.SemanticTypeNotAllowedInConstant, (1, 7), (1, 13 + arraySize.Length), s.Diagnostics);
+        CheckError(ErrorCode.SemanticUndefinedSymbol, (1, 15), (1, 17), s.Diagnostics);
     }
 }

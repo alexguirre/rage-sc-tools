@@ -173,7 +173,7 @@ public class StaticsTests : SemanticsTestsBase
     public void CanInitializeToConstant()
     {
         var s = Analyze(
-            @$"CONST INT foo = 1
+            @$"CONST_INT foo 1
                INT bar = foo"
         );
 
@@ -185,8 +185,7 @@ public class StaticsTests : SemanticsTestsBase
     public void CanInitializeTextLabelToString()
     {
         var s = Analyze(
-            @$"CONST STRING foo = 'hello'
-               TEXT_LABEL_63 bar = foo"
+            @$"TEXT_LABEL_63 bar = 'hello'"
         );
 
         False(s.Diagnostics.HasErrors);

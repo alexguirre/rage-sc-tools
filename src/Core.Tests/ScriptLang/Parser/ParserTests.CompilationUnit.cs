@@ -144,34 +144,8 @@ public partial class ParserTests
         public void Constants()
         {
             var p = ParserFor(
-                @"CONST INT a, b"
-            );
-
-            var u = p.ParseCompilationUnit();
-            Assert(u.Declarations[0], n => n is VarDeclaration
-            {
-                Label: null,
-                Type: TypeName { Name: "INT" },
-                Name: "a", Declarator: VarDeclarator { Name: "a" },
-                Initializer: null, Kind: VarKind.Constant
-            });
-            Assert(u.Declarations[1], n => n is VarDeclaration
-            {
-                Label: null,
-                Type: TypeName { Name: "INT" },
-                Name: "b", Declarator: VarDeclarator { Name: "b" },
-                Initializer: null, Kind: VarKind.Constant
-            });
-
-            NoErrorsAndIsAtEOF(p);
-        }
-
-        [Fact]
-        public void ConstantsWithInitializers()
-        {
-            var p = ParserFor(
-                @"CONST INT a = 1, b = 2
-                  CONST BOOL c = TRUE"
+                @"CONST_INT a 1
+                  CONST_INT b 2"
             );
 
             var u = p.ParseCompilationUnit();
@@ -191,14 +165,6 @@ public partial class ParserTests
                 Initializer: IntLiteralExpression { Value: 2 },
                 Kind: VarKind.Constant
             });
-            Assert(u.Declarations[2], n => n is VarDeclaration
-            {
-                Label: null,
-                Type: TypeName { Name: "BOOL" },
-                Name: "c", Declarator: VarDeclarator { Name: "c" },
-                Initializer: BoolLiteralExpression { Value: true },
-                Kind: VarKind.Constant
-            });
 
             NoErrorsAndIsAtEOF(p);
         }
@@ -207,9 +173,8 @@ public partial class ParserTests
         public void ConstantsAndStaticVars()
         {
             var p = ParserFor(
-                @"CONST INT a = 1
-                  INT b = 2
-                  CONST BOOL c = TRUE"
+                @"CONST_INT a 1
+                  INT b = 2"
             );
 
             var u = p.ParseCompilationUnit();
@@ -228,14 +193,6 @@ public partial class ParserTests
                 Name: "b", Declarator: VarDeclarator { Name: "b" },
                 Initializer: IntLiteralExpression { Value: 2 },
                 Kind: VarKind.Static
-            });
-            Assert(u.Declarations[2], n => n is VarDeclaration
-            {
-                Label: null,
-                Type: TypeName { Name: "BOOL" },
-                Name: "c", Declarator: VarDeclarator { Name: "c" },
-                Initializer: BoolLiteralExpression { Value: true },
-                Kind: VarKind.Constant
             });
 
             NoErrorsAndIsAtEOF(p);
