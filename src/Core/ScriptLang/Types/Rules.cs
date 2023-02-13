@@ -53,9 +53,10 @@ internal static class Rules
     public static bool IsPromotableTo(this TypeInfo source, TypeInfo destination)
         => source == destination || source switch
         {
-            NullType => destination is IntType or FloatType or StringType or BoolType or AnyType or HandleType,
+            NullType => destination is IntType or FloatType or StringType or BoolType or AnyType or NativeType,
             IntType => destination is FloatType or BoolType,
-            HandleType h => destination is HandleType destH && destH.Kind.IsAssignableFrom(destH.Kind),
+            // TODO: support PED_INDEX/VEHICLE_INDEX/OBJECT_INDEX conversion to ENTITY_INDEX
+            //HandleType h => destination is HandleType destH && destH.Kind.IsAssignableFrom(destH.Kind),
 
             _ => false,
         };
@@ -95,14 +96,12 @@ internal static class Rules
         public bool Visit(StructType destination) => destination == Source;
         // ENTITY_INDEX <- ENTITY_INDEX | PED_INDEX | VEHICLE_INDEX | OBJECT_INDEX | NULL
         // HANDLE <- HANDLE | NULL
-        public bool Visit(HandleType destination)
+        public bool Visit(NativeType destination)
         {
-            if (Source is not HandleType srcHandle)
-            {
-                return Source is NullType;
-            }
+            // TODO: support PED_INDEX/VEHICLE_INDEX/OBJECT_INDEX conversion to ENTITY_INDEX
+            return Source is NullType || destination == Source;
 
-            return destination.Kind.IsAssignableFrom(srcHandle.Kind);
+            //return destination.Kind.IsAssignableFrom(srcHandle.Kind);
         }
         // TEXT_LABEL_n <- TEXT_LABEL_n | STRING
         public bool Visit(TextLabelType destination) => Source is TextLabelType or StringType;

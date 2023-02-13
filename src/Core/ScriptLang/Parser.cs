@@ -93,6 +93,10 @@ public class Parser
             {
                 decls.Add(ParseNativeFunctionDeclaration());
             }
+            else if (IsPossibleNativeTypeDeclaration())
+            {
+                decls.Add(ParseNativeTypeDeclaration());
+            }
             else if (IsPossibleScriptDeclaration())
             {
                 decls.Add(ParseScriptDeclaration());
@@ -319,7 +323,7 @@ public class Parser
     }
 
     public bool IsPossibleNativeFunctionDeclaration()
-        => Peek(0).Kind is TokenKind.NATIVE;
+        => Peek(0).Kind is TokenKind.NATIVE && Peek(1).Kind is TokenKind.FUNC or TokenKind.PROC;
     public NativeFunctionDeclaration ParseNativeFunctionDeclaration()
     {
         ExpectOrMissing(TokenKind.NATIVE, out var nativeKeyword);
@@ -348,6 +352,16 @@ public class Parser
         ExpectEOS();
 
         return new(nativeKeyword, procOrFuncKeyword, nameIdent, openParen, closeParen, returnType, @params);
+    }
+
+    public bool IsPossibleNativeTypeDeclaration()
+        => Peek(0).Kind is TokenKind.NATIVE;
+    public NativeTypeDeclaration ParseNativeTypeDeclaration()
+    {
+        ExpectOrMissing(TokenKind.NATIVE, out var nativeKeyword);
+        ExpectOrMissing(TokenKind.Identifier, out var nameIdent, MissingIdentifier);
+        ExpectEOS();
+        return new(nativeKeyword, nameIdent);
     }
 
     private (IEnumerable<VarDeclaration> Params, Token OpenParen, Token CloseParen) ParseParameterList(bool isScriptParameterList = false)

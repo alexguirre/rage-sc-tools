@@ -45,7 +45,7 @@ public enum ErrorCode
     SemanticArgNotAnEnum = 0x2014,
     SemanticArgNotAnEnumType = 0x2015,
     SemanticArgNotAnArray = 0x2016,
-    SemanticArgNotAHandle = 0x2017,
+    SemanticArgNotANativeType = 0x2017,
     SemanticSwitchCaseValueIsNotConstant = 0x2018,
     SemanticDuplicateSwitchCase = 0x2019,
     SemanticTypeNotAllowedInSwitch = 0x201A,

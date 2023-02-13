@@ -760,10 +760,10 @@ public class OperationsTests : CodeGenTestsBase
         ");
     }
 
-    [Theory]
+    [Theory(Skip = "PED_INDEX/VEHICLE_INDEX/OBJECT_INDEX conversion to ENTITY_INDEX is not currently supported")]
     [InlineData("==", "IEQ")]
     [InlineData("<>", "INE")]
-    public void HandleTypesSupportEqualityOperators(string equalityOperator, string opcode)
+    public void NativeTypesSupportEqualityOperators(string equalityOperator, string opcode)
     {
         CompileScript(
         scriptSource: $@"

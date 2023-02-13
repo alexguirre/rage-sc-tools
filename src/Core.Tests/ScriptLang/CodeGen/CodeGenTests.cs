@@ -1768,7 +1768,7 @@
             ");
         }
 
-        [Fact]
+        [Fact(Skip = "PED_INDEX/VEHICLE_INDEX/OBJECT_INDEX conversion to ENTITY_INDEX is not currently supported")]
         public void TestConversionToEntityIndex()
         {
             CompileMain(
@@ -1818,33 +1818,18 @@
         }
 
         [Fact]
-        public void TestHandleTypeAssignNull()
+        public void TestNativeTypeAssignNull()
         {
             CompileMain(
             source: @"
                 ENTITY_INDEX entity = NULL
-                PED_INDEX ped = NULL
-                VEHICLE_INDEX vehicle = NULL
-                OBJECT_INDEX object = NULL
             ",
             expectedAssembly: @"
-                ENTER 0, 6
+                ENTER 0, 3
 
                 ; entity = NULL
                 PUSH_CONST_0
                 LOCAL_U8_STORE 2
-
-                ; ped = NULL
-                PUSH_CONST_0
-                LOCAL_U8_STORE 3
-
-                ; vehicle = NULL
-                PUSH_CONST_0
-                LOCAL_U8_STORE 4
-
-                ; object = NULL
-                PUSH_CONST_0
-                LOCAL_U8_STORE 5
 
                 LEAVE 0, 0
             ");

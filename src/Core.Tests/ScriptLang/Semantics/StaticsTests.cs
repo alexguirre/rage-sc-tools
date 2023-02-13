@@ -105,28 +105,32 @@ public class StaticsTests : SemanticsTestsBase
         AssertStatic(s, "foo", VectorType.Instance, hasInitializer: true);
     }
 
-    [Theory]
-    [MemberData(nameof(GetAllHandleTypes))]
-    public void HandleTypesWithoutInitializerAreAllowed(HandleType handleType)
+    [Fact]
+    public void NativeTypesWithoutInitializerAreAllowed()
     {
         var s = Analyze(
-            @$"{HandleType.KindToTypeName(handleType.Kind)} foo"
+            @$"NATIVE MY_TYPE
+               MY_TYPE foo"
         );
 
         False(s.Diagnostics.HasErrors);
-        AssertStatic(s, "foo", handleType);
+        True(s.GetTypeSymbolUnchecked("MY_TYPE", out var ty));
+        var nativeTy = (NativeType)ty!;
+        AssertStatic(s, "foo", nativeTy);
     }
 
-    [Theory]
-    [MemberData(nameof(GetAllHandleTypes))]
-    public void HandleTypesWithNullInitializerAreAllowed(HandleType handleType)
+    [Fact]
+    public void NativeTypesWithNullInitializerAreAllowed()
     {
         var s = Analyze(
-            @$"{HandleType.KindToTypeName(handleType.Kind)} foo = NULL"
+            @$"NATIVE MY_TYPE
+               MY_TYPE foo = NULL"
         );
 
         False(s.Diagnostics.HasErrors);
-        AssertStatic(s, "foo", handleType, hasInitializer: true);
+        True(s.GetTypeSymbolUnchecked("MY_TYPE", out var ty));
+        var nativeTy = (NativeType)ty!;
+        AssertStatic(s, "foo", nativeTy, hasInitializer: true);
     }
 
     [Theory]

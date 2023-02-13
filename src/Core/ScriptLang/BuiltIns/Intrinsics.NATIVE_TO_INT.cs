@@ -33,10 +33,10 @@ public static partial class Intrinsics
             var args = node.Arguments;
             ExpressionTypeChecker.CheckArgumentCount(parameterCount: 1, node, semantics);
 
-            // check that the argument is an ENUM value
-            if (argTypes.Length > 0 && argTypes[0] is not HandleType)
+            // check that the argument is a NATIVE type value
+            if (argTypes.Length > 0 && argTypes[0] is not NativeType)
             {
-                ExpressionTypeChecker.ArgNotAHandleError(semantics, 0, args[0], argTypes[0]);
+                ExpressionTypeChecker.ArgNotANativeTypeError(semantics, 0, args[0], argTypes[0]);
             }
 
             return new(IntType.Instance, ValueKind.RValue, ArgumentKind.None);

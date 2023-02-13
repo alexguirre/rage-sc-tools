@@ -24,59 +24,58 @@ public class TypeInfoTests
         EqualAndSameHashCode(typeInfoA, typeInfoB);
     }
 
-    [Theory]
-    [MemberData(nameof(GetAllHandleKinds))]
-    public void DifferentInstancesOfSameHandleTypeMustBeEqual(HandleKind kind)
+    [Fact]
+    public void DifferentInstancesOfSameNativeTypeMustBeEqual()
     {
-        var handleA = new HandleType(kind);
-        var handleB = new HandleType(kind);
+        var decl = new NativeTypeDeclaration(TokenKind.NATIVE.Create(), Token.Identifier("MY_TYPE"));
+        var handleA = new NativeType(decl);
+        var handleB = new NativeType(decl);
 
         EqualAndSameHashCode(handleA, handleB);
     }
-    public static IEnumerable<object[]> GetAllHandleKinds() => HandleType.All.Select(h => new object[] { h.Kind });
 
-    [Fact]
-    public void HandleTypesAssignmentAndInheritanceSemanticsAreCorrect()
-    {
-        var baseA = new HandleKind(BaseClass: 0, DerivedClass: 0);
-        var baseB = new HandleKind(BaseClass: 1, DerivedClass: 0);
-        var derivedA1 = baseA with { DerivedClass = 1 };
-        var derivedA2 = baseA with { DerivedClass = 2 };
-        var derivedB1 = baseB with { DerivedClass = 1 };
-        var derivedB2 = baseB with { DerivedClass = 2 };
+    //[Fact]
+    //public void HandleTypesAssignmentAndInheritanceSemanticsAreCorrect()
+    //{
+    //    var baseA = new HandleKind(BaseClass: 0, DerivedClass: 0);
+    //    var baseB = new HandleKind(BaseClass: 1, DerivedClass: 0);
+    //    var derivedA1 = baseA with { DerivedClass = 1 };
+    //    var derivedA2 = baseA with { DerivedClass = 2 };
+    //    var derivedB1 = baseB with { DerivedClass = 1 };
+    //    var derivedB2 = baseB with { DerivedClass = 2 };
 
-        // is assignable from itself
-        True(baseA.IsAssignableFrom(baseA));
-        True(baseB.IsAssignableFrom(baseB));
-        True(derivedA1.IsAssignableFrom(derivedA1));
-        True(derivedA2.IsAssignableFrom(derivedA2));
-        True(derivedB1.IsAssignableFrom(derivedB1));
-        True(derivedB2.IsAssignableFrom(derivedB2));
+    //    // is assignable from itself
+    //    True(baseA.IsAssignableFrom(baseA));
+    //    True(baseB.IsAssignableFrom(baseB));
+    //    True(derivedA1.IsAssignableFrom(derivedA1));
+    //    True(derivedA2.IsAssignableFrom(derivedA2));
+    //    True(derivedB1.IsAssignableFrom(derivedB1));
+    //    True(derivedB2.IsAssignableFrom(derivedB2));
 
-        // base classes is assignable from derived classes
-        True(baseA.IsAssignableFrom(derivedA1));
-        True(baseA.IsAssignableFrom(derivedA2));
-        True(baseB.IsAssignableFrom(derivedB1));
-        True(baseB.IsAssignableFrom(derivedB2));
+    //    // base classes is assignable from derived classes
+    //    True(baseA.IsAssignableFrom(derivedA1));
+    //    True(baseA.IsAssignableFrom(derivedA2));
+    //    True(baseB.IsAssignableFrom(derivedB1));
+    //    True(baseB.IsAssignableFrom(derivedB2));
 
-        // derived classes are not assignable from base classes
-        False(derivedA1.IsAssignableFrom(baseA));
-        False(derivedA2.IsAssignableFrom(baseA));
-        False(derivedB1.IsAssignableFrom(baseB));
-        False(derivedB2.IsAssignableFrom(baseB));
+    //    // derived classes are not assignable from base classes
+    //    False(derivedA1.IsAssignableFrom(baseA));
+    //    False(derivedA2.IsAssignableFrom(baseA));
+    //    False(derivedB1.IsAssignableFrom(baseB));
+    //    False(derivedB2.IsAssignableFrom(baseB));
 
-        // derived classes with same base class are assignable from each other
-        False(derivedA1.IsAssignableFrom(derivedA2));
-        False(derivedA2.IsAssignableFrom(derivedA1));
-        False(derivedB1.IsAssignableFrom(derivedB2));
-        False(derivedB2.IsAssignableFrom(derivedB1));
+    //    // derived classes with same base class are assignable from each other
+    //    False(derivedA1.IsAssignableFrom(derivedA2));
+    //    False(derivedA2.IsAssignableFrom(derivedA1));
+    //    False(derivedB1.IsAssignableFrom(derivedB2));
+    //    False(derivedB2.IsAssignableFrom(derivedB1));
 
-        // different base classes are not assignable from each other
-        False(baseA.IsAssignableFrom(derivedB1));
-        False(baseA.IsAssignableFrom(derivedB2));
-        False(baseB.IsAssignableFrom(derivedA1));
-        False(baseB.IsAssignableFrom(derivedA2));
-    }
+    //    // different base classes are not assignable from each other
+    //    False(baseA.IsAssignableFrom(derivedB1));
+    //    False(baseA.IsAssignableFrom(derivedB2));
+    //    False(baseB.IsAssignableFrom(derivedA1));
+    //    False(baseB.IsAssignableFrom(derivedA2));
+    //}
 
     [Theory]
     [MemberData(nameof(GetAllTextLabelLengths64Bit))]

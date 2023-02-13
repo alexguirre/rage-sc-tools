@@ -82,7 +82,7 @@ internal sealed class ValueEmitter : AstVisitor
         var lhsType = node.LHS.Semantics.Type;
         var rhsType = node.LHS.Semantics.Type;
         TypeInfo operandsType;
-        if (lhsType is EnumType or HandleType || rhsType is EnumType or HandleType)
+        if (lhsType is EnumType or NativeType || rhsType is EnumType or NativeType)
         {
             operandsType = IntType.Instance;
         }

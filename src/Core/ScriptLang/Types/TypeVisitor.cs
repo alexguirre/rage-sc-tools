@@ -15,7 +15,7 @@ public interface ITypeVisitor<TReturn>
     TReturn Visit(VectorType type);
     TReturn Visit(EnumType type);
     TReturn Visit(StructType type);
-    TReturn Visit(HandleType type);
+    TReturn Visit(NativeType type);
     TReturn Visit(TextLabelType type);
     TReturn Visit(FunctionType type);
     TReturn Visit(TypeNameType type);

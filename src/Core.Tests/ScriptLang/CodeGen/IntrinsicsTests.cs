@@ -113,17 +113,19 @@ public class IntrinsicsTests : CodeGenTestsBase
         ");
     }
 
-    [Theory]
-    [MemberData(nameof(GetAllHandleTypes))]
-    public void SizeOfWithHandleTypes(HandleType handleType)
+    [Fact]
+    public void SizeOfWithHandleTypes()
     {
         CompileScript(
         scriptSource: @$"
-            INT foo = SIZE_OF({HandleType.KindToTypeName(handleType.Kind)})
+            INT foo = SIZE_OF(MY_TYPE)
+        ",
+        declarationsSource: @$"
+            NATIVE MY_TYPE
         ",
         expectedAssembly: @$"
             ENTER 0, 3
-            {IntToPushInst(handleType.SizeOf)}
+            {IntToPushInst(1)}
             LOCAL_U8_STORE 2
             LEAVE 0, 0
         ");
@@ -313,14 +315,16 @@ public class IntrinsicsTests : CodeGenTestsBase
             ");
     }
 
-    [Theory]
-    [MemberData(nameof(GetAllHandleTypes))]
-    public void NativeToInt(HandleType handleType)
+    [Fact]
+    public void NativeToInt()
     {
         CompileScript(
         scriptSource: @$"
-            {HandleType.KindToTypeName(handleType.Kind)} handle
+            MY_TYPE handle
             INT foo = NATIVE_TO_INT(handle)
+        ",
+        declarationsSource: $@"
+            NATIVE MY_TYPE
         ",
         expectedAssembly: @$"
             ENTER 0, 4

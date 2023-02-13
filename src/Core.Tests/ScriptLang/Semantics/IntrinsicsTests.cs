@@ -39,16 +39,16 @@ public class IntrinsicsTests : SemanticsTestsBase
         AssertConst(s, "foo", IntType.Instance, expectedSize);
     }
 
-    [Theory]
-    [MemberData(nameof(GetAllHandleTypes))]
-    public void SizeOfWithHandleTypes(HandleType handleType)
+    [Fact]
+    public void SizeOfWithNativeTypes()
     {
         var s = Analyze(
-            @$"CONST_INT foo SIZE_OF({HandleType.KindToTypeName(handleType.Kind)})"
+            @$"NATIVE MY_TYPE
+               CONST_INT foo SIZE_OF(MY_TYPE)"
         );
 
         False(s.Diagnostics.HasErrors);
-        AssertConst(s, "foo", IntType.Instance, expectedValue: handleType.SizeOf);
+        AssertConst(s, "foo", IntType.Instance, expectedValue: 1);
     }
 
     [Theory]
@@ -101,13 +101,13 @@ public class IntrinsicsTests : SemanticsTestsBase
         AssertConst(s, "foo", IntType.Instance, expectedLength);
     }
 
-    [Theory]
-    [MemberData(nameof(GetAllHandleTypes))]
-    public void NativeToInt(HandleType handleType)
+    [Fact]
+    public void NativeToInt()
     {
         var s = Analyze(@$"
+            NATIVE MY_TYPE
             SCRIPT test_script
-                {HandleType.KindToTypeName(handleType.Kind)} handle
+                MY_TYPE handle
                 INT foo = NATIVE_TO_INT(handle)
             ENDSCRIPT
         ");
@@ -133,6 +133,6 @@ public class IntrinsicsTests : SemanticsTestsBase
         ");
 
         True(s.Diagnostics.HasErrors);
-        CheckError(ErrorCode.SemanticArgNotAHandle, (4, 41), (4, 41), s.Diagnostics);
+        CheckError(ErrorCode.SemanticArgNotANativeType, (4, 41), (4, 41), s.Diagnostics);
     }
 }

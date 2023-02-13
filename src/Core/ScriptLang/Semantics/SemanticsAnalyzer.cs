@@ -63,7 +63,8 @@ public sealed class SemanticsAnalyzer : AstVisitor
         AddSymbol(new BuiltInTypeSymbol("STRING", StringType.Instance));
         AddSymbol(new BuiltInTypeSymbol("VECTOR", VectorType.Instance));
 
-        HandleType.All.ForEach(h => AddSymbol(new BuiltInTypeSymbol(HandleType.KindToTypeName(h.Kind), h)));
+        //HandleType.All.ForEach(h => AddSymbol(new BuiltInTypeSymbol(HandleType.KindToTypeName(h.Kind), h)));
+        AddSymbol(new BuiltInTypeSymbol("ENTITY_INDEX", new NativeType(new NativeTypeDeclaration(TokenKind.NATIVE.Create(), Token.Identifier("ENTITY_INDEX")))));
 
         TextLabelType.All64.ForEach(tl => AddSymbol(new BuiltInTypeSymbol(TextLabelType.GetTypeNameForLength(tl.Length), tl)));
     }
@@ -201,6 +202,11 @@ public sealed class SemanticsAnalyzer : AstVisitor
         EnterScope();
         node.Parameters.ForEach(p => p.Accept(this));
         ExitScope();
+    }
+
+    public override void Visit(NativeTypeDeclaration node)
+    {
+        AddSymbol(node);
     }
 
     public override void Visit(GlobalBlockDeclaration node)

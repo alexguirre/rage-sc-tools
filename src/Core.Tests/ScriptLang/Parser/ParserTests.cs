@@ -173,6 +173,14 @@ public partial class ParserTests
             parametersChecker(funcDecl.Parameters);
         }
     }
+    private static void AssertNativeTypeDeclaration(INode node, string name)
+    {
+        True(node is NativeTypeDeclaration);
+        if (node is NativeTypeDeclaration typeDecl)
+        {
+            Equal(name, typeDecl.Name);
+        }
+    }
     private static void AssertError(INode node, Predicate<INode> predicate)
     {
         True(node is IError);

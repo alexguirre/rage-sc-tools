@@ -117,10 +117,10 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
             {
                 return SetBinaryOpResultType(node, BOOL);
             }
-            else if (lhs is HandleType || rhs is HandleType)
+            else if (lhs is NativeType || rhs is NativeType)
             {
-                bool isComparableHandle = (lhs == rhs) || lhs.IsPromotableTo(rhs) || rhs.IsPromotableTo(lhs);
-                if (isComparableHandle)
+                bool isComparableNativeTy = (lhs == rhs) || lhs.IsPromotableTo(rhs) || rhs.IsPromotableTo(lhs);
+                if (isComparableNativeTy)
                 {
                     return SetBinaryOpResultType(node, BOOL);
                 }
@@ -441,7 +441,7 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
         => Error(s, ErrorCode.SemanticArgNotAnEnumType, $"Argument {argIndex + 1}: expected ENUM type name", arg.Location);
     internal static void ArgNotAnArrayError(SemanticsAnalyzer s, int argIndex, IExpression arg, TypeInfo argType)
         => Error(s, ErrorCode.SemanticArgNotAnArray, $"Argument {argIndex + 1}: type '{argType.ToPrettyString()}' is not an array", arg.Location);
-    internal static void ArgNotAHandleError(SemanticsAnalyzer s, int argIndex, IExpression arg, TypeInfo argType)
-        => Error(s, ErrorCode.SemanticArgNotAHandle, $"Argument {argIndex + 1}: type '{argType.ToPrettyString()}' is not a native handle value", arg.Location);
+    internal static void ArgNotANativeTypeError(SemanticsAnalyzer s, int argIndex, IExpression arg, TypeInfo argType)
+        => Error(s, ErrorCode.SemanticArgNotANativeType, $"Argument {argIndex + 1}: type '{argType.ToPrettyString()}' is not a NATIVE type value", arg.Location);
     #endregion Errors
 }

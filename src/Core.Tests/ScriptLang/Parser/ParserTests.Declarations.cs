@@ -825,5 +825,17 @@ public partial class ParserTests
                 @params => Empty(@params));
             NoErrorsAndIsAtEOF(p);
         }
+
+        [Fact]
+        public void NativeType()
+        {
+            var p = ParserFor(
+                @"NATIVE FOO_ID"
+            );
+
+            True(p.IsPossibleNativeTypeDeclaration());
+            AssertNativeTypeDeclaration(p.ParseNativeTypeDeclaration(), "FOO_ID");
+            NoErrorsAndIsAtEOF(p);
+        }
     }
 }

@@ -608,7 +608,7 @@ public class StatementsTests : SemanticsTestsBase
     [InlineData("VECTOR")]
     [InlineData("ANY")]
     [InlineData("TEXT_LABEL_63")]
-    [InlineData("PED_INDEX")]
+    [InlineData("ENTITY_INDEX")]
     public void SwitchDoesNotWorkWithOtherTypes(string typeStr)
     {
         var (s, _) = AnalyzeAndAst(

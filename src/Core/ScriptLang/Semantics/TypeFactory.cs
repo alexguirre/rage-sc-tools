@@ -120,6 +120,17 @@ internal sealed class TypeFactory
             var parametersTy = parameters.Select(p => new ParameterInfo(p.Accept(this, s), p.IsReference));
             return new FunctionType(returnTy, parametersTy.ToImmutableArray());
         }
+
+        public override TypeInfo Visit(NativeTypeDeclaration node, SemanticsAnalyzer param)
+        {
+            if (node.Semantics.DeclaredType is null)
+            {
+                var ty = new NativeType(node);
+                node.Semantics = node.Semantics with { DeclaredType = ty };
+            }
+            
+            return node.Semantics.DeclaredType;
+        }
     }
 
     private sealed class VarDeclaratorVisitor : AstVisitor<TypeInfo, (VarDeclaration Var, SemanticsAnalyzer S)>

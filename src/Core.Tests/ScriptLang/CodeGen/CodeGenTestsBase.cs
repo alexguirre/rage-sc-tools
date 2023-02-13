@@ -19,7 +19,6 @@ using Xunit;
 
 public abstract class CodeGenTestsBase
 {
-    public static IEnumerable<object[]> GetAllHandleTypes() => HandleType.All.Select(h => new object[] { h });
     public static IEnumerable<object[]> GetAllTextLabelTypes64Bit() => TextLabelType.All64.Select(tl => new object[] { tl });
 
     protected static string IntToPushInst(int value)
