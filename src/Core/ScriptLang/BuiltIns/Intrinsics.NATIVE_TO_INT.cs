@@ -11,9 +11,9 @@ using System.Linq;
 public static partial class Intrinsics
 {
     /// <summary>
-    /// Casts an handle type value to the corresponding INT value.
+    /// Casts an native type value to the corresponding INT value.
     /// <br/>
-    /// Signature: NATIVE_TO_INT (HANDLE) -> INT
+    /// Signature: NATIVE_TO_INT (NATIVE) -> INT
     /// </summary>
     private sealed class IntrinsicNATIVE_TO_INT : BaseIntrinsic
     {
@@ -36,7 +36,7 @@ public static partial class Intrinsics
             // check that the argument is a NATIVE type value
             if (argTypes.Length > 0 && argTypes[0] is not NativeType)
             {
-                ExpressionTypeChecker.ArgNotANativeTypeError(semantics, 0, args[0], argTypes[0]);
+                ExpressionTypeChecker.ArgNotANativeTypeValueError(semantics, 0, args[0], argTypes[0]);
             }
 
             return new(IntType.Instance, ValueKind.RValue, ArgumentKind.None);

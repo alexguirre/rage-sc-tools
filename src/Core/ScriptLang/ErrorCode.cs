@@ -45,12 +45,13 @@ public enum ErrorCode
     SemanticArgNotAnEnum = 0x2014,
     SemanticArgNotAnEnumType = 0x2015,
     SemanticArgNotAnArray = 0x2016,
-    SemanticArgNotANativeType = 0x2017,
+    SemanticArgNotANativeTypeValue = 0x2017,
     SemanticSwitchCaseValueIsNotConstant = 0x2018,
     SemanticDuplicateSwitchCase = 0x2019,
     SemanticTypeNotAllowedInSwitch = 0x201A,
     SemanticUsingNotFound = 0x201B,
     SemanticExpectedNativeType = 0x201C,
+    SemanticArgNotANativeType = 0x201D,
 
     // Preprocessor errors   0x3000 - 0x3FFF
     PreprocessorUnexpectedDirective = 0x3000,

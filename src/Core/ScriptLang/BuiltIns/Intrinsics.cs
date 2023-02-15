@@ -57,7 +57,9 @@ public static partial class Intrinsics
     // Bit Utilities
     public static IIntrinsic IS_BIT_SET { get; } = new IntrinsicIS_BIT_SET();
 
+    // Native Type Utilities
     public static IIntrinsic NATIVE_TO_INT { get; } = new IntrinsicNATIVE_TO_INT();
+    public static IIntrinsic INT_TO_NATIVE { get; } = new IntrinsicINT_TO_NATIVE();
 
     // Exception Handling
     public static IIntrinsic CATCH { get; } = new IntrinsicCATCH();
@@ -70,7 +72,7 @@ public static partial class Intrinsics
         ENUM_TO_INT, INT_TO_ENUM, ENUM_TO_STRING,
         TEXT_LABEL_ASSIGN_STRING, TEXT_LABEL_ASSIGN_INT, TEXT_LABEL_APPEND_STRING, TEXT_LABEL_APPEND_INT,
         IS_BIT_SET,
-        NATIVE_TO_INT,
+        NATIVE_TO_INT, INT_TO_NATIVE,
         CATCH, THROW);
 
     private static void IntrinsicUsagePrecondition(IIntrinsic intrinsic, InvocationExpression node, [CallerArgumentExpression("node")] string? paramName = null)

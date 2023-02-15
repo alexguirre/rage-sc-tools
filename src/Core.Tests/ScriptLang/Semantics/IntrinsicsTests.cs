@@ -115,6 +115,19 @@ public class IntrinsicsTests : SemanticsTestsBase
         False(s.Diagnostics.HasErrors);
     }
 
+    [Fact]
+    public void IntToNative()
+    {
+        var s = Analyze(@$"
+            NATIVE MY_TYPE
+            SCRIPT test_script
+                MY_TYPE handle = INT_TO_NATIVE(MY_TYPE, 1)
+            ENDSCRIPT
+        ");
+
+        False(s.Diagnostics.HasErrors);
+    }
+
     [Theory]
     [InlineData("INT")]
     [InlineData("FLOAT")]
@@ -133,6 +146,6 @@ public class IntrinsicsTests : SemanticsTestsBase
         ");
 
         True(s.Diagnostics.HasErrors);
-        CheckError(ErrorCode.SemanticArgNotANativeType, (4, 41), (4, 41), s.Diagnostics);
+        CheckError(ErrorCode.SemanticArgNotANativeTypeValue, (4, 41), (4, 41), s.Diagnostics);
     }
 }

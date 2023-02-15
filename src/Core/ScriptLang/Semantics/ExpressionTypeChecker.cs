@@ -441,7 +441,9 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
         => Error(s, ErrorCode.SemanticArgNotAnEnumType, $"Argument {argIndex + 1}: expected ENUM type name", arg.Location);
     internal static void ArgNotAnArrayError(SemanticsAnalyzer s, int argIndex, IExpression arg, TypeInfo argType)
         => Error(s, ErrorCode.SemanticArgNotAnArray, $"Argument {argIndex + 1}: type '{argType.ToPrettyString()}' is not an array", arg.Location);
-    internal static void ArgNotANativeTypeError(SemanticsAnalyzer s, int argIndex, IExpression arg, TypeInfo argType)
-        => Error(s, ErrorCode.SemanticArgNotANativeType, $"Argument {argIndex + 1}: type '{argType.ToPrettyString()}' is not a NATIVE type value", arg.Location);
+    internal static void ArgNotANativeTypeValueError(SemanticsAnalyzer s, int argIndex, IExpression arg, TypeInfo argType)
+        => Error(s, ErrorCode.SemanticArgNotANativeTypeValue, $"Argument {argIndex + 1}: type '{argType.ToPrettyString()}' is not a NATIVE type value", arg.Location);
+    internal static void ArgNotAnNativeTypeError(SemanticsAnalyzer s, int argIndex, IExpression arg)
+        => Error(s, ErrorCode.SemanticArgNotANativeType, $"Argument {argIndex + 1}: expected NATIVE type name", arg.Location);
     #endregion Errors
 }
