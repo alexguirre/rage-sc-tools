@@ -360,8 +360,14 @@ public class Parser
     {
         ExpectOrMissing(TokenKind.NATIVE, out var nativeKeyword);
         ExpectOrMissing(TokenKind.Identifier, out var nameIdent, MissingIdentifier);
+        TypeName? baseType = null;
+        if (Accept(TokenKind.Colon, out var colon))
+        {
+            ExpectOrMissing(TokenKind.Identifier, out var baseTypeIdent, MissingIdentifier);
+            baseType = new(baseTypeIdent);
+        }
         ExpectEOS();
-        return new(nativeKeyword, nameIdent);
+        return new(nativeKeyword, nameIdent, baseType);
     }
 
     private (IEnumerable<VarDeclaration> Params, Token OpenParen, Token CloseParen) ParseParameterList(bool isScriptParameterList = false)

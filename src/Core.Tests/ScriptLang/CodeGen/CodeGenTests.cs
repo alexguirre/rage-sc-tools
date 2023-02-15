@@ -1768,15 +1768,15 @@
             ");
         }
 
-        [Fact(Skip = "PED_INDEX/VEHICLE_INDEX/OBJECT_INDEX conversion to ENTITY_INDEX is not currently supported")]
-        public void TestConversionToEntityIndex()
+        [Fact]
+        public void TestNativeTypeConversionToBaseType()
         {
             CompileMain(
             source: @"
-                ENTITY_INDEX entity
-                PED_INDEX ped
-                VEHICLE_INDEX vehicle
-                OBJECT_INDEX object
+                MY_ENTITY_INDEX entity
+                MY_PED_INDEX ped
+                MY_VEHICLE_INDEX vehicle
+                MY_OBJECT_INDEX object
 
                 entity = ped
                 entity = vehicle
@@ -1785,7 +1785,12 @@
                 TEST(ped, vehicle, object)
             ",
             sourceStatics: @"
-                PROC TEST(ENTITY_INDEX e1, ENTITY_INDEX e2, ENTITY_INDEX e3)
+                NATIVE MY_ENTITY_INDEX
+                NATIVE MY_PED_INDEX : MY_ENTITY_INDEX
+                NATIVE MY_VEHICLE_INDEX : MY_ENTITY_INDEX
+                NATIVE MY_OBJECT_INDEX : MY_ENTITY_INDEX
+
+                PROC TEST(MY_ENTITY_INDEX e1, MY_ENTITY_INDEX e2, MY_ENTITY_INDEX e3)
                 ENDPROC
             ",
             expectedAssembly: @"
@@ -1822,7 +1827,10 @@
         {
             CompileMain(
             source: @"
-                ENTITY_INDEX entity = NULL
+                MY_ENTITY_INDEX entity = NULL
+            ",
+            sourceStatics: @"
+                NATIVE MY_ENTITY_INDEX
             ",
             expectedAssembly: @"
                 ENTER 0, 3

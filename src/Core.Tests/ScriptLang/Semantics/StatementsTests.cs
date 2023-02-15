@@ -220,14 +220,15 @@ public class StatementsTests : SemanticsTestsBase
     [Theory]
     [InlineData("STRING")]
     [InlineData("FLOAT")]
-    [InlineData("ENTITY_INDEX")]
+    [InlineData("MY_ENTITY_INDEX")]
     [InlineData("TEXT_LABEL_63")]
     [InlineData("ANY")]
     [InlineData("VECTOR")]
     public void TypesNotAllowedInIfCondition(string conditionType)
     {
         var s = Analyze(
-            @$"PROC foo()
+            @$"NATIVE MY_ENTITY_INDEX
+               PROC foo()
                 {conditionType} a
                 IF a
                 ENDIF
@@ -235,20 +236,21 @@ public class StatementsTests : SemanticsTestsBase
         );
 
         True(s.Diagnostics.HasErrors);
-        CheckError(ErrorCode.SemanticCannotConvertType, (3, 20), (3, 20), s.Diagnostics);
+        CheckError(ErrorCode.SemanticCannotConvertType, (4, 20), (4, 20), s.Diagnostics);
     }
 
     [Theory]
     [InlineData("STRING")]
     [InlineData("FLOAT")]
-    [InlineData("ENTITY_INDEX")]
+    [InlineData("MY_ENTITY_INDEX")]
     [InlineData("TEXT_LABEL_63")]
     [InlineData("ANY")]
     [InlineData("VECTOR")]
     public void TypesNotAllowedInWhileCondition(string conditionType)
     {
         var s = Analyze(
-            @$"PROC foo()
+            @$"NATIVE MY_ENTITY_INDEX
+               PROC foo()
                 {conditionType} a
                 WHILE a
                 ENDWHILE
@@ -256,7 +258,7 @@ public class StatementsTests : SemanticsTestsBase
         );
 
         True(s.Diagnostics.HasErrors);
-        CheckError(ErrorCode.SemanticCannotConvertType, (3, 23), (3, 23), s.Diagnostics);
+        CheckError(ErrorCode.SemanticCannotConvertType, (4, 23), (4, 23), s.Diagnostics);
     }
 
     [Fact]
@@ -608,18 +610,19 @@ public class StatementsTests : SemanticsTestsBase
     [InlineData("VECTOR")]
     [InlineData("ANY")]
     [InlineData("TEXT_LABEL_63")]
-    [InlineData("ENTITY_INDEX")]
+    [InlineData("MY_ENTITY_INDEX")]
     public void SwitchDoesNotWorkWithOtherTypes(string typeStr)
     {
         var (s, _) = AnalyzeAndAst(
-            $@"PROC foo({typeStr} v)
+            $@"NATIVE MY_ENTITY_INDEX
+               PROC foo({typeStr} v)
                 SWITCH v
                 ENDSWITCH
               ENDPROC"
         );
 
         True(s.Diagnostics.HasErrors);
-        CheckError(ErrorCode.SemanticTypeNotAllowedInSwitch, (2, 24), (2, 24), s.Diagnostics);
+        CheckError(ErrorCode.SemanticTypeNotAllowedInSwitch, (3, 24), (3, 24), s.Diagnostics);
     }
 
     [Fact]

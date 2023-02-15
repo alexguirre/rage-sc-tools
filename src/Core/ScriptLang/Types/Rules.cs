@@ -55,8 +55,7 @@ internal static class Rules
         {
             NullType => destination is IntType or FloatType or StringType or BoolType or AnyType or NativeType,
             IntType => destination is FloatType or BoolType,
-            // TODO: support PED_INDEX/VEHICLE_INDEX/OBJECT_INDEX conversion to ENTITY_INDEX
-            //HandleType h => destination is HandleType destH && destH.Kind.IsAssignableFrom(destH.Kind),
+            NativeType n => destination is NativeType destN && destN.IsAssignableFrom(n),
 
             _ => false,
         };
@@ -95,13 +94,27 @@ internal static class Rules
         // STRUCT <- STRUCT
         public bool Visit(StructType destination) => destination == Source;
         // ENTITY_INDEX <- ENTITY_INDEX | PED_INDEX | VEHICLE_INDEX | OBJECT_INDEX | NULL
-        // HANDLE <- HANDLE | NULL
+        // NATIVE BASE <- NATIVE | NATIVE BASE | NULL
+        // NATIVE <- NATIVE | NULL
         public bool Visit(NativeType destination)
         {
-            // TODO: support PED_INDEX/VEHICLE_INDEX/OBJECT_INDEX conversion to ENTITY_INDEX
-            return Source is NullType || destination == Source;
+            if (Source is NullType)
+            {
+                return true;
+            }
 
-            //return destination.Kind.IsAssignableFrom(srcHandle.Kind);
+            var srcTy = Source as NativeType;
+            while (srcTy != null)
+            {
+                if (destination == srcTy)
+                {
+                    return true;
+                }
+
+                srcTy = srcTy.Base;
+            }
+
+            return false;
         }
         // TEXT_LABEL_n <- TEXT_LABEL_n | STRING
         public bool Visit(TextLabelType destination) => Source is TextLabelType or StringType;

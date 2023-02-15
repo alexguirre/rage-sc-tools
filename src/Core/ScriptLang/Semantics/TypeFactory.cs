@@ -121,11 +121,30 @@ internal sealed class TypeFactory
             return new FunctionType(returnTy, parametersTy.ToImmutableArray());
         }
 
-        public override TypeInfo Visit(NativeTypeDeclaration node, SemanticsAnalyzer param)
+        public override TypeInfo Visit(NativeTypeDeclaration node, SemanticsAnalyzer s)
         {
             if (node.Semantics.DeclaredType is null)
             {
-                var ty = new NativeType(node);
+                NativeType? baseTy = null;
+                if (node.BaseType is not null)
+                {
+                    var baseTyResolved = node.BaseType.Accept(this, s);
+                    if (baseTyResolved.IsError)
+                    {
+                        baseTy = null;
+                    }
+                    else if (baseTyResolved is not NativeType)
+                    {
+                        s.ExpectedNativeTypeError(node.BaseType);
+                        baseTy = null;
+                    }
+                    else
+                    {
+                        baseTy = (NativeType)baseTyResolved;
+                    }
+                }
+
+                var ty = new NativeType(node, baseTy);
                 node.Semantics = node.Semantics with { DeclaredType = ty };
             }
             

@@ -760,17 +760,17 @@ public class OperationsTests : CodeGenTestsBase
         ");
     }
 
-    [Theory(Skip = "PED_INDEX/VEHICLE_INDEX/OBJECT_INDEX conversion to ENTITY_INDEX is not currently supported")]
+    [Theory]
     [InlineData("==", "IEQ")]
     [InlineData("<>", "INE")]
     public void NativeTypesSupportEqualityOperators(string equalityOperator, string opcode)
     {
         CompileScript(
         scriptSource: $@"
-            ENTITY_INDEX entity
-            PED_INDEX ped
-            VEHICLE_INDEX vehicle
-            OBJECT_INDEX object
+            MY_ENTITY_INDEX entity
+            MY_PED_INDEX ped
+            MY_VEHICLE_INDEX vehicle
+            MY_OBJECT_INDEX object
 
             BOOL b
             b = entity {equalityOperator} NULL
@@ -784,6 +784,12 @@ public class OperationsTests : CodeGenTestsBase
             b = object {equalityOperator} entity
             b = object {equalityOperator} NULL
             b = object {equalityOperator} object
+        ",
+        declarationsSource: $@"
+            NATIVE MY_ENTITY_INDEX
+            NATIVE MY_PED_INDEX : MY_ENTITY_INDEX
+            NATIVE MY_VEHICLE_INDEX : MY_ENTITY_INDEX
+            NATIVE MY_OBJECT_INDEX : MY_ENTITY_INDEX
         ",
         expectedAssembly: $@"
             ENTER 0, 7

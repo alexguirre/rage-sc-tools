@@ -63,9 +63,6 @@ public sealed class SemanticsAnalyzer : AstVisitor
         AddSymbol(new BuiltInTypeSymbol("STRING", StringType.Instance));
         AddSymbol(new BuiltInTypeSymbol("VECTOR", VectorType.Instance));
 
-        //HandleType.All.ForEach(h => AddSymbol(new BuiltInTypeSymbol(HandleType.KindToTypeName(h.Kind), h)));
-        AddSymbol(new BuiltInTypeSymbol("ENTITY_INDEX", new NativeType(new NativeTypeDeclaration(TokenKind.NATIVE.Create(), Token.Identifier("ENTITY_INDEX")))));
-
         TextLabelType.All64.ForEach(tl => AddSymbol(new BuiltInTypeSymbol(TextLabelType.GetTypeNameForLength(tl.Length), tl)));
     }
 
@@ -803,5 +800,7 @@ public sealed class SemanticsAnalyzer : AstVisitor
         => Error(ErrorCode.SemanticTypeNotAllowedInSwitch, $"Type '{switchStmt.Expression.Type!.ToPrettyString()}' is not allowed in SWITCH statement", switchStmt.Expression.Location);
     internal void UsingNotFoundError(UsingDirective usingDirective)
         => Error(ErrorCode.SemanticUsingNotFound, $"File '{usingDirective.Path.Escape()}' not found in USING directive", usingDirective.PathToken.Location);
+    internal void ExpectedNativeTypeError(TypeName typeName)
+        => Error(ErrorCode.SemanticExpectedNativeType, $"Expected a NATIVE type, but found '{typeName.Name}'", typeName.Location);
     #endregion Errors
 }

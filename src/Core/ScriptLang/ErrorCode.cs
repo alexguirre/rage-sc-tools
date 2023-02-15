@@ -50,6 +50,7 @@ public enum ErrorCode
     SemanticDuplicateSwitchCase = 0x2019,
     SemanticTypeNotAllowedInSwitch = 0x201A,
     SemanticUsingNotFound = 0x201B,
+    SemanticExpectedNativeType = 0x201C,
 
     // Preprocessor errors   0x3000 - 0x3FFF
     PreprocessorUnexpectedDirective = 0x3000,
