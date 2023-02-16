@@ -15,11 +15,15 @@ public sealed partial class FunctionDeclaration : BaseValueDeclaration
     public ImmutableArray<VarDeclaration> Parameters { get; }
     public ImmutableArray<IStatement> Body { get; }
 
-    public FunctionDeclaration(Token procOrFuncKeyword, Token nameIdentifier, Token paramsOpenParen, Token paramsCloseParen, Token endKeyword,
+    public bool IsDebugOnly => Tokens.Last().Kind is TokenKind.DEBUGONLY;
+
+    public FunctionDeclaration(Token? debugonlyKeyword, Token procOrFuncKeyword, Token nameIdentifier, Token paramsOpenParen, Token paramsCloseParen, Token endKeyword,
                                TypeName? returnType, IEnumerable<VarDeclaration> parameters, IEnumerable<IStatement> body)
-        : base(OfTokens(procOrFuncKeyword, nameIdentifier, paramsOpenParen, paramsCloseParen, endKeyword),
+        : base(OfTokens(procOrFuncKeyword, nameIdentifier, paramsOpenParen, paramsCloseParen, endKeyword).AppendIfNotNull(debugonlyKeyword),
                OfChildren().AppendIfNotNull(returnType).Concat(parameters).Concat(body))
     {
+        if (debugonlyKeyword.HasValue)
+            Debug.Assert(debugonlyKeyword.Value.Kind is TokenKind.DEBUGONLY);
         if (returnType is null)
             Debug.Assert(procOrFuncKeyword.Kind is TokenKind.PROC && endKeyword.Kind is TokenKind.ENDPROC);
         else

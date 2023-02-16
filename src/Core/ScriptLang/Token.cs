@@ -61,6 +61,7 @@ public enum TokenKind
     ENDPROC,
     FUNC,
     ENDFUNC,
+    DEBUGONLY,
     STRUCT,
     ENDSTRUCT,
     ENUM,
@@ -152,6 +153,7 @@ public static class TokenLexemes
     public const string ENDPROC = nameof(TokenKind.ENDPROC);
     public const string FUNC = nameof(TokenKind.FUNC);
     public const string ENDFUNC = nameof(TokenKind.ENDFUNC);
+    public const string DEBUGONLY = nameof(TokenKind.DEBUGONLY);
     public const string STRUCT = nameof(TokenKind.STRUCT);
     public const string ENDSTRUCT = nameof(TokenKind.ENDSTRUCT);
     public const string ENUM = nameof(TokenKind.ENUM);
@@ -238,6 +240,7 @@ public static class TokenKindExtensions
             TokenKind.ENDPROC => TokenLexemes.ENDPROC,
             TokenKind.FUNC => TokenLexemes.FUNC,
             TokenKind.ENDFUNC => TokenLexemes.ENDFUNC,
+            TokenKind.DEBUGONLY => TokenLexemes.DEBUGONLY,
             TokenKind.STRUCT => TokenLexemes.STRUCT,
             TokenKind.ENDSTRUCT => TokenLexemes.ENDSTRUCT,
             TokenKind.ENUM => TokenLexemes.ENUM,

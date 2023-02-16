@@ -247,9 +247,15 @@ public class Parser
     }
 
     public bool IsPossibleFunctionDeclaration()
-        => Peek(0).Kind is TokenKind.FUNC or TokenKind.PROC;
+        => Peek(0).Kind is TokenKind.DEBUGONLY or TokenKind.FUNC or TokenKind.PROC;
     public FunctionDeclaration ParseFunctionDeclaration()
     {
+        Token? debugonlyKeyword = null;
+        if (Accept(TokenKind.DEBUGONLY, out var debugonlyKeywordTmp))
+        {
+            debugonlyKeyword = debugonlyKeywordTmp;
+        }
+        
         Token procOrFuncKeyword;
         if (!ExpectEither(TokenKind.FUNC, TokenKind.PROC, out procOrFuncKeyword))
         {
@@ -287,7 +293,7 @@ public class Parser
             }
         }
         ExpectEOS();
-        return new(procOrFuncKeyword, nameIdent, openParen, closeParen, endKeyword,
+        return new(debugonlyKeyword, procOrFuncKeyword, nameIdent, openParen, closeParen, endKeyword,
                    returnType, @params, body);
     }
 
@@ -324,10 +330,16 @@ public class Parser
     }
 
     public bool IsPossibleNativeFunctionDeclaration()
-        => Peek(0).Kind is TokenKind.NATIVE && Peek(1).Kind is TokenKind.FUNC or TokenKind.PROC;
+        => Peek(0).Kind is TokenKind.NATIVE && Peek(1).Kind is TokenKind.DEBUGONLY or TokenKind.FUNC or TokenKind.PROC;
     public NativeFunctionDeclaration ParseNativeFunctionDeclaration()
     {
         ExpectOrMissing(TokenKind.NATIVE, out var nativeKeyword);
+
+        Token? debugonlyKeyword = null;
+        if (Accept(TokenKind.DEBUGONLY, out var debugonlyKeywordTmp))
+        {
+            debugonlyKeyword = debugonlyKeywordTmp;
+        }
 
         Token procOrFuncKeyword;
         if (!ExpectEither(TokenKind.FUNC, TokenKind.PROC, out procOrFuncKeyword))
@@ -357,7 +369,7 @@ public class Parser
         }
         ExpectEOS();
 
-        return new(nativeKeyword, procOrFuncKeyword, nameIdent, openParen, closeParen, returnType, @params, idExpr);
+        return new(nativeKeyword, debugonlyKeyword, procOrFuncKeyword, nameIdent, openParen, closeParen, returnType, @params, idExpr);
     }
 
     public bool IsPossibleNativeTypeDeclaration()

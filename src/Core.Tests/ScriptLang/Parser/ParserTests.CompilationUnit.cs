@@ -31,7 +31,8 @@ public partial class ParserTests
             AssertFunctionDeclaration(u.Declarations[0], "foo",
                 retTy => retTy is TypeName { Name: "INT" },
                 @params => Empty(@params),
-                body => Empty(body));
+                body => Empty(body),
+                isDebugOnly: false);
 
             AssertScriptDeclaration(u.Declarations[1], "bar",
                 @params => Empty(@params),

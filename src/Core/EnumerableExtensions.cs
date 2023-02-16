@@ -16,4 +16,6 @@ internal static class EnumerableExtensions
 
     public static IEnumerable<TSource> AppendIfNotNull<TSource>(this IEnumerable<TSource> source, TSource? element)
         => element is null ? source : source.Append(element);
+    public static IEnumerable<TSource> AppendIfNotNull<TSource>(this IEnumerable<TSource> source, TSource? element) where TSource : struct
+        => element is null ? source : source.Append(element.Value);
 }

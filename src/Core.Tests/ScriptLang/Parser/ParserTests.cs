@@ -142,7 +142,7 @@ public partial class ParserTests
             bodyChecker(scriptDecl.Body);
         }
     }
-    private static void AssertFunctionDeclaration(INode node, string name, Predicate<TypeName?> returnTypePredicate, Action<ImmutableArray<VarDeclaration>> parametersChecker, Action<ImmutableArray<IStatement>> bodyChecker)
+    private static void AssertFunctionDeclaration(INode node, string name, Predicate<TypeName?> returnTypePredicate, Action<ImmutableArray<VarDeclaration>> parametersChecker, Action<ImmutableArray<IStatement>> bodyChecker, bool isDebugOnly)
     {
         True(node is FunctionDeclaration);
         if (node is FunctionDeclaration funcDecl)
@@ -151,6 +151,7 @@ public partial class ParserTests
             True(returnTypePredicate(funcDecl.ReturnType));
             parametersChecker(funcDecl.Parameters);
             bodyChecker(funcDecl.Body);
+            Equal(isDebugOnly, funcDecl.IsDebugOnly);
         }
     }
     private static void AssertFunctionTypeDefDeclaration(INode node, string name, Predicate<TypeName?> returnTypePredicate, Action<ImmutableArray<VarDeclaration>> parametersChecker)
@@ -163,7 +164,7 @@ public partial class ParserTests
             parametersChecker(funcPtrDecl.Parameters);
         }
     }
-    private static void AssertNativeFunctionDeclaration(INode node, string name, Predicate<TypeName?> returnTypePredicate, Action<ImmutableArray<VarDeclaration>> parametersChecker, Predicate<IExpression?> idPredicate)
+    private static void AssertNativeFunctionDeclaration(INode node, string name, Predicate<TypeName?> returnTypePredicate, Action<ImmutableArray<VarDeclaration>> parametersChecker, Predicate<IExpression?> idPredicate, bool isDebugOnly)
     {
         True(node is NativeFunctionDeclaration);
         if (node is NativeFunctionDeclaration funcDecl)
@@ -172,6 +173,7 @@ public partial class ParserTests
             True(returnTypePredicate(funcDecl.ReturnType));
             parametersChecker(funcDecl.Parameters);
             True(idPredicate(funcDecl.Id));
+            Equal(isDebugOnly, funcDecl.IsDebugOnly);
         }
     }
     private static void AssertNativeTypeDeclaration(INode node, string name)

@@ -16,12 +16,16 @@ public sealed partial class NativeFunctionDeclaration : BaseValueDeclaration
     public ImmutableArray<VarDeclaration> Parameters { get; }
     public IExpression? Id { get; }
 
-    public NativeFunctionDeclaration(Token nativeKeyword, Token procOrFuncKeyword, Token nameIdentifier, Token paramsOpenParen, Token paramsCloseParen,
+    public bool IsDebugOnly => Tokens.Last().Kind is TokenKind.DEBUGONLY;
+
+    public NativeFunctionDeclaration(Token nativeKeyword, Token? debugonlyKeyword, Token procOrFuncKeyword, Token nameIdentifier, Token paramsOpenParen, Token paramsCloseParen,
                                TypeName? returnType, IEnumerable<VarDeclaration> parameters, IExpression? id)
-        : base(OfTokens(nativeKeyword, procOrFuncKeyword, nameIdentifier, paramsOpenParen, paramsCloseParen),
+        : base(OfTokens(nativeKeyword, procOrFuncKeyword, nameIdentifier, paramsOpenParen, paramsCloseParen).AppendIfNotNull(debugonlyKeyword),
                OfChildren().AppendIfNotNull(returnType).Concat(parameters).AppendIfNotNull(id))
     {
         Debug.Assert(nativeKeyword.Kind is TokenKind.NATIVE);
+        if (debugonlyKeyword.HasValue)
+            Debug.Assert(debugonlyKeyword.Value.Kind is TokenKind.DEBUGONLY);
         if (returnType is null)
             Debug.Assert(procOrFuncKeyword.Kind is TokenKind.PROC);
         else

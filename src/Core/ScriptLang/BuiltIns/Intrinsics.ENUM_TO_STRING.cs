@@ -88,7 +88,7 @@ public static partial class Intrinsics
             };
 
             // TODO: add some special char valid in assembly but not in script source to prevent name collisions
-            return new(TokenKind.FUNC.Create(), Token.Identifier($"__{enumName}_ENUM_TO_STRING"),
+            return new(null, TokenKind.FUNC.Create(), Token.Identifier($"__{enumName}_ENUM_TO_STRING"),
                        TokenKind.OpenParen.Create(), TokenKind.CloseParen.Create(), TokenKind.ENDFUNC.Create(),
                        new(Token.Identifier("STRING")), new[] { param }, body)
             {

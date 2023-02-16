@@ -434,7 +434,8 @@ public partial class ParserTests
                             RHS: IntLiteralExpression { Value: 2 },
                         }
                     }),
-                    _2 => True(_2 is ReturnStatement { Expression: BoolLiteralExpression { Value: true } })));
+                    _2 => True(_2 is ReturnStatement { Expression: BoolLiteralExpression { Value: true } })),
+                isDebugOnly: false);
             NoErrorsAndIsAtEOF(p);
         }
 
@@ -452,7 +453,8 @@ public partial class ParserTests
                 @params => Collection(@params,
                     _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
                     _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter })),
-                body => Empty(body));
+                body => Empty(body),
+                isDebugOnly: false);
             NoErrorsAndIsAtEOF(p);
         }
 
@@ -470,7 +472,8 @@ public partial class ParserTests
                 @params => Collection(@params,
                     _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter, Initializer: IntLiteralExpression { Value: 1 } }),
                     _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter, Initializer: FloatLiteralExpression { Value: 3.0f } })),
-                body => Empty(body));
+                body => Empty(body),
+                isDebugOnly: false);
 
             CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 21), (1, 23), p.Diagnostics);
             CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 34), (1, 38), p.Diagnostics);
@@ -490,7 +493,8 @@ public partial class ParserTests
             AssertFunctionDeclaration(p.ParseFunctionDeclaration(), "foo",
                 retTy => retTy is TypeName { Name: "BOOL" },
                 @params => Empty(@params),
-                body => Empty(body));
+                body => Empty(body),
+                isDebugOnly: false);
             NoErrorsAndIsAtEOF(p);
         }
 
@@ -523,7 +527,8 @@ public partial class ParserTests
                             RHS: IntLiteralExpression { Value: 2 },
                         }
                     }),
-                    _2 => True(_2 is ReturnStatement { Expression: null })));
+                    _2 => True(_2 is ReturnStatement { Expression: null })),
+                isDebugOnly: false);
             NoErrorsAndIsAtEOF(p);
         }
 
@@ -541,7 +546,8 @@ public partial class ParserTests
                 @params => Collection(@params,
                     _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter, Initializer: IntLiteralExpression { Value: 1 } }),
                     _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter, Initializer: FloatLiteralExpression { Value: 3.0f } })),
-                body => Empty(body));
+                body => Empty(body),
+                isDebugOnly: false);
 
             CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 16), (1, 18), p.Diagnostics);
             CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 29), (1, 33), p.Diagnostics);
@@ -563,7 +569,8 @@ public partial class ParserTests
                 @params => Collection(@params,
                     _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
                     _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter })),
-                body => Empty(body));
+                body => Empty(body),
+                isDebugOnly: false);
             NoErrorsAndIsAtEOF(p);
         }
 
@@ -579,7 +586,8 @@ public partial class ParserTests
             AssertFunctionDeclaration(p.ParseFunctionDeclaration(), "foo",
                 retTy => retTy is null,
                 @params => Empty(@params),
-                body => Empty(body));
+                body => Empty(body),
+                isDebugOnly: false);
             NoErrorsAndIsAtEOF(p);
         }
 
@@ -594,7 +602,8 @@ public partial class ParserTests
             AssertFunctionDeclaration(p.ParseFunctionDeclaration(), "foo",
                 retTy => retTy is TypeName { Name: "BOOL" },
                 @params => Empty(@params),
-                body => Empty(body));
+                body => Empty(body),
+                isDebugOnly: false);
             CheckError(ErrorCode.ParserUnexpectedToken, (2, 1), (2, 7), p.Diagnostics);
             True(p.IsAtEOF);
         }
@@ -610,7 +619,8 @@ public partial class ParserTests
             AssertFunctionDeclaration(p.ParseFunctionDeclaration(), "foo",
                 retTy => retTy is null,
                 @params => Empty(@params),
-                body => Empty(body));
+                body => Empty(body),
+                isDebugOnly: false);
             CheckError(ErrorCode.ParserUnexpectedToken, (2, 1), (2, 7), p.Diagnostics);
             True(p.IsAtEOF);
         }
@@ -628,7 +638,8 @@ public partial class ParserTests
                 @params => Collection(@params,
                     _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
                     _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter })),
-                body => Empty(body));
+                body => Empty(body),
+                isDebugOnly: false);
             CheckError(ErrorCode.ParserUnexpectedToken, (1, 5), (1, 5), p.Diagnostics);
             True(p.IsAtEOF);
         }
@@ -644,7 +655,8 @@ public partial class ParserTests
             AssertFunctionDeclaration(p.ParseFunctionDeclaration(), Parser.MissingIdentifierLexeme,
                 retTy => retTy is TypeName { Name: "BOOL" },
                 @params => Empty(@params),
-                body => Empty(body));
+                body => Empty(body),
+                isDebugOnly: false);
             CheckError(ErrorCode.ParserUnexpectedToken, (1, 10), (1, 10), p.Diagnostics);
             True(p.IsAtEOF);
         }
@@ -660,9 +672,44 @@ public partial class ParserTests
             AssertFunctionDeclaration(p.ParseFunctionDeclaration(), Parser.MissingIdentifierLexeme,
                 retTy => retTy is TypeName { Name: Parser.MissingIdentifierLexeme },
                 @params => Empty(@params),
-                body => Empty(body));
+                body => Empty(body),
+                isDebugOnly: false);
             CheckError(ErrorCode.ParserUnexpectedToken, (1, 5), (1, 5), p.Diagnostics, 2);
             True(p.IsAtEOF);
+        }
+
+        [Fact]
+        public void FunctionCanBeDebugOnly()
+        {
+            var p = ParserFor(
+                @"DEBUGONLY FUNC BOOL foo()
+                ENDFUNC"
+            );
+
+            True(p.IsPossibleFunctionDeclaration());
+            AssertFunctionDeclaration(p.ParseFunctionDeclaration(), "foo",
+                retTy => retTy is TypeName { Name: "BOOL" },
+                @params => Empty(@params),
+                body => Empty(body),
+                isDebugOnly: true);
+            NoErrorsAndIsAtEOF(p);
+        }
+
+        [Fact]
+        public void ProcedureCanBeDebugOnly()
+        {
+            var p = ParserFor(
+                @"DEBUGONLY PROC foo()
+                ENDPROC"
+            );
+
+            True(p.IsPossibleFunctionDeclaration());
+            AssertFunctionDeclaration(p.ParseFunctionDeclaration(), "foo",
+                retTy => retTy is null,
+                @params => Empty(@params),
+                body => Empty(body),
+                isDebugOnly: true);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -778,7 +825,8 @@ public partial class ParserTests
                 @params => Collection(@params,
                     _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
                     _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter })),
-                id => id is null);
+                id => id is null,
+                isDebugOnly: false);
             NoErrorsAndIsAtEOF(p);
         }
 
@@ -795,7 +843,8 @@ public partial class ParserTests
                 @params => Collection(@params,
                     _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter, Initializer: IntLiteralExpression { Value: 1 } }),
                     _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter, Initializer: FloatLiteralExpression { Value: 3.0f } })),
-                id => id is null);
+                id => id is null,
+                isDebugOnly: false);
 
             CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 28), (1, 30), p.Diagnostics);
             CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 41), (1, 45), p.Diagnostics);
@@ -814,7 +863,8 @@ public partial class ParserTests
             AssertNativeFunctionDeclaration(p.ParseNativeFunctionDeclaration(), "foo",
                 retTy => retTy is TypeName { Name: "BOOL" },
                 @params => Empty(@params),
-                id => id is null);
+                id => id is null,
+                isDebugOnly: false);
             NoErrorsAndIsAtEOF(p);
         }
 
@@ -831,7 +881,8 @@ public partial class ParserTests
                 @params => Collection(@params,
                     _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
                     _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter })),
-                id => id is null);
+                id => id is null,
+                isDebugOnly: false);
             NoErrorsAndIsAtEOF(p);
         }
 
@@ -848,7 +899,8 @@ public partial class ParserTests
                 @params => Collection(@params,
                     _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter, Initializer: IntLiteralExpression { Value: 1 } }),
                     _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter, Initializer: FloatLiteralExpression { Value: 3.0f } })),
-                id => id is null);
+                id => id is null,
+                isDebugOnly: false);
 
             CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 23), (1, 25), p.Diagnostics);
             CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 36), (1, 40), p.Diagnostics);
@@ -867,7 +919,8 @@ public partial class ParserTests
             AssertNativeFunctionDeclaration(p.ParseNativeFunctionDeclaration(), "foo",
                 retTy => retTy is null,
                 @params => Empty(@params),
-                id => id is null);
+                id => id is null,
+                isDebugOnly: false);
             NoErrorsAndIsAtEOF(p);
         }
 
@@ -882,7 +935,8 @@ public partial class ParserTests
             AssertNativeFunctionDeclaration(p.ParseNativeFunctionDeclaration(), "foo",
                 retTy => retTy is TypeName { Name: "INT" },
                 @params => Empty(@params),
-                id => id is StringLiteralExpression { Value: "my_id" });
+                id => id is StringLiteralExpression { Value: "my_id" },
+                isDebugOnly: false);
             NoErrorsAndIsAtEOF(p);
         }
 
@@ -897,7 +951,40 @@ public partial class ParserTests
             AssertNativeFunctionDeclaration(p.ParseNativeFunctionDeclaration(), "foo",
                 retTy => retTy is null,
                 @params => Empty(@params),
-                id => id is StringLiteralExpression { Value: "my_id" });
+                id => id is StringLiteralExpression { Value: "my_id" },
+                isDebugOnly: false);
+            NoErrorsAndIsAtEOF(p);
+        }
+
+        [Fact]
+        public void NativeFunctionCanBeDebugOnly()
+        {
+            var p = ParserFor(
+                @"NATIVE DEBUGONLY FUNC INT foo()"
+            );
+
+            True(p.IsPossibleNativeFunctionDeclaration());
+            AssertNativeFunctionDeclaration(p.ParseNativeFunctionDeclaration(), "foo",
+                retTy => retTy is TypeName { Name: "INT" },
+                @params => Empty(@params),
+                id => id is null,
+                isDebugOnly: true);
+            NoErrorsAndIsAtEOF(p);
+        }
+
+        [Fact]
+        public void NativeProcedureCanBeDebugOnly()
+        {
+            var p = ParserFor(
+                @"NATIVE DEBUGONLY PROC foo()"
+            );
+
+            True(p.IsPossibleNativeFunctionDeclaration());
+            AssertNativeFunctionDeclaration(p.ParseNativeFunctionDeclaration(), "foo",
+                retTy => retTy is null,
+                @params => Empty(@params),
+                id => id is null,
+                isDebugOnly: true);
             NoErrorsAndIsAtEOF(p);
         }
 
