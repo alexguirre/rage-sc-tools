@@ -1,6 +1,6 @@
 {
 	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
-	"name": "ScAsm",
+	"name": "rage-script-asm",
 	"patterns": [
 		{
 			"include": "#directives"
@@ -27,35 +27,35 @@
 	"repository": {
 		"directives": {
 			"patterns": [{
-				"name": "keyword.control.directive.scasm",
+				"name": "keyword.control.directive.ragescriptasm",
 				"match": "\\$[a-zA-Z_][a-zA-Z0-9_]+"
 			}]
 		},
 		"keywords": {
 			"patterns": [{
-				"name": "storage.type.struct.scasm",
+				"name": "storage.type.struct.ragescriptasm",
 				"match": "\\b(STRUCT|ARGS|STATICS|FUNC|NAKED|BEGIN|END|AUTO|SIZEOF|OFFSETOF|ITEMSIZEOF|LENGTHOF|HASH|ADDROF)\\b"
 			}]
 		},
 		"mnemonics": {
 			"patterns": [
 				{
-					"name": "entity.name.function.instruction.scasm",
+					"name": "entity.name.function.instruction.ragescriptasm",
 					"match": "\\b(NOP|IADD|ISUB|IMUL|IDIV|IMOD|INOT|INEG|IEQ|INE|IGT|IGE|ILT|ILE|FADD|FSUB|FMUL|FDIV|FMOD|FNEG|FEQ|FNE|FGT|FGE|FLT|FLE|VADD|VSUB|VMUL|VDIV|VNEG|IAND|IOR|IXOR|I2F|F2I|F2V|PUSH_CONST_U8|PUSH_CONST_U8_U8|PUSH_CONST_U8_U8_U8|PUSH_CONST_U32|PUSH_CONST_F|DUP|DROP|NATIVE|ENTER|LEAVE|LOAD|STORE|STORE_REV|LOAD_N|STORE_N|ARRAY_U8|ARRAY_U8_LOAD|ARRAY_U8_STORE|LOCAL_U8|LOCAL_U8_LOAD|LOCAL_U8_STORE|STATIC_U8|STATIC_U8_LOAD|STATIC_U8_STORE|IADD_U8|IMUL_U8|IOFFSET|IOFFSET_U8|IOFFSET_U8_LOAD|IOFFSET_U8_STORE|PUSH_CONST_S16|IADD_S16|IMUL_S16|IOFFSET_S16|IOFFSET_S16_LOAD|IOFFSET_S16_STORE|ARRAY_U16|ARRAY_U16_LOAD|ARRAY_U16_STORE|LOCAL_U16|LOCAL_U16_LOAD|LOCAL_U16_STORE|STATIC_U16|STATIC_U16_LOAD|STATIC_U16_STORE|GLOBAL_U16|GLOBAL_U16_LOAD|GLOBAL_U16_STORE|J|JZ|IEQ_JZ|INE_JZ|IGT_JZ|IGE_JZ|ILT_JZ|ILE_JZ|CALL|GLOBAL_U24|GLOBAL_U24_LOAD|GLOBAL_U24_STORE|PUSH_CONST_U24|SWITCH|STRING|STRINGHASH|TEXT_LABEL_ASSIGN_STRING|TEXT_LABEL_ASSIGN_INT|TEXT_LABEL_APPEND_STRING|TEXT_LABEL_APPEND_INT|TEXT_LABEL_COPY|CATCH|THROW|CALLINDIRECT|PUSH_CONST_M1|PUSH_CONST_0|PUSH_CONST_1|PUSH_CONST_2|PUSH_CONST_3|PUSH_CONST_4|PUSH_CONST_5|PUSH_CONST_6|PUSH_CONST_7|PUSH_CONST_FM1|PUSH_CONST_F0|PUSH_CONST_F1|PUSH_CONST_F2|PUSH_CONST_F3|PUSH_CONST_F4|PUSH_CONST_F5|PUSH_CONST_F6|PUSH_CONST_F7)\\b"
 				},
 				{
-					"name": "entity.name.function.instruction.highlevel.scasm",
+					"name": "entity.name.function.instruction.highlevel.ragescriptasm",
 					"match": "\\b(PUSH_CONST|CALL_NATIVE|STATIC|STATIC_LOAD|STATIC_STORE|LOCAL|LOCAL_LOAD|LOCAL_STORE)\\b"
 				}
 			]
 		},
 		"strings": {
-			"name": "string.quoted.double.scasm",
+			"name": "string.quoted.double.ragescriptasm",
 			"begin": "\"",
 			"end": "\"",
 			"patterns": [
 				{
-					"name": "constant.character.escape.scasm",
+					"name": "constant.character.escape.ragescriptasm",
 					"match": "\\\\."
 				}
 			]
@@ -63,15 +63,15 @@
 		"numbers": {
 			"patterns": [
 				{
-					"name": "constant.numeric.float.scasm",
+					"name": "constant.numeric.float.ragescriptasm",
 					"match": "\\b[0-9]+\\.[0-9]+\\b"
 				},
 				{
-					"name": "constant.numeric.integer.decimal.scasm",
+					"name": "constant.numeric.integer.decimal.ragescriptasm",
 					"match": "\\b[0-9]+\\b"
 				},
 				{
-					"name": "constant.numeric.integer.hex.scasm",
+					"name": "constant.numeric.integer.hex.ragescriptasm",
 					"match": "\\b0x[0-9a-fA-F]+\\b"
 				}
 			]
@@ -81,7 +81,7 @@
 				{
 					"begin": ";",
 					"end": "\\n",
-					"name": "comment.line.scasm"
+					"name": "comment.line.ragescriptasm"
 				}
 			]
 		},
@@ -90,10 +90,10 @@
 				{
 					"begin": "#",
 					"end": "\\s",
-					"name": "keyword.control.directive.scasm"
+					"name": "keyword.control.directive.ragescriptasm"
 				}
 			]
 		}
 	},
-	"scopeName": "source.scasm"
+	"scopeName": "source.ragescriptasm"
 }

@@ -1,7 +1,7 @@
 {
-    "name": "sclang-support",
-    "displayName": "ScLang Support",
-    "description": "Language support for ScLang/ScAsm",
+    "name": "rage-script-support",
+    "displayName": "RAGE-Script Support",
+    "description": "Language support for RAGE-Script",
     "version": "0.0.1",
     "license": "MIT",
     "publisher": "alexguirre",
@@ -14,64 +14,59 @@
         "url": "https://github.com/alexguirre/gtav-sc-tools/issues"
     },
     "engines": {
-        "vscode": "^1.63.0"
+        "vscode": "^1.75.1"
     },
     "categories": [
         "Programming Languages"
-    ],
-    "activationEvents": [
-        "onLanguage:sclang"
     ],
     "main": "./out/extension.js",
     "contributes": {
         "languages": [
             {
-                "id": "scasm",
+                "id": "rage-script-asm",
                 "aliases": [
-                    "ScAsm",
-                    "scasm"
+                    "RAGE-Script Assembly"
                 ],
                 "extensions": [
                     ".scasm"
                 ],
-                "configuration": "./scasm-configuration.json"
+                "configuration": "./rage-script-asm-language-configuration.json"
             },
             {
-                "id": "sclang",
+                "id": "rage-script",
                 "aliases": [
-                    "ScLang",
-                    "sclang"
+                    "RAGE-Script"
                 ],
                 "extensions": [
                     ".sc",
                     ".sch"
                 ],
-                "configuration": "./sclang-configuration.json"
+                "configuration": "./rage-script-language-configuration.json"
             }
         ],
         "grammars": [
             {
-                "language": "scasm",
-                "scopeName": "source.scasm",
-                "path": "./syntaxes/scasm.tmLanguage.json"
+                "language": "rage-script-asm",
+                "scopeName": "source.ragescriptasm",
+                "path": "./syntaxes/rage-script-asm.tmLanguage.json"
             },
             {
-                "language": "sclang",
-                "scopeName": "source.sclang",
-                "path": "./syntaxes/sclang.tmLanguage.json"
+                "language": "rage-script",
+                "scopeName": "source.ragescript",
+                "path": "./syntaxes/rage-script.tmLanguage.json"
             }
         ],
         "configuration": {
             "type": "object",
-            "title": "ScLang Configuration",
+            "title": "RAGE-Script Configuration",
             "properties": {
-                "sclang.languageServerPath": {
+                "ragescript.languageServerPath": {
                     "scope": "resource",
                     "type": [
                         "string",
                         "null"
                     ],
-                    "description": "Path to the language server executable for ScLang.",
+                    "description": "Path to the language server executable for RAGE-Script.",
                     "default": null
                 }
             }
@@ -83,16 +78,16 @@
         "watch": "tsc -watch -p ./"
     },
     "devDependencies": {
-        "@types/mocha": "^9.1.0",
-        "@types/node": "^16.11.7",
-        "@types/vscode": "^1.63.0",
-        "@typescript-eslint/eslint-plugin": "^5.19.0",
-        "@typescript-eslint/parser": "^5.19.0",
-        "eslint": "^8.13.0",
-        "mocha": "^9.2.1",
-        "typescript": "^4.7.2"
+        "@types/mocha": "^9.1.1",
+        "@types/node": "^16.18.12",
+        "@types/vscode": "^1.75.1",
+        "@typescript-eslint/eslint-plugin": "^5.52.0",
+        "@typescript-eslint/parser": "^5.52.0",
+        "eslint": "^8.34.0",
+        "mocha": "^9.2.2",
+        "typescript": "^4.9.5"
     },
     "dependencies": {
-        "vscode-languageclient": "^7.0.0"
+        "vscode-languageclient": "^8.1.0"
     }
 }

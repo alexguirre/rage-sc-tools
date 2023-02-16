@@ -1,0 +1,94 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "rage-script",
+	"patterns": [
+		{
+			"include": "#keywords"
+		},
+		{
+			"include": "#strings"
+		},
+		{
+			"include": "#singleQuoteStrings"
+		},
+		{
+			"include": "#numbers"
+		},
+		{
+			"include": "#comments"
+		},
+		{
+			"include": "#preprocessor"
+		}
+	],
+	"repository": {
+		"keywords": {
+			"patterns": [{
+				"name": "keyword.ragescript",
+				"match": "(?i)\\b(PROC|ENDPROC|FUNC|ENDFUNC|DEBUGONLY|TYPEDEF|STRUCT|ENDSTRUCT|ENUM|HASH_ENUM|STRICT_ENUM|ENDENUM|SCRIPT|ENDSCRIPT|GLOBAL|ENDGLOBAL|NATIVE|TRUE|FALSE|NOT|AND|OR|IF|ELSE|ENDIF|WHILE|ENDWHILE|REPEAT|ENDREPEAT|FOR|ENDFOR|SWITCH|ENDSWITCH|CASE|DEFAULT|RETURN|USING|CONST_INT|CONST_FLOAT|BOOL|INT|FLOAT|VECTOR|STRING|(TEXT_LABEL_[0-9]+))\\b"
+			}]
+		},
+		"strings": {
+			"name": "string.quoted.double.ragescript",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": [
+				{
+					"name": "constant.character.escape.ragescript",
+					"match": "\\\\."
+				}
+			]
+		},
+		"singleQuoteStrings": {
+			"name": "string.quoted.double.ragescript",
+			"begin": "'",
+			"end": "'",
+			"patterns": [
+				{
+					"name": "constant.character.escape.ragescript",
+					"match": "\\\\."
+				}
+			]
+		},
+		"numbers": {
+			"patterns": [
+				{
+					"name": "constant.numeric.float.ragescript",
+					"match": "\\b[0-9]+\\.[0-9]+\\b"
+				},
+				{
+					"name": "constant.numeric.integer.decimal.ragescript",
+					"match": "\\b[0-9]+\\b"
+				},
+				{
+					"name": "constant.numeric.integer.hex.ragescript",
+					"match": "\\b0x[0-9a-fA-F]+\\b"
+				}
+			]
+		},
+		"comments": {
+			"patterns": [
+				{
+					"begin": "//",
+					"end": "\\n",
+					"name": "comment.line.ragescript"
+				},
+				{
+					"begin": "/\\*",
+					"end": "\\*/",
+					"name": "comment.block.ragescript"
+				}
+			]
+		},
+		"preprocessor": {
+			"patterns": [
+				{
+					"begin": "#",
+					"end": "\\s",
+					"name": "keyword.control.directive.ragescript"
+				}
+			]
+		}
+	},
+	"scopeName": "source.ragescript"
+}

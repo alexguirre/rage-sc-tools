@@ -1,24 +1,24 @@
 {
     "comments": {
-        "lineComment": "//"
+        "lineComment": "//",
+        "blockComment": ["/*", "*/"]
     },
     "brackets": [
         ["STRUCT", "ENDSTRUCT"],
+        ["ENUM", "ENDENUM"],
+        ["HASH_ENUM", "ENDENUM"],
+        ["STRICT_ENUM", "ENDENUM"],
         ["PROC", "ENDPROC"],
+        ["FUNC", "ENDFUNC"],
         ["IF", "ENDIF"],
         ["WHILE", "ENDWHILE"],
         ["REPEAT", "ENDREPEAT"],
+        ["FOR", "ENDFOR"],
         ["SWITCH", "ENDSWITCH"],
         ["[", "]"],
         ["(", ")"]
     ],
     "autoClosingPairs": [
-        ["STRUCT", "ENDSTRUCT"],
-        ["PROC", "ENDPROC"],
-        ["IF", "ENDIF"],
-        ["WHILE", "ENDWHILE"],
-        ["REPEAT", "ENDREPEAT"],
-        ["SWITCH", "ENDSWITCH"],
         ["[", "]"],
         ["(", ")"],
         ["<<", ">>"],

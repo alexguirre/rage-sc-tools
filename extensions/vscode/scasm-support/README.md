@@ -1,1 +1,1 @@
-# sclang-support
+# RAGE-Script Support

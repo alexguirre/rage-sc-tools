@@ -1,22 +1,28 @@
 // based on https://github.com/microsoft/qsharp-compiler/blob/e1a43f3da021fc94d7214ea197ba3905ff96695c/src/VSCodeExtension/src/languageServer.ts
 import * as fs from "fs";
-import * as cp from "child_process";
-import * as net from 'net';
 import * as vscode from "vscode";
 import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from "vscode-languageclient/node";
 
+let client: LanguageClient;
+
 export async function activate(context: vscode.ExtensionContext) {
-    console.log("SC extension activated");
+    console.log("RAGE-Script extension activated");
 
     await startLanguageServer(context);
 }
 
+export async function deactivate() {
+    console.log("RAGE-Script extension deactivated");
+
+    await client?.stop();
+}
+
 async function startLanguageServer(context: vscode.ExtensionContext) {
     const config = vscode.workspace.getConfiguration();
-    const exePath = config.get("sclang.languageServerPath") as string;
+    const exePath = config.get("ragescript.languageServerPath") as string;
 
     if (!(await isValidExe(exePath))) {
-        console.log(`[sclang] sclang.languageServerPath = '${exePath}' is not an executable`);
+        console.log(`[rage-script] ragescript.languageServerPath = '${exePath}' is not an executable`);
         return;
     }
 
@@ -24,24 +30,23 @@ async function startLanguageServer(context: vscode.ExtensionContext) {
 
     const clientOptions: LanguageClientOptions = {
         documentSelector: [
-            { scheme: "file", language: "sclang" }
+            { scheme: "file", language: "rage-script" }
         ],
         markdown: {
             isTrusted: true,
         }
     };
 
-    const client = new LanguageClient(
-        "sclang",
-        "ScLang",
+    client = new LanguageClient(
+        "rage-script",
+        "RAGE-Script",
         serverOptions,
         clientOptions
     );
 
-    let disposable = client.start();
-    context.subscriptions.push(disposable);
+    await client.start();
 
-    console.log("[sclang] Started language client.");
+    console.log("[rage-script] Started language client.");
 }
 
 function getServerOptions(exePath: string): ServerOptions {
