@@ -41,9 +41,9 @@ public partial class ParserTests
         {
             var p = ParserFor(
                 @"ENUM foo
-                    A, B = 1, C
-                    D
-                    E = 2 + 1
+                    A, B = 1, C,
+                    D,
+                    E = 2 + 1,
                     F
                   ENDENUM"
             );
@@ -93,6 +93,45 @@ public partial class ParserTests
             CheckError(ErrorCode.ParserUnexpectedToken, (1, 5), (1, 5), p.Diagnostics);
 
             True(p.IsAtEOF);
+        }
+
+        [Fact]
+        public void EnumCommasOnNextLineAreAllowed()
+        {
+            var p = ParserFor(
+                @"ENUM foo
+                    A = 1
+                    ,B = 2
+                    ,C  = 4
+                ENDENUM");
+
+            True(p.IsPossibleEnumDeclaration());
+            AssertEnumDeclaration(p.ParseEnumDeclaration(), "foo",
+                members => Collection(members,
+                    _0 => True(_0 is { Name: "A", Initializer: IntLiteralExpression { Value: 1 } }),
+                    _1 => True(_1 is { Name: "B", Initializer: IntLiteralExpression { Value: 2 } }),
+                    _2 => True(_2 is { Name: "C", Initializer: IntLiteralExpression { Value: 4 } })));
+            NoErrorsAndIsAtEOF(p);
+        }
+
+        [Fact]
+        public void EnumTrailingCommaIsAllowed()
+        {
+            // R*'s compiler doesn't seem to allow trailing commas, but it's annoying to implement in our parser
+            var p = ParserFor(
+                @"ENUM foo
+                    A,
+                    B,
+                    C,
+                ENDENUM");
+            
+            True(p.IsPossibleEnumDeclaration());
+            AssertEnumDeclaration(p.ParseEnumDeclaration(), "foo",
+                members => Collection(members,
+                    _0 => True(_0 is { Name: "A", Initializer: null }),
+                    _1 => True(_1 is { Name: "B", Initializer: null }),
+                    _2 => True(_2 is { Name: "C", Initializer: null })));
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]

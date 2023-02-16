@@ -29,7 +29,7 @@ public class EnumTests : SemanticsTestsBase
     {
         var s = Analyze(
             @"ENUM foo
-                A, B = 5, C
+                A, B = 5, C,
                 D = -1, E
               ENDENUM"
         );
@@ -74,8 +74,8 @@ public class EnumTests : SemanticsTestsBase
     {
         var s = Analyze(
             @$"ENUM foo
-                A = 1
-                B = 2
+                A = 1,
+                B = 2,
                 C = {initializerExpr}
               ENDENUM"
         );
@@ -93,7 +93,7 @@ public class EnumTests : SemanticsTestsBase
     {
         var s = Analyze(
             @"ENUM foo
-                A = 1 + B
+                A = 1 + B,
                 B
               ENDENUM"
         );
@@ -157,7 +157,7 @@ public class EnumTests : SemanticsTestsBase
     {
         var s = Analyze(
             @"ENUM foo
-                A
+                A,
                 A
               ENDENUM"
         );

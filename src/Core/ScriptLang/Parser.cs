@@ -142,13 +142,12 @@ public class Parser
         var members = new List<EnumMemberDeclaration>();
         while (Peek(0).Kind is not TokenKind.ENDENUM)
         {
-            members.Add(ParseEnumMember());
+            members.Add(ParseEnumMember(out var lastMember));
+            Accept(TokenKind.EOS, out _);
 
-            if (!ExpectEither(TokenKind.Comma, TokenKind.EOS, out _))
+            if (lastMember)
             {
-                // skip this line
-                while (!IsAtEOS) { Next(); }
-                ExpectEOS();
+                break;
             }
         }
 
@@ -157,7 +156,7 @@ public class Parser
 
         return new(enumKeyword, nameIdent, endenumKeyword, members);
 
-        EnumMemberDeclaration ParseEnumMember()
+        EnumMemberDeclaration ParseEnumMember(out bool last)
         {
             ExpectOrMissing(TokenKind.Identifier, out var nameIdent, MissingIdentifier);
             IExpression? initializerExpr = null;
@@ -165,6 +164,8 @@ public class Parser
             {
                 initializerExpr = ParseExpression();
             }
+            Accept(TokenKind.EOS, out _);
+            last = !Accept(TokenKind.Comma, out _);
 
             return new(nameIdent, initializerExpr);
         }

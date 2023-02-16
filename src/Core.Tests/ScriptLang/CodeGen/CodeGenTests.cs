@@ -1686,8 +1686,8 @@
             ",
             sourceStatics: @"
                 ENUM MY_ENUM
-                    MY_ENUM_A, MY_ENUM_B
-                    MY_ENUM_C = -10
+                    MY_ENUM_A, MY_ENUM_B,
+                    MY_ENUM_C = -10,
                     MY_ENUM_D
                 ENDENUM
             ",
@@ -1729,11 +1729,11 @@
             ",
             sourceStatics: @"
                 ENUM MY_ENUM
-                    MY_ENUM_A
-                    MY_ENUM_B = ENUM_TO_INT(MY_ENUM_A) + 1
-                    MY_ENUM_C = ENUM_TO_INT(MY_ENUM_B) + 1
-                    MY_ENUM_D
-                    MY_ENUM_E = -10
+                    MY_ENUM_A,
+                    MY_ENUM_B = ENUM_TO_INT(MY_ENUM_A) + 1,
+                    MY_ENUM_C = ENUM_TO_INT(MY_ENUM_B) + 1,
+                    MY_ENUM_D,
+                    MY_ENUM_E = -10,
                     MY_ENUM_F = MY_ENUM_E
                 ENDENUM
             ",
@@ -1837,29 +1837,6 @@
 
                 ; entity = NULL
                 PUSH_CONST_0
-                LOCAL_U8_STORE 2
-
-                LEAVE 0, 0
-            ");
-        }
-
-        [Fact]
-        public void TestEnumCountOf()
-        {
-            CompileMain(
-            source: @"
-                INT n1 = COUNT_OF(MY_ENUM)
-            ",
-            sourceStatics: @"
-                ENUM MY_ENUM
-                    MY_ENUM_A, MY_ENUM_B, MY_ENUM_C
-                ENDENUM
-            ",
-            expectedAssembly: @"
-                ENTER 0, 3
-
-                ; INT n1 = COUNT_OF(MY_ENUM)
-                PUSH_CONST_3
                 LOCAL_U8_STORE 2
 
                 LEAVE 0, 0

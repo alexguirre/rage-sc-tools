@@ -679,7 +679,7 @@ public class StatementsTests : SemanticsTestsBase
     {
         var (s, ast) = AnalyzeAndAst(
             @"ENUM BAR
-                BAR_A
+                BAR_A,
                 BAR_B
               ENDENUM
 
