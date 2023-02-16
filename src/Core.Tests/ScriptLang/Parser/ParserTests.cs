@@ -163,7 +163,7 @@ public partial class ParserTests
             parametersChecker(funcPtrDecl.Parameters);
         }
     }
-    private static void AssertNativeFunctionDeclaration(INode node, string name, Predicate<TypeName?> returnTypePredicate, Action<ImmutableArray<VarDeclaration>> parametersChecker)
+    private static void AssertNativeFunctionDeclaration(INode node, string name, Predicate<TypeName?> returnTypePredicate, Action<ImmutableArray<VarDeclaration>> parametersChecker, Predicate<IExpression?> idPredicate)
     {
         True(node is NativeFunctionDeclaration);
         if (node is NativeFunctionDeclaration funcDecl)
@@ -171,6 +171,7 @@ public partial class ParserTests
             Equal(name, funcDecl.Name);
             True(returnTypePredicate(funcDecl.ReturnType));
             parametersChecker(funcDecl.Parameters);
+            True(idPredicate(funcDecl.Id));
         }
     }
     private static void AssertNativeTypeDeclaration(INode node, string name)

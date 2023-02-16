@@ -349,9 +349,14 @@ public class Parser
         }
 
         (IEnumerable<VarDeclaration> @params, Token openParen, Token closeParen) = ParseParameterList();
+        IExpression? idExpr = null;
+        if (Accept(TokenKind.Equals, out _))
+        {
+            idExpr = ParseExpression();
+        }
         ExpectEOS();
 
-        return new(nativeKeyword, procOrFuncKeyword, nameIdent, openParen, closeParen, returnType, @params);
+        return new(nativeKeyword, procOrFuncKeyword, nameIdent, openParen, closeParen, returnType, @params, idExpr);
     }
 
     public bool IsPossibleNativeTypeDeclaration()

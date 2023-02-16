@@ -1,5 +1,6 @@
 ﻿namespace ScTools.ScriptLang.Ast.Declarations;
 
+using ScTools.ScriptLang.Ast.Expressions;
 using ScTools.ScriptLang.Ast.Statements;
 
 using System;
@@ -13,11 +14,12 @@ public sealed partial class NativeFunctionDeclaration : BaseValueDeclaration
     public override Token NameToken => Tokens[2];
     public TypeName? ReturnType { get; }
     public ImmutableArray<VarDeclaration> Parameters { get; }
+    public IExpression? Id { get; }
 
     public NativeFunctionDeclaration(Token nativeKeyword, Token procOrFuncKeyword, Token nameIdentifier, Token paramsOpenParen, Token paramsCloseParen,
-                               TypeName? returnType, IEnumerable<VarDeclaration> parameters)
+                               TypeName? returnType, IEnumerable<VarDeclaration> parameters, IExpression? id)
         : base(OfTokens(nativeKeyword, procOrFuncKeyword, nameIdentifier, paramsOpenParen, paramsCloseParen),
-               OfChildren().AppendIfNotNull(returnType).Concat(parameters))
+               OfChildren().AppendIfNotNull(returnType).Concat(parameters).AppendIfNotNull(id))
     {
         Debug.Assert(nativeKeyword.Kind is TokenKind.NATIVE);
         if (returnType is null)
@@ -30,8 +32,9 @@ public sealed partial class NativeFunctionDeclaration : BaseValueDeclaration
 
         ReturnType = returnType;
         Parameters = parameters.ToImmutableArray();
+        Id = id;
     }
 
     public override string DebuggerDisplay =>
-        $@"{nameof(NativeFunctionDeclaration)} {{ {nameof(Name)} = {Name}, {nameof(ReturnType)} = {ReturnType?.DebuggerDisplay}, {nameof(Parameters)} = [{string.Join(", ", Parameters.Select(a => a.DebuggerDisplay))} }}";
+        $@"{nameof(NativeFunctionDeclaration)} {{ {nameof(Name)} = {Name}, {nameof(ReturnType)} = {ReturnType?.DebuggerDisplay}, {nameof(Parameters)} = [{string.Join(", ", Parameters.Select(a => a.DebuggerDisplay))}], {nameof(Id)} = {Id?.DebuggerDisplay} }}";
 }

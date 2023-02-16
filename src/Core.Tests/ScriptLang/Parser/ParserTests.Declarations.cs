@@ -738,7 +738,8 @@ public partial class ParserTests
                 retTy => retTy is TypeName { Name: "BOOL" },
                 @params => Collection(@params,
                     _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
-                    _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter })));
+                    _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter })),
+                id => id is null);
             NoErrorsAndIsAtEOF(p);
         }
 
@@ -754,7 +755,8 @@ public partial class ParserTests
                 retTy => retTy is TypeName { Name: "BOOL" },
                 @params => Collection(@params,
                     _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter, Initializer: IntLiteralExpression { Value: 1 } }),
-                    _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter, Initializer: FloatLiteralExpression { Value: 3.0f } })));
+                    _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter, Initializer: FloatLiteralExpression { Value: 3.0f } })),
+                id => id is null);
 
             CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 28), (1, 30), p.Diagnostics);
             CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 41), (1, 45), p.Diagnostics);
@@ -772,7 +774,8 @@ public partial class ParserTests
             True(p.IsPossibleNativeFunctionDeclaration());
             AssertNativeFunctionDeclaration(p.ParseNativeFunctionDeclaration(), "foo",
                 retTy => retTy is TypeName { Name: "BOOL" },
-                @params => Empty(@params));
+                @params => Empty(@params),
+                id => id is null);
             NoErrorsAndIsAtEOF(p);
         }
 
@@ -788,7 +791,8 @@ public partial class ParserTests
                 retTy => retTy is null,
                 @params => Collection(@params,
                     _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
-                    _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter })));
+                    _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter })),
+                id => id is null);
             NoErrorsAndIsAtEOF(p);
         }
 
@@ -804,7 +808,8 @@ public partial class ParserTests
                 retTy => retTy is null,
                 @params => Collection(@params,
                     _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter, Initializer: IntLiteralExpression { Value: 1 } }),
-                    _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter, Initializer: FloatLiteralExpression { Value: 3.0f } })));
+                    _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter, Initializer: FloatLiteralExpression { Value: 3.0f } })),
+                id => id is null);
 
             CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 23), (1, 25), p.Diagnostics);
             CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 36), (1, 40), p.Diagnostics);
@@ -822,7 +827,38 @@ public partial class ParserTests
             True(p.IsPossibleNativeFunctionDeclaration());
             AssertNativeFunctionDeclaration(p.ParseNativeFunctionDeclaration(), "foo",
                 retTy => retTy is null,
-                @params => Empty(@params));
+                @params => Empty(@params),
+                id => id is null);
+            NoErrorsAndIsAtEOF(p);
+        }
+
+        [Fact]
+        public void NativeFunctionCanHaveId()
+        {
+            var p = ParserFor(
+                @"NATIVE FUNC INT foo() = ""my_id"""
+            );
+
+            True(p.IsPossibleNativeFunctionDeclaration());
+            AssertNativeFunctionDeclaration(p.ParseNativeFunctionDeclaration(), "foo",
+                retTy => retTy is TypeName { Name: "INT" },
+                @params => Empty(@params),
+                id => id is StringLiteralExpression { Value: "my_id" });
+            NoErrorsAndIsAtEOF(p);
+        }
+
+        [Fact]
+        public void NativeProcedureCanHaveId()
+        {
+            var p = ParserFor(
+                @"NATIVE PROC foo() = ""my_id"""
+            );
+
+            True(p.IsPossibleNativeFunctionDeclaration());
+            AssertNativeFunctionDeclaration(p.ParseNativeFunctionDeclaration(), "foo",
+                retTy => retTy is null,
+                @params => Empty(@params),
+                id => id is StringLiteralExpression { Value: "my_id" });
             NoErrorsAndIsAtEOF(p);
         }
 
