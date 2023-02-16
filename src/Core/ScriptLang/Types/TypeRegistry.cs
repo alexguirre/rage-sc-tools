@@ -5,7 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 
 public sealed class TypeRegistry
 {
-    private readonly Dictionary<string, TypeInfo> types = new();
+    private readonly Dictionary<string, TypeInfo> types = new(Parser.CaseInsensitiveComparer);
 
     public void Register(string name, TypeInfo type) => types.Add(name, type);
     public bool TryRegister(string name, TypeInfo type) => types.TryAdd(name, type);
