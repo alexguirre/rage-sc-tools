@@ -385,7 +385,7 @@ public partial class ParserTests
         }
 
         [Fact]
-        public void ScriptDeclarationWithParametersWithInitializers()
+        public void ScriptDeclarationWithOptionalParameters()
         {
             var p = ParserFor(
                 @"SCRIPT foo(INT a = 1, FLOAT b = 3.0)
@@ -398,11 +398,7 @@ public partial class ParserTests
                     _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.ScriptParameter, Initializer: IntLiteralExpression{ Value: 1 } }),
                     _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.ScriptParameter, Initializer: FloatLiteralExpression { Value: 3.0f } })),
                 body => Empty(body));
-
-            CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 18), (1, 20), p.Diagnostics);
-            CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 31), (1, 35), p.Diagnostics);
-
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p); // no error during parsing, errors during semantic phase
         }
 
         [Fact]
@@ -459,7 +455,7 @@ public partial class ParserTests
         }
 
         [Fact]
-        public void FunctionDeclarationWithParametersWithInitializers()
+        public void FunctionDeclarationWithOptionalParameters()
         {
             var p = ParserFor(
                 @"FUNC BOOL foo(INT a = 1, FLOAT b = 3.0)
@@ -474,11 +470,7 @@ public partial class ParserTests
                     _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter, Initializer: FloatLiteralExpression { Value: 3.0f } })),
                 body => Empty(body),
                 isDebugOnly: false);
-
-            CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 21), (1, 23), p.Diagnostics);
-            CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 34), (1, 38), p.Diagnostics);
-
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -533,7 +525,7 @@ public partial class ParserTests
         }
 
         [Fact]
-        public void ProcedureDeclarationWithParametersWithInitializers()
+        public void ProcedureDeclarationWithOptionalParameters()
         {
             var p = ParserFor(
                 @"PROC foo(INT a = 1, FLOAT b = 3.0)
@@ -548,11 +540,7 @@ public partial class ParserTests
                     _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter, Initializer: FloatLiteralExpression { Value: 3.0f } })),
                 body => Empty(body),
                 isDebugOnly: false);
-
-            CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 16), (1, 18), p.Diagnostics);
-            CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 29), (1, 33), p.Diagnostics);
-
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -729,7 +717,7 @@ public partial class ParserTests
         }
 
         [Fact]
-        public void FunctionTypeDefDeclarationWithParametersWithInitializers()
+        public void FunctionTypeDefDeclarationWithOptionalParameters()
         {
             var p = ParserFor(
                 @"TYPEDEF FUNC BOOL foo(INT a = 1, FLOAT b = 3.0)"
@@ -741,11 +729,7 @@ public partial class ParserTests
                 @params => Collection(@params,
                     _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter, Initializer: IntLiteralExpression { Value: 1 } }),
                     _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter, Initializer: FloatLiteralExpression { Value: 3.0f } })));
-
-            CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 29), (1, 31), p.Diagnostics);
-            CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 42), (1, 46), p.Diagnostics);
-
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -779,7 +763,7 @@ public partial class ParserTests
         }
 
         [Fact]
-        public void ProcedureTypeDefDeclarationWithParametersWithInitializers()
+        public void ProcedureTypeDefDeclarationWithOptionalParameters()
         {
             var p = ParserFor(
                 @"TYPEDEF PROC foo(INT a = 1, FLOAT b = 3.0)"
@@ -791,11 +775,7 @@ public partial class ParserTests
                 @params => Collection(@params,
                     _0 => True(_0 is VarDeclaration { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter, Initializer: IntLiteralExpression { Value: 1 } }),
                     _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter, Initializer: FloatLiteralExpression { Value: 3.0f } })));
-
-            CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 24), (1, 26), p.Diagnostics);
-            CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 37), (1, 41), p.Diagnostics);
-
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -831,7 +811,7 @@ public partial class ParserTests
         }
 
         [Fact]
-        public void NativeFunctionDeclarationWithParametersWithInitializers()
+        public void NativeFunctionDeclarationWithOptionalParameters()
         {
             var p = ParserFor(
                 @"NATIVE FUNC BOOL foo(INT a = 1, FLOAT b = 3.0)"
@@ -845,11 +825,7 @@ public partial class ParserTests
                     _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter, Initializer: FloatLiteralExpression { Value: 3.0f } })),
                 id => id is null,
                 isDebugOnly: false);
-
-            CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 28), (1, 30), p.Diagnostics);
-            CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 41), (1, 45), p.Diagnostics);
-
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]
@@ -887,7 +863,7 @@ public partial class ParserTests
         }
 
         [Fact]
-        public void NativeProcedureDeclarationWithParametersWithInitializers()
+        public void NativeProcedureDeclarationWithOptionalParameters()
         {
             var p = ParserFor(
                 @"NATIVE PROC foo(INT a = 1, FLOAT b = 3.0)"
@@ -901,11 +877,7 @@ public partial class ParserTests
                     _1 => True(_1 is VarDeclaration { Name: "b", Type: TypeName { Name: "FLOAT" }, Kind: VarKind.Parameter, Initializer: FloatLiteralExpression { Value: 3.0f } })),
                 id => id is null,
                 isDebugOnly: false);
-
-            CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 23), (1, 25), p.Diagnostics);
-            CheckError(ErrorCode.ParserVarInitializerNotAllowed, (1, 36), (1, 40), p.Diagnostics);
-
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p);
         }
 
         [Fact]

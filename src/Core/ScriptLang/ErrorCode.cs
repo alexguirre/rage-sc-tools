@@ -18,8 +18,7 @@ public enum ErrorCode
     ParserUnknownDeclarator = 0x1004,
     ParserExpressionAsStatement = 0x1005,
     ParserUsingAfterDeclaration = 0x1006,
-    ParserVarInitializerNotAllowed = 0x1007,
-    ParserReferenceNotAllowed = 0x1008,
+    ParserReferenceNotAllowed = 0x1007,
 
     // Semantic errors 0x2000 - 0x2FFF
     SemanticSymbolAlreadyDefined = 0x2000,
@@ -38,7 +37,7 @@ public enum ErrorCode
     SemanticExpectedValueInReturn = 0x200D,
     SemanticValueReturnedFromProcedure = 0x200E,
     SemanticTypeNotCallable = 0x200F,
-    SemanticMismatchedArgumentCount = 0x2010,
+    SemanticMissingRequiredParameter = 0x2010,
     SemanticArgCannotPassType = 0x2011,
     SemanticArgCannotPassRefType = 0x2012,
     SemanticArgCannotPassNonLValueToRefParam = 0x2013,
@@ -52,6 +51,8 @@ public enum ErrorCode
     SemanticUsingNotFound = 0x201B,
     SemanticExpectedNativeType = 0x201C,
     SemanticArgNotANativeType = 0x201D,
+    SemanticRequiredParameterAfterOptionalParameter = 0x201E,
+    SemanticTooManyArguments = 0x201F,
 
     // Preprocessor errors   0x3000 - 0x3FFF
     PreprocessorUnexpectedDirective = 0x3000,

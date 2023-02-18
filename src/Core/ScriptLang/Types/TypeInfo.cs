@@ -1,6 +1,7 @@
 ﻿namespace ScTools.ScriptLang.Types;
 
 using ScTools.ScriptLang.Ast.Declarations;
+using ScTools.ScriptLang.Ast.Expressions;
 using ScTools.ScriptLang.Semantics;
 
 using System;
@@ -148,9 +149,10 @@ public record FunctionType(TypeInfo Return, ImmutableArray<ParameterInfo> Parame
     public override TReturn Accept<TReturn>(ITypeVisitor<TReturn> visitor) => visitor.Visit(this);
 }
 
-public sealed record ParameterInfo(TypeInfo Type, bool IsReference)
+public sealed record ParameterInfo(TypeInfo Type, bool IsReference, IExpression? OptionalInitializer = null)
 {
     public bool IsReference { get; } = IsReference || Type is ArrayType;
+    public bool IsOptional => OptionalInitializer is not null;
     public int SizeOf => IsReference ? 1 : Type.SizeOf;
     public string ToPrettyString() => Type.ToPrettyString() + (IsReference && Type is not ArrayType ? "&" : "");
 }

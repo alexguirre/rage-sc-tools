@@ -14,7 +14,7 @@
 
     using Xunit;
 
-    public class CodeGenTests
+    public class CodeGenTests_Old
     {
         [Fact]
         public void TestIfStatement()

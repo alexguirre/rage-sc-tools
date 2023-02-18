@@ -52,23 +52,36 @@ internal sealed class ValueEmitter : AstVisitor
         }
         else if (node.Callee is NameExpression { Semantics.Symbol: FunctionDeclaration funcDecl })
         {
-            EmitArgs(_C, node);
+            EmitArgs(_C, node, (FunctionType)funcDecl.Semantics.ValueType!);
             _C.EmitCall(funcDecl);
         }
         else if (node.Callee is NameExpression { Semantics.Symbol: NativeFunctionDeclaration nativeDecl })
         {
-            EmitArgs(_C, node);
+            EmitArgs(_C, node, (FunctionType)nativeDecl.Semantics.ValueType!);
             _C.EmitNativeCall(nativeDecl);
         }
         else
         {
-            EmitArgs(_C, node);
+            EmitArgs(_C, node, (FunctionType)node.Callee.Type!);
             _C.EmitValue(node.Callee);
             _C.EmitIndirectCall();
         }
 
-        static void EmitArgs(ICodeEmitter c, InvocationExpression invocation)
-            => invocation.Arguments.ForEach(arg => c.EmitArg(arg));
+        static void EmitArgs(ICodeEmitter c, InvocationExpression invocation, FunctionType funcTy)
+        {
+            for (int i = 0; i < funcTy.Parameters.Length; i++)
+            {
+                if (i < invocation.Arguments.Length)
+                {
+                    c.EmitArg(invocation.Arguments[i]);
+                }
+                else
+                {
+                    Debug.Assert(funcTy.Parameters[i].IsOptional);
+                    c.EmitValue(funcTy.Parameters[i].OptionalInitializer!);
+                }
+            }
+        }
     }
 
     public override void Visit(UnaryExpression node)

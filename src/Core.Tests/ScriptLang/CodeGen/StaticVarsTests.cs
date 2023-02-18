@@ -429,11 +429,11 @@ public class StaticVarsTests : CodeGenTestsBase
     {
         CompileRaw(
         source: @"
-                STRUCT ARGS
+                STRUCT ARGS_STRUCT
                     INT a = 1, b = 2, c = 3
                 ENDSTRUCT
 
-                SCRIPT test(ARGS args)
+                SCRIPT test(ARGS_STRUCT args)
                     INT i = args.a
                 ENDSCRIPT
             ",

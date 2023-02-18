@@ -58,7 +58,7 @@ public class Parser
             }
             else if (IsPossibleVarDeclaration())
             {
-                decls.Add(ParseVarDeclaration(VarKind.Static, allowMultipleDeclarations: true, allowInitializer: true, allowReferences: false));
+                decls.Add(ParseVarDeclaration(VarKind.Static, allowMultipleDeclarations: true, allowReferences: false));
                 if (!isInsideCommaSeparatedVarDeclaration)
                 {
                     ExpectEOS();
@@ -182,7 +182,7 @@ public class Parser
         var fields = new List<VarDeclaration>();
         while (Peek(0).Kind is not TokenKind.ENDSTRUCT)
         {
-            fields.Add(ParseVarDeclaration(VarKind.Field, allowMultipleDeclarations: true, allowInitializer: true, allowReferences: false));
+            fields.Add(ParseVarDeclaration(VarKind.Field, allowMultipleDeclarations: true, allowReferences: false));
 
             if (!isInsideCommaSeparatedVarDeclaration)
             {
@@ -208,7 +208,7 @@ public class Parser
         var vars = new List<VarDeclaration>();
         while (Peek(0).Kind is not TokenKind.ENDGLOBAL)
         {
-            vars.Add(ParseVarDeclaration(VarKind.Global, allowMultipleDeclarations: true, allowInitializer: true, allowReferences: false));
+            vars.Add(ParseVarDeclaration(VarKind.Global, allowMultipleDeclarations: true, allowReferences: false));
 
             if (!isInsideCommaSeparatedVarDeclaration)
             {
@@ -399,7 +399,7 @@ public class Parser
                 @params = new();
                 do
                 {
-                    @params.Add(ParseVarDeclaration(isScriptParameterList ? VarKind.ScriptParameter : VarKind.Parameter, allowMultipleDeclarations: false, allowInitializer: false, allowReferences: !isScriptParameterList));
+                    @params.Add(ParseVarDeclaration(isScriptParameterList ? VarKind.ScriptParameter : VarKind.Parameter, allowMultipleDeclarations: false, allowReferences: !isScriptParameterList));
                 } while (Accept(TokenKind.Comma, out _));
             }
         }
@@ -473,7 +473,7 @@ public class Parser
 
         if (IsPossibleVarDeclaration())
         {
-            stmt = ParseVarDeclaration(VarKind.Local, allowMultipleDeclarations: true, allowInitializer: true, allowReferences: false).WithLabel(label);
+            stmt = ParseVarDeclaration(VarKind.Local, allowMultipleDeclarations: true, allowReferences: false).WithLabel(label);
         }
         else if (IsPossibleExpression() &&
                  !IsPossibleLabel()) // in case of sequential labels, avoid parsing the second label identifier as an expression
@@ -957,7 +957,7 @@ public class Parser
     private bool IsPossibleVarDeclaration()
         => isInsideCommaSeparatedVarDeclaration ||
            Peek(0).Kind is TokenKind.Identifier && Peek(1).Kind is TokenKind.Identifier or TokenKind.Ampersand;
-    private VarDeclaration ParseVarDeclaration(VarKind varKind, bool allowMultipleDeclarations, bool allowInitializer, bool allowReferences)
+    private VarDeclaration ParseVarDeclaration(VarKind varKind, bool allowMultipleDeclarations, bool allowReferences)
     {
         Token typeIdent;
         IVarDeclarator decl;
@@ -977,11 +977,6 @@ public class Parser
         if (Accept(TokenKind.Equals, out var equalsToken))
         {
             initializerExpr = ParseExpression();
-
-            if (!allowInitializer)
-            {
-                VarInitializerNotAllowedError(equalsToken, initializerExpr);
-            }
         }
 
         if (allowMultipleDeclarations && Accept(TokenKind.Comma, out _))
@@ -1133,9 +1128,6 @@ public class Parser
 
     private void UsingAfterDeclarationError(UsingDirective @using)
         => Error(ErrorCode.ParserUsingAfterDeclaration, $"USING directives must precede all declarations", @using.Location);
-
-    private void VarInitializerNotAllowedError(Token equalsToken, IExpression initializer)
-        => Error(ErrorCode.ParserVarInitializerNotAllowed, $"Variable initializer is not allowed in this context", equalsToken.Location.Merge(initializer.Location));
 
     private void ReferenceNotAllowedError(Token ampersandToken)
         => Error(ErrorCode.ParserReferenceNotAllowed, $"References are not allowed in this context", ampersandToken.Location);

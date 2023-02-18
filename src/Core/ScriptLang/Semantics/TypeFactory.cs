@@ -117,7 +117,7 @@ internal sealed class TypeFactory
         private FunctionType MakeFunctionType(TypeName? returnType, ImmutableArray<VarDeclaration> parameters, SemanticsAnalyzer s)
         {
             var returnTy = returnType?.Accept(this, s) ?? VoidType.Instance;
-            var parametersTy = parameters.Select(p => new ParameterInfo(p.Accept(this, s), p.IsReference));
+            var parametersTy = parameters.Select(p => new ParameterInfo(p.Accept(this, s), p.IsReference, p.Initializer));
             return new FunctionType(returnTy, parametersTy.ToImmutableArray());
         }
 

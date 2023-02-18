@@ -236,11 +236,13 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
                 return ErrorType;
             }
 
-            // type-check arguments
+            // check number of arguments passed
             var parameters = funcType.Parameters;
+            var numRequiredParameters = parameters.TakeWhile(p => !p.IsOptional).Count();
             var args = node.Arguments;
-            CheckArgumentCount(parameters.Length, node, s);
+            CheckArgumentCount(parameters.Length, node, s, numRequiredParameters);
 
+            // type-check arguments
             var n = Math.Min(args.Length, parameters.Length);
             for (int i = 0; i < n; i++)
             {
@@ -254,14 +256,24 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
         return result.Type!;
     }
 
-    internal static void CheckArgumentCount(int parameterCount, InvocationExpression invocation, SemanticsAnalyzer s)
+    public static void CheckArgumentCount(int parameterCount, InvocationExpression node, SemanticsAnalyzer s, int requiredParameterCount = -1)
     {
-        var args = invocation.Arguments;
-        if (parameterCount != args.Length)
+        if (requiredParameterCount < 0)
         {
-            MismatchedArgumentCountError(s, parameterCount, invocation);
+            requiredParameterCount = parameterCount;
+        }
+
+        var args = node.Arguments;
+        if (args.Length > parameterCount)
+        {
+            TooManyArgumentsError(s, node, parameterCount);
+        }
+        else if (args.Length < requiredParameterCount)
+        {
+            MissingRequiredParameterError(s, node, parameterIndex: args.Length);
         }
     }
+
     internal static void TypeCheckArgumentAgainstParameter(int argIndex, IExpression arg, ParameterInfo param, SemanticsAnalyzer s)
     {
         var paramType = param.Type;
@@ -423,8 +435,10 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
 
     internal static void TypeNotCallableError(SemanticsAnalyzer s, IExpression expr, TypeInfo type)
         => Error(s, ErrorCode.SemanticTypeNotCallable, $"Type '{type.ToPrettyString()}' is not callable", expr.Location);
-    internal static void MismatchedArgumentCountError(SemanticsAnalyzer s, int paramCount, InvocationExpression expr)
-        => Error(s, ErrorCode.SemanticMismatchedArgumentCount, $"Expected {paramCount} arguments, found {expr.Arguments.Length}", expr.OpenParen.Location.Merge(expr.CloseParen.Location));
+    internal static void MissingRequiredParameterError(SemanticsAnalyzer s, InvocationExpression expr, int parameterIndex)
+        => Error(s, ErrorCode.SemanticMissingRequiredParameter, $"Missing argument for required parameter {parameterIndex + 1}", expr.Callee.Location);
+    internal static void TooManyArgumentsError(SemanticsAnalyzer s, InvocationExpression expr, int parameterCount)
+        => Error(s, ErrorCode.SemanticTooManyArguments, $"Expected {parameterCount} arguments, but found {expr.Arguments.Length}", expr.Arguments[parameterCount].Location.Merge(expr.Arguments.Last().Location));
     internal static void ArgCannotPassTypeError(SemanticsAnalyzer s, int argIndex, IExpression arg, TypeInfo argType, TypeInfo paramType)
         => Error(s, ErrorCode.SemanticArgCannotPassType, $"Argument {argIndex + 1}: cannot pass '{argType.ToPrettyString()}' to parameter type '{paramType.ToPrettyString()}'", arg.Location);
     internal static void ArgCannotPassRefTypeError(SemanticsAnalyzer s, int argIndex, IExpression arg, TypeInfo argType, TypeInfo paramType)

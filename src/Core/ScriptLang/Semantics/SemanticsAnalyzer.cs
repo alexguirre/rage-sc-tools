@@ -30,6 +30,7 @@ public sealed class SemanticsAnalyzer : AstVisitor
     private EnumMemberDeclaration? previousEnumMember = null;
     private StructDeclaration? currentStructDeclaration = null;
     private TypeInfo? currentFunctionReturnType = null;
+    private bool currentFunctionHasOptionalParameter = false;
     private SwitchStatement? currentSwitchStmt = null;
     private bool currentSwitchHasDefaultCase = false;
     private readonly HashSet<int> currentSwitchHandledCases = new();
@@ -164,11 +165,13 @@ public sealed class SemanticsAnalyzer : AstVisitor
         AddSymbol(node);
 
         currentFunctionReturnType = VoidType.Instance;
+        currentFunctionHasOptionalParameter = false;
         EnterFunctionScope();
         node.Parameters.ForEach(p => p.Accept(this));
         VisitBody(node.Body);
         ExitFunctionScope();
         currentFunctionReturnType = null;
+        currentFunctionHasOptionalParameter = false;
     }
 
     public override void Visit(FunctionDeclaration node)
@@ -176,11 +179,13 @@ public sealed class SemanticsAnalyzer : AstVisitor
         AddSymbol(node);
 
         currentFunctionReturnType = ((FunctionType)node.Semantics.ValueType!).Return;
+        currentFunctionHasOptionalParameter = false;
         EnterFunctionScope();
         node.Parameters.ForEach(p => p.Accept(this));
         VisitBody(node.Body);
         ExitFunctionScope();
         currentFunctionReturnType = null;
+        currentFunctionHasOptionalParameter = false;
     }
 
     public override void Visit(FunctionTypeDefDeclaration node)
@@ -236,7 +241,7 @@ public sealed class SemanticsAnalyzer : AstVisitor
         switch (node.Kind)
         {
             case VarKind.Constant:
-                if (!varType.IsError && varType is not (IntType or FloatType or BoolType or StringType or VectorType or EnumType))
+                if (!varType.IsError && varType is not (IntType or FloatType))
                 {
                     TypeNotAllowedInConstantError(node, varType);
                 }
@@ -260,8 +265,24 @@ public sealed class SemanticsAnalyzer : AstVisitor
             case VarKind.Local:
                 CheckRuntimeInitializer(this, node);
                 break;
-            case VarKind.Parameter or VarKind.ScriptParameter:
-                // parameters are not allowed initializers (error in parser phase), don't need to check the initializer
+            case VarKind.Parameter:
+                CheckConstantInitializer(this, node);
+                
+                if (currentFunctionHasOptionalParameter && node.Initializer is null)
+                {
+                    RequiredParameterAfterOptionalParameterError(node);
+                }
+                else if (node.Initializer is not null)
+                {
+                    currentFunctionHasOptionalParameter = true;
+                }
+                
+                break;
+            case VarKind.ScriptParameter:
+                if (node.Initializer is not null)
+                {
+                    // TODO: disallow optional script parameters
+                }
                 // TODO: check if script parameter types are safe to use?
                 break;
             default:
@@ -802,5 +823,7 @@ public sealed class SemanticsAnalyzer : AstVisitor
         => Error(ErrorCode.SemanticUsingNotFound, $"File '{usingDirective.Path.Escape()}' not found in USING directive", usingDirective.PathToken.Location);
     internal void ExpectedNativeTypeError(TypeName typeName)
         => Error(ErrorCode.SemanticExpectedNativeType, $"Expected a NATIVE type, but found '{typeName.Name}'", typeName.Location);
+    internal void RequiredParameterAfterOptionalParameterError(VarDeclaration parameter)
+        => Error(ErrorCode.SemanticRequiredParameterAfterOptionalParameter, $"Optional parameters must appear after all required parameters", parameter.Location);
     #endregion Errors
 }
