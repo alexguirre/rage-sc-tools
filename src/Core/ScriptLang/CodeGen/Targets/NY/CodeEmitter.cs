@@ -758,6 +758,8 @@ public sealed partial class CodeEmitter : ICodeEmitter
     public void EmitCastFloatToInt() => instEmitter.EmitF2I();
     public void EmitCastFloatToVector() => instEmitter.EmitF2V();
 
+    public void EmitStringHash() => throw new NotImplementedException($"{nameof(EmitStringHash)} is not supported"); // TODO: call GET_HASH_KEY for NY's EmitStringHash?
+
     public void EmitCatch() => instEmitter.EmitCatch();
     public void EmitThrow() => instEmitter.EmitThrow();
 

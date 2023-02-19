@@ -353,4 +353,49 @@ public class IntrinsicsTests : CodeGenTestsBase
                 LEAVE 0, 0
             ");
     }
+
+    [Fact]
+    public void HashWithStringLiteralIsCalculatedAtCompileTime()
+    {
+        CompileScript(
+        scriptSource: @"
+                INT v = HASH('Test')
+            ",
+        expectedAssembly: $@"
+                ENTER 0, 3
+
+                {IntToPushInst(unchecked((int)"Test".ToLowercaseHash()))}
+                LOCAL_U8_STORE 2
+
+                LEAVE 0, 0
+            ");
+    }
+
+    [Fact]
+    public void HashWithRuntimeString()
+    {
+        CompileScript(
+        scriptSource: @"
+                INT v = HASH(TEST())
+            ",
+        declarationsSource: @"
+                FUNC STRING TEST()
+                    RETURN NULL
+                ENDFUNC
+            ",
+        expectedAssembly: $@"
+                ENTER 0, 3
+
+                CALL TEST
+                STRINGHASH
+                LOCAL_U8_STORE 2
+
+                LEAVE 0, 0
+
+            TEST:
+                ENTER 0, 2
+                PUSH_CONST_0
+                LEAVE 0, 1
+            ");
+    }
 }

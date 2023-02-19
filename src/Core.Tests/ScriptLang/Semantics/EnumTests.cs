@@ -235,22 +235,4 @@ public class EnumTests : SemanticsTestsBase
         AssertEnum(s, "B", enumTy, 1);
         AssertEnum(s, "C", enumTy, 2);
     }
-
-    private static void AssertEnum(SemanticsAnalyzer s, string memberName, EnumType expectedEnumType, int expectedValue)
-    {
-        True(s.GetSymbolUnchecked(memberName, out var member));
-        AssertEnumMember(member!, expectedEnumType, expectedValue);
-    }
-
-    private static void AssertEnumMember(ISymbol symbol, EnumType expectedType, int expectedValue)
-    {
-        True(symbol is EnumMemberDeclaration);
-        if (symbol is EnumMemberDeclaration enumMemberA)
-        {
-            Equal(expectedType, enumMemberA.Semantics.ValueType);
-            NotNull(enumMemberA.Semantics.ConstantValue);
-            Equal(IntType.Instance, enumMemberA.Semantics.ConstantValue!.Type);
-            Equal(expectedValue, enumMemberA.Semantics.ConstantValue!.IntValue);
-        }
-    }
 }

@@ -61,6 +61,9 @@ public static partial class Intrinsics
     public static IIntrinsic NATIVE_TO_INT { get; } = new IntrinsicNATIVE_TO_INT();
     public static IIntrinsic INT_TO_NATIVE { get; } = new IntrinsicINT_TO_NATIVE();
 
+    // Compile-time hashing
+    public static IIntrinsic HASH { get; } = new IntrinsicHASH();
+
     // Exception Handling
     public static IIntrinsic CATCH { get; } = new IntrinsicCATCH();
     public static IIntrinsic THROW { get; } = new IntrinsicTHROW();
@@ -73,6 +76,7 @@ public static partial class Intrinsics
         TEXT_LABEL_ASSIGN_STRING, TEXT_LABEL_ASSIGN_INT, TEXT_LABEL_APPEND_STRING, TEXT_LABEL_APPEND_INT,
         IS_BIT_SET,
         NATIVE_TO_INT, INT_TO_NATIVE,
+        HASH,
         CATCH, THROW);
 
     private static void IntrinsicUsagePrecondition(IIntrinsic intrinsic, InvocationExpression node, [CallerArgumentExpression("node")] string? paramName = null)

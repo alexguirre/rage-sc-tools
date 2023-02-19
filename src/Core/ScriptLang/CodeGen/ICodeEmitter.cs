@@ -63,6 +63,9 @@ public interface ICodeEmitter
     void EmitCastFloatToInt();
     void EmitCastFloatToVector();
 
+    // Calculate hash from string at the top of the stack
+    void EmitStringHash();
+
     // Exception handling
     void EmitCatch();
     void EmitThrow();

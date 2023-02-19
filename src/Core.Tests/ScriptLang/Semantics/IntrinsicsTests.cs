@@ -148,4 +148,34 @@ public class IntrinsicsTests : SemanticsTestsBase
         True(s.Diagnostics.HasErrors);
         CheckError(ErrorCode.SemanticArgNotANativeTypeValue, (4, 41), (4, 41), s.Diagnostics);
     }
+
+    [Fact]
+    public void Hash()
+    {
+        var s = Analyze(@$"
+            SCRIPT test_script
+                INT foo = HASH('Test')
+            ENDSCRIPT
+        ");
+
+        False(s.Diagnostics.HasErrors);
+    }
+
+    [Fact]
+    public void HashWorksInEnums()
+    {
+        var s = Analyze(@$"
+            ENUM MY_ENUM
+                MY_A = HASH('A'),
+                MY_B = HASH('B'),
+                MY_C = HASH('C')
+            ENDENUM
+        ");
+        False(s.Diagnostics.HasErrors);
+        True(s.GetTypeSymbolUnchecked("MY_ENUM", out var ty));
+        var enumTy = (EnumType)ty!;
+        AssertEnum(s, "MY_A", enumTy, unchecked((int)"A".ToLowercaseHash()));
+        AssertEnum(s, "MY_B", enumTy, unchecked((int)"B".ToLowercaseHash()));
+        AssertEnum(s, "MY_C", enumTy, unchecked((int)"C".ToLowercaseHash()));
+    }
 }
