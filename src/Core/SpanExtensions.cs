@@ -42,7 +42,7 @@ internal static class SpanExtensions
     public static uint ToHash(this ReadOnlyMemory<char> str) => str.Span.ToHash();
     public static uint ToHash(this string str) => str.AsSpan().ToHash();
 
-    private static bool NeedsEscaping(char c) => c is '\n' or '\r' or '\t' or '\0' or '\\' or '\"' or '\'' or '`';
+    private static bool NeedsEscaping(char c) => c is '\n' or '\r' or '\t' or '\0' or '\\' or '\"' or '\'';
     private static string EscapeSequence(char c) => c switch
     {
         '\n' => "\\n",
@@ -52,11 +52,10 @@ internal static class SpanExtensions
         '\\' => "\\\\",
         '\"' => "\\\"",
         '\'' => "\\\'",
-        '`' => "\\`",
         _ => throw new ArgumentException($"Char '{c}' does not need escaping", nameof(c)),
     };
 
-    private static bool NeedsUnescaping(ReadOnlySpan<char> s) => s.Length >= 2 && s[0] == '\\' && (s[1] is 'n' or 'r' or 't' or '0' or '\\' or '\"' or '\'' or '`');
+    private static bool NeedsUnescaping(ReadOnlySpan<char> s) => s.Length >= 2 && s[0] == '\\' && (s[1] is 'n' or 'r' or 't' or '0' or '\\' or '\"' or '\'');
     private static char UnescapeSequence(ReadOnlySpan<char> s) => s switch
     {
         _ when s[1] == 'n' => '\n',
@@ -66,7 +65,6 @@ internal static class SpanExtensions
         _ when s[1] == '\\' => '\\',
         _ when s[1] == '\"' => '\"',
         _ when s[1] == '\'' => '\'',
-        _ when s[1] == '`' => '`',
         _ => throw new ArgumentException("Not a valid escape sequence", nameof(s)),
     };
 

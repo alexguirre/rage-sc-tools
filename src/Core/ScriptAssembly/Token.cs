@@ -22,7 +22,7 @@ public enum TokenKind
 
     // Literals
     String,     // "...", '...'
-    Integer,    // decimal or hexadecimal prefixed by 0x, or hash strings `...`
+    Integer,    // decimal or hexadecimal prefixed by 0x
     Float,
 
     /// <summary>
@@ -106,30 +106,12 @@ public readonly record struct Token : IToken<Token, TokenKind>
     public int GetIntLiteral()
     {
         Debug.Assert(Kind is TokenKind.Integer);
-        if (Lexeme.Length >= 2)
-        {
-            var lexemeSpan = Lexeme.Span;
-            if (lexemeSpan[0] == '`' && lexemeSpan[^1] == '`')
-            {
-                return unchecked((int)lexemeSpan[1..^1].Unescape().ToLowercaseHash());
-            }
-        }
-
         return Lexeme.ParseAsInt();
     }
 
     public long GetInt64Literal()
     {
         Debug.Assert(Kind is TokenKind.Integer);
-        if (Lexeme.Length >= 2)
-        {
-            var lexemeSpan = Lexeme.Span;
-            if (lexemeSpan[0] == '`' && lexemeSpan[^1] == '`')
-            {
-                return lexemeSpan[1..^1].Unescape().ToLowercaseHash();
-            }
-        }
-
         return Lexeme.ParseAsInt64();
     }
 

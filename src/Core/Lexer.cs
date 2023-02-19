@@ -174,7 +174,6 @@ public abstract class LexerBase<TToken, TTokenKind, TErrorCode> : ILexer<TToken,
                 ':' => NewToken(commonTokens.Colon),
                 '#' => NewToken(commonTokens.Hash),
                 '"' or '\'' => LexString(),
-                '`' => LexHashString(),
                 '\n' => LexEOS(),
                 // NOTE: by default +/- are included in number tokens
                 '-' or '+' when IsDecimalDigit(Peek()) => LexNumberWithSign(),
@@ -199,15 +198,6 @@ public abstract class LexerBase<TToken, TTokenKind, TErrorCode> : ILexer<TToken,
             return LexStringLikeToken(commonTokens.String, quote);
         }
 
-        /// <summary>
-        /// Lexes hashed strings.
-        /// </summary>
-        private TToken LexHashString()
-        {
-            Debug.Assert(Peek(-1) is '`');
-            return LexStringLikeToken(commonTokens.Integer, '`');
-        }
-
         private TToken LexStringLikeToken(TTokenKind kind, char delimiter)
         {
             while (true)
@@ -221,7 +211,7 @@ public abstract class LexerBase<TToken, TTokenKind, TErrorCode> : ILexer<TToken,
                 if (curr == '\\') // handle escape sequences
                 {
                     var next = Peek(1);
-                    var isValidEscapeSequence = next is 'n' or 'r' or 't' or '0' or '\\' or '"' or '\'' or '`';
+                    var isValidEscapeSequence = next is 'n' or 'r' or 't' or '0' or '\\' or '"' or '\'';
                     if (isValidEscapeSequence)
                     {
                         Next();

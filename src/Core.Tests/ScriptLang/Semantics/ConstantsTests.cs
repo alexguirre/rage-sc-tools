@@ -8,7 +8,7 @@ public class ConstantsTests : SemanticsTestsBase
     [Theory]
     [InlineData("1", 1)]
     [InlineData("NULL", 0)]
-    [InlineData("`foo` - 1", 0x238678DD - 1)]
+    [InlineData("HASH('foo') - 1", 0x238678DD - 1)]
     [InlineData("(1 + 2 * 3) & 0xFE", (1 + 2 * 3) & 0xFE)]
     [InlineData("123 ^ 456", 123 ^ 456)]
     [InlineData("123 | 456", 123 | 456)]

@@ -28,7 +28,7 @@ public class StaticsTests : SemanticsTestsBase
     [Theory]
     [InlineData("1")]
     [InlineData("NULL")]
-    [InlineData("`foo` - 1")]
+    [InlineData("HASH('foo') - 1")]
     [InlineData("(1 + 2 * 3) & 0xFE")]
     public void IntInitializerExpressionIsEvaluated(string initializerExpr)
     {

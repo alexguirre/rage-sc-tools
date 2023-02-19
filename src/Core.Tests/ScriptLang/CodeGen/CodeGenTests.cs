@@ -2118,9 +2118,9 @@
                         BREAK
                     CASE 2
                         BREAK
-                    CASE `hello`
+                    CASE HASH('hello')
                         BREAK
-                    CASE `world`
+                    CASE HASH('world')
                         BREAK
                     DEFAULT
                         BREAK

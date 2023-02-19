@@ -124,37 +124,17 @@
         }
 
         [Fact]
-        public void HashStrings()
-        {
-            var (tokens, diag) = Lex("`hello``world`  `te\\nst`");
-
-            False(diag.HasErrors);
-            False(diag.HasWarnings);
-
-            Equal(4, tokens.Length);
-
-            TokenEqual(TokenKind.Integer, "`hello`", (1, 1), (1, 7), tokens[0]);
-            TokenEqual(TokenKind.Integer, "`world`", (1, 8), (1, 14), tokens[1]);
-            TokenEqual(TokenKind.Integer, "`te\\nst`", (1, 17), (1, 24), tokens[2]);
-            Equal(unchecked((int)"hello".ToLowercaseHash()), tokens[0].GetIntLiteral());
-            Equal(unchecked((int)"world".ToLowercaseHash()), tokens[1].GetIntLiteral());
-            Equal(unchecked((int)"te\nst".ToLowercaseHash()), tokens[2].GetIntLiteral());
-            TokenIsEOF(tokens.Last());
-        }
-
-        [Fact]
         public void StringWithEscapeSequences()
         {
-            var (tokens, diag) = Lex(@"'foo\'""`ba\nr' ""foo'\""`ba\tr"" `foo'""\`ba\rr`");
+            var (tokens, diag) = Lex(@"'foo\'""`ba\nr' ""foo'\""`ba\tr""");
 
             False(diag.HasErrors);
             False(diag.HasWarnings);
 
-            Equal(4, tokens.Length);
+            Equal(3, tokens.Length);
 
             TokenEqual(TokenKind.String, @"'foo\'""`ba\nr'", (1, 1), (1, 14), tokens[0]);
             TokenEqual(TokenKind.String, @"""foo'\""`ba\tr""", (1, 16), (1, 29), tokens[1]);
-            TokenEqual(TokenKind.Integer, @"`foo'""\`ba\rr`", (1, 31), (1, 44), tokens[2]);
             TokenIsEOF(tokens.Last());
         }
 
