@@ -22,7 +22,7 @@ internal static class ConstantExpressionEvaluator
 
     private sealed class Evaluator : AstVisitor<ConstantValue, SemanticsAnalyzer>
     {
-        public static readonly Evaluator Instance = new Evaluator();
+        public static readonly Evaluator Instance = new();
 
         public override ConstantValue Visit(NullExpression node, SemanticsAnalyzer param)
             => ConstantValue.Null;

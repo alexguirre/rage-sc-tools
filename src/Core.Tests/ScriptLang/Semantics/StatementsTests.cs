@@ -783,7 +783,7 @@ public class StatementsTests : SemanticsTestsBase
     [Fact]
     public void SwitchCaseWithDifferentEnumTypeIsNotAllowed()
     {
-        var (s, ast) = AnalyzeAndAst(
+        var (s, _) = AnalyzeAndAst(
             @"ENUM BAR
                 BAR_A
               ENDENUM
@@ -809,7 +809,7 @@ public class StatementsTests : SemanticsTestsBase
     [Fact]
     public void SwitchCaseWithIntWhenSwitchingOnEnumTypeIsNotAllowed()
     {
-        var (s, ast) = AnalyzeAndAst(
+        var (s, _) = AnalyzeAndAst(
             @"ENUM BAR
                 BAR_A
               ENDENUM

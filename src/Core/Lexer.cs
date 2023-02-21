@@ -471,7 +471,7 @@ public abstract class LexerBase<TToken, TTokenKind, TErrorCode> : ILexer<TToken,
                     // starting new line
                     endLine++;
                     endColumn = 1;
-                    if (dropTokenOnNewLine) Drop(); // start a new token
+                    if (dropTokenOnNewLine) { Drop(); } // start a new token
                 }
 
                 // continuing current line

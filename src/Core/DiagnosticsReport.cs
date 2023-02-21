@@ -26,7 +26,7 @@ public sealed class Diagnostic
 
 public sealed class DiagnosticsReport
 {
-    private readonly List<Diagnostic> diagnostics = new List<Diagnostic>();
+    private readonly List<Diagnostic> diagnostics = new();
 
     public bool HasErrors => diagnostics.Any(d => d.Tag is DiagnosticTag.Error);
     public bool HasWarnings => diagnostics.Any(d => d.Tag is DiagnosticTag.Warning);

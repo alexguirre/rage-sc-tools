@@ -131,8 +131,7 @@ public class Parser
         => Peek(0).Kind is TokenKind.ENUM or TokenKind.STRICT_ENUM or TokenKind.HASH_ENUM;
     public EnumDeclaration ParseEnumDeclaration()
     {
-        Token enumKeyword;
-        if (!ExpectEither(TokenKind.ENUM, TokenKind.STRICT_ENUM, TokenKind.HASH_ENUM, out enumKeyword))
+        if (!ExpectEither(TokenKind.ENUM, TokenKind.STRICT_ENUM, TokenKind.HASH_ENUM, out var enumKeyword))
         {
             enumKeyword = Missing(TokenKind.ENUM);
         }
@@ -256,8 +255,7 @@ public class Parser
             debugonlyKeyword = debugonlyKeywordTmp;
         }
         
-        Token procOrFuncKeyword;
-        if (!ExpectEither(TokenKind.FUNC, TokenKind.PROC, out procOrFuncKeyword))
+        if (!ExpectEither(TokenKind.FUNC, TokenKind.PROC, out var procOrFuncKeyword))
         {
             procOrFuncKeyword = Missing(TokenKind.PROC);
         }
@@ -302,9 +300,8 @@ public class Parser
     public FunctionTypeDefDeclaration ParseFunctionTypeDefDeclaration()
     {
         ExpectOrMissing(TokenKind.TYPEDEF, out var typedefKeyword);
-        
-        Token procOrFuncKeyword;
-        if (!ExpectEither(TokenKind.FUNC, TokenKind.PROC, out procOrFuncKeyword))
+
+        if (!ExpectEither(TokenKind.FUNC, TokenKind.PROC, out var procOrFuncKeyword))
         {
             procOrFuncKeyword = Missing(TokenKind.PROC);
         }
@@ -341,8 +338,7 @@ public class Parser
             debugonlyKeyword = debugonlyKeywordTmp;
         }
 
-        Token procOrFuncKeyword;
-        if (!ExpectEither(TokenKind.FUNC, TokenKind.PROC, out procOrFuncKeyword))
+        if (!ExpectEither(TokenKind.FUNC, TokenKind.PROC, out var procOrFuncKeyword))
         {
             procOrFuncKeyword = Missing(TokenKind.PROC);
         }
@@ -937,8 +933,7 @@ public class Parser
 
     private VarDeclaration ParseConstantDeclaration()
     {
-        Token constKeyword;
-        if (!ExpectEither(TokenKind.CONST_INT, TokenKind.CONST_FLOAT, out constKeyword))
+        if (!ExpectEither(TokenKind.CONST_INT, TokenKind.CONST_FLOAT, out var constKeyword))
         {
             constKeyword = Missing(TokenKind.CONST_INT);
         }

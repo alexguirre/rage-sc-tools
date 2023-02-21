@@ -40,7 +40,7 @@ public readonly struct SourceLocation : IEquatable<SourceLocation>, IComparable<
     public override int GetHashCode() => (Line, Column).GetHashCode();
     public override bool Equals(object? obj) => obj is SourceLocation l && Equals(l);
 
-    public static implicit operator SourceLocation((int Line, int Column, string FilePath) location) => new SourceLocation(location.Line, location.Column, location.FilePath);
+    public static implicit operator SourceLocation((int Line, int Column, string FilePath) location) => new(location.Line, location.Column, location.FilePath);
 
     public static bool operator <(SourceLocation left, SourceLocation right) => left.CompareTo(right) < 0;
     public static bool operator <=(SourceLocation left, SourceLocation right) => left.CompareTo(right) <= 0;
