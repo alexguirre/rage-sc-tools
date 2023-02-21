@@ -160,6 +160,7 @@ public class OperationsTests : CodeGenTestsBase
     [Fact]
     public void BoolEquality()
     {
+        const int b1 = 2, b2 = 3, b = 4; // var stack positions in assembly
         CompileScript(
         scriptSource: @"
             BOOL b1 = TRUE, b2 = FALSE
@@ -167,29 +168,26 @@ public class OperationsTests : CodeGenTestsBase
             b = b1 == b2
             b = b1 <> b2
         ",
-        expectedAssembly: @"
-        #define b1 2
-        #define b2 3
-        #define b 4
+        expectedAssembly: $@"
             ENTER 0, 5
             ; b1 = TRUE
             PUSH_CONST_1
-            LOCAL_U8_STORE b1
+            LOCAL_U8_STORE {b1}
             ; b2 = FALSE
             PUSH_CONST_0
-            LOCAL_U8_STORE b2
+            LOCAL_U8_STORE {b2}
 
             ; b = b1 == b2
-            LOCAL_U8_LOAD b1
-            LOCAL_U8_LOAD b2
+            LOCAL_U8_LOAD {b1}
+            LOCAL_U8_LOAD {b2}
             IEQ
-            LOCAL_U8_STORE b
+            LOCAL_U8_STORE {b}
 
             ; b = b1 <> b2
-            LOCAL_U8_LOAD b1
-            LOCAL_U8_LOAD b2
+            LOCAL_U8_LOAD {b1}
+            LOCAL_U8_LOAD {b2}
             INE
-            LOCAL_U8_STORE b
+            LOCAL_U8_STORE {b}
 
             LEAVE 0, 0
         ");
@@ -198,6 +196,7 @@ public class OperationsTests : CodeGenTestsBase
     [Fact]
     public void IntOperations()
     {
+        const int n1 = 2, n2 = 3, n3 = 4; // var stack positions in assembly
         CompileScript(
         scriptSource: @"
             INT n1 = 1, n2 = 2, n3
@@ -210,64 +209,61 @@ public class OperationsTests : CodeGenTestsBase
             n3 = n1 | n2
             n3 = -n1
         ",
-        expectedAssembly: @"
-        #define n1 2
-        #define n2 3
-        #define n3 4
+        expectedAssembly: $@"
             ENTER 0, 5
             ; n1 = 1
             PUSH_CONST_1
-            LOCAL_U8_STORE n1
+            LOCAL_U8_STORE {n1}
             ; n1 = 2
             PUSH_CONST_2
-            LOCAL_U8_STORE n2
+            LOCAL_U8_STORE {n2}
 
             ; n3 = n1 + n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             IADD
-            LOCAL_U8_STORE n3
+            LOCAL_U8_STORE {n3}
 
             ; n3 = n1 - n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             ISUB
-            LOCAL_U8_STORE n3
+            LOCAL_U8_STORE {n3}
 
             ; n3 = n1 * n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             IMUL
-            LOCAL_U8_STORE n3
+            LOCAL_U8_STORE {n3}
 
             ; n3 = n1 / n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             IDIV
-            LOCAL_U8_STORE n3
+            LOCAL_U8_STORE {n3}
 
             ; n3 = n1 & n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             IAND
-            LOCAL_U8_STORE n3
+            LOCAL_U8_STORE {n3}
 
             ; n3 = n1 ^ n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             IXOR
-            LOCAL_U8_STORE n3
+            LOCAL_U8_STORE {n3}
 
             ; n3 = n1 | n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             IOR
-            LOCAL_U8_STORE n3
+            LOCAL_U8_STORE {n3}
 
             ; n3 = -n1
-            LOCAL_U8_LOAD n1
+            LOCAL_U8_LOAD {n1}
             INEG
-            LOCAL_U8_STORE n3
+            LOCAL_U8_STORE {n3}
 
             LEAVE 0, 0
         ");
@@ -276,6 +272,7 @@ public class OperationsTests : CodeGenTestsBase
     [Fact]
     public void IntCompoundAssignments()
     {
+        const int n1 = 2, n2 = 3; // var stack positions in assembly
         CompileScript(
         scriptSource: @"
             INT n1 = 1, n2 = 2
@@ -287,58 +284,56 @@ public class OperationsTests : CodeGenTestsBase
             n1 ^= n2
             n1 |= n2
         ",
-        expectedAssembly: @"
-        #define n1 2
-        #define n2 3
+        expectedAssembly: $@"
             ENTER 0, 4
             ; n1 = 1
             PUSH_CONST_1
-            LOCAL_U8_STORE n1
+            LOCAL_U8_STORE {n1}
             ; n1 = 2
             PUSH_CONST_2
-            LOCAL_U8_STORE n2
+            LOCAL_U8_STORE {n2}
 
             ; n1 += n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             IADD
-            LOCAL_U8_STORE n1
+            LOCAL_U8_STORE {n1}
 
             ; n1 -= n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             ISUB
-            LOCAL_U8_STORE n1
+            LOCAL_U8_STORE {n1}
 
             ; n1 *= n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             IMUL
-            LOCAL_U8_STORE n1
+            LOCAL_U8_STORE {n1}
 
             ; n1 /= n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             IDIV
-            LOCAL_U8_STORE n1
+            LOCAL_U8_STORE {n1}
 
             ; n1 &= n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             IAND
-            LOCAL_U8_STORE n1
+            LOCAL_U8_STORE {n1}
 
             ; n1 ^= n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             IXOR
-            LOCAL_U8_STORE n1
+            LOCAL_U8_STORE {n1}
 
             ; n1 |= n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             IOR
-            LOCAL_U8_STORE n1
+            LOCAL_U8_STORE {n1}
 
             LEAVE 0, 0
         ");
@@ -347,6 +342,7 @@ public class OperationsTests : CodeGenTestsBase
     [Fact]
     public void IntEqualityAndComparison()
     {
+        const int n1 = 2, n2 = 3, b = 4; // var stack positions in assembly
         CompileScript(
         scriptSource: @"
             INT n1 = 1, n2 = 2
@@ -358,53 +354,50 @@ public class OperationsTests : CodeGenTestsBase
             b = n1 < n2
             b = n1 <= n2
         ",
-        expectedAssembly: @"
-        #define n1 2
-        #define n2 3
-        #define b 4
+        expectedAssembly: $@"
             ENTER 0, 5
             ; n1 = 1
             PUSH_CONST_1
-            LOCAL_U8_STORE n1
+            LOCAL_U8_STORE {n1}
             ; n1 = 2
             PUSH_CONST_2
-            LOCAL_U8_STORE n2
+            LOCAL_U8_STORE {n2}
 
             ; b = n1 == n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             IEQ
-            LOCAL_U8_STORE b
+            LOCAL_U8_STORE {b}
 
             ; b = n1 <> n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             INE
-            LOCAL_U8_STORE b
+            LOCAL_U8_STORE {b}
 
             ; b = n1 > n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             IGT
-            LOCAL_U8_STORE b
+            LOCAL_U8_STORE {b}
 
             ; b = n1 >= n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             IGE
-            LOCAL_U8_STORE b
+            LOCAL_U8_STORE {b}
 
             ; b = n1 < n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             ILT
-            LOCAL_U8_STORE b
+            LOCAL_U8_STORE {b}
 
             ; b = n1 <= n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             ILE
-            LOCAL_U8_STORE b
+            LOCAL_U8_STORE {b}
 
             LEAVE 0, 0
         ");
@@ -413,6 +406,7 @@ public class OperationsTests : CodeGenTestsBase
     [Fact]
     public void FloatOperations()
     {
+        const int n1 = 2, n2 = 3, n3 = 4; // var stack positions in assembly
         CompileScript(
         scriptSource: @"
             FLOAT n1 = 1.0, n2 = 2.0, n3
@@ -422,46 +416,43 @@ public class OperationsTests : CodeGenTestsBase
             n3 = n1 / n2
             n3 = -n1
         ",
-        expectedAssembly: @"
-        #define n1 2
-        #define n2 3
-        #define n3 4
+        expectedAssembly: $@"
             ENTER 0, 5
             ; n1 = 1
             PUSH_CONST_F1
-            LOCAL_U8_STORE n1
+            LOCAL_U8_STORE {n1}
             ; n1 = 2
             PUSH_CONST_F2
-            LOCAL_U8_STORE n2
+            LOCAL_U8_STORE {n2}
 
             ; n3 = n1 + n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             FADD
-            LOCAL_U8_STORE n3
+            LOCAL_U8_STORE {n3}
 
             ; n3 = n1 - n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             FSUB
-            LOCAL_U8_STORE n3
+            LOCAL_U8_STORE {n3}
 
             ; n3 = n1 * n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             FMUL
-            LOCAL_U8_STORE n3
+            LOCAL_U8_STORE {n3}
 
             ; n3 = n1 / n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             FDIV
-            LOCAL_U8_STORE n3
+            LOCAL_U8_STORE {n3}
 
             ; n3 = -n1
-            LOCAL_U8_LOAD n1
+            LOCAL_U8_LOAD {n1}
             FNEG
-            LOCAL_U8_STORE n3
+            LOCAL_U8_STORE {n3}
 
             LEAVE 0, 0
         ");
@@ -470,6 +461,7 @@ public class OperationsTests : CodeGenTestsBase
     [Fact]
     public void FloatCompoundAssignments()
     {
+        const int n1 = 2, n2 = 3; // var stack positions in assembly
         CompileScript(
         scriptSource: @"
             FLOAT n1 = 1.0, n2 = 2.0
@@ -478,40 +470,38 @@ public class OperationsTests : CodeGenTestsBase
             n1 *= n2
             n1 /= n2
         ",
-        expectedAssembly: @"
-        #define n1 2
-        #define n2 3
+        expectedAssembly: $@"
             ENTER 0, 4
             ; n1 = 1
             PUSH_CONST_F1
-            LOCAL_U8_STORE n1
+            LOCAL_U8_STORE {n1}
             ; n1 = 2
             PUSH_CONST_F2
-            LOCAL_U8_STORE n2
+            LOCAL_U8_STORE {n2}
 
             ; n1 += n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             FADD
-            LOCAL_U8_STORE n1
+            LOCAL_U8_STORE {n1}
 
             ; n1 -= n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             FSUB
-            LOCAL_U8_STORE n1
+            LOCAL_U8_STORE {n1}
 
             ; n1 *= n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             FMUL
-            LOCAL_U8_STORE n1
+            LOCAL_U8_STORE {n1}
 
             ; n1 /= n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             FDIV
-            LOCAL_U8_STORE n1
+            LOCAL_U8_STORE {n1}
 
             LEAVE 0, 0
         ");
@@ -520,6 +510,7 @@ public class OperationsTests : CodeGenTestsBase
     [Fact]
     public void FloatEqualityAndComparison()
     {
+        const int n1 = 2, n2 = 3, b = 4; // var stack positions in assembly
         CompileScript(
         scriptSource: @"
             FLOAT n1 = 1.0, n2 = 2.0
@@ -531,53 +522,50 @@ public class OperationsTests : CodeGenTestsBase
             b = n1 < n2
             b = n1 <= n2
         ",
-        expectedAssembly: @"
-        #define n1 2
-        #define n2 3
-        #define b 4
+        expectedAssembly: $@"
             ENTER 0, 5
             ; n1 = 1
             PUSH_CONST_F1
-            LOCAL_U8_STORE n1
+            LOCAL_U8_STORE {n1}
             ; n1 = 2
             PUSH_CONST_F2
-            LOCAL_U8_STORE n2
+            LOCAL_U8_STORE {n2}
 
             ; b = n1 == n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             FEQ
-            LOCAL_U8_STORE b
+            LOCAL_U8_STORE {b}
 
             ; b = n1 <> n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             FNE
-            LOCAL_U8_STORE b
+            LOCAL_U8_STORE {b}
 
             ; b = n1 > n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             FGT
-            LOCAL_U8_STORE b
+            LOCAL_U8_STORE {b}
 
             ; b = n1 >= n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             FGE
-            LOCAL_U8_STORE b
+            LOCAL_U8_STORE {b}
 
             ; b = n1 < n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             FLT
-            LOCAL_U8_STORE b
+            LOCAL_U8_STORE {b}
 
             ; b = n1 <= n2
-            LOCAL_U8_LOAD n1
-            LOCAL_U8_LOAD n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
             FLE
-            LOCAL_U8_STORE b
+            LOCAL_U8_STORE {b}
 
             LEAVE 0, 0
         ");
@@ -586,6 +574,7 @@ public class OperationsTests : CodeGenTestsBase
     [Fact]
     public void VectorOperations()
     {
+        const int v1 = 2, v2 = 5, v3 = 8; // var stack positions in assembly
         CompileScript(
         scriptSource: @"
             VECTOR v1 = <<1.0, 2.0, 3.0>>, v2 = <<4.0, 5.0, 6.0>>, v3
@@ -595,17 +584,14 @@ public class OperationsTests : CodeGenTestsBase
             v3 = v1 / v2
             v3 = -v1
         ",
-        expectedAssembly: @"
-        #define v1 2
-        #define v2 5
-        #define v3 8
+        expectedAssembly: $@"
             ENTER 0, 11
             ; v1 = <<1.0, 2.0, 3.0>>
             PUSH_CONST_F1
             PUSH_CONST_F2
             PUSH_CONST_F3
             PUSH_CONST_3
-            LOCAL_U8 v1
+            LOCAL_U8 {v1}
             STORE_N
 
             ; v2 = <<4.0, 5.0, 6.0>>
@@ -613,64 +599,64 @@ public class OperationsTests : CodeGenTestsBase
             PUSH_CONST_F5
             PUSH_CONST_F6
             PUSH_CONST_3
-            LOCAL_U8 v2
+            LOCAL_U8 {v2}
             STORE_N
 
             ; v3 = v1 + v2
             PUSH_CONST_3
-            LOCAL_U8 v1
+            LOCAL_U8 {v1}
             LOAD_N
             PUSH_CONST_3
-            LOCAL_U8 v2
+            LOCAL_U8 {v2}
             LOAD_N
             VADD
             PUSH_CONST_3
-            LOCAL_U8 v3
+            LOCAL_U8 {v3}
             STORE_N
 
             ; v3 = v1 - v2
             PUSH_CONST_3
-            LOCAL_U8 v1
+            LOCAL_U8 {v1}
             LOAD_N
             PUSH_CONST_3
-            LOCAL_U8 v2
+            LOCAL_U8 {v2}
             LOAD_N
             VSUB
             PUSH_CONST_3
-            LOCAL_U8 v3
+            LOCAL_U8 {v3}
             STORE_N
 
             ; v3 = v1 * v2
             PUSH_CONST_3
-            LOCAL_U8 v1
+            LOCAL_U8 {v1}
             LOAD_N
             PUSH_CONST_3
-            LOCAL_U8 v2
+            LOCAL_U8 {v2}
             LOAD_N
             VMUL
             PUSH_CONST_3
-            LOCAL_U8 v3
+            LOCAL_U8 {v3}
             STORE_N
 
             ; v3 = v1 / v2
             PUSH_CONST_3
-            LOCAL_U8 v1
+            LOCAL_U8 {v1}
             LOAD_N
             PUSH_CONST_3
-            LOCAL_U8 v2
+            LOCAL_U8 {v2}
             LOAD_N
             VDIV
             PUSH_CONST_3
-            LOCAL_U8 v3
+            LOCAL_U8 {v3}
             STORE_N
 
             ; v3 = -v1
             PUSH_CONST_3
-            LOCAL_U8 v1
+            LOCAL_U8 {v1}
             LOAD_N
             VNEG
             PUSH_CONST_3
-            LOCAL_U8 v3
+            LOCAL_U8 {v3}
             STORE_N
 
             LEAVE 0, 0
@@ -680,6 +666,7 @@ public class OperationsTests : CodeGenTestsBase
     [Fact]
     public void VectorCompoundAssignments()
     {
+        const int v1 = 2, v2 = 5; // var stack positions in assembly
         CompileScript(
         scriptSource: @"
             VECTOR v1 = <<1.0, 2.0, 3.0>>, v2 = <<4.0, 5.0, 6.0>>
@@ -688,16 +675,14 @@ public class OperationsTests : CodeGenTestsBase
             v1 *= v2
             v1 /= v2
         ",
-        expectedAssembly: @"
-        #define v1 2
-        #define v2 5
+        expectedAssembly: $@"
             ENTER 0, 8
             ; v1 = <<1.0, 2.0, 3.0>>
             PUSH_CONST_F1
             PUSH_CONST_F2
             PUSH_CONST_F3
             PUSH_CONST_3
-            LOCAL_U8 v1
+            LOCAL_U8 {v1}
             STORE_N
 
             ; v2 = <<4.0, 5.0, 6.0>>
@@ -705,55 +690,55 @@ public class OperationsTests : CodeGenTestsBase
             PUSH_CONST_F5
             PUSH_CONST_F6
             PUSH_CONST_3
-            LOCAL_U8 v2
+            LOCAL_U8 {v2}
             STORE_N
 
             ; v1 += v2
             PUSH_CONST_3
-            LOCAL_U8 v1
+            LOCAL_U8 {v1}
             LOAD_N
             PUSH_CONST_3
-            LOCAL_U8 v2
+            LOCAL_U8 {v2}
             LOAD_N
             VADD
             PUSH_CONST_3
-            LOCAL_U8 v1
+            LOCAL_U8 {v1}
             STORE_N
 
             ; v1 -= v2
             PUSH_CONST_3
-            LOCAL_U8 v1
+            LOCAL_U8 {v1}
             LOAD_N
             PUSH_CONST_3
-            LOCAL_U8 v2
+            LOCAL_U8 {v2}
             LOAD_N
             VSUB
             PUSH_CONST_3
-            LOCAL_U8 v1
+            LOCAL_U8 {v1}
             STORE_N
 
             ; v1 *= v2
             PUSH_CONST_3
-            LOCAL_U8 v1
+            LOCAL_U8 {v1}
             LOAD_N
             PUSH_CONST_3
-            LOCAL_U8 v2
+            LOCAL_U8 {v2}
             LOAD_N
             VMUL
             PUSH_CONST_3
-            LOCAL_U8 v1
+            LOCAL_U8 {v1}
             STORE_N
 
             ; v1 /= v2
             PUSH_CONST_3
-            LOCAL_U8 v1
+            LOCAL_U8 {v1}
             LOAD_N
             PUSH_CONST_3
-            LOCAL_U8 v2
+            LOCAL_U8 {v2}
             LOAD_N
             VDIV
             PUSH_CONST_3
-            LOCAL_U8 v1
+            LOCAL_U8 {v1}
             STORE_N
 
             LEAVE 0, 0
