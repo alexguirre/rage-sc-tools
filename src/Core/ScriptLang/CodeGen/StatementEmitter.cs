@@ -114,13 +114,8 @@ internal sealed class StatementEmitter : AstVisitor
         var constantOne = new IntLiteralExpression(Token.Integer(1)) { Semantics = new(IntType.Instance, ValueKind: ValueKind.RValue | ValueKind.Constant, ArgumentKind: ArgumentKind.None) };
         var counterLessThanLimit = new BinaryExpression(TokenKind.LessThan.Create(), node.Counter, node.Limit) { Semantics = new(BoolType.Instance, ValueKind: ValueKind.RValue, ArgumentKind: ArgumentKind.None) };
         var counterIncrement = new AssignmentStatement(TokenKind.PlusEquals.Create(), node.Counter, constantOne, label: null);
-        var counterVarDecl = (VarDeclaration)node.Counter.Semantics.Symbol!;
 
         var sem = node.Semantics;
-
-        // allocate space for counter
-        // TODO: can we reuse the same counter space for different REPEAT loops?
-        counterVarDecl.Accept(this);
         
         // set counter to 0
         _C.EmitAssignment(node.Counter, constantZero);

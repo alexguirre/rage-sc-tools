@@ -35,6 +35,7 @@ public class LoopsTests : CodeGenTestsBase
     {
         CompileScript(
         scriptSource: @"
+            INT i
             REPEAT 10 i
                 INT n = 5
                 CONTINUE

@@ -409,22 +409,23 @@ public sealed class SemanticsAnalyzer : AstVisitor
             CannotConvertTypeError(limitType, IntType.Instance, node.Limit.Location);
         }
 
-        var counterDecl = SynthesizeVarDeclarationForCounter(node.Counter);
-
+        var counterType = node.Counter.Accept(exprTypeChecker, this);
+        if (!counterType.IsError)
+        {
+            if (!IntType.Instance.IsAssignableFrom(counterType) || !counterType.IsAssignableFrom(IntType.Instance))
+            {
+                CannotConvertTypeError(counterType, IntType.Instance, node.Counter.Location);
+            }
+            else if (!node.Counter.ValueKind.Is(ValueKind.Assignable))
+            {
+                ExpressionIsNotAssignableError(node.Counter);
+            }
+        }
+        
         AddLabelsToLoop(node);
         EnterLoop(node);
-        counterDecl.Accept(this); // declare counter var inside the loop scope
-        node.Counter.Accept(exprTypeChecker, this);  // bind counter name expression to counter var
         VisitBody(node.Body);
         ExitLoop(node);
-
-        Debug.Assert(node.Counter.Semantics.Symbol == counterDecl);
-
-        static VarDeclaration SynthesizeVarDeclarationForCounter(NameExpression counter)
-        {
-            var loc = counter.Location;
-            return new(new(Token.Identifier("INT", loc)), new VarDeclarator(counter.NameToken), VarKind.Local);
-        }
     }
 
     public override void Visit(ReturnStatement node)
@@ -791,6 +792,8 @@ public sealed class SemanticsAnalyzer : AstVisitor
         => Error(ErrorCode.SemanticUndefinedLabel, $"Label '{name}' is undefined", location);
     internal void CannotConvertTypeError(TypeInfo source, TypeInfo destination, SourceRange location)
         => Error(ErrorCode.SemanticCannotConvertType, $"Cannot convert type '{source.ToPrettyString()}' to '{destination.ToPrettyString()}'", location);
+    internal void ExpressionIsNotAssignableError(IExpression expr)
+        => Error(ErrorCode.SemanticExpressionIsNotAssignable, $"Expression must be assignable", expr.Location);
     internal void ConstantWithoutInitializerError(VarDeclaration constVarDecl)
         => Error(ErrorCode.SemanticConstantWithoutInitializer, $"Constant '{constVarDecl.Name}' requires an initializer", constVarDecl.NameToken.Location);
     internal void InitializerExpressionIsNotConstantError(VarDeclaration constVarDecl)

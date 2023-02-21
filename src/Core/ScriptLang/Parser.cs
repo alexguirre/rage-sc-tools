@@ -515,12 +515,12 @@ public class Parser
         else if (Accept(TokenKind.REPEAT, out var repeatToken))
         {
             if (Expect(ParseExpression, out var limitExpr) &&
-                ExpectOrMissing(TokenKind.Identifier, out var counterName, MissingIdentifier) &&
+                Expect(ParseExpression, out var counterExpr) &&
                 ExpectEOS())
             {
                 var body = ParseBodyUntilAny(TokenKind.ENDREPEAT);
                 ExpectOrMissing(TokenKind.ENDREPEAT, out var endrepeatToken);
-                stmt = new RepeatStatement(repeatToken, endrepeatToken, limitExpr, new(counterName), body, label);
+                stmt = new RepeatStatement(repeatToken, endrepeatToken, limitExpr, counterExpr, body, label);
             }
             else
             {

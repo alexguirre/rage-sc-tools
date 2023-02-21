@@ -110,6 +110,7 @@ public class StatementsTests : SemanticsTestsBase
     {
         var (s, ast) = AnalyzeAndAst(
             @"PROC foo()
+                INT i
                 REPEAT 10 i
                 ENDREPEAT
               ENDPROC"
@@ -118,7 +119,7 @@ public class StatementsTests : SemanticsTestsBase
         False(s.Diagnostics.HasErrors);
         var repStmt = ast.FindFirstNodeOfType<RepeatStatement>();
         True(repStmt.Limit.Semantics is { Type: IntType, ValueKind: ValueKind.RValue | ValueKind.Constant });
-        True(repStmt.Counter.Semantics is { Type: IntType, ValueKind: ValueKind.RValue | ValueKind.Addressable | ValueKind.Assignable, Symbol: VarDeclaration { Kind: VarKind.Local } });
+        True(repStmt.Counter.Semantics is { Type: IntType, ValueKind: ValueKind.RValue | ValueKind.Addressable | ValueKind.Assignable });
     }
 
     [Fact]
@@ -126,6 +127,7 @@ public class StatementsTests : SemanticsTestsBase
     {
         var (s, ast) = AnalyzeAndAst(
             @"PROC foo()
+                INT i
                 INT n = 10
                 REPEAT n i
                 ENDREPEAT
@@ -133,11 +135,68 @@ public class StatementsTests : SemanticsTestsBase
         );
 
         False(s.Diagnostics.HasErrors);
-        var nVarDecl = ast.FindFirstNodeOfType<VarDeclaration>();
+        var iVarDecl = ast.FindNthNodeOfType<VarDeclaration>(1);
+        var nVarDecl = ast.FindNthNodeOfType<VarDeclaration>(2);
         var repStmt = ast.FindFirstNodeOfType<RepeatStatement>();
         True(repStmt.Limit.Semantics is { Type: IntType, ValueKind: ValueKind.RValue | ValueKind.Addressable | ValueKind.Assignable });
         Equal(nVarDecl, ((NameExpression)repStmt.Limit).Semantics.Symbol);
-        True(repStmt.Counter.Semantics is { Type: IntType, ValueKind: ValueKind.RValue | ValueKind.Addressable | ValueKind.Assignable, Symbol: VarDeclaration { Kind: VarKind.Local } });
+        True(repStmt.Counter.Semantics is { Type: IntType, ValueKind: ValueKind.RValue | ValueKind.Addressable | ValueKind.Assignable });
+        Equal(iVarDecl, ((NameExpression)repStmt.Counter).Semantics.Symbol);
+    }
+
+    [Fact]
+    public void RepeatLoopWorksWithCounterInStruct()
+    {
+        var (s, ast) = AnalyzeAndAst(
+            @"STRUCT MY_DATA_STRUCT
+                INT i
+              ENDSTRUCT
+
+              PROC foo()
+                MY_DATA_STRUCT myData
+                INT n = 10
+                REPEAT n myData.i
+                ENDREPEAT
+              ENDPROC"
+        );
+
+        False(s.Diagnostics.HasErrors);
+        var nVarDecl = ast.FindNthNodeOfType<VarDeclaration>(3);
+        var repStmt = ast.FindFirstNodeOfType<RepeatStatement>();
+        True(repStmt.Limit.Semantics is { Type: IntType, ValueKind: ValueKind.RValue | ValueKind.Addressable | ValueKind.Assignable });
+        Equal(nVarDecl, ((NameExpression)repStmt.Limit).Semantics.Symbol);
+        True(repStmt.Counter.Semantics is { Type: IntType, ValueKind: ValueKind.RValue | ValueKind.Addressable | ValueKind.Assignable });
+        s.GetTypeSymbolUnchecked("MY_DATA_STRUCT", out var structTy);
+        Equal(((StructType)structTy).Fields[0], ((FieldAccessExpression)repStmt.Counter).Semantics.Field);
+    }
+
+    [Fact]
+    public void RepeatLoopCounterMustBeAssignable()
+    {
+        var (s, _) = AnalyzeAndAst(
+            @"PROC foo()
+                REPEAT 10 1+2
+                ENDREPEAT
+              ENDPROC"
+        );
+
+        True(s.Diagnostics.HasErrors);
+        CheckError(ErrorCode.SemanticExpressionIsNotAssignable, (2, 27), (2, 29), s.Diagnostics);
+    }
+
+    [Fact]
+    public void RepeatLoopCounterMustBeInt()
+    {
+        var (s, _) = AnalyzeAndAst(
+            @"PROC foo()
+                BOOL b
+                REPEAT 10 b
+                ENDREPEAT
+              ENDPROC"
+        );
+
+        True(s.Diagnostics.HasErrors);
+        CheckError(ErrorCode.SemanticCannotConvertType, (3, 27), (3, 27), s.Diagnostics);
     }
 
     [Fact]

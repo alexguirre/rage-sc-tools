@@ -53,6 +53,7 @@ public enum ErrorCode
     SemanticArgNotANativeType = 0x201D,
     SemanticRequiredParameterAfterOptionalParameter = 0x201E,
     SemanticTooManyArguments = 0x201F,
+    SemanticExpressionIsNotAssignable = 0x2020,
 
     // Preprocessor errors   0x3000 - 0x3FFF
     PreprocessorUnexpectedDirective = 0x3000,
