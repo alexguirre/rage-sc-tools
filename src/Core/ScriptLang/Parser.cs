@@ -523,6 +523,24 @@ public class Parser
                 stmt = new ErrorStatement(LastError!, label, repeatToken);
             }
         }
+        else if (Accept(TokenKind.FOR, out var forToken))
+        {
+            if (Expect(ParseExpression, out var counterExpr) &&
+                Expect(TokenKind.Equals, out _) &&
+                Expect(ParseExpression, out var initializerExpr) &&
+                Expect(TokenKind.TO, out var toToken) &&
+                Expect(ParseExpression, out var limitExpr) &&
+                ExpectEOS())
+            {
+                var body = ParseBodyUntilAny(TokenKind.ENDFOR);
+                ExpectOrMissing(TokenKind.ENDFOR, out var endforToken);
+                stmt = new ForStatement(forToken, toToken, endforToken, counterExpr, initializerExpr, limitExpr, body, label);
+            }
+            else
+            {
+                stmt = new ErrorStatement(LastError!, label, forToken);
+            }
+        }
         else if (Accept(TokenKind.SWITCH, out var switchToken))
         {
             if (Expect(ParseExpression, out var expr) && ExpectEOS())

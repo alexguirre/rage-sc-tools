@@ -138,6 +138,36 @@ internal sealed class StatementEmitter : AstVisitor
         _C.Label(sem.ExitLabel!);
     }
 
+    public override void Visit(ForStatement node)
+    {
+        // synthesized expressions and statements
+        var constantOne = new IntLiteralExpression(Token.Integer(1)) { Semantics = new(IntType.Instance, ValueKind: ValueKind.RValue | ValueKind.Constant, ArgumentKind: ArgumentKind.None) };
+        var counterLessThanOrEqualToLimit = new BinaryExpression(TokenKind.LessThanEquals.Create(), node.Counter, node.Limit) { Semantics = new(BoolType.Instance, ValueKind: ValueKind.RValue, ArgumentKind: ArgumentKind.None) };
+        var counterIncrement = new AssignmentStatement(TokenKind.PlusEquals.Create(), node.Counter, constantOne, label: null);
+
+        var sem = node.Semantics;
+
+        // set counter to 0
+        _C.EmitAssignment(node.Counter, node.Initializer);
+
+        // check condition counter <= limit
+        _C.Label(sem.BeginLabel!);
+        _C.EmitValue(counterLessThanOrEqualToLimit);
+        _C.EmitJumpIfZero(sem.ExitLabel!);
+
+        // body
+        _C.EmitStatementBlock(node.Body);
+
+        // increment counter
+        _C.Label(sem.ContinueLabel!);
+        _C.EmitStatement(counterIncrement);
+
+        // jump back to condition check
+        _C.EmitJump(sem.BeginLabel!);
+
+        _C.Label(sem.ExitLabel!);
+    }
+
     public override void Visit(ReturnStatement node)
     {
         if (node.Expression is not null)

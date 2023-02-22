@@ -200,6 +200,101 @@ public class StatementsTests : SemanticsTestsBase
     }
 
     [Fact]
+    public void ForLoop()
+    {
+        var (s, ast) = AnalyzeAndAst(
+            @"PROC foo()
+                INT i
+                FOR i = 0 TO 10
+                ENDFOR
+              ENDPROC"
+        );
+
+        False(s.Diagnostics.HasErrors);
+        var forStmt = ast.FindFirstNodeOfType<ForStatement>();
+        True(forStmt.Counter.Semantics is { Type: IntType, ValueKind: ValueKind.RValue | ValueKind.Addressable | ValueKind.Assignable });
+        True(forStmt.Initializer.Semantics is { Type: IntType, ValueKind: ValueKind.RValue | ValueKind.Constant });
+        True(forStmt.Limit.Semantics is { Type: IntType, ValueKind: ValueKind.RValue | ValueKind.Constant });
+    }
+
+    [Fact]
+    public void ForLoopWorksWithNonConstantLimit()
+    {
+        var (s, ast) = AnalyzeAndAst(
+            @"PROC foo()
+                INT i
+                INT n = 10
+                FOR i = 0 TO n
+                ENDFOR
+              ENDPROC"
+        );
+
+        False(s.Diagnostics.HasErrors);
+        var iVarDecl = ast.FindNthNodeOfType<VarDeclaration>(1);
+        var nVarDecl = ast.FindNthNodeOfType<VarDeclaration>(2);
+        var forStmt = ast.FindFirstNodeOfType<ForStatement>();
+        True(forStmt.Counter.Semantics is { Type: IntType, ValueKind: ValueKind.RValue | ValueKind.Addressable | ValueKind.Assignable });
+        Equal(iVarDecl, ((NameExpression)forStmt.Counter).Semantics.Symbol);
+        True(forStmt.Limit.Semantics is { Type: IntType, ValueKind: ValueKind.RValue | ValueKind.Addressable | ValueKind.Assignable });
+        Equal(nVarDecl, ((NameExpression)forStmt.Limit).Semantics.Symbol);
+    }
+
+    [Fact]
+    public void ForLoopWorksWithCounterInStruct()
+    {
+        var (s, ast) = AnalyzeAndAst(
+            @"STRUCT MY_DATA_STRUCT
+                INT i
+              ENDSTRUCT
+
+              PROC foo()
+                MY_DATA_STRUCT myData
+                INT n = 10
+                FOR myData.i = 0 TO n
+                ENDFOR
+              ENDPROC"
+        );
+
+        False(s.Diagnostics.HasErrors);
+        var nVarDecl = ast.FindNthNodeOfType<VarDeclaration>(3);
+        var forStmt = ast.FindFirstNodeOfType<ForStatement>();
+        True(forStmt.Counter.Semantics is { Type: IntType, ValueKind: ValueKind.RValue | ValueKind.Addressable | ValueKind.Assignable });
+        s.GetTypeSymbolUnchecked("MY_DATA_STRUCT", out var structTy);
+        Equal(((StructType)structTy).Fields[0], ((FieldAccessExpression)forStmt.Counter).Semantics.Field);
+        True(forStmt.Limit.Semantics is { Type: IntType, ValueKind: ValueKind.RValue | ValueKind.Addressable | ValueKind.Assignable });
+        Equal(nVarDecl, ((NameExpression)forStmt.Limit).Semantics.Symbol);
+    }
+
+    [Fact]
+    public void ForLoopCounterMustBeAssignable()
+    {
+        var (s, _) = AnalyzeAndAst(
+            @"PROC foo()
+                FOR 1+2 = 0 TO 10
+                ENDFOR
+              ENDPROC"
+        );
+
+        True(s.Diagnostics.HasErrors);
+        CheckError(ErrorCode.SemanticExpressionIsNotAssignable, (2, 21), (2, 23), s.Diagnostics);
+    }
+
+    [Fact]
+    public void ForLoopCounterMustBeInt()
+    {
+        var (s, _) = AnalyzeAndAst(
+            @"PROC foo()
+                BOOL b
+                FOR b = TRUE TO 10
+                ENDFOR
+              ENDPROC"
+        );
+
+        True(s.Diagnostics.HasErrors);
+        CheckError(ErrorCode.SemanticCannotConvertType, (3, 21), (3, 21), s.Diagnostics);
+    }
+
+    [Fact]
     public void BoolLiteralWorksOnIfStatements()
     {
         var (s, ast) = AnalyzeAndAst(

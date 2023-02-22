@@ -74,6 +74,17 @@ public partial class ParserTests
             bodyChecker(repeatStmt.Body);
         }
     }
+    private static void AssertForStmt(IStatement stmt, Predicate<IExpression> counterPredicate, Predicate<IExpression> initializerPredicate, Predicate<IExpression> limitPredicate, Action<ImmutableArray<IStatement>> bodyChecker)
+    {
+        True(stmt is ForStatement);
+        if (stmt is ForStatement forStmt)
+        {
+            True(counterPredicate(forStmt.Counter));
+            True(initializerPredicate(forStmt.Initializer));
+            True(limitPredicate(forStmt.Limit));
+            bodyChecker(forStmt.Body);
+        }
+    }
     private static void AssertSwitchStmt(IStatement stmt, Predicate<IExpression> expressionPredicate, Action<ImmutableArray<SwitchCase>> casesChecker)
     {
         True(stmt is SwitchStatement);

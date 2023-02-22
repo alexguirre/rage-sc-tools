@@ -81,6 +81,9 @@ public enum TokenKind
     ENDWHILE,
     REPEAT,
     ENDREPEAT,
+    FOR,
+    ENDFOR,
+    TO,
     SWITCH,
     ENDSWITCH,
     CASE,
@@ -173,6 +176,9 @@ public static class TokenLexemes
     public const string ENDWHILE = nameof(TokenKind.ENDWHILE);
     public const string REPEAT = nameof(TokenKind.REPEAT);
     public const string ENDREPEAT = nameof(TokenKind.ENDREPEAT);
+    public const string FOR = nameof(TokenKind.FOR);
+    public const string ENDFOR = nameof(TokenKind.ENDFOR);
+    public const string TO = nameof(TokenKind.TO);
     public const string SWITCH = nameof(TokenKind.SWITCH);
     public const string ENDSWITCH = nameof(TokenKind.ENDSWITCH);
     public const string CASE = nameof(TokenKind.CASE);
@@ -260,6 +266,9 @@ public static class TokenKindExtensions
             TokenKind.ENDWHILE => TokenLexemes.ENDWHILE,
             TokenKind.REPEAT => TokenLexemes.REPEAT,
             TokenKind.ENDREPEAT => TokenLexemes.ENDREPEAT,
+            TokenKind.FOR => TokenLexemes.FOR,
+            TokenKind.ENDFOR => TokenLexemes.ENDFOR,
+            TokenKind.TO => TokenLexemes.TO,
             TokenKind.SWITCH => TokenLexemes.SWITCH,
             TokenKind.ENDSWITCH => TokenLexemes.ENDSWITCH,
             TokenKind.CASE => TokenLexemes.CASE,

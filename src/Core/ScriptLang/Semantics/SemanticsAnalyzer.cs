@@ -428,6 +428,39 @@ public sealed class SemanticsAnalyzer : AstVisitor
         ExitLoop(node);
     }
 
+    public override void Visit(ForStatement node)
+    {
+        var counterType = node.Counter.Accept(exprTypeChecker, this);
+        if (!counterType.IsError)
+        {
+            if (!IntType.Instance.IsAssignableFrom(counterType) || !counterType.IsAssignableFrom(IntType.Instance))
+            {
+                CannotConvertTypeError(counterType, IntType.Instance, node.Counter.Location);
+            }
+            else if (!node.Counter.ValueKind.Is(ValueKind.Assignable))
+            {
+                ExpressionIsNotAssignableError(node.Counter);
+            }
+        }
+
+        var initializerType = node.Initializer.Accept(exprTypeChecker, this);
+        if (!initializerType.IsError && !counterType.IsError && !counterType.IsAssignableFrom(initializerType))
+        {
+            CannotConvertTypeError(initializerType, counterType, node.Initializer.Location);
+        }
+
+        var limitType = node.Limit.Accept(exprTypeChecker, this);
+        if (!limitType.IsError && !IntType.Instance.IsAssignableFrom(limitType))
+        {
+            CannotConvertTypeError(limitType, IntType.Instance, node.Limit.Location);
+        }
+
+        AddLabelsToLoop(node);
+        EnterLoop(node);
+        VisitBody(node.Body);
+        ExitLoop(node);
+    }
+
     public override void Visit(ReturnStatement node)
     {
         Debug.Assert(currentFunctionReturnType is not null);

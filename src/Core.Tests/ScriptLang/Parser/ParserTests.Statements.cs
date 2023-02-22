@@ -430,6 +430,67 @@ public partial class ParserTests
         }
 
         [Fact]
+        public void ForStatement()
+        {
+            var p = ParserFor(
+                @"  FOR i = 0 TO 10
+                        foo()
+                    ENDFOR"
+            );
+
+            AssertForStmt(p.ParseStatement(),
+                counter => counter is NameExpression { Name: "i" },
+                initializer => initializer is IntLiteralExpression { Value: 0 },
+                limit => limit is IntLiteralExpression { Value: 10 },
+                body => Collection(body,
+                    _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args))));
+            NoErrorsAndIsAtEOF(p);
+        }
+
+        [Fact]
+        public void NestedForStatement()
+        {
+            var p = ParserFor(
+                @"  FOR i = 0 TO 10
+                        foo()
+                        FOR k = 0 TO 10
+                            bar()
+                        ENDFOR
+                    ENDFOR"
+            );
+
+            AssertForStmt(p.ParseStatement(),
+                counter => counter is NameExpression { Name: "i" },
+                initializer => initializer is IntLiteralExpression { Value: 0 },
+                limit => limit is IntLiteralExpression { Value: 10 },
+                body => Collection(body,
+                    _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args)),
+                    _1 => AssertForStmt(_1,
+                        counter => counter is NameExpression { Name: "k" },
+                        initializer => initializer is IntLiteralExpression { Value: 0 },
+                        limit => limit is IntLiteralExpression { Value: 10 },
+                        body => Collection(body,
+                            _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))))));
+            NoErrorsAndIsAtEOF(p);
+        }
+
+        [Fact]
+        public void EmptyForStatement()
+        {
+            var p = ParserFor(
+                @"  FOR i = 0 TO 10
+                    ENDFOR"
+            );
+
+            AssertForStmt(p.ParseStatement(),
+                counter => counter is NameExpression { Name: "i" },
+                initializer => initializer is IntLiteralExpression { Value: 0 },
+                limit => limit is IntLiteralExpression { Value: 10 },
+                body => Empty(body));
+            NoErrorsAndIsAtEOF(p);
+        }
+
+        [Fact]
         public void SwitchStatement()
         {
             var p = ParserFor(

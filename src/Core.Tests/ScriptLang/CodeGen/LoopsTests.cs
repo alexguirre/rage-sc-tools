@@ -66,4 +66,41 @@ public class LoopsTests : CodeGenTestsBase
             LEAVE 0, 0
         ");
     }
+
+    [Fact]
+    public void ForLoop()
+    {
+        CompileScript(
+        scriptSource: @"
+            INT i
+            FOR i = 2 TO 10
+                INT n = 5
+                CONTINUE
+                BREAK
+            ENDFOR
+        ",
+        expectedAssembly: @"
+            ENTER 0, 4
+            PUSH_CONST_2
+            LOCAL_U8_STORE 2
+        for:
+            LOCAL_U8_LOAD 2
+            PUSH_CONST_U8 10
+            ILE_JZ endfor
+
+            ; body
+            PUSH_CONST_5
+            LOCAL_U8_STORE 3
+            J increment_counter
+            J endfor
+
+        increment_counter:
+            LOCAL_U8_LOAD 2
+            IADD_U8 1
+            LOCAL_U8_STORE 2
+            J for
+        endfor:
+            LEAVE 0, 0
+        ");
+    }
 }
