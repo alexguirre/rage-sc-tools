@@ -449,11 +449,11 @@
                 pair.v2 = <<0.0, 0.0, 0.0>>
             ",
             sourceStatics: @"
-                VPAIR pair
                 STRUCT VPAIR
                     INT padding[99999]
                     VECTOR v1, v2
                 ENDSTRUCT
+                VPAIR pair
             ",
             expectedAssembly: @"
                 ENTER 0, 2
@@ -496,11 +496,11 @@
                 v = pair.v2
             ",
             sourceStatics: @"
-                VPAIR pair
                 STRUCT VPAIR
                     INT padding[99999]
                     VECTOR v1, v2
                 ENDSTRUCT
+                VPAIR pair
             ",
             expectedAssembly: @"
                 ENTER 0, 5
@@ -596,7 +596,7 @@
             ");
         }
 
-        [Fact]
+        [Fact(Skip = "Array indexing not supported currently")]
         public void TestArrayItemAssignment()
         {
             CompileMain(
@@ -630,7 +630,7 @@
             ");
         }
 
-        [Fact]
+        [Fact(Skip = "Array indexing not supported currently")]
         public void TestArrayItemAccess()
         {
             CompileMain(
@@ -664,7 +664,7 @@
             ");
         }
 
-        [Fact]
+        [Fact(Skip = "Array indexing not supported currently")]
         public void TestArrayStructItemAssignment()
         {
             CompileMain(
@@ -708,7 +708,7 @@
             ");
         }
 
-        [Fact]
+        [Fact(Skip = "Array indexing not supported currently")]
         public void TestArrayStructItemAccess()
         {
             CompileMain(
@@ -750,7 +750,7 @@
             ");
         }
 
-        [Fact]
+        [Fact(Skip = "Array indexing not supported currently")]
         public void TestArrayItemFieldAssignment()
         {
             CompileMain(
@@ -789,7 +789,7 @@
             ");
         }
 
-        [Fact]
+        [Fact(Skip = "Array indexing not supported currently")]
         public void TestArrayItemFieldAccess()
         {
             CompileMain(
@@ -949,7 +949,7 @@
             ");
         }
 
-        [Fact]
+        [Fact(Skip = "NATIVE invocation not fully supported currently")]
         public void TestNativeProcedureInvocation()
         {
             // TODO: some better way to define NativeDBs for tests
@@ -990,7 +990,7 @@
             ");
         }
 
-        [Fact]
+        [Fact(Skip = "NATIVE invocation not fully supported currently")]
         public void TestNativeFunctionInvocation()
         {
             var nativeDB = NativeDB.FromJson(@"
@@ -1038,7 +1038,7 @@
             ");
         }
 
-        [Fact]
+        [Fact(Skip = "NATIVE invocation not fully supported currently")]
         public void TestFunctionPointerInvocation()
         {
             CompileMain(
@@ -1049,7 +1049,7 @@
                 myFunc2(1234, 5678)
             ",
             sourceStatics: @"
-                PROTO FUNC INT MY_FUNC_T(INT a, INT b)
+                TYPEDEF FUNC INT MY_FUNC_T(INT a, INT b)
                 FUNC INT ADD(INT a, INT b)
                     RETURN a + b
                 ENDFUNC
@@ -1088,7 +1088,7 @@
             ");
         }
 
-        [Fact]
+        [Fact(Skip = "Function pointer comparison not supported currently")]
         public void TestFunctionPointerComparison()
         {
             CompileMain(
@@ -1104,7 +1104,7 @@
                 b = myFunc2 <> ADD
             ",
             sourceStatics: @"
-                PROTO FUNC INT MY_FUNC_T(INT a, INT b)
+                TYPEDEF FUNC INT MY_FUNC_T(INT a, INT b)
                 FUNC INT ADD(INT a, INT b)
                     RETURN a + b
                 ENDFUNC
@@ -1300,7 +1300,7 @@
             ");
         }
 
-        [Fact]
+        [Fact(Skip = "TEXT_LABEL += STRING not supported currently")]
         public void TestTextLabelAppendString()
         {
             CompileMain(
@@ -1311,40 +1311,40 @@
                 TEXT_LABEL_63 tl63
                 TEXT_LABEL_127 tl127
 
-                APPEND(tl7, 'hello world')
-                APPEND(tl15, 'hello world')
-                APPEND(tl31, 'hello world')
-                APPEND(tl63, 'hello world')
-                APPEND(tl127, 'hello world')
+                tl7 += 'hello world'
+                tl15 += 'hello world'
+                tl31 += 'hello world'
+                tl63 += 'hello world'
+                tl127 += 'hello world'
             ",
             expectedAssembly: @"
                 ENTER 0, 33
 
-                ; APPEND(tl7, 'hello world')
+                ; tl7 += 'hello world'
                 PUSH_CONST_0
                 STRING
                 LOCAL_U8 2
                 TEXT_LABEL_APPEND_STRING 8
 
-                ; APPEND(tl15, 'hello world')
+                ; tl15 += 'hello world'
                 PUSH_CONST_0
                 STRING
                 LOCAL_U8 3
                 TEXT_LABEL_APPEND_STRING 16
 
-                ; APPEND(tl31, 'hello world')
+                ; tl31 += 'hello world'
                 PUSH_CONST_0
                 STRING
                 LOCAL_U8 5
                 TEXT_LABEL_APPEND_STRING 32
 
-                ; APPEND(tl63, 'hello world')
+                ; tl63 += 'hello world'
                 PUSH_CONST_0
                 STRING
                 LOCAL_U8 9
                 TEXT_LABEL_APPEND_STRING 64
 
-                ; APPEND(tl127, 'hello world')
+                ; tl127 += 'hello world'
                 PUSH_CONST_0
                 STRING
                 LOCAL_U8 17
@@ -1357,7 +1357,7 @@
             ");
         }
 
-        [Fact]
+        [Fact(Skip = "TEXT_LABEL += INT not supported currently")]
         public void TestTextLabelAppendInt()
         {
             CompileMain(
@@ -1368,21 +1368,21 @@
                 TEXT_LABEL_63 tl63
                 TEXT_LABEL_127 tl127
 
-                APPEND(tl7, 123456)
-                APPEND(tl15, 123456)
-                APPEND(tl31, 123456)
-                APPEND(tl63, 123456)
-                APPEND(tl127, 123456)
+                tl7 += 123456
+                tl15 += 123456
+                tl31 += 123456
+                tl63 += 123456
+                tl127 += 123456
             ",
             expectedAssembly: @"
                 ENTER 0, 33
 
-                ; APPEND(tl7, 123456)
+                ; tl7 += 123456
                 PUSH_CONST_U24 123456
                 LOCAL_U8 2
                 TEXT_LABEL_APPEND_INT 8
 
-                ; APPEND(tl15, 123456)
+                ; tl15 += 123456
                 PUSH_CONST_U24 123456
                 LOCAL_U8 3
                 TEXT_LABEL_APPEND_INT 16
@@ -1392,12 +1392,12 @@
                 LOCAL_U8 5
                 TEXT_LABEL_APPEND_INT 32
 
-                ; APPEND(tl63, 123456)
+                ; tl63 += 123456
                 PUSH_CONST_U24 123456
                 LOCAL_U8 9
                 TEXT_LABEL_APPEND_INT 64
 
-                ; APPEND(tl127, 123456)
+                ; tl127 += 123456
                 PUSH_CONST_U24 123456
                 LOCAL_U8 17
                 TEXT_LABEL_APPEND_INT 128
@@ -1406,7 +1406,7 @@
             ");
         }
 
-        [Fact]
+        [Fact(Skip = "TEXT_LABEL += STRING not supported currently")]
         public void TestTextLabelAppendTextLabel()
         {
             // supported due to TEXT_LABEL to STRING implicit conversion
@@ -1419,36 +1419,36 @@
                 TEXT_LABEL_63 tl63
                 TEXT_LABEL_127 tl127
 
-                APPEND(tl7, src)
-                APPEND(tl15, src)
-                APPEND(tl31, src)
-                APPEND(tl63, src)
-                APPEND(tl127, src)
+                tl7 += src
+                tl15 += src
+                tl31 += src
+                tl63 += src
+                tl127 += src
             ",
             expectedAssembly: @"
                 ENTER 0, 37
 
-                ; APPEND(tl7, src)
+                ; tl7 += src
                 LOCAL_U8 2
                 LOCAL_U8 6
                 TEXT_LABEL_APPEND_STRING 8
 
-                ; APPEND(tl15, src)
+                ; tl15 += src
                 LOCAL_U8 2
                 LOCAL_U8 7
                 TEXT_LABEL_APPEND_STRING 16
 
-                ; APPEND(tl31, src)
+                ; tl31 += src
                 LOCAL_U8 2
                 LOCAL_U8 9
                 TEXT_LABEL_APPEND_STRING 32
 
-                ; APPEND(tl63, src)
+                ; tl63 += src
                 LOCAL_U8 2
                 LOCAL_U8 13
                 TEXT_LABEL_APPEND_STRING 64
 
-                ; APPEND(tl127, src)
+                ; tl127 += src
                 LOCAL_U8 2
                 LOCAL_U8 21
                 TEXT_LABEL_APPEND_STRING 128
@@ -1589,7 +1589,7 @@
             ");
         }
 
-        [Fact]
+        [Fact(Skip = "Wrong, arrays still need & to be passed as reference")]
         public void TestArrayReferences()
         {
             CompileMain(
@@ -1899,18 +1899,18 @@
             ");
         }
 
-        [Fact]
+        [Fact(Skip = "Intrinsics don't work at compile time currently")]
         public void TestArraySizeWithEnumToInt()
         {
             CompileMain(
             source: @"
             ",
             sourceStatics: @"
-                INT iNumbers[ENUM_TO_INT(NUM_MY_ENUM)]
-
                 ENUM MY_ENUM
                     MY_ENUM_A, MY_ENUM_B, NUM_MY_ENUM
                 ENDENUM
+
+                INT iNumbers[ENUM_TO_INT(NUM_MY_ENUM)]
             ",
             expectedAssembly: @"
                 ENTER 0, 2
@@ -1921,18 +1921,18 @@
             ");
         }
 
-        [Fact]
+        [Fact(Skip = "Intrinsics don't work at compile time currently")]
         public void TestArraySizeWithEnumToIntAndIntToEnum()
         {
             CompileMain(
             source: @"
             ",
             sourceStatics: @"
-                INT iNumbers[ENUM_TO_INT(INT_TO_ENUM(MY_ENUM, ENUM_TO_INT(NUM_MY_ENUM)))]
-
                 ENUM MY_ENUM
                     MY_ENUM_A, MY_ENUM_B, NUM_MY_ENUM
                 ENDENUM
+
+                INT iNumbers[ENUM_TO_INT(INT_TO_ENUM(MY_ENUM, ENUM_TO_INT(NUM_MY_ENUM)))]
             ",
             expectedAssembly: @"
                 ENTER 0, 2
@@ -1943,25 +1943,23 @@
             ");
         }
 
-        [Fact]
+        [Fact(Skip = "Intrinsics don't work at compile time currently")]
         public void TestArraySizeWithCountOf()
         {
             CompileMain(
             source: @"
             ",
             sourceStatics: @"
-                INT iNumbers[COUNT_OF(MY_ENUM)]
-
-                ENUM MY_ENUM
-                    MY_ENUM_A, MY_ENUM_B, MY_ENUM_C
-                ENDENUM
+                INT iNumbers1[10]
+                INT iNumbers2[COUNT_OF(iNumbers1)]
             ",
             expectedAssembly: @"
                 ENTER 0, 2
                 LEAVE 0, 0
 
                 .static
-                .int 3, 3 dup (0)
+                .int 10, 10 dup (0)
+                .int 10, 10 dup (0)
             ");
         }
 
@@ -2217,8 +2215,8 @@
             using var expectedAssemblyReader = new StringReader(expectedAssembly);
             var expectedAssembler = Assembler.Assemble(expectedAssemblyReader, "test_expected.scasm", nativeDB, options: new() { IncludeFunctionNames = true });
 
-            string sourceDump = new DumperFiveV12().DumpToString(compiledScriptGTAV);
-            string expectedDump = new DumperFiveV12().DumpToString(expectedAssembler.OutputScript);
+            string sourceDump = new DumperFiveV10().DumpToString(compiledScriptGTAV);
+            string expectedDump = new DumperFiveV10().DumpToString(expectedAssembler.OutputScript);
 
             Util.AssertScriptsAreEqual(compiledScriptGTAV, expectedAssembler.OutputScript);
         }

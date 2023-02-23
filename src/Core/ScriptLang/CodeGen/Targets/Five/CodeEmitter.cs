@@ -275,7 +275,7 @@ public sealed partial class CodeEmitter : ICodeEmitter
 
     public void EmitSwitch(IEnumerable<ValueSwitchCase> valueCases)
     {
-        var cases = valueCases.OrderBy(c => c.Semantics.Value!.Value).ToArray();
+        var cases = valueCases.ToArray();
         var inst = instEmitter.EmitSwitch(cases.Select(c => (unchecked((uint)c.Semantics.Value!.Value), (short)0)).ToArray());
         for (int i = 0; i < cases.Length; i++)
         {
