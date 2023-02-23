@@ -154,25 +154,47 @@ internal sealed class TypeFactory
 
     private sealed class VarDeclaratorVisitor : AstVisitor<TypeInfo, (VarDeclaration Var, SemanticsAnalyzer S)>
     {
-        private readonly Visitor declarationVisitor;
+        private readonly Visitor typeFactoryVisitor;
+        private readonly ExpressionTypeChecker exprTypeChecker = new();
 
-        public VarDeclaratorVisitor(Visitor declarationVisitor)
+        public VarDeclaratorVisitor(Visitor typeFactoryVisitor)
         {
-            this.declarationVisitor = declarationVisitor;
+            this.typeFactoryVisitor = typeFactoryVisitor;
         }
 
         public override TypeInfo Visit(VarDeclarator node, (VarDeclaration Var, SemanticsAnalyzer S) param)
-            => param.Var.Type.Accept(declarationVisitor, param.S);
+            => param.Var.Type.Accept(typeFactoryVisitor, param.S);
 
         public override TypeInfo Visit(VarRefDeclarator node, (VarDeclaration Var, SemanticsAnalyzer S) param)
-            => param.Var.Type.Accept(declarationVisitor, param.S);
+            => param.Var.Type.Accept(typeFactoryVisitor, param.S);
 
         public override TypeInfo Visit(VarArrayDeclarator node, (VarDeclaration Var, SemanticsAnalyzer S) param)
         {
-            var itemType = param.Var.Type.Accept(declarationVisitor, param.S);
-            // TODO: check that the length expression is constant
+            var itemType = param.Var.Type.Accept(typeFactoryVisitor, param.S);
             Debug.Assert(node.Lengths.All(l => l is not null), "Incomplete array types are not supported for now");
-            var arrayType = node.Lengths.Reverse().Aggregate(itemType, (ty, lengthExpr) => new ArrayType(ty, ConstantExpressionEvaluator.Eval(lengthExpr!, param.S).IntValue));
+            var arrayType = node.Lengths.Reverse().Aggregate(itemType, (ty, lengthExpr) =>
+            {
+                var lengthType = lengthExpr?.Accept(exprTypeChecker, param.S) ?? ErrorType.Instance;
+
+                ConstantValue? length = null;
+                if (!lengthType.IsError)
+                {
+                    if (!lengthExpr!.ValueKind.Is(ValueKind.Constant))
+                    {
+                        param.S.ArrayLengthExpressionIsNotConstantError(param.Var, lengthExpr);
+                    }
+                    else if (IntType.Instance.IsAssignableFrom(lengthType))
+                    {
+                        length = ConstantExpressionEvaluator.Eval(lengthExpr, param.S);
+                    }
+                    else
+                    {
+                        param.S.CannotConvertTypeError(lengthType, IntType.Instance, lengthExpr.Location);
+                    }
+                }
+
+                return new ArrayType(ty, length?.IntValue ?? 0);
+            });
             return arrayType;
         }
     }

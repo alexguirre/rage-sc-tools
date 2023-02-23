@@ -1899,7 +1899,7 @@
             ");
         }
 
-        [Fact(Skip = "Intrinsics don't work at compile time currently")]
+        [Fact]
         public void TestArraySizeWithEnumToInt()
         {
             CompileMain(
@@ -1921,7 +1921,7 @@
             ");
         }
 
-        [Fact(Skip = "Intrinsics don't work at compile time currently")]
+        [Fact]
         public void TestArraySizeWithEnumToIntAndIntToEnum()
         {
             CompileMain(
@@ -1943,7 +1943,7 @@
             ");
         }
 
-        [Fact(Skip = "Intrinsics don't work at compile time currently")]
+        [Fact]
         public void TestArraySizeWithCountOf()
         {
             CompileMain(

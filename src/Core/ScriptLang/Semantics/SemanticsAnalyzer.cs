@@ -833,6 +833,8 @@ public sealed class SemanticsAnalyzer : AstVisitor
         => Error(ErrorCode.SemanticInitializerExpressionIsNotConstant, $"Initializer expression of constant '{constVarDecl.Name}' must be constant", constVarDecl.Initializer!.Location);
     internal void InitializerExpressionIsNotConstantError(EnumMemberDeclaration enumMemberDecl)
         => Error(ErrorCode.SemanticInitializerExpressionIsNotConstant, $"Initializer expression of enum '{enumMemberDecl.Name}' must be constant", enumMemberDecl.Initializer!.Location);
+    internal void ArrayLengthExpressionIsNotConstantError(VarDeclaration arrayDecl, IExpression expr)
+        => Error(ErrorCode.SemanticArrayLengthExpressionIsNotConstant, $"Size expression of array '{arrayDecl.Name}' must be constant", expr.Location);
     internal void TypeNotAllowedInConstantError(VarDeclaration constVarDecl, TypeInfo type)
     {
         var loc = constVarDecl.Declarator switch
