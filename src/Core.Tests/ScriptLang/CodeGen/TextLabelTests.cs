@@ -9,14 +9,13 @@ using static Xunit.Assert;
 
 public class TextLabelTests : CodeGenTestsBase
 {
-    [Theory(Skip = "TEXT_LABEL syntax is not final")]
+    [Theory]
     [MemberData(nameof(GetAllTextLabelTypes64Bit))]
     public void AssignString(TextLabelType tl)
     {
         CompileScript(
         scriptSource: @$"
-                {TextLabelType.GetTypeNameForLength(tl.Length)} tl
-                TEXT_LABEL_ASSIGN_STRING(tl, 'hello world')
+                {TextLabelType.GetTypeNameForLength(tl.Length)} tl = 'hello world'
             ",
         expectedAssembly: @$"
                 ENTER 0, {2 + tl.SizeOf}
@@ -33,9 +32,9 @@ public class TextLabelTests : CodeGenTestsBase
             ");
     }
 
-    [Theory(Skip = "TEXT_LABEL syntax is not final")]
+    [Theory]
     [MemberData(nameof(GetAllTextLabelTypes64Bit))]
-    public void AssignStringWithoutIntrinsic(TextLabelType tl)
+    public void AssignStringStatically(TextLabelType tl)
     {
         CompileScript(
         scriptSource: @$"
@@ -76,14 +75,13 @@ public class TextLabelTests : CodeGenTestsBase
             ");
     }
 
-    [Theory(Skip = "TEXT_LABEL syntax is not final")]
+    [Theory]
     [MemberData(nameof(GetAllTextLabelTypes64Bit))]
     public void AssignInt(TextLabelType tl)
     {
         CompileScript(
         scriptSource: @$"
-                {TextLabelType.GetTypeNameForLength(tl.Length)} tl
-                TEXT_LABEL_ASSIGN_INT(tl, 123)
+                {TextLabelType.GetTypeNameForLength(tl.Length)} tl = 123
             ",
         expectedAssembly: @$"
                 ENTER 0, {2 + tl.SizeOf}
@@ -96,42 +94,9 @@ public class TextLabelTests : CodeGenTestsBase
             ");
     }
 
-    [Theory(Skip = "TEXT_LABEL syntax is not final")]
-    [MemberData(nameof(GetAllTextLabelTypes64Bit))]
-    public void AssignTextLabel(TextLabelType tl)
-    {
-        var tlSourceType = new TextLabelType(32, tl.ValueByteSize);
-        CompileScript(
-        scriptSource: @$"
-                TEXT_LABEL_31 tlSource
-                TEXT_LABEL_ASSIGN_STRING(tlSource, 'hello world')
-                {TextLabelType.GetTypeNameForLength(tl.Length)} tl
-                TEXT_LABEL_ASSIGN_STRING(tl, tlSource)
-            ",
-        expectedAssembly: @$"
-                ENTER 0, {2 + tlSourceType.SizeOf + tl.SizeOf}
-
-                ; TEXT_LABEL_ASSIGN_STRING(tlSource, 'hello world')
-                PUSH_CONST_0
-                STRING
-                LOCAL_U8 {2}
-                TEXT_LABEL_ASSIGN_STRING {tlSourceType.Length}
-
-                ; TEXT_LABEL_ASSIGN_STRING(tl, tlSource)
-                LOCAL_U8 {2}
-                LOCAL_U8 {2+tlSourceType.SizeOf}
-                TEXT_LABEL_ASSIGN_STRING {tl.Length}
-
-                LEAVE 0, 0
-
-                .string
-                .str 'hello world'
-            ");
-    }
-
     [Theory]
     [MemberData(nameof(GetAllTextLabelTypes64Bit))]
-    public void AssignSameTextLabelTypeWithoutIntrinsic(TextLabelType tl)
+    public void AssignSameTextLabelType(TextLabelType tl)
     {
         // same TEXT_LABEL_n type can just use LOAD_N/STORE_N
         var tlName = TextLabelType.GetTypeNameForLength(tl.Length);
@@ -141,8 +106,7 @@ public class TextLabelTests : CodeGenTestsBase
             ",
         declarationsSource: @$"
                FUNC {tlName} GET_MY_TEXT()
-                 {tlName} tl
-                 TEXT_LABEL_ASSIGN_STRING(tl, 'hello world')
+                 {tlName} tl = 'hello world'
                  RETURN tl
                ENDFUNC
             ",
@@ -160,7 +124,7 @@ public class TextLabelTests : CodeGenTestsBase
             GET_MY_TEXT:
                 ENTER 0, {2 + tl.SizeOf}
 
-                ; TEXT_LABEL_ASSIGN_STRING(tl, 'hello world')
+                ; tl = 'hello world'
                 PUSH_CONST_0
                 STRING
                 LOCAL_U8 {2}
@@ -187,7 +151,7 @@ public class TextLabelTests : CodeGenTestsBase
             GET_MY_TEXT:
                 ENTER 0, {2 + tl.SizeOf}
 
-                ; TEXT_LABEL_ASSIGN_STRING(tl, 'hello world')
+                ; tl = 'hello world'
                 PUSH_CONST_0
                 STRING
                 LOCAL_U8 {2}
@@ -202,7 +166,7 @@ public class TextLabelTests : CodeGenTestsBase
     }
 
     [Fact]
-    public void AssignDifferentTextLabelTypesWithoutIntrinsic()
+    public void AssignDifferentTextLabelTypes()
     {
         // TEXT_LABEL_COPY allows different lengths between source and destination text labels.
         var tl15 = new TextLabelType(16, 8);
@@ -215,8 +179,7 @@ public class TextLabelTests : CodeGenTestsBase
             ",
         declarationsSource: @$"
                FUNC TEXT_LABEL_31 GET_MY_TEXT()
-                 TEXT_LABEL_31 tl
-                 TEXT_LABEL_ASSIGN_STRING(tl, 'hello world')
+                 TEXT_LABEL_31 tl = 'hello world'
                  RETURN tl
                ENDFUNC
             ",
@@ -242,7 +205,7 @@ public class TextLabelTests : CodeGenTestsBase
             GET_MY_TEXT:
                 ENTER 0, {2 + tl31.SizeOf}
 
-                ; TEXT_LABEL_ASSIGN_STRING(tl, 'hello world')
+                ; tl = 'hello world'
                 PUSH_CONST_0
                 STRING
                 LOCAL_U8 {2}
@@ -258,26 +221,25 @@ public class TextLabelTests : CodeGenTestsBase
             ");
     }
 
-    [Theory(Skip = "TEXT_LABEL syntax is not final")]
+    [Theory]
     [MemberData(nameof(GetAllTextLabelTypes64Bit))]
     public void AppendString(TextLabelType tl)
     {
         CompileScript(
         scriptSource: @$"
-                {TextLabelType.GetTypeNameForLength(tl.Length)} tl
-                TEXT_LABEL_ASSIGN_STRING(tl, 'hello')
-                TEXT_LABEL_APPEND_STRING(tl, 'foobar')
+                {TextLabelType.GetTypeNameForLength(tl.Length)} tl = 'hello'
+                tl += 'foobar'
             ",
         expectedAssembly: @$"
                 ENTER 0, {2 + tl.SizeOf}
 
-                ; TEXT_LABEL_ASSIGN_STRING(tl, 'hello')
+                ; tl = 'hello'
                 PUSH_CONST_0
                 STRING
                 LOCAL_U8 2
                 TEXT_LABEL_ASSIGN_STRING {tl.Length}
 
-                ; TEXT_LABEL_APPEND_STRING(tl, 'foobar')
+                ; tl += 'foobar'
                 PUSH_CONST_6
                 STRING
                 LOCAL_U8 2
@@ -297,20 +259,19 @@ public class TextLabelTests : CodeGenTestsBase
     {
         CompileScript(
         scriptSource: @$"
-                {TextLabelType.GetTypeNameForLength(tl.Length)} tl
-                TEXT_LABEL_ASSIGN_STRING(tl, 'hello')
-                TEXT_LABEL_APPEND_INT(tl, 123)
+                {TextLabelType.GetTypeNameForLength(tl.Length)} tl = 'hello'
+                tl += 123
             ",
         expectedAssembly: @$"
                 ENTER 0, {2 + tl.SizeOf}
 
-                ; TEXT_LABEL_ASSIGN_STRING(tl, 'hello')
+                ; tl = 'hello'
                 PUSH_CONST_0
                 STRING
                 LOCAL_U8 2
                 TEXT_LABEL_ASSIGN_STRING {tl.Length}
 
-                ; TEXT_LABEL_APPEND_INT(tl, 123)
+                ; tl += 123
                 PUSH_CONST_U8 123
                 LOCAL_U8 2
                 TEXT_LABEL_APPEND_INT {tl.Length}
@@ -322,35 +283,33 @@ public class TextLabelTests : CodeGenTestsBase
             ");
     }
 
-    [Theory(Skip = "TEXT_LABEL syntax is not final")]
+    [Theory]
     [MemberData(nameof(GetAllTextLabelTypes64Bit))]
     public void AppendTextLabel(TextLabelType tl)
     {
         var tl31 = new TextLabelType(32, 8);
         CompileScript(
         scriptSource: @$"
-                TEXT_LABEL_31 tlSource
-                TEXT_LABEL_ASSIGN_STRING(tlSource, 'hello world')
-                {TextLabelType.GetTypeNameForLength(tl.Length)} tl
-                TEXT_LABEL_ASSIGN_STRING(tl, 'foobar')
-                TEXT_LABEL_APPEND_STRING(tl, tlSource)
+                TEXT_LABEL_31 tlSource = 'hello world'
+                {TextLabelType.GetTypeNameForLength(tl.Length)} tl = 'foobar'
+                tl += tlSource
             ",
         expectedAssembly: @$"
                 ENTER 0, {2 + tl31.SizeOf + tl.SizeOf}
 
-                ; TEXT_LABEL_ASSIGN_STRING(tlSource, 'hello world')
+                ; tlSource = 'hello world'
                 PUSH_CONST_0
                 STRING
                 LOCAL_U8 {2}
                 TEXT_LABEL_ASSIGN_STRING {tl31.Length}
 
-                ; TEXT_LABEL_ASSIGN_STRING(tl, 'foobar')
+                ; tl = 'foobar'
                 PUSH_CONST_U8 sFoo
                 STRING
                 LOCAL_U8 {2 + tl31.SizeOf}
                 TEXT_LABEL_ASSIGN_STRING {tl.Length}
 
-                ; TEXT_LABEL_APPEND_STRING(tl, tlSource)
+                ; tl += tlSource
                 LOCAL_U8 {2}
                 LOCAL_U8 {2 + tl31.SizeOf}
                 TEXT_LABEL_APPEND_STRING {tl.Length}
@@ -369,8 +328,7 @@ public class TextLabelTests : CodeGenTestsBase
     {
         CompileScript(
         scriptSource: @$"
-                {TextLabelType.GetTypeNameForLength(tl.Length)} tl
-                TEXT_LABEL_ASSIGN_STRING(tl, 'hello')
+                {TextLabelType.GetTypeNameForLength(tl.Length)} tl = 'hello'
                 FOO(tl)
             ",
         declarationsSource: @$"
@@ -380,7 +338,7 @@ public class TextLabelTests : CodeGenTestsBase
         expectedAssembly: @$"
                 ENTER 0, {2 + tl.SizeOf}
 
-                ; TEXT_LABEL_ASSIGN_STRING(tl, 'hello')
+                ; tl = 'hello'
                 PUSH_CONST_0
                 STRING
                 LOCAL_U8 {2}

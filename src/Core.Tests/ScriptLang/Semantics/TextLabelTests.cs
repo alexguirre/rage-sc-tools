@@ -13,8 +13,7 @@ public class TextLabelTests : SemanticsTestsBase
     {
         var s = Analyze(
             @$"SCRIPT my_script
-                 {TextLabelType.GetTypeNameForLength(tl.Length)} tl
-                 TEXT_LABEL_ASSIGN_STRING(tl, 'hello world')
+                 {TextLabelType.GetTypeNameForLength(tl.Length)} tl = 'hello world'
                ENDSCRIPT"
         );
 
@@ -43,8 +42,7 @@ public class TextLabelTests : SemanticsTestsBase
     {
         var s = Analyze(
             @$"SCRIPT my_script
-                 {TextLabelType.GetTypeNameForLength(tl.Length)} tl
-                 TEXT_LABEL_ASSIGN_INT(tl, 123)
+                 {TextLabelType.GetTypeNameForLength(tl.Length)} tl = 123
                ENDSCRIPT"
         );
 
@@ -57,10 +55,8 @@ public class TextLabelTests : SemanticsTestsBase
     {
         var s = Analyze(
             @$"SCRIPT my_script
-                 TEXT_LABEL_31 tlSource
-                 TEXT_LABEL_ASSIGN_STRING(tlSource, 'hello world')
-                 {TextLabelType.GetTypeNameForLength(tl.Length)} tl
-                 TEXT_LABEL_ASSIGN_STRING(tl, tlSource)
+                 TEXT_LABEL_31 tlSource = 'hello world'
+                 {TextLabelType.GetTypeNameForLength(tl.Length)} tl = tlSource
                ENDSCRIPT"
         );
 
@@ -74,8 +70,7 @@ public class TextLabelTests : SemanticsTestsBase
         var tlName = TextLabelType.GetTypeNameForLength(tl.Length);
         var s = Analyze(
             @$"FUNC {tlName} GET_MY_TEXT()
-                 {tlName} tl
-                 TEXT_LABEL_ASSIGN_STRING(tl, 'hello world')
+                 {tlName} tl = 'hello world'
                  RETURN tl
                ENDFUNC
 
@@ -93,8 +88,7 @@ public class TextLabelTests : SemanticsTestsBase
         // TEXT_LABEL_COPY allows different lengths between source and destination text labels.
         var s = Analyze(
             @$"FUNC TEXT_LABEL_31 GET_MY_TEXT()
-                 TEXT_LABEL_31 tl
-                 TEXT_LABEL_ASSIGN_STRING(tl, 'hello world')
+                 TEXT_LABEL_31 tl = 'hello world'
                  RETURN tl
                ENDFUNC
 
@@ -113,9 +107,8 @@ public class TextLabelTests : SemanticsTestsBase
     {
         var s = Analyze(
             @$"SCRIPT my_script
-                 {TextLabelType.GetTypeNameForLength(tl.Length)} tl
-                 TEXT_LABEL_ASSIGN_STRING(tl, 'hello')
-                 TEXT_LABEL_APPEND_STRING(tl, 'foobar')
+                 {TextLabelType.GetTypeNameForLength(tl.Length)} tl = 'hello'
+                 tl += 'foobar'
                ENDSCRIPT"
         );
 
@@ -128,9 +121,8 @@ public class TextLabelTests : SemanticsTestsBase
     {
         var s = Analyze(
             @$"SCRIPT my_script
-                 {TextLabelType.GetTypeNameForLength(tl.Length)} tl
-                 TEXT_LABEL_ASSIGN_STRING(tl, 'hello')
-                 TEXT_LABEL_APPEND_INT(tl, 123)
+                 {TextLabelType.GetTypeNameForLength(tl.Length)} tl = 'hello'
+                 tl += 123
                ENDSCRIPT"
         );
 
@@ -143,11 +135,9 @@ public class TextLabelTests : SemanticsTestsBase
     {
         var s = Analyze(
             @$"SCRIPT my_script
-                 TEXT_LABEL_31 tlSource
-                 TEXT_LABEL_ASSIGN_STRING(tlSource, 'hello world')
-                 {TextLabelType.GetTypeNameForLength(tl.Length)} tl
-                 TEXT_LABEL_ASSIGN_STRING(tl, 'foobar')
-                 TEXT_LABEL_APPEND_STRING(tl, tlSource)
+                 TEXT_LABEL_31 tlSource = 'hello world'
+                 {TextLabelType.GetTypeNameForLength(tl.Length)} tl = 'foobar'
+                 tl += tlSource
                ENDSCRIPT"
         );
 
@@ -161,42 +151,52 @@ public class TextLabelTests : SemanticsTestsBase
         // TEXT_LABEL_APPEND_STRING requires an address to convert the TEXT_LABEL_n to STRING but return values are not addressable
         var s = Analyze(
             @$"FUNC TEXT_LABEL_31 GET_MY_TEXT()
-                 TEXT_LABEL_31 tl
-                 TEXT_LABEL_ASSIGN_STRING(tl, 'hello world')
+                 TEXT_LABEL_31 tl = 'hello world'
                  RETURN tl
                ENDFUNC
 
                SCRIPT my_script
-                 {TextLabelType.GetTypeNameForLength(tl.Length)} tl
-                 TEXT_LABEL_ASSIGN_STRING(tl, 'foobar')
-                 TEXT_LABEL_APPEND_STRING(tl, GET_MY_TEXT())
+                 {TextLabelType.GetTypeNameForLength(tl.Length)} tl = 'foobar'
+                 tl += GET_MY_TEXT()
                ENDSCRIPT"
         );
 
         True(s.Diagnostics.HasErrors);
-        CheckError(ErrorCode.SemanticArgCannotPassNonLValueToRefParam, (10, 47), (10, 59), s.Diagnostics);
+        CheckError(ErrorCode.SemanticTextLabelAppendNonAddressableTextLabel, (8, 24), (8, 36), s.Diagnostics);
     }
 
     [Theory]
     [MemberData(nameof(GetAllTextLabelTypes64Bit))]
-    public void CannotAssignNonAddressableTextLabel(TextLabelType tl)
+    public void CannotAppendUnsupportedType(TextLabelType tl)
     {
-        // TEXT_LABEL_ASSIGN_STRING requires an address to convert the TEXT_LABEL_n to STRING but return values are not addressable
         var s = Analyze(
-            @$"FUNC TEXT_LABEL_31 GET_MY_TEXT()
-                 TEXT_LABEL_31 tl
-                 TEXT_LABEL_ASSIGN_STRING(tl, 'hello world')
-                 RETURN tl
-               ENDFUNC
-
-               SCRIPT my_script
-                 {TextLabelType.GetTypeNameForLength(tl.Length)} tl
-                 TEXT_LABEL_ASSIGN_STRING(tl, GET_MY_TEXT())
+            @$"SCRIPT my_script
+                 {TextLabelType.GetTypeNameForLength(tl.Length)} tl = 'foobar'
+                 tl += TRUE
                ENDSCRIPT"
         );
 
         True(s.Diagnostics.HasErrors);
-        CheckError(ErrorCode.SemanticArgCannotPassNonLValueToRefParam, (9, 47), (9, 59), s.Diagnostics);
+        CheckError(ErrorCode.SemanticTextLabelAppendInvalidType, (3, 24), (3, 27), s.Diagnostics);
+    }
+
+    [Theory]
+    [MemberData(nameof(GetAllTextLabelTypes64Bit))]
+    public void CanAssignNonAddressableTextLabel(TextLabelType tl)
+    {
+        // Uses TEXT_LABEL_COPY, not TEXT_LABEL_ASSIGN_STRING, so the RHS doesn't need to be addressable, it is pushed to the stack.
+        var s = Analyze(
+            @$"FUNC TEXT_LABEL_31 GET_MY_TEXT()
+                 TEXT_LABEL_31 tl = 'hello world'
+                 RETURN tl
+               ENDFUNC
+
+               SCRIPT my_script
+                 {TextLabelType.GetTypeNameForLength(tl.Length)} tl = GET_MY_TEXT()
+               ENDSCRIPT"
+        );
+
+        False(s.Diagnostics.HasErrors);
     }
 
     [Theory]
@@ -208,8 +208,7 @@ public class TextLabelTests : SemanticsTestsBase
                ENDPROC
 
                SCRIPT my_script
-                 {TextLabelType.GetTypeNameForLength(tl.Length)} tl
-                 TEXT_LABEL_ASSIGN_STRING(tl, 'hello')
+                 {TextLabelType.GetTypeNameForLength(tl.Length)} tl = 'hello'
                  FOO(tl)
                ENDSCRIPT"
         );
@@ -223,11 +222,10 @@ public class TextLabelTests : SemanticsTestsBase
     {
         var s = Analyze(
             @$"PROC FOO(STRING s)
-               ENDFUNC
+               ENDPROC
 
                FUNC {TextLabelType.GetTypeNameForLength(tl.Length)} GET_MY_TEXT()
-                 {TextLabelType.GetTypeNameForLength(tl.Length)} tl
-                 TEXT_LABEL_ASSIGN_STRING(tl, 'hello world')
+                 {TextLabelType.GetTypeNameForLength(tl.Length)} tl = 'hello world'
                  RETURN tl
                ENDFUNC
 
@@ -237,6 +235,40 @@ public class TextLabelTests : SemanticsTestsBase
         );
 
         True(s.Diagnostics.HasErrors);
-        CheckError(ErrorCode.SemanticArgCannotPassNonLValueToRefParam, (11, 22), (11, 34), s.Diagnostics);
+        CheckError(ErrorCode.SemanticArgCannotPassNonLValueToRefParam, (10, 22), (10, 34), s.Diagnostics);
+    }
+
+    [Theory]
+    [MemberData(nameof(GetAllTextLabelTypes64Bit))]
+    public void CannotUseBinaryAddOperator(TextLabelType tl)
+    {
+        var s = Analyze(
+            @$"SCRIPT my_script
+                 {TextLabelType.GetTypeNameForLength(tl.Length)} tl = 'hello world'
+                 tl = tl + 'foobar'
+               ENDSCRIPT"
+        );
+
+        True(s.Diagnostics.HasErrors);
+        CheckError(ErrorCode.SemanticBadBinaryOp, (3, 23), (3, 35), s.Diagnostics);
+    }
+
+    [Theory]
+    [MemberData(nameof(GetAllTextLabelTypes64Bit))]
+    public void CannotUseOtherCompoundOperators(TextLabelType tl)
+    {
+        var s = Analyze(
+            @$"SCRIPT my_script
+                 {TextLabelType.GetTypeNameForLength(tl.Length)} tl = 'foobar'
+                 tl -= 1
+                 tl *= 1
+                 tl /= 1
+               ENDSCRIPT"
+        );
+
+        True(s.Diagnostics.HasErrors);
+        CheckError(ErrorCode.SemanticTextLabelOnlyAppendSupported, (3, 21), (3, 22), s.Diagnostics);
+        CheckError(ErrorCode.SemanticTextLabelOnlyAppendSupported, (4, 21), (4, 22), s.Diagnostics);
+        CheckError(ErrorCode.SemanticTextLabelOnlyAppendSupported, (5, 21), (5, 22), s.Diagnostics);
     }
 }

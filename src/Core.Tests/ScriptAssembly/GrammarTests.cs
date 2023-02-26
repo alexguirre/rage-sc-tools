@@ -283,7 +283,7 @@ _0x9614299DCB53E54B:    .native 0x9614299DCB53E54B
             Assert.Equal(0xD49F9B0955C367DEu, sc.NativeHash(1));
             Assert.Equal(0x9614299DCB53E54Bu, sc.NativeHash(2));
 
-            var s = new DumperFiveV12().DumpToString(sc);
+            var s = new DumperFiveV10().DumpToString(sc);
             ;
         }
     }

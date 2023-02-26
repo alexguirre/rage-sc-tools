@@ -334,7 +334,50 @@ public sealed class SemanticsAnalyzer : AstVisitor
     {
         var lhsType = node.LHS.Accept(exprTypeChecker, this);
         var rhsType = node.RHS.Accept(exprTypeChecker, this);
-        CheckRuntimeAssignment(lhsType, rhsType, node.RHS);
+        var rhsNode = node.RHS;
+
+        if (node.CompoundOperator.HasValue)
+        {
+            var binOp = node.CompoundOperator.Value;
+            
+            if (lhsType is TextLabelType)
+            {
+                // special case for text labels which support `lhs += rhs` but not `lhs = lhs + rhs`
+                if (binOp != BinaryOperator.Add)
+                {
+                    TextLabelOnlyAppendSupportedError(node);
+                }
+                else
+                {
+                    switch (rhsType)
+                    {
+                        case TextLabelType when !rhsNode.ValueKind.Is(ValueKind.Addressable):
+                            TextLabelAppendNonAddressableTextLabelError(rhsNode);
+                            break;
+                        case TextLabelType:
+                        case StringType:
+                        case IntType:
+                            // nothing to do, RHS has a valid type
+                            break;
+                        default:
+                            if (!rhsType.IsError)
+                            {
+                                TextLabelAppendInvalidTypeError(rhsNode);
+                            }
+                            break;
+                    }
+                }
+            }
+            else
+            {
+                // synthesize `lhs binOp= rhs` as `lhs = lhs binOp rhs`
+                var binExpr = new BinaryExpression(node.CompoundOperator.Value.ToToken().Create(), node.LHS, node.RHS);
+                rhsType = binExpr.Accept(exprTypeChecker, this);
+                rhsNode = binExpr;
+            }
+        }
+        
+        CheckRuntimeAssignment(lhsType, rhsType, rhsNode);
     }
 
     private void CheckRuntimeAssignment(TypeInfo lhsType, TypeInfo rhsType, INode? rhsNode)
@@ -863,5 +906,11 @@ public sealed class SemanticsAnalyzer : AstVisitor
         => Error(ErrorCode.SemanticExpectedNativeType, $"Expected a NATIVE type, but found '{typeName.Name}'", typeName.Location);
     internal void RequiredParameterAfterOptionalParameterError(VarDeclaration parameter)
         => Error(ErrorCode.SemanticRequiredParameterAfterOptionalParameter, $"Optional parameters must appear after all required parameters", parameter.Location);
+    internal void TextLabelOnlyAppendSupportedError(AssignmentStatement stmt)
+        => Error(ErrorCode.SemanticTextLabelOnlyAppendSupported, $"TEXT_LABEL type only supported '+='", stmt.Tokens[0].Location);
+    internal void TextLabelAppendNonAddressableTextLabelError(IExpression rhs)
+        => Error(ErrorCode.SemanticTextLabelAppendNonAddressableTextLabel, $"Cannot append non-addressable TEXT_LABEL", rhs.Location);
+    internal void TextLabelAppendInvalidTypeError(IExpression rhs)
+        => Error(ErrorCode.SemanticTextLabelAppendInvalidType, $"Cannot append type '{rhs.Type!.ToPrettyString()}' to TEXT_LABEL. Only INT, STRING or TEXT_LABEL are supported", rhs.Location);
     #endregion Errors
 }

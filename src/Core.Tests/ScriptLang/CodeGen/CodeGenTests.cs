@@ -1300,7 +1300,7 @@
             ");
         }
 
-        [Fact(Skip = "TEXT_LABEL += STRING not supported currently")]
+        [Fact]
         public void TestTextLabelAppendString()
         {
             CompileMain(
@@ -1357,7 +1357,7 @@
             ");
         }
 
-        [Fact(Skip = "TEXT_LABEL += INT not supported currently")]
+        [Fact]
         public void TestTextLabelAppendInt()
         {
             CompileMain(
@@ -1406,7 +1406,7 @@
             ");
         }
 
-        [Fact(Skip = "TEXT_LABEL += STRING not supported currently")]
+        [Fact]
         public void TestTextLabelAppendTextLabel()
         {
             // supported due to TEXT_LABEL to STRING implicit conversion
@@ -1467,7 +1467,6 @@
             ",
             sourceStatics: @"
                 PROC TEST(TEXT_LABEL_31 tl)
-                    TEXT_LABEL_APPEND_INT(tl, 1234)
                 ENDPROC
             ",
             expectedAssembly: @"
@@ -1483,12 +1482,6 @@
 
             TEST:
                 ENTER 4, 6
-
-                ; APPEND(tl, 1234)
-                PUSH_CONST_S16 1234
-                LOCAL_U8 0
-                TEXT_LABEL_APPEND_INT 32
-
                 LEAVE 4, 0
             ");
         }

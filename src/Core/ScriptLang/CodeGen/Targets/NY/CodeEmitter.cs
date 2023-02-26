@@ -374,6 +374,14 @@ public sealed partial class CodeEmitter : ICodeEmitter
             Debug.Assert(destinationTypeTL2.Length <= byte.MaxValue);
             instEmitter.EmitTextLabelAssignString((byte)destinationTypeTL2.Length);
         }
+        else if (sourceType is IntType && destinationType is TextLabelType destinationTypeTL3)
+        {
+            // Allow assignment of ints to text labels without intrinsics.
+            EmitValue(source);
+            EmitAddress(destination);
+            Debug.Assert(destinationTypeTL3.Length <= byte.MaxValue);
+            instEmitter.EmitTextLabelAssignInt((byte)destinationTypeTL3.Length);
+        }
         else
         {
             EmitValue(source);
@@ -390,6 +398,51 @@ public sealed partial class CodeEmitter : ICodeEmitter
                 Semantics = new(destination.Semantics.ValueType, ValueKind.RValue | ValueKind.Addressable, ArgumentKind.None, destination)
             },
             source);
+    }
+
+    public void EmitCompoundAssignment(IExpression destination, IExpression source, BinaryOperator binOp)
+    {
+
+        var sourceType = source.Type!;
+        var destinationType = destination.Type!;
+
+        if (sourceType is TextLabelType && destinationType is TextLabelType destinationTypeTL1)
+        {
+            Debug.Assert(binOp is BinaryOperator.Add, "Only += is supported for text labels");
+            Debug.Assert(source.ValueKind.Is(ValueKind.Addressable), "Text label to append must be addressable");
+            // Allow appending text labels to text labels without intrinsics.
+            EmitAddress(source);
+            EmitAddress(destination);
+            Debug.Assert(destinationTypeTL1.Length <= byte.MaxValue);
+            instEmitter.EmitTextLabelAppendString((byte)destinationTypeTL1.Length);
+        }
+        else if (sourceType is StringType && destinationType is TextLabelType destinationTypeTL2)
+        {
+            Debug.Assert(binOp is BinaryOperator.Add, "Only += is supported for text labels");
+            // Allow appending strings to text labels without intrinsics.
+            EmitValue(source);
+            EmitAddress(destination);
+            Debug.Assert(destinationTypeTL2.Length <= byte.MaxValue);
+            instEmitter.EmitTextLabelAppendString((byte)destinationTypeTL2.Length);
+        }
+        else if (sourceType is IntType && destinationType is TextLabelType destinationTypeTL3)
+        {
+            Debug.Assert(binOp is BinaryOperator.Add, "Only += is supported for text labels");
+            // Allow appending ints to text labels without intrinsics.
+            EmitValue(source);
+            EmitAddress(destination);
+            Debug.Assert(destinationTypeTL3.Length <= byte.MaxValue);
+            instEmitter.EmitTextLabelAppendInt((byte)destinationTypeTL3.Length);
+        }
+        else
+        {
+            // synthesize `lhs binOp= rhs` as `lhs = lhs binOp rhs`
+            var binExpr = new BinaryExpression(binOp.ToToken().Create(), destination, source)
+            {
+                Semantics = new(destination.Type, (ValueKind.RValue | ValueKind.Constant) & destination.ValueKind & source.ValueKind, ArgumentKind.None)
+            };
+            EmitAssignment(destination, binExpr);
+        }
     }
 
     public void EmitArrayIndexing(IndexingExpression expr)

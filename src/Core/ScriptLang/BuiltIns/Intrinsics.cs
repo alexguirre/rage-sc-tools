@@ -48,12 +48,6 @@ public static partial class Intrinsics
     public static IIntrinsic INT_TO_ENUM { get; } = new IntrinsicINT_TO_ENUM();
     public static IIntrinsic ENUM_TO_STRING { get; } = new IntrinsicENUM_TO_STRING();
 
-    // Text Label Utilities
-    public static IIntrinsic TEXT_LABEL_ASSIGN_STRING { get; } = new IntrinsicTEXT_LABEL_ASSIGN_STRING();
-    public static IIntrinsic TEXT_LABEL_ASSIGN_INT { get; } = new IntrinsicTEXT_LABEL_ASSIGN_INT();
-    public static IIntrinsic TEXT_LABEL_APPEND_STRING { get; } = new IntrinsicTEXT_LABEL_APPEND_STRING();
-    public static IIntrinsic TEXT_LABEL_APPEND_INT { get; } = new IntrinsicTEXT_LABEL_APPEND_INT();
-
     // Bit Utilities
     public static IIntrinsic IS_BIT_SET { get; } = new IntrinsicIS_BIT_SET();
 
@@ -73,7 +67,6 @@ public static partial class Intrinsics
         SIZE_OF,
         COUNT_OF,
         ENUM_TO_INT, INT_TO_ENUM, ENUM_TO_STRING,
-        TEXT_LABEL_ASSIGN_STRING, TEXT_LABEL_ASSIGN_INT, TEXT_LABEL_APPEND_STRING, TEXT_LABEL_APPEND_INT,
         IS_BIT_SET,
         NATIVE_TO_INT, INT_TO_NATIVE,
         HASH,

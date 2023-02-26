@@ -55,6 +55,9 @@ public enum ErrorCode
     SemanticTooManyArguments = 0x201F,
     SemanticExpressionIsNotAssignable = 0x2020,
     SemanticArrayLengthExpressionIsNotConstant = 0x2021,
+    SemanticTextLabelOnlyAppendSupported = 0x2022,
+    SemanticTextLabelAppendNonAddressableTextLabel = 0x2023,
+    SemanticTextLabelAppendInvalidType = 0x2024,
 
     // Preprocessor errors   0x3000 - 0x3FFF
     PreprocessorUnexpectedDirective = 0x3000,

@@ -116,8 +116,8 @@ internal static class Rules
 
             return false;
         }
-        // TEXT_LABEL_n <- TEXT_LABEL_n | STRING
-        public bool Visit(TextLabelType destination) => Source is TextLabelType or StringType;
+        // TEXT_LABEL_n <- TEXT_LABEL_n | STRING | INT
+        public bool Visit(TextLabelType destination) => Source is TextLabelType or StringType or IntType;
         // FUNCPTR <- FUNCPTR
         public bool Visit(FunctionType destination) => destination == Source;
         public bool Visit(TypeNameType destination) => false;

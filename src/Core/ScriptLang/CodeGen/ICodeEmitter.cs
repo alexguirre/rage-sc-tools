@@ -22,6 +22,7 @@ public interface ICodeEmitter
 
     void EmitAssignment(IExpression destination, IExpression source);
     void EmitAssignmentToVar(VarDeclaration destination, IExpression source);
+    void EmitCompoundAssignment(IExpression destination, IExpression source, BinaryOperator binOp);
 
     void EmitDefaultInit(VarDeclaration declaration);
 

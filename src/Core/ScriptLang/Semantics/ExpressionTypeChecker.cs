@@ -443,8 +443,6 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
         => Error(s, ErrorCode.SemanticArgCannotPassType, $"Argument {argIndex + 1}: cannot pass '{argType.ToPrettyString()}' to parameter type '{paramType.ToPrettyString()}'", arg.Location);
     internal static void ArgCannotPassRefTypeError(SemanticsAnalyzer s, int argIndex, IExpression arg, TypeInfo argType, TypeInfo paramType)
         => Error(s, ErrorCode.SemanticArgCannotPassRefType, $"Argument {argIndex + 1}: cannot pass '{argType.ToPrettyString()}' to reference parameter type '{paramType.ToPrettyString()}'", arg.Location);
-    internal static void ArgCannotPassRefTextLabelError(SemanticsAnalyzer s, int argIndex, IExpression arg, TypeInfo argType)
-        => Error(s, ErrorCode.SemanticArgCannotPassRefType, $"Argument {argIndex + 1}: cannot pass '{argType.ToPrettyString()}' to TEXT_LABEL_* reference", arg.Location);
     internal static void ArgCannotPassNonLValueToRefParamError(SemanticsAnalyzer s, int argIndex, IExpression arg)
         => Error(s, ErrorCode.SemanticArgCannotPassNonLValueToRefParam, $"Argument {argIndex + 1}: cannot pass non-lvalue to reference parameter", arg.Location);
     internal static void ArgCannotPassNonLValueTextLabelToStringParamError(SemanticsAnalyzer s, int argIndex, IExpression arg)
