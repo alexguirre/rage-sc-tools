@@ -58,7 +58,7 @@ public class Parser
             }
             else if (IsPossibleVarDeclaration())
             {
-                decls.Add(ParseVarDeclaration(VarKind.Static, allowMultipleDeclarations: true, allowReferences: false));
+                decls.Add(ParseVarDeclaration(VarKind.Static, allowMultipleDeclarations: true));
                 if (!isInsideCommaSeparatedVarDeclaration)
                 {
                     ExpectEOS();
@@ -181,7 +181,7 @@ public class Parser
         var fields = new List<VarDeclaration>();
         while (Peek(0).Kind is not TokenKind.ENDSTRUCT)
         {
-            fields.Add(ParseVarDeclaration(VarKind.Field, allowMultipleDeclarations: true, allowReferences: false));
+            fields.Add(ParseVarDeclaration(VarKind.Field, allowMultipleDeclarations: true));
 
             if (!isInsideCommaSeparatedVarDeclaration)
             {
@@ -207,7 +207,7 @@ public class Parser
         var vars = new List<VarDeclaration>();
         while (Peek(0).Kind is not TokenKind.ENDGLOBAL)
         {
-            vars.Add(ParseVarDeclaration(VarKind.Global, allowMultipleDeclarations: true, allowReferences: false));
+            vars.Add(ParseVarDeclaration(VarKind.Global, allowMultipleDeclarations: true));
 
             if (!isInsideCommaSeparatedVarDeclaration)
             {
@@ -395,7 +395,7 @@ public class Parser
                 @params = new();
                 do
                 {
-                    @params.Add(ParseVarDeclaration(isScriptParameterList ? VarKind.ScriptParameter : VarKind.Parameter, allowMultipleDeclarations: false, allowReferences: !isScriptParameterList));
+                    @params.Add(ParseVarDeclaration(isScriptParameterList ? VarKind.ScriptParameter : VarKind.Parameter, allowMultipleDeclarations: false));
                 } while (Accept(TokenKind.Comma, out _));
             }
         }
@@ -469,7 +469,7 @@ public class Parser
 
         if (IsPossibleVarDeclaration())
         {
-            stmt = ParseVarDeclaration(VarKind.Local, allowMultipleDeclarations: true, allowReferences: false).WithLabel(label);
+            stmt = ParseVarDeclaration(VarKind.Local, allowMultipleDeclarations: true).WithLabel(label);
         }
         else if (IsPossibleExpression() &&
                  !IsPossibleLabel()) // in case of sequential labels, avoid parsing the second label identifier as an expression
@@ -970,20 +970,20 @@ public class Parser
     private bool IsPossibleVarDeclaration()
         => isInsideCommaSeparatedVarDeclaration ||
            Peek(0).Kind is TokenKind.Identifier && Peek(1).Kind is TokenKind.Identifier or TokenKind.Ampersand;
-    private VarDeclaration ParseVarDeclaration(VarKind varKind, bool allowMultipleDeclarations, bool allowReferences)
+    private VarDeclaration ParseVarDeclaration(VarKind varKind, bool allowMultipleDeclarations)
     {
         Token typeIdent;
-        IVarDeclarator decl;
+        VarDeclarator decl;
         if (isInsideCommaSeparatedVarDeclaration)
         {
             // continue comma-separated var declarations
             typeIdent = commaSeparatedVarDeclarationTypeIdentifier;
-            decl = ParseDeclarator(allowReferences);
+            decl = ParseDeclarator();
         }
         else
         {
             ExpectOrMissing(TokenKind.Identifier, out typeIdent, MissingIdentifier);
-            decl = ParseDeclarator(allowReferences);
+            decl = ParseDeclarator();
         }
 
         IExpression? initializerExpr = null;
@@ -1005,45 +1005,32 @@ public class Parser
 
         return new(new(typeIdent), decl, varKind, initializerExpr);
 
-        IVarDeclarator ParseDeclarator(bool allowReferences)
+        VarDeclarator ParseDeclarator()
         {
             /*  declarator
-                : identifier arrayLength?     #simpleDeclarator
-                | '&' identifier              #refDeclarator
+                : '&'? identifier arrayLength?
                 ;
 
                 arrayLength
                 : '[' expression? ']' arrayLength?
                 ;
-
-                NOTE: arrays are passed by reference so no need to support syntax like 'INT (&arr)[10]' in the grammar, 'INT arr[10]' is equivalent
             */
 
-            if (Accept(TokenKind.Identifier, out var identifier))
+            var isRef = Accept(TokenKind.Ampersand, out var ampersandToken);
+            if (ExpectOrMissing(TokenKind.Identifier, out var identifier, MissingIdentifier))
             {
                 List<IExpression?>? arrayLengths = null;
                 Token firstOpenBracket = default, lastCloseBracket = default;
-                TryParseArrayLengths(ref arrayLengths, ref firstOpenBracket, ref lastCloseBracket);
-                return arrayLengths is null ?
-                    new VarDeclarator(identifier) :
-                    new VarArrayDeclarator(identifier, firstOpenBracket, lastCloseBracket, arrayLengths);
-            }
-            else if (Accept(TokenKind.Ampersand, out var ampersandToken))
-            {
-                if (!allowReferences)
-                {
-                    ReferenceNotAllowedError(ampersandToken);
-                }
-
-                ExpectOrMissing(TokenKind.Identifier, out identifier, MissingIdentifier);
-                return new VarRefDeclarator(ampersandToken, identifier);
+                return TryParseArrayLengths(ref arrayLengths, ref firstOpenBracket, ref lastCloseBracket)
+                    ? new VarDeclarator(identifier, firstOpenBracket, lastCloseBracket, arrayLengths, isRef ? ampersandToken : null)
+                    : new VarDeclarator(identifier, isRef ? ampersandToken : null);
             }
 
             UnknownDeclaratorError();
-            return new VarDeclarator(MissingIdentifier());
+            return new VarDeclarator(MissingIdentifier(), isRef ? ampersandToken : null);
 
 
-            void TryParseArrayLengths(ref List<IExpression?>? ranks, ref Token firstOpenBracket, ref Token lastCloseBracket)
+            bool TryParseArrayLengths(ref List<IExpression?>? ranks, ref Token firstOpenBracket, ref Token lastCloseBracket)
             {
                 if (Accept(TokenKind.OpenBracket, out var openBracket))
                 {
@@ -1064,6 +1051,8 @@ public class Parser
 
                     TryParseArrayLengths(ref ranks, ref firstOpenBracket, ref lastCloseBracket);
                 }
+
+                return ranks != null;
             }
         }
     }
@@ -1141,9 +1130,6 @@ public class Parser
 
     private void UsingAfterDeclarationError(UsingDirective @using)
         => Error(ErrorCode.ParserUsingAfterDeclaration, $"USING directives must precede all declarations", @using.Location);
-
-    private void ReferenceNotAllowedError(Token ampersandToken)
-        => Error(ErrorCode.ParserReferenceNotAllowed, $"References are not allowed in this context", ampersandToken.Location);
 
     private Token Peek(int offset)
     {

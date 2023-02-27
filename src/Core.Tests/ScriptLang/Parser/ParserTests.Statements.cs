@@ -617,21 +617,21 @@ public partial class ParserTests
             {
                 Label: null,
                 Type: TypeName { Name: "INT" },
-                Name: "hello", Declarator: VarDeclarator { Name: "hello" },
+                Name: "hello", Declarator: { Name: "hello", IsReference: false, IsArray: false },
                 Initializer: null, Kind: VarKind.Local
             });
             Assert(p.ParseStatement(), n => n is VarDeclaration
             {
                 Label: Label { Name: "label" },
                 Type: TypeName { Name: "FLOAT" },
-                Name: "foo", Declarator: VarDeclarator { Name: "foo" },
+                Name: "foo", Declarator: { Name: "foo", IsReference: false, IsArray: false },
                 Initializer: null, Kind: VarKind.Local
             });
             Assert(p.ParseStatement(), n => n is VarDeclaration
             {
                 Label: null,
                 Type: TypeName { Name: "FLOAT" },
-                Name: "bar", Declarator: VarDeclarator { Name: "bar" },
+                Name: "bar", Declarator: { Name: "bar", IsReference: false, IsArray: false },
                 Initializer: null, Kind: VarKind.Local
             });
             NoErrorsAndIsAtEOF(p);
@@ -649,7 +649,7 @@ public partial class ParserTests
             {
                 Label: null,
                 Type: TypeName { Name: "INT" },
-                Name: "hello", Declarator: VarDeclarator { Name: "hello" },
+                Name: "hello", Declarator: { Name: "hello", IsReference: false, IsArray: false },
                 Initializer: IntLiteralExpression { Value: 1 },
                 Kind: VarKind.Local
             });
@@ -657,7 +657,7 @@ public partial class ParserTests
             {
                 Label: Label { Name: "label" },
                 Type: TypeName { Name: "FLOAT" },
-                Name: "foo", Declarator: VarDeclarator { Name: "foo" },
+                Name: "foo", Declarator: { Name: "foo", IsReference: false, IsArray: false },
                 Initializer: FloatLiteralExpression { Value: 3.0f },
                 Kind: VarKind.Local
             });
@@ -665,7 +665,7 @@ public partial class ParserTests
             {
                 Label: null,
                 Type: TypeName { Name: "FLOAT" },
-                Name: "bar", Declarator: VarDeclarator { Name: "bar" },
+                Name: "bar", Declarator: { Name: "bar", IsReference: false, IsArray: false },
                 Initializer: BinaryExpression
                 {
                     Operator: BinaryOperator.Add,
@@ -748,7 +748,7 @@ public partial class ParserTests
         }
 
         [Fact]
-        public void VarDeclarationStatementCannotBeReference()
+        public void VarDeclarationStatementIsReference()
         {
             var p = ParserFor(
                 @"INT &hello"
@@ -758,12 +758,10 @@ public partial class ParserTests
             {
                 Label: null,
                 Type: TypeName { Name: "INT" },
-                Name: "hello", Declarator: VarRefDeclarator { Name: "hello" },
+                Name: "hello", Declarator: { Name: "hello", IsReference: true, IsArray: false },
                 Initializer: null, Kind: VarKind.Local
             });
-
-            CheckError(ErrorCode.ParserReferenceNotAllowed, (1, 5), (1, 5), p.Diagnostics);
-            True(p.IsAtEOF);
+            NoErrorsAndIsAtEOF(p); // error is reported during semantic analysis, not parsing
         }
 
         [Fact]

@@ -18,7 +18,6 @@ public enum ErrorCode
     ParserUnknownDeclarator = 0x1004,
     ParserExpressionAsStatement = 0x1005,
     ParserUsingAfterDeclaration = 0x1006,
-    ParserReferenceNotAllowed = 0x1007,
 
     // Semantic errors 0x2000 - 0x2FFF
     SemanticSymbolAlreadyDefined = 0x2000,
@@ -58,6 +57,7 @@ public enum ErrorCode
     SemanticTextLabelOnlyAppendSupported = 0x2022,
     SemanticTextLabelAppendNonAddressableTextLabel = 0x2023,
     SemanticTextLabelAppendInvalidType = 0x2024,
+    SemanticReferenceNotAllowed = 0x2025,
 
     // Preprocessor errors   0x3000 - 0x3FFF
     PreprocessorUnexpectedDirective = 0x3000,

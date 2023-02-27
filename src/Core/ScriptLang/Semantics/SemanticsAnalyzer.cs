@@ -44,7 +44,7 @@ public sealed class SemanticsAnalyzer : AstVisitor
     {
         this.usingResolver = usingResolver;
         Diagnostics = diagnostics;
-        typeFactory = new(this);
+        typeFactory = new(this, exprTypeChecker);
 
         RegisterBuiltIns();
     }
@@ -237,6 +237,11 @@ public sealed class SemanticsAnalyzer : AstVisitor
         var varType = typeFactory.GetFrom(node);
 
         // TODO: global variables
+
+        if (node is { IsReference: true, Kind: not VarKind.Parameter })
+        {
+            ReferenceNotAllowedError(node);
+        }
 
         switch (node.Kind)
         {
@@ -879,15 +884,7 @@ public sealed class SemanticsAnalyzer : AstVisitor
     internal void ArrayLengthExpressionIsNotConstantError(VarDeclaration arrayDecl, IExpression expr)
         => Error(ErrorCode.SemanticArrayLengthExpressionIsNotConstant, $"Size expression of array '{arrayDecl.Name}' must be constant", expr.Location);
     internal void TypeNotAllowedInConstantError(VarDeclaration constVarDecl, TypeInfo type)
-    {
-        var loc = constVarDecl.Declarator switch
-        {
-            VarRefDeclarator r => constVarDecl.Type.Location.Merge(r.AmpersandToken.Location),
-            VarArrayDeclarator a => constVarDecl.Type.Location.Merge(a.Location),
-            _ => constVarDecl.Type.Location,
-        };
-        Error(ErrorCode.SemanticTypeNotAllowedInConstant, $"Type '{type.ToPrettyString()}' is not allowed in constants", loc);
-    }
+        => Error(ErrorCode.SemanticTypeNotAllowedInConstant, $"Type '{type.ToPrettyString()}' is not allowed in constants", constVarDecl.Type.Location);
     internal void ExpectedValueInReturnError(TypeInfo returnType, ReturnStatement returnStmt)
         => Error(ErrorCode.SemanticExpectedValueInReturn, $"Expected value of type '{returnType.ToPrettyString()}' in RETURN", returnStmt.Location);
     internal void ValueReturnedFromProcedureError(ReturnStatement returnStmt)
@@ -912,5 +909,7 @@ public sealed class SemanticsAnalyzer : AstVisitor
         => Error(ErrorCode.SemanticTextLabelAppendNonAddressableTextLabel, $"Cannot append non-addressable TEXT_LABEL", rhs.Location);
     internal void TextLabelAppendInvalidTypeError(IExpression rhs)
         => Error(ErrorCode.SemanticTextLabelAppendInvalidType, $"Cannot append type '{rhs.Type!.ToPrettyString()}' to TEXT_LABEL. Only INT, STRING or TEXT_LABEL are supported", rhs.Location);
+    internal void ReferenceNotAllowedError(VarDeclaration varDecl)
+        => Error(ErrorCode.SemanticReferenceNotAllowed, $"References are not allowed in this context", varDecl.Declarator.RefAmpersandToken!.Value.Location);
     #endregion Errors
 }

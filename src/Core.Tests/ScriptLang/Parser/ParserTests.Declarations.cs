@@ -151,35 +151,35 @@ public partial class ParserTests
                 fields => Collection(fields,
                     _0 => True(_0 is
                     {
-                        Name: "a", Declarator: VarDeclarator { Name: "a" },
+                        Name: "a", Declarator: { Name: "a", IsReference: false, IsArray: false },
                         Type: TypeName { Name: "INT" },
                         Initializer: null,
                         Kind: VarKind.Field
                     }),
                     _1 => True(_1 is
                     {
-                        Name: "b", Declarator: VarDeclarator { Name: "b" },
+                        Name: "b", Declarator: { Name: "b", IsReference: false, IsArray: false },
                         Type: TypeName { Name: "INT" },
                         Initializer: IntLiteralExpression { Value: 1 },
                         Kind: VarKind.Field
                     }),
                     _2 => True(_2 is
                     {
-                        Name: "c", Declarator: VarDeclarator { Name: "c" },
+                        Name: "c", Declarator: { Name: "c", IsReference: false, IsArray: false },
                         Type: TypeName { Name: "INT" },
                         Initializer: null,
                         Kind: VarKind.Field
                     }),
                     _3 => True(_3 is
                     {
-                        Name: "d", Declarator: VarArrayDeclarator { Name: "d" },
+                        Name: "d", Declarator: { Name: "d", IsReference: false, IsArray: true, Rank: 1, Lengths: [IntLiteralExpression { Value: 5 }] },
                         Type: TypeName { Name: "FLOAT" },
                         Initializer: null,
                         Kind: VarKind.Field
                     }),
                     _4 => True(_4 is
                     {
-                        Name: "e", Declarator: VarDeclarator { Name: "e" },
+                        Name: "e", Declarator: { Name: "e", IsReference: false, IsArray: false },
                         Type: TypeName { Name: "INT" },
                         Initializer: BinaryExpression
                         {
@@ -191,7 +191,7 @@ public partial class ParserTests
                     }),
                     _5 => True(_5 is
                     {
-                        Name: "f", Declarator: VarDeclarator { Name: "f" },
+                        Name: "f", Declarator: { Name: "f", IsReference: false, IsArray: false },
                         Type: TypeName { Name: "BOOL" },
                         Initializer: null,
                         Kind: VarKind.Field
@@ -246,35 +246,35 @@ public partial class ParserTests
                 vars => Collection(vars,
                     _0 => True(_0 is
                     {
-                        Name: "a", Declarator: VarDeclarator { Name: "a" },
+                        Name: "a", Declarator: { Name: "a", IsReference: false, IsArray: false },
                         Type: TypeName { Name: "INT" },
                         Initializer: null,
                         Kind: VarKind.Global
                     }),
                     _1 => True(_1 is
                     {
-                        Name: "b", Declarator: VarDeclarator { Name: "b" },
+                        Name: "b", Declarator: { Name: "b", IsReference: false, IsArray: false },
                         Type: TypeName { Name: "INT" },
                         Initializer: IntLiteralExpression { Value: 1 },
                         Kind: VarKind.Global
                     }),
                     _2 => True(_2 is
                     {
-                        Name: "c", Declarator: VarDeclarator { Name: "c" },
+                        Name: "c", Declarator: { Name: "c", IsReference: false, IsArray: false },
                         Type: TypeName { Name: "INT" },
                         Initializer: null,
                         Kind: VarKind.Global
                     }),
                     _3 => True(_3 is
                     {
-                        Name: "d", Declarator: VarArrayDeclarator { Name: "d" },
+                        Name: "d", Declarator: { Name: "d", IsReference: false, IsArray: true, Rank: 1, Lengths: [IntLiteralExpression { Value: 5 }]  },
                         Type: TypeName { Name: "FLOAT" },
                         Initializer: null,
                         Kind: VarKind.Global
                     }),
                     _4 => True(_4 is
                     {
-                        Name: "e", Declarator: VarDeclarator { Name: "e" },
+                        Name: "e", Declarator: { Name: "e", IsReference: false, IsArray: false },
                         Type: TypeName { Name: "INT" },
                         Initializer: BinaryExpression
                         {
@@ -286,7 +286,7 @@ public partial class ParserTests
                     }),
                     _5 => True(_5 is
                     {
-                        Name: "f", Declarator: VarDeclarator { Name: "f" },
+                        Name: "f", Declarator: { Name: "f", IsReference: false, IsArray: false },
                         Type: TypeName { Name: "BOOL" },
                         Initializer: null,
                         Kind: VarKind.Global

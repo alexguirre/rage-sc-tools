@@ -104,11 +104,11 @@ public partial class ParserTests
         True(stmt is VarDeclaration);
         if (stmt is VarDeclaration varDecl)
         {
-            True(varDecl.Declarator is VarArrayDeclarator);
+            True(varDecl.Declarator.IsArray);
             True(varDeclPredicate(varDecl));
-            Equal(expectedLengths.Length, ((VarArrayDeclarator)varDecl.Declarator).Rank);
+            Equal(expectedLengths.Length, varDecl.Declarator.Rank);
             int i = 0;
-            foreach(var length in ((VarArrayDeclarator)varDecl.Declarator).Lengths)
+            foreach(var length in varDecl.Declarator.Lengths)
             {
                 True(expectedLengths[i](length));
                 i++;

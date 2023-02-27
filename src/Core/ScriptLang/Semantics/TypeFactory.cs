@@ -14,9 +14,9 @@ internal sealed class TypeFactory
     private readonly Visitor visitor;
     private readonly SemanticsAnalyzer semantics;
 
-    public TypeFactory(SemanticsAnalyzer semantics)
+    public TypeFactory(SemanticsAnalyzer semantics, ExpressionTypeChecker exprTypeChecker)
     {
-        visitor = new();
+        visitor = new(exprTypeChecker);
         this.semantics = semantics;
     }
 
@@ -28,11 +28,11 @@ internal sealed class TypeFactory
 
     private sealed class Visitor : AstVisitor<TypeInfo, SemanticsAnalyzer>
     {
-        private readonly VarDeclaratorVisitor varDeclaratorVisitor;
+        private readonly ExpressionTypeChecker exprTypeChecker;
 
-        public Visitor()
+        public Visitor(ExpressionTypeChecker exprTypeChecker)
         {
-            varDeclaratorVisitor = new(this);
+            this.exprTypeChecker = exprTypeChecker;
         }
 
         public override TypeInfo Visit(EnumDeclaration node, SemanticsAnalyzer s)
@@ -74,11 +74,46 @@ internal sealed class TypeFactory
         {
             if (node.Semantics.ValueType is null)
             {
-                var ty = node.Declarator.Accept(varDeclaratorVisitor, (node, s));
+                var ty = BuildTypeForVarDeclaration(node, s);
                 node.Semantics = node.Semantics with { ValueType = ty };
             }
 
             return node.Semantics.ValueType;
+        }
+        
+        private TypeInfo BuildTypeForVarDeclaration(VarDeclaration node, SemanticsAnalyzer s)
+        {
+            var varType = node.Type.Accept(this, s);
+            var declarator = node.Declarator;
+            if (!declarator.IsArray)
+            {
+                return varType;
+            }
+
+            Debug.Assert(declarator.Lengths.All(l => l is not null), "Incomplete array types are not supported for now");
+            return declarator.Lengths.Reverse().Aggregate(varType, (ty, lengthExpr) =>
+            {
+                var lengthType = lengthExpr?.Accept(exprTypeChecker, s) ?? ErrorType.Instance;
+
+                ConstantValue? length = null;
+                if (!lengthType.IsError)
+                {
+                    if (!lengthExpr!.ValueKind.Is(ValueKind.Constant))
+                    {
+                        s.ArrayLengthExpressionIsNotConstantError(node, lengthExpr);
+                    }
+                    else if (IntType.Instance.IsAssignableFrom(lengthType))
+                    {
+                        length = ConstantExpressionEvaluator.Eval(lengthExpr, s);
+                    }
+                    else
+                    {
+                        s.CannotConvertTypeError(lengthType, IntType.Instance, lengthExpr.Location);
+                    }
+                }
+
+                return new ArrayType(ty, length?.IntValue ?? 0);
+            });
         }
 
         public override TypeInfo Visit(FunctionDeclaration node, SemanticsAnalyzer s)
@@ -151,52 +186,4 @@ internal sealed class TypeFactory
             return node.Semantics.DeclaredType;
         }
     }
-
-    private sealed class VarDeclaratorVisitor : AstVisitor<TypeInfo, (VarDeclaration Var, SemanticsAnalyzer S)>
-    {
-        private readonly Visitor typeFactoryVisitor;
-        private readonly ExpressionTypeChecker exprTypeChecker = new();
-
-        public VarDeclaratorVisitor(Visitor typeFactoryVisitor)
-        {
-            this.typeFactoryVisitor = typeFactoryVisitor;
-        }
-
-        public override TypeInfo Visit(VarDeclarator node, (VarDeclaration Var, SemanticsAnalyzer S) param)
-            => param.Var.Type.Accept(typeFactoryVisitor, param.S);
-
-        public override TypeInfo Visit(VarRefDeclarator node, (VarDeclaration Var, SemanticsAnalyzer S) param)
-            => param.Var.Type.Accept(typeFactoryVisitor, param.S);
-
-        public override TypeInfo Visit(VarArrayDeclarator node, (VarDeclaration Var, SemanticsAnalyzer S) param)
-        {
-            var itemType = param.Var.Type.Accept(typeFactoryVisitor, param.S);
-            Debug.Assert(node.Lengths.All(l => l is not null), "Incomplete array types are not supported for now");
-            var arrayType = node.Lengths.Reverse().Aggregate(itemType, (ty, lengthExpr) =>
-            {
-                var lengthType = lengthExpr?.Accept(exprTypeChecker, param.S) ?? ErrorType.Instance;
-
-                ConstantValue? length = null;
-                if (!lengthType.IsError)
-                {
-                    if (!lengthExpr!.ValueKind.Is(ValueKind.Constant))
-                    {
-                        param.S.ArrayLengthExpressionIsNotConstantError(param.Var, lengthExpr);
-                    }
-                    else if (IntType.Instance.IsAssignableFrom(lengthType))
-                    {
-                        length = ConstantExpressionEvaluator.Eval(lengthExpr, param.S);
-                    }
-                    else
-                    {
-                        param.S.CannotConvertTypeError(lengthType, IntType.Instance, lengthExpr.Location);
-                    }
-                }
-
-                return new ArrayType(ty, length?.IntValue ?? 0);
-            });
-            return arrayType;
-        }
-    }
-
 }

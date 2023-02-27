@@ -90,14 +90,14 @@ public partial class ParserTests
             {
                 Label: null,
                 Type: TypeName { Name: "INT" },
-                Name: "a", Declarator: VarDeclarator { Name: "a" },
+                Name: "a", Declarator: { Name: "a", IsReference: false, IsArray: false },
                 Initializer: null, Kind: VarKind.Static
             });
             Assert(u.Declarations[1], n => n is VarDeclaration
             {
                 Label: null,
                 Type: TypeName { Name: "INT" },
-                Name: "b", Declarator: VarDeclarator { Name: "b" },
+                Name: "b", Declarator: { Name: "b", IsReference: false, IsArray: false },
                 Initializer: null, Kind: VarKind.Static
             });
 
@@ -117,7 +117,7 @@ public partial class ParserTests
             {
                 Label: null,
                 Type: TypeName { Name: "INT" },
-                Name: "a", Declarator: VarDeclarator { Name: "a" },
+                Name: "a", Declarator: { Name: "a", IsReference: false, IsArray: false },
                 Initializer: IntLiteralExpression { Value: 1 },
                 Kind: VarKind.Static
             });
@@ -125,7 +125,7 @@ public partial class ParserTests
             {
                 Label: null,
                 Type: TypeName { Name: "INT" },
-                Name: "b", Declarator: VarDeclarator { Name: "b" },
+                Name: "b", Declarator: { Name: "b", IsReference: false, IsArray: false },
                 Initializer: IntLiteralExpression { Value: 2 },
                 Kind: VarKind.Static
             });
@@ -133,7 +133,7 @@ public partial class ParserTests
             {
                 Label: null,
                 Type: TypeName { Name: "BOOL" },
-                Name: "c", Declarator: VarDeclarator { Name: "c" },
+                Name: "c", Declarator: { Name: "c", IsReference: false, IsArray: false },
                 Initializer: BoolLiteralExpression { Value: true },
                 Kind: VarKind.Static
             });
@@ -154,7 +154,7 @@ public partial class ParserTests
             {
                 Label: null,
                 Type: TypeName { Name: "INT" },
-                Name: "a", Declarator: VarDeclarator { Name: "a" },
+                Name: "a", Declarator: { Name: "a", IsReference: false, IsArray: false },
                 Initializer: IntLiteralExpression { Value: 1 },
                 Kind: VarKind.Constant
             });
@@ -162,7 +162,7 @@ public partial class ParserTests
             {
                 Label: null,
                 Type: TypeName { Name: "INT" },
-                Name: "b", Declarator: VarDeclarator { Name: "b" },
+                Name: "b", Declarator: { Name: "b", IsReference: false, IsArray: false },
                 Initializer: IntLiteralExpression { Value: 2 },
                 Kind: VarKind.Constant
             });
@@ -183,7 +183,7 @@ public partial class ParserTests
             {
                 Label: null,
                 Type: TypeName { Name: "INT" },
-                Name: "a", Declarator: VarDeclarator { Name: "a" },
+                Name: "a", Declarator: { Name: "a", IsReference: false, IsArray: false },
                 Initializer: IntLiteralExpression { Value: 1 },
                 Kind: VarKind.Constant
             });
@@ -191,7 +191,7 @@ public partial class ParserTests
             {
                 Label: null,
                 Type: TypeName { Name: "INT" },
-                Name: "b", Declarator: VarDeclarator { Name: "b" },
+                Name: "b", Declarator: { Name: "b", IsReference: false, IsArray: false },
                 Initializer: IntLiteralExpression { Value: 2 },
                 Kind: VarKind.Static
             });

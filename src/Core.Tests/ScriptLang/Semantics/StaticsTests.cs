@@ -260,12 +260,12 @@ public class StaticsTests : SemanticsTestsBase
     [Fact]
     public void ReferencesAreNotAllowed()
     {
-        // This is now detected in the parser phase
         var s = Analyze(
             @$"INT& foo"
         );
 
-        CheckError(ErrorCode.ParserReferenceNotAllowed, (1, 4), (1, 4), s.Diagnostics);
+        True(s.Diagnostics.HasErrors);
+        CheckError(ErrorCode.SemanticReferenceNotAllowed, (1, 4), (1, 4), s.Diagnostics);
     }
 
     [Fact]
