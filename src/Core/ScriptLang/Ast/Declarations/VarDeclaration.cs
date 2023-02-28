@@ -71,14 +71,16 @@ public sealed partial class VarDeclarator : BaseNode
     public Token NameToken => Tokens[0];
     public string Name => NameToken.Lexeme.ToString();
     /// <summary>
-    /// Gets whether this is a reference.
+    /// Gets whether this variable is a reference.
     /// </summary>
     public bool IsReference { get; }
     public Token? RefAmpersandToken => IsReference ? Tokens.Last() : null;
     /// <summary>
-    /// Gets whether this is an array. If true, <see cref="Lengths"/> is not empty and <see cref="Rank"/> is 1 or greater.
+    /// Gets whether this variable is an array. If true, <see cref="Lengths"/> is not empty and <see cref="Rank"/> is 1 or greater.
     /// </summary>
     public bool IsArray => Rank != 0;
+    public Token? ArrayOpenBracketToken => IsArray ? Tokens[1] : null;
+    public Token? ArrayCloseBracketToken => IsArray ? Tokens[2] : null;
     /// <summary>
     /// Gets the dimensions sizes. Empty is not an array.
     /// </summary>

@@ -202,14 +202,26 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
 
     public override TypeInfo Visit(IndexingExpression node, SemanticsAnalyzer s)
     {
-        throw new NotImplementedException();
-        //node.Array.Accept(this, param);
-        //node.Index.Accept(this, param);
+        var arrTy = node.Array.Accept(this, s);
+        var idxTy = node.Index.Accept(this, s);
+        if (arrTy.IsError)
+        {
+            return ErrorType;
+        }
 
-        //node.Semantics = new(Type: node.Array.Type!.Indexing(node.Index.Type!, node.Location, Diagnostics),
-        //                     IsLValue: true,
-        //                     IsConstant: false);
-        //return default;
+        if (arrTy is ArrayType arr)
+        {
+            if (!idxTy.IsError && !IntType.Instance.IsAssignableFrom(idxTy))
+            {
+                InvalidIndexTypeError(s, node.Index, idxTy, IntType.Instance);
+            }
+
+            node.Semantics = new(arr.Item, node.Array.ValueKind, ArgumentKind.None);
+            return arr.Item;
+        }
+
+        IndexingNotSupportedError(s, node, arrTy);
+        return ErrorType;
     }
 
     public override TypeInfo Visit(InvocationExpression node, SemanticsAnalyzer s)
@@ -299,19 +311,6 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
             {
                 ArgCannotPassNonLValueToRefParamError(s, argIndex, arg);
             }
-
-            arg.Semantics = arg.Semantics with { ArgumentKind = ArgumentKind.ByRef };
-        }
-        else if (paramType is ArrayType)
-        {
-            Debug.Assert(arg.Semantics.ValueKind.Is(ValueKind.Addressable)); // all expression of array type should be lvalues
-
-            // pass array by reference
-            if (paramType != argType)
-            {
-                ArgCannotPassTypeError(s, argIndex, arg, argType, paramType);
-            }
-            // TODO: check 'incomplete' array
 
             arg.Semantics = arg.Semantics with { ArgumentKind = ArgumentKind.ByRef };
         }
@@ -457,5 +456,9 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
         => Error(s, ErrorCode.SemanticArgNotANativeTypeValue, $"Argument {argIndex + 1}: type '{argType.ToPrettyString()}' is not a NATIVE type value", arg.Location);
     internal static void ArgNotAnNativeTypeError(SemanticsAnalyzer s, int argIndex, IExpression arg)
         => Error(s, ErrorCode.SemanticArgNotANativeType, $"Argument {argIndex + 1}: expected NATIVE type name", arg.Location);
+    internal static void IndexingNotSupportedError(SemanticsAnalyzer s, IndexingExpression expr, TypeInfo arrType)
+        => Error(s, ErrorCode.SemanticIndexingNotSupported, $"Indexing not supported on type '{arrType.ToPrettyString()}'", expr.Location);
+    internal static void InvalidIndexTypeError(SemanticsAnalyzer s, IExpression expr, TypeInfo exprType, TypeInfo expectedIndexType)
+        => Error(s, ErrorCode.SemanticInvalidIndexType, $"Type '{exprType.ToPrettyString()}' is not a valid index type, expected '{expectedIndexType.ToPrettyString()}'", expr.Location);
     #endregion Errors
 }

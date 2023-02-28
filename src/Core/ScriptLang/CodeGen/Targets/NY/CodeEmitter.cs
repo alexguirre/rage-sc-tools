@@ -455,6 +455,13 @@ public sealed partial class CodeEmitter : ICodeEmitter
         instEmitter.EmitArray();
     }
 
+    public void EmitPushArrayLength(IExpression arrayExpr)
+    {
+        // arrays have a hidden INT at the beginning of its memory layout that stores the length
+        EmitAddress(arrayExpr);
+        instEmitter.EmitLoad();
+    }
+
     public void EmitOffset(int offset)
     {
         EmitPushInt(offset);

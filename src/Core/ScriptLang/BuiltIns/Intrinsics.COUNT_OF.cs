@@ -39,20 +39,32 @@ public static partial class Intrinsics
                 ExpressionTypeChecker.ArgNotAnArrayError(semantics, 0, args[0], argTypes[0]);
             }
 
-            // TODO: when incomplete array types are supported COUNT_OF won't always be constant
-            return new(IntType.Instance, ValueKind.RValue | ValueKind.Constant, ArgumentKind.None);
+            bool isIncomplete = (argTypes[0] as ArrayType)?.IsIncomplete ?? false;
+            return new(IntType.Instance, ValueKind.RValue | (isIncomplete ? 0 : ValueKind.Constant), ArgumentKind.None);
         }
 
         public override ConstantValue ConstantEval(InvocationExpression node, SemanticsAnalyzer semantics)
         {
             var arrType = (ArrayType)node.Arguments[0].Type!;
+            if (arrType.IsIncomplete)
+            {
+                throw new NotSupportedException($"Intrinsic '{Name}' with incomplete array cannot be constant-evaluated.");
+            }
+
             return ConstantValue.Int(arrType.Length);
         }
 
         public override void CodeGen(InvocationExpression node, ICodeEmitter c)
         {
             var arrType = (ArrayType)node.Arguments[0].Type!;
-            c.EmitPushInt(arrType.Length);
+            if (arrType.IsIncomplete)
+            {
+                c.EmitPushArrayLength(node.Arguments[0]);
+            }
+            else
+            {
+                c.EmitPushInt(arrType.Length);
+            }
         }
     }
 }

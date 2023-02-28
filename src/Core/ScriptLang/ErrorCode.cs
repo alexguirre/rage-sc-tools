@@ -58,6 +58,11 @@ public enum ErrorCode
     SemanticTextLabelAppendNonAddressableTextLabel = 0x2023,
     SemanticTextLabelAppendInvalidType = 0x2024,
     SemanticReferenceNotAllowed = 0x2025,
+    SemanticArrayItemTypeIsIncompleteArray = 0x2026,
+    SemanticIncompleteArrayNotAllowed = 0x2027,
+    SemanticIncompleteArrayNotByRef = 0x2028,
+    SemanticIndexingNotSupported = 0x2029,
+    SemanticInvalidIndexType = 0x202A,
 
     // Preprocessor errors   0x3000 - 0x3FFF
     PreprocessorUnexpectedDirective = 0x3000,

@@ -151,16 +151,24 @@ public record FunctionType(TypeInfo Return, ImmutableArray<ParameterInfo> Parame
 
 public sealed record ParameterInfo(TypeInfo Type, bool IsReference, IExpression? OptionalInitializer = null)
 {
-    public bool IsReference { get; } = IsReference || Type is ArrayType;
+    public bool IsReference { get; } = IsReference;
     public bool IsOptional => OptionalInitializer is not null;
     public int SizeOf => IsReference ? 1 : Type.SizeOf;
-    public string ToPrettyString() => Type.ToPrettyString() + (IsReference && Type is not ArrayType ? "&" : "");
+    public string ToPrettyString() => Type.ToPrettyString() + (IsReference ? "&" : "");
 }
 
+/// <param name="Item">The type of the items in this array.</param>
+/// <param name="Length">The number of items in this array. If negative, it is considered an incomplete array.</param>
 public sealed record ArrayType(TypeInfo Item, int Length) : TypeInfo
 {
-    public override int SizeOf { get; } = 1 + Item.SizeOf * Length;
+    public override int SizeOf { get; } = 1 + Item.SizeOf * Math.Max(0, Length);
     public override ImmutableArray<FieldInfo> Fields => ImmutableArray<FieldInfo>.Empty;
+
+    /// <summary>
+    /// Gets whether the length of this array is unspecified.
+    /// Used for parameters that take references to arrays of any length, e.g. `INT &arr[]`.
+    /// </summary>
+    public bool IsIncomplete { get; } = Length < 0;
 
     public override string ToPrettyString()
     {

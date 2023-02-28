@@ -883,6 +883,13 @@ public sealed class SemanticsAnalyzer : AstVisitor
         => Error(ErrorCode.SemanticInitializerExpressionIsNotConstant, $"Initializer expression of enum '{enumMemberDecl.Name}' must be constant", enumMemberDecl.Initializer!.Location);
     internal void ArrayLengthExpressionIsNotConstantError(VarDeclaration arrayDecl, IExpression expr)
         => Error(ErrorCode.SemanticArrayLengthExpressionIsNotConstant, $"Size expression of array '{arrayDecl.Name}' must be constant", expr.Location);
+
+    internal void ArrayItemTypeIsIncompleteArrayError(VarDeclaration arrayDecl)
+        => Error(ErrorCode.SemanticArrayItemTypeIsIncompleteArray, $"Arrays cannot have an incomplete array as item type", arrayDecl.Declarator.ArrayOpenBracketToken!.Value.Location.Merge(arrayDecl.Declarator.ArrayCloseBracketToken!.Value.Location));
+    internal void IncompleteArrayNotAllowedError(VarDeclaration arrayDecl)
+        => Error(ErrorCode.SemanticIncompleteArrayNotAllowed, $"Incomplete arrays are not allowed in this context", arrayDecl.Declarator.ArrayOpenBracketToken!.Value.Location.Merge(arrayDecl.Declarator.ArrayCloseBracketToken!.Value.Location));
+    internal void IncompleteArrayNotByRefError(VarDeclaration arrayDecl)
+        => Error(ErrorCode.SemanticIncompleteArrayNotByRef, $"Incomplete array parameters must be passed by reference", arrayDecl.Location);
     internal void TypeNotAllowedInConstantError(VarDeclaration constVarDecl, TypeInfo type)
         => Error(ErrorCode.SemanticTypeNotAllowedInConstant, $"Type '{type.ToPrettyString()}' is not allowed in constants", constVarDecl.Type.Location);
     internal void ExpectedValueInReturnError(TypeInfo returnType, ReturnStatement returnStmt)

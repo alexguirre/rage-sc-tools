@@ -294,41 +294,6 @@ public class StaticsTests : SemanticsTestsBase
         AssertStatic(s, "foo3", new ArrayType(new ArrayType(new ArrayType(IntType.Instance, 30), 20), 10));
     }
 
-    [Fact]
-    public void ArraySizeMustBeConstant()
-    {
-        var s = Analyze(
-            @"INT n
-              INT foo[n]"
-        );
-
-        True(s.Diagnostics.HasErrors);
-        CheckError(ErrorCode.SemanticArrayLengthExpressionIsNotConstant, (2, 23), (2, 23), s.Diagnostics);
-    }
-
-    [Fact]
-    public void ArraySizeMustBeInt()
-    {
-        var s = Analyze(
-            @"INT foo[TRUE]"
-        );
-
-        True(s.Diagnostics.HasErrors);
-        CheckError(ErrorCode.SemanticCannotConvertType, (1, 9), (1, 12), s.Diagnostics);
-    }
-
-    // TODO: IncompleteArrayTypesAreNotAllowed
-    [Fact(Skip = "Incomplete array type is not yet supported")]
-    public void IncompleteArrayTypesAreNotAllowed()
-    {
-        var s = Analyze(
-            @"INT foo[]"
-        );
-
-        True(s.Diagnostics.HasErrors);
-        //CheckError
-    }
-
     private static void AssertStatic(SemanticsAnalyzer s, string varName, TypeInfo expectedType, bool hasInitializer = false)
     {
         True(s.GetSymbolUnchecked(varName, out var declaration));

@@ -61,7 +61,21 @@ internal static class Rules
         };
 
     public static bool IsRefAssignableFrom(this TypeInfo destination, TypeInfo source)
-        => source is ErrorType || destination == source || destination is AnyType;
+    {
+        if (source is ErrorType || destination == source || destination is AnyType)
+        {
+            return true;
+        }
+
+        // allow T&[] <- T[N]
+        if (destination is ArrayType { IsIncomplete: true } destArray && source is ArrayType srcArray)
+        {
+            return destArray.Item == srcArray.Item;
+        }
+
+        return false;
+    }
+
     public static bool IsAssignableFrom(this TypeInfo destination, TypeInfo source)
         => source is ErrorType || destination.Accept(new IsAssignableFromVisitor(source));
     public static bool IsAssignableTo(this TypeInfo source, TypeInfo destination)
@@ -75,7 +89,8 @@ internal static class Rules
 
         public bool Visit(ErrorType destination) => true;
         public bool Visit(VoidType destination) => false;
-        public bool Visit(ArrayType destination) => false;
+        // T[] <- T[]
+        public bool Visit(ArrayType destination) => destination == Source;
         // INT <- INT | NULL
         public bool Visit(IntType destination) => Source is IntType or NullType;
         // FLOAT <- FLOAT | INT | NULL

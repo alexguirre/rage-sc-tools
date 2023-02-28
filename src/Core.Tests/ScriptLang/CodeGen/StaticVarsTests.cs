@@ -283,7 +283,7 @@ public class StaticVarsTests : CodeGenTestsBase
 
             DATA d[8]
 
-            PROC FOO(DATA dArrayRef[8])
+            PROC FOO(DATA &dArrayRef[8])
             ENDPROC
         ",
         expectedAssembly: @"

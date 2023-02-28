@@ -54,7 +54,7 @@ public sealed class VarAllocator : IEnumerable<VarDeclaration>
         if (varDecl.Kind is VarKind.Parameter)
         {
             // special case for parameters passed by reference
-            isReference = varDecl.IsReference || type is ArrayType;
+            isReference = varDecl.IsReference;
         }
 
         var size = isReference ? 1 : type.SizeOf;

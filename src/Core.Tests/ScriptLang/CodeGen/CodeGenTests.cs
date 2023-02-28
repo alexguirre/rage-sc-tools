@@ -596,9 +596,10 @@
             ");
         }
 
-        [Fact(Skip = "Array indexing not supported currently")]
+        [Fact]
         public void TestArrayItemAssignment()
         {
+            const int sizeofInt = 1;
             CompileMain(
             source: @"
                 iNumbers[4] = 123
@@ -607,32 +608,32 @@
             sourceStatics: @"
                 INT iNumbers[8]
             ",
-            expectedAssembly: @"
+            expectedAssembly: $@"
                 ENTER 0, 2
 
                 ; iNumbers[4] = 123
                 PUSH_CONST_U8 123
                 PUSH_CONST_4
                 STATIC_U8 iNumbers
-                ARRAY_U8_STORE SIZE_OF_INT
+                ARRAY_U8_STORE {sizeofInt}
 
                 ; iNumbers[5] = 456
                 PUSH_CONST_S16 456
                 PUSH_CONST_5
                 STATIC_U8 iNumbers
-                ARRAY_U8_STORE SIZE_OF_INT
+                ARRAY_U8_STORE {sizeofInt}
 
                 LEAVE 0, 0
 
                 .static
-                .const SIZE_OF_INT 1
                 iNumbers: .int 8, 8 dup (0)
             ");
         }
 
-        [Fact(Skip = "Array indexing not supported currently")]
+        [Fact]
         public void TestArrayItemAccess()
         {
+            const int sizeofInt = 1;
             CompileMain(
             source: @"
                 INT n = iNumbers[4]
@@ -641,32 +642,32 @@
             sourceStatics: @"
                 INT iNumbers[8]
             ",
-            expectedAssembly: @"
+            expectedAssembly: $@"
                 ENTER 0, 3
 
                 ; INT n = iNumbers[4]
                 PUSH_CONST_4
                 STATIC_U8 iNumbers
-                ARRAY_U8_LOAD SIZE_OF_INT
+                ARRAY_U8_LOAD {sizeofInt}
                 LOCAL_U8_STORE 2
 
                 ; n = iNumbers[5]
                 PUSH_CONST_5
                 STATIC_U8 iNumbers
-                ARRAY_U8_LOAD SIZE_OF_INT
+                ARRAY_U8_LOAD {sizeofInt}
                 LOCAL_U8_STORE 2
 
                 LEAVE 0, 0
 
                 .static
-                .const SIZE_OF_INT 1
                 iNumbers: .int 8, 8 dup (0)
             ");
         }
 
-        [Fact(Skip = "Array indexing not supported currently")]
+        [Fact]
         public void TestArrayStructItemAssignment()
         {
+            const int sizeofVector = 3;
             CompileMain(
             source: @"
                 vPositions[4] = <<1.0, 2.0, 3.0>>
@@ -675,7 +676,7 @@
             sourceStatics: @"
                 VECTOR vPositions[8]
             ",
-            expectedAssembly: @"
+            expectedAssembly: $@"
                 ENTER 0, 2
 
                 ; vPositions[4] = <<1.0, 2.0, 3.0>>
@@ -685,32 +686,32 @@
                 PUSH_CONST_3
                 PUSH_CONST_4
                 STATIC_U8 vPositions
-                ARRAY_U8 SIZE_OF_VECTOR
+                ARRAY_U8 {sizeofVector}
                 STORE_N
 
                 ; vPositions[5] = vPositions[4]
                 PUSH_CONST_3
                 PUSH_CONST_4
                 STATIC_U8 vPositions
-                ARRAY_U8 SIZE_OF_VECTOR
+                ARRAY_U8 {sizeofVector}
                 LOAD_N
                 PUSH_CONST_3
                 PUSH_CONST_5
                 STATIC_U8 vPositions
-                ARRAY_U8 SIZE_OF_VECTOR
+                ARRAY_U8 {sizeofVector}
                 STORE_N
 
                 LEAVE 0, 0
 
                 .static
-                .const SIZE_OF_VECTOR 3
                 vPositions: .int 8, 8 dup (0, 0, 0)
             ");
         }
 
-        [Fact(Skip = "Array indexing not supported currently")]
+        [Fact]
         public void TestArrayStructItemAccess()
         {
+            const int sizeofVector = 3;
             CompileMain(
             source: @"
                 VECTOR v = vPositions[4]
@@ -719,14 +720,14 @@
             sourceStatics: @"
                 VECTOR vPositions[8]
             ",
-            expectedAssembly: @"
+            expectedAssembly: $@"
                 ENTER 0, 5
 
                 ; VECTOR v = vPositions[4]
                 PUSH_CONST_3
                 PUSH_CONST_4
                 STATIC_U8 vPositions
-                ARRAY_U8 SIZE_OF_VECTOR
+                ARRAY_U8 {sizeofVector}
                 LOAD_N
                 PUSH_CONST_3
                 LOCAL_U8 2
@@ -736,7 +737,7 @@
                 PUSH_CONST_3
                 PUSH_CONST_5
                 STATIC_U8 vPositions
-                ARRAY_U8 SIZE_OF_VECTOR
+                ARRAY_U8 {sizeofVector}
                 LOAD_N
                 PUSH_CONST_3
                 LOCAL_U8 2
@@ -745,14 +746,14 @@
                 LEAVE 0, 0
 
                 .static
-                .const SIZE_OF_VECTOR 3
                 vPositions: .int 8, 8 dup (0, 0, 0)
             ");
         }
 
-        [Fact(Skip = "Array indexing not supported currently")]
+        [Fact]
         public void TestArrayItemFieldAssignment()
         {
+            const int sizeofData = 2;
             CompileMain(
             source: @"
                 sDatas[4].a = 123
@@ -765,33 +766,33 @@
 
                 DATA sDatas[8]
             ",
-            expectedAssembly: @"
+            expectedAssembly: $@"
                 ENTER 0, 2
 
                 ; sDatas[4].a = 123
                 PUSH_CONST_U8 123
                 PUSH_CONST_4
                 STATIC_U8 sDatas
-                ARRAY_U8_STORE SIZE_OF_DATA
+                ARRAY_U8_STORE {sizeofData}
 
                 ; sDatas[4].b = 456
                 PUSH_CONST_S16 456
                 PUSH_CONST_4
                 STATIC_U8 sDatas
-                ARRAY_U8 SIZE_OF_DATA
+                ARRAY_U8 {sizeofData}
                 IOFFSET_U8_STORE 1
 
                 LEAVE 0, 0
 
                 .static
-                .const SIZE_OF_DATA 2
                 sDatas: .int 8, 8 dup (0, 0)
             ");
         }
 
-        [Fact(Skip = "Array indexing not supported currently")]
+        [Fact]
         public void TestArrayItemFieldAccess()
         {
+            const int sizeofData = 2;
             CompileMain(
             source: @"
                 INT n = sDatas[4].a
@@ -804,26 +805,25 @@
 
                 DATA sDatas[8]
             ",
-            expectedAssembly: @"
+            expectedAssembly: $@"
                 ENTER 0, 3
 
                 ; INT n = sDatas[4].a
                 PUSH_CONST_4
                 STATIC_U8 sDatas
-                ARRAY_U8_LOAD SIZE_OF_DATA
+                ARRAY_U8_LOAD {sizeofData}
                 LOCAL_U8_STORE 2
 
                 ; n = sDatas[4].b
                 PUSH_CONST_4
                 STATIC_U8 sDatas
-                ARRAY_U8 SIZE_OF_DATA
+                ARRAY_U8 {sizeofData}
                 IOFFSET_U8_LOAD 1
                 LOCAL_U8_STORE 2
 
                 LEAVE 0, 0
 
                 .static
-                .const SIZE_OF_DATA 2
                 sDatas: .int 8, 8 dup (0, 0)
             ");
         }
@@ -1582,8 +1582,8 @@
             ");
         }
 
-        [Fact(Skip = "Wrong, arrays still need & to be passed as reference")]
-        public void TestArrayReferences()
+        [Fact]
+        public void TestArrayPassedByReference()
         {
             CompileMain(
             source: @"
@@ -1591,7 +1591,7 @@
                 TEST(v, v)
             ",
             sourceStatics: @"
-                PROC TEST(INT a[10], INT b[]) // arrays are passed by reference
+                PROC TEST(INT &a[10], INT &b[10])
                     a[1] = b[1]
                     b[1] = a[1]
                     TEST(a, b)
@@ -1636,6 +1636,132 @@
                 CALL TEST
 
                 LEAVE 2, 0
+            ");
+        }
+
+        [Fact]
+        public void TestArrayPassedByReferenceToIncompleteArray()
+        {
+            CompileMain(
+            source: @"
+                INT v[10]
+                TEST(v, v)
+            ",
+            sourceStatics: @"
+                PROC TEST(INT &a[], INT &b[])
+                    a[1] = b[1]
+                    b[1] = a[1]
+                    TEST(a, b)
+                ENDPROC
+            ",
+            expectedAssembly: @"
+                ENTER 0, 13
+
+                ; array initializer
+                LOCAL_U8 2
+                PUSH_CONST_U8 10
+                STORE_REV
+                DROP
+
+                LOCAL_U8 2
+                LOCAL_U8 2
+                CALL TEST
+                LEAVE 0, 0
+
+            TEST:
+                ENTER 2, 4
+
+                ; a[1] = b[1]
+                PUSH_CONST_1
+                LOCAL_U8_LOAD 1
+                ARRAY_U8_LOAD 1
+                PUSH_CONST_1
+                LOCAL_U8_LOAD 0
+                ARRAY_U8_STORE 1
+
+                ; b[1] = a[1]
+                PUSH_CONST_1
+                LOCAL_U8_LOAD 0
+                ARRAY_U8_LOAD 1
+                PUSH_CONST_1
+                LOCAL_U8_LOAD 1
+                ARRAY_U8_STORE 1
+
+                ; TEST(a, b)
+                LOCAL_U8_LOAD 0
+                LOCAL_U8_LOAD 1
+                CALL TEST
+
+                LEAVE 2, 0
+            ");
+        }
+
+        [Fact]
+        public void TestArrayPassedByValue()
+        {
+            CompileMain(
+                source: @"
+                INT v[2]
+                TEST(v, v)
+            ",
+            sourceStatics: @"
+                PROC TEST(INT a[2], INT b[2])
+                    a[1] = b[1]
+                    b[1] = a[1]
+                    TEST(a, b)
+                ENDPROC
+            ",
+            expectedAssembly: @"
+                ENTER 0, 5
+
+                ; array initializer
+                LOCAL_U8 2
+                PUSH_CONST_2
+                STORE_REV
+                DROP
+
+                ; copy array to stack for param a
+                PUSH_CONST_3
+                LOCAL_U8 2
+                LOAD_N
+                ; copy array to stack for param b
+                PUSH_CONST_3
+                LOCAL_U8 2
+                LOAD_N
+
+                CALL TEST
+
+                LEAVE 0, 0
+
+            TEST:
+                ENTER 6, 8
+
+                ; a[1] = b[1]
+                PUSH_CONST_1
+                LOCAL_U8 3
+                ARRAY_U8_LOAD 1
+                PUSH_CONST_1
+                LOCAL_U8 0
+                ARRAY_U8_STORE 1
+
+                ; b[1] = a[1]
+                PUSH_CONST_1
+                LOCAL_U8 0
+                ARRAY_U8_LOAD 1
+                PUSH_CONST_1
+                LOCAL_U8 3
+                ARRAY_U8_STORE 1
+
+                ; TEST(a, b)
+                PUSH_CONST_3
+                LOCAL_U8 0
+                LOAD_N
+                PUSH_CONST_3
+                LOCAL_U8 3
+                LOAD_N
+                CALL TEST
+
+                LEAVE 6, 0
             ");
         }
 

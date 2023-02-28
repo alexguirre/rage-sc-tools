@@ -90,30 +90,57 @@ internal sealed class TypeFactory
                 return varType;
             }
 
-            Debug.Assert(declarator.Lengths.All(l => l is not null), "Incomplete array types are not supported for now");
-            return declarator.Lengths.Reverse().Aggregate(varType, (ty, lengthExpr) =>
+            var arrTy = (ArrayType)declarator.Lengths.Reverse().Aggregate(varType, (ty, lengthExpr) =>
             {
-                var lengthType = lengthExpr?.Accept(exprTypeChecker, s) ?? ErrorType.Instance;
-
-                ConstantValue? length = null;
-                if (!lengthType.IsError)
+                if (ty is ArrayType { IsIncomplete: true })
                 {
-                    if (!lengthExpr!.ValueKind.Is(ValueKind.Constant))
+                    s.ArrayItemTypeIsIncompleteArrayError(node);
+                }
+
+                int length = 0;
+                if (lengthExpr is null)
+                {
+                    // incomplete array
+                    length = -1;
+                }
+                else
+                {
+                    // constant-sized array
+                    var lengthType = lengthExpr?.Accept(exprTypeChecker, s) ?? ErrorType.Instance;
+
+                    if (!lengthType.IsError)
                     {
-                        s.ArrayLengthExpressionIsNotConstantError(node, lengthExpr);
-                    }
-                    else if (IntType.Instance.IsAssignableFrom(lengthType))
-                    {
-                        length = ConstantExpressionEvaluator.Eval(lengthExpr, s);
-                    }
-                    else
-                    {
-                        s.CannotConvertTypeError(lengthType, IntType.Instance, lengthExpr.Location);
+                        if (!lengthExpr!.ValueKind.Is(ValueKind.Constant))
+                        {
+                            s.ArrayLengthExpressionIsNotConstantError(node, lengthExpr);
+                        }
+                        else if (IntType.Instance.IsAssignableFrom(lengthType))
+                        {
+                            length = ConstantExpressionEvaluator.Eval(lengthExpr, s).IntValue;
+                        }
+                        else
+                        {
+                            s.CannotConvertTypeError(lengthType, IntType.Instance, lengthExpr.Location);
+                        }
                     }
                 }
 
-                return new ArrayType(ty, length?.IntValue ?? 0);
+                return new ArrayType(ty, length);
             });
+
+            if (arrTy.IsIncomplete)
+            {
+                if (node.Kind is not VarKind.Parameter)
+                {
+                    s.IncompleteArrayNotAllowedError(node);
+                }
+                else if (!node.IsReference)
+                {
+                    s.IncompleteArrayNotByRefError(node);
+                }
+            }
+
+            return arrTy;
         }
 
         public override TypeInfo Visit(FunctionDeclaration node, SemanticsAnalyzer s)

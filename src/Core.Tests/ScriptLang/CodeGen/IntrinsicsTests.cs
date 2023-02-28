@@ -198,8 +198,7 @@ public class IntrinsicsTests : CodeGenTestsBase
         ");
     }
 
-    // TODO: CountOfWithArrayReferences
-    [Fact(Skip = "Incomplete array type is not yet supported")]
+    [Fact]
     public void CountOfWithArrayReferences()
     {
         CompileScript(
@@ -210,10 +209,10 @@ public class IntrinsicsTests : CodeGenTestsBase
                 TEST2(array)
             ",
         declarationsSource: @"
-                PROC TEST1(INT array[])
+                PROC TEST1(INT &array[])
                     INT i = COUNT_OF(array)
                 ENDPROC
-                PROC TEST2(INT array[10])
+                PROC TEST2(INT &array[10])
                     INT i = COUNT_OF(array)
                 ENDPROC
             ",

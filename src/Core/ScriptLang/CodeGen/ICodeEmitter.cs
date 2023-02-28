@@ -30,6 +30,7 @@ public interface ICodeEmitter
     void EmitOffset(int offset);
 
     void EmitArrayIndexing(IndexingExpression expr);
+    void EmitPushArrayLength(IExpression arrayExpr);
 
     void EmitLoadFrom(IExpression lvalueExpr);
     void EmitStoreAt(IExpression lvalueExpr);
