@@ -112,6 +112,6 @@ public sealed partial class VarDeclarator : BaseNode
         IsReference = refAmpersandToken.HasValue;
     }
 
-    public override string DebuggerDisplay =>
-        $@"{nameof(VarDeclarator)} {{ {nameof(Name)} = {Name}, {nameof(IsReference)} = {IsReference}, {nameof(IsArray)} = {IsArray}, {nameof(Lengths)} = [{string.Join(", ", Lengths.Select(l => l?.DebuggerDisplay ?? "null"))}] }}";
+    public override string DebuggerDisplay => 
+        $@"{nameof(VarDeclarator)} {{ {nameof(Name)} = {Name}, {nameof(IsReference)} = {IsReference}, {nameof(IsArray)} = {IsArray}, {nameof(Lengths)} = [{(Lengths.IsDefaultOrEmpty ? string.Empty : string.Join(", ", Lengths.Select(l => l?.DebuggerDisplay ?? "null")))}] }}";
 }
