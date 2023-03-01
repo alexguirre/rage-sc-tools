@@ -2,7 +2,7 @@
 
 using Xunit;
 
-public class OperationsTests : CodeGenTestsBase
+public class ExpressionsTests : CodeGenTestsBase
 {
     [Fact]
     public void BoolUnaryNOT()
