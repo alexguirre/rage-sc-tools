@@ -227,9 +227,21 @@ public sealed class SemanticsAnalyzer : AstVisitor
         AddSymbol(node);
     }
 
-    public override void Visit(InvocationExpression node)
+    public override void Visit(ExpressionStatement node)
     {
-        node.Accept(exprTypeChecker, this);
+        node.Expression.Accept(exprTypeChecker, this);
+        node.Expression.Semantics = node.Expression.Semantics with { IsStatement = true };
+
+        switch (node.Expression)
+        {
+            case InvocationExpression:
+            case PostfixUnaryExpression { Operator: PostfixUnaryOperator.Increment or PostfixUnaryOperator.Decrement }:
+                // nothing to do, these are valid expression statements
+                break;
+            default:
+                InvalidExpressionStatementError(node);
+                break;
+        }
     }
 
     public override void Visit(VarDeclaration node)
@@ -917,6 +929,8 @@ public sealed class SemanticsAnalyzer : AstVisitor
     internal void TextLabelAppendInvalidTypeError(IExpression rhs)
         => Error(ErrorCode.SemanticTextLabelAppendInvalidType, $"Cannot append type '{rhs.Type!.ToPrettyString()}' to TEXT_LABEL. Only INT, STRING or TEXT_LABEL are supported", rhs.Location);
     internal void ReferenceNotAllowedError(VarDeclaration varDecl)
-        => Error(ErrorCode.SemanticReferenceNotAllowed, $"References are not allowed in this context", varDecl.Declarator.RefAmpersandToken!.Value.Location);
+        => Error(ErrorCode.SemanticReferenceNotAllowed, $"References are not allowed in this context", varDecl.Declarator.RefAmpersandToken!.Value.Location); 
+    internal void InvalidExpressionStatementError(ExpressionStatement stmt)
+        => Error(ErrorCode.SemanticInvalidExpressionStatement, $"Only invocation, increment, and decrement expressions can be used as a statement", stmt.Location);
     #endregion Errors
 }

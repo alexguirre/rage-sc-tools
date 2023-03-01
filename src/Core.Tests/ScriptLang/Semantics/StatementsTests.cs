@@ -922,4 +922,41 @@ public class StatementsTests : SemanticsTestsBase
         True(s.Diagnostics.HasErrors);
         CheckError(ErrorCode.SemanticCannotConvertType, (9, 22), (9, 22), s.Diagnostics);
     }
+
+    [Theory]
+    [InlineData("1 + 1")]
+    [InlineData("123")]
+    [InlineData("1.0")]
+    [InlineData("TRUE")]
+    [InlineData("NULL")]
+    public void ErrorOnInvalidExpressionStatements(string expr)
+    {
+        var (s, _) = AnalyzeAndAst(
+            $@"PROC foo()
+                {expr}
+              ENDPROC"
+        );
+
+        True(s.Diagnostics.HasErrors);
+        CheckError(ErrorCode.SemanticInvalidExpressionStatement, (2, 17), (2, 17 + expr.Length - 1), s.Diagnostics);
+    }
+
+    [Theory]
+    [InlineData("test()")]
+    [InlineData("n++")]
+    [InlineData("n--")]
+    public void ValidExpressionStatements(string expr)
+    {
+        var (s, _) = AnalyzeAndAst(
+            $@"PROC test()
+              ENDPROC
+
+              PROC foo()
+                INT n
+                {expr}
+              ENDPROC"
+        );
+
+        False(s.Diagnostics.HasErrors);
+    }
 }

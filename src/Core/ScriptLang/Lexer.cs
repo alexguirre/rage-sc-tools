@@ -1,7 +1,6 @@
 ﻿namespace ScTools.ScriptLang;
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -70,8 +69,12 @@ public sealed class Lexer : LexerBase<Token, TokenKind, ErrorCode>
                 '=' => NextIf('=') ? NewToken(TokenKind.EqualsEquals) : NewToken(TokenKind.Equals),
                 // NOTE: number tokens do not include +/- in the lexeme as here we don't know if the sign is used as a unary
                 //       operator or as a binary operator. The parser will handle this.
-                '+' => NextIf('=') ? NewToken(TokenKind.PlusEquals) : NewToken(TokenKind.Plus),
-                '-' => NextIf('=') ? NewToken(TokenKind.MinusEquals) : NewToken(TokenKind.Minus),
+                '+' => NextIf('+') ? NewToken(TokenKind.PlusPlus) :
+                       NextIf('=') ? NewToken(TokenKind.PlusEquals) :
+                                     NewToken(TokenKind.Plus),
+                '-' => NextIf('-') ? NewToken(TokenKind.MinusMinus) :
+                       NextIf('=') ? NewToken(TokenKind.MinusEquals) :
+                                     NewToken(TokenKind.Minus),
                 '*' => NextIf('=') ? NewToken(TokenKind.AsteriskEquals) : NewToken(TokenKind.Asterisk),
                 '/' => NextIf('=') ? NewToken(TokenKind.SlashEquals) : NewToken(TokenKind.Slash),
                 '%' => NextIf('=') ? NewToken(TokenKind.PercentEquals) : NewToken(TokenKind.Percent),

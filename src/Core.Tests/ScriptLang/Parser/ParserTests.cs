@@ -27,13 +27,12 @@ public partial class ParserTests
         False(expr is IError);
         True(predicate(expr));
     }
-    private static void AssertInvocation(IStatement stmt, Predicate<IExpression> calleePredicate, Action<ImmutableArray<IExpression>> argumentsChecker)
+    private static void AssertInvocationStmt(IStatement stmt, Predicate<IExpression> calleePredicate, Action<ImmutableArray<IExpression>> argumentsChecker)
     {
-        True(stmt is InvocationExpression);
-        if (stmt is InvocationExpression invocationExpr)
+        True(stmt is ExpressionStatement);
+        if (stmt is ExpressionStatement exprStmt)
         {
-            True(calleePredicate(invocationExpr.Callee));
-            argumentsChecker(invocationExpr.Arguments);
+            AssertInvocation(exprStmt.Expression, calleePredicate, argumentsChecker);
         }
     }
     private static void AssertInvocation(IExpression expr, Predicate<IExpression> calleePredicate, Action<ImmutableArray<IExpression>> argumentsChecker)

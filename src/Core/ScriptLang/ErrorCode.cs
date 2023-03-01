@@ -16,7 +16,7 @@ public enum ErrorCode
     ParserUnknownStatement = 0x1002,
     ParserUnknownExpression = 0x1003,
     ParserUnknownDeclarator = 0x1004,
-    ParserExpressionAsStatement = 0x1005,
+    // = 0x1005,
     ParserUsingAfterDeclaration = 0x1006,
 
     // Semantic errors 0x2000 - 0x2FFF
@@ -63,6 +63,8 @@ public enum ErrorCode
     SemanticIncompleteArrayNotByRef = 0x2028,
     SemanticIndexingNotSupported = 0x2029,
     SemanticInvalidIndexType = 0x202A,
+    SemanticInvalidExpressionStatement = 0x202B,
+    SemanticBadPostfixUnaryOp = 0x202C,
 
     // Preprocessor errors   0x3000 - 0x3FFF
     PreprocessorUnexpectedDirective = 0x3000,

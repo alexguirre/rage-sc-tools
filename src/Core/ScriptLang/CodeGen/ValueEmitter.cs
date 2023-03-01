@@ -90,6 +90,25 @@ internal sealed class ValueEmitter : AstVisitor
         _C.EmitUnaryOp(node.Operator, node.SubExpression.Type!);
     }
 
+    public override void Visit(PostfixUnaryExpression node)
+    {
+        var constantOne = new IntLiteralExpression(Token.Integer(1)) { Semantics = new(IntType.Instance, ValueKind: ValueKind.RValue | ValueKind.Constant, ArgumentKind: ArgumentKind.None) };
+
+        _C.EmitValue(node.SubExpression);
+        if (!node.Semantics.IsStatement)
+        {
+            _C.EmitDup();
+        }
+        _C.EmitValue(constantOne);
+        _C.EmitBinaryOp(node.Operator switch
+        {
+            PostfixUnaryOperator.Increment => BinaryOperator.Add,
+            PostfixUnaryOperator.Decrement => BinaryOperator.Subtract,
+            _ => throw new NotImplementedException($"Codegen for postfix unary operator '{node.Operator}' not implemented")
+        }, IntType.Instance);
+        _C.EmitStoreAt(node.SubExpression);
+    }
+
     public override void Visit(BinaryExpression node)
     {
         var lhsType = node.LHS.Semantics.Type;

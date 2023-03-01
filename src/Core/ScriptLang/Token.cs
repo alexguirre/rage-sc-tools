@@ -28,7 +28,9 @@ public enum TokenKind
     Ampersand,              // &
     Caret,                  // ^
     Bar,                    // |
+    PlusPlus,               // ++
     PlusEquals,             // +=
+    MinusMinus,             // --
     MinusEquals,            // -=
     AsteriskEquals,         // *=
     SlashEquals,            // /=
@@ -127,7 +129,9 @@ public static class TokenLexemes
     public const string Ampersand = "&";
     public const string Caret = "^";
     public const string Bar = "|";
+    public const string PlusPlus = "++";
     public const string PlusEquals = "+=";
+    public const string MinusMinus = "--";
     public const string MinusEquals = "-=";
     public const string AsteriskEquals = "*=";
     public const string SlashEquals = "/=";
@@ -221,7 +225,9 @@ public static class TokenKindExtensions
             TokenKind.Ampersand => TokenLexemes.Ampersand,
             TokenKind.Caret => TokenLexemes.Caret,
             TokenKind.Bar => TokenLexemes.Bar,
+            TokenKind.PlusPlus => TokenLexemes.PlusPlus,
             TokenKind.PlusEquals => TokenLexemes.PlusEquals,
+            TokenKind.MinusMinus => TokenLexemes.MinusMinus,
             TokenKind.MinusEquals => TokenLexemes.MinusEquals,
             TokenKind.AsteriskEquals => TokenLexemes.AsteriskEquals,
             TokenKind.SlashEquals => TokenLexemes.SlashEquals,

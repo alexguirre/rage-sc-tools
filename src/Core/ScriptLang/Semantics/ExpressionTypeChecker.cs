@@ -69,6 +69,28 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
         }
     }
 
+    public override TypeInfo Visit(PostfixUnaryExpression node, SemanticsAnalyzer s)
+    {
+        var type = node.SubExpression.Accept(this, s);
+        if (type.IsError)
+        {
+            return ErrorType;
+        }
+
+        switch (type)
+        {
+            case IntType when node.Operator is PostfixUnaryOperator.Increment or PostfixUnaryOperator.Decrement:
+                if (!node.SubExpression.ValueKind.Is(ValueKind.Assignable))
+                {
+                    s.ExpressionIsNotAssignableError(node.SubExpression);
+                }
+                node.Semantics = new(type, ValueKind.RValue, ArgumentKind.None);
+                return type;
+            default:
+                return PostfixUnaryOperatorNotSupportedError(s, node, type);
+        }
+    }
+
     public override TypeInfo Visit(BinaryExpression node, SemanticsAnalyzer s)
     {
         var lhs = node.LHS.Accept(this, s);
@@ -410,13 +432,19 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
 
     private static TypeInfo UnaryOperatorNotSupportedError(SemanticsAnalyzer s, UnaryExpression node, TypeInfo type)
     {
-        Error(s, ErrorCode.SemanticBadUnaryOp, $"Unary operator '{node.Operator}' not supported on type '{type.ToPrettyString()}'", node.Location);
+        Error(s, ErrorCode.SemanticBadUnaryOp, $"Unary operator '{node.Operator.ToLexeme()}' not supported on type '{type.ToPrettyString()}'", node.Location);
+        return ErrorType;
+    }
+
+    private static TypeInfo PostfixUnaryOperatorNotSupportedError(SemanticsAnalyzer s, PostfixUnaryExpression node, TypeInfo type)
+    {
+        Error(s, ErrorCode.SemanticBadPostfixUnaryOp, $"Postfix unary operator '{node.Operator.ToLexeme()}' not supported on type '{type.ToPrettyString()}'", node.Location);
         return ErrorType;
     }
 
     private static TypeInfo BinaryOperatorNotSupportedError(SemanticsAnalyzer s, BinaryExpression node, (TypeInfo LHS, TypeInfo RHS) typePair)
     {
-        Error(s, ErrorCode.SemanticBadBinaryOp, $"Binary operator '{node.Operator}' not supported on types '{typePair.LHS.ToPrettyString()}' and '{typePair.RHS.ToPrettyString()}'", node.Location);
+        Error(s, ErrorCode.SemanticBadBinaryOp, $"Binary operator '{node.Operator.ToLexeme()}' not supported on types '{typePair.LHS.ToPrettyString()}' and '{typePair.RHS.ToPrettyString()}'", node.Location);
         return ErrorType;
     }
 

@@ -191,8 +191,20 @@ internal sealed class StatementEmitter : AstVisitor
         _C.Label(node.Semantics.ExitLabel!);
     }
 
-    public override void Visit(InvocationExpression node)
+    public override void Visit(ExpressionStatement node)
     {
-        _C.EmitValueAndDrop(node);
+        if (node.Expression is PostfixUnaryExpression
+            {
+                Operator: PostfixUnaryOperator.Increment or PostfixUnaryOperator.Decrement
+            })
+        {
+            // postfix increment/decrement do not actually push any value to the stack when used as statements,
+            // so we don't need to drop it
+            _C.EmitValue(node.Expression);
+        }
+        else
+        {
+            _C.EmitValueAndDrop(node.Expression);
+        }
     }
 }

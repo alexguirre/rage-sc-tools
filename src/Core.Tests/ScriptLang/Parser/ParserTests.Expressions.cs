@@ -56,6 +56,30 @@ public partial class ParserTests
         }
 
         [Fact]
+        public void PostfixUnaryExpressions()
+        {
+            var p = ParserFor(
+                @"hello++"
+            );
+            ParseExpressionAndAssert(p, n => n is PostfixUnaryExpression
+            {
+                Operator: PostfixUnaryOperator.Increment,
+                SubExpression: NameExpression { Name: "hello" }
+            });
+            NoErrorsAndIsAtEOF(p);
+
+            p = ParserFor(
+                @"world--"
+            );
+            ParseExpressionAndAssert(p, n => n is PostfixUnaryExpression
+            {
+                Operator: PostfixUnaryOperator.Decrement,
+                SubExpression: NameExpression { Name: "world" }
+            });
+            NoErrorsAndIsAtEOF(p);
+        }
+
+        [Fact]
         public void VectorExpression()
         {
             var p = ParserFor(

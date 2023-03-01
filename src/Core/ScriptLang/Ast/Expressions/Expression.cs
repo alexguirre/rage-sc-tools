@@ -4,7 +4,7 @@ using ScTools.ScriptLang.Types;
 
 using System.Collections.Generic;
 
-public record struct ExpressionSemantics(TypeInfo? Type, ValueKind ValueKind, ArgumentKind ArgumentKind);
+public record struct ExpressionSemantics(TypeInfo? Type, ValueKind ValueKind, ArgumentKind ArgumentKind, bool IsStatement = false);
 
 public interface IExpression : ISemanticNode<ExpressionSemantics>
 {

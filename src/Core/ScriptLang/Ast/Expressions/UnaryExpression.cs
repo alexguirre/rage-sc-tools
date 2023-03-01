@@ -27,11 +27,14 @@ public sealed partial class UnaryExpression : BaseExpression
 
 public static class UnaryOperatorExtensions
 {
-    public static string ToHumanString(this UnaryOperator op)
+    public static string ToLexeme(this UnaryOperator op)
+        => ToToken(op).GetCanonicalLexeme();
+
+    public static TokenKind ToToken(this UnaryOperator op)
         => op switch
         {
-            UnaryOperator.Negate => "-",
-            UnaryOperator.LogicalNot => "NOT",
+            UnaryOperator.Negate => TokenKind.Minus,
+            UnaryOperator.LogicalNot => TokenKind.NOT,
             _ => throw new ArgumentOutOfRangeException(nameof(op))
         };
 

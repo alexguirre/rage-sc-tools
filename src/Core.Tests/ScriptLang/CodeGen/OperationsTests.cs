@@ -848,4 +848,85 @@ public class OperationsTests : CodeGenTestsBase
             LEAVE 0, 0
         ");
     }
+
+    [Fact]
+    public void PostfixIncrement()
+    {
+        CompileScript(
+            scriptSource: @$"
+                INT n
+                INT m = n++
+            ",
+            expectedAssembly: @$"
+                ENTER 0, 4
+
+                LOCAL_U8_LOAD 2
+                DUP
+                IADD_U8 1
+                LOCAL_U8_STORE 2
+                LOCAL_U8_STORE 3
+
+                LEAVE 0, 0
+            ");
+    }
+
+    [Fact]
+    public void PostfixIncrementAsStatement()
+    {
+        CompileScript(
+            scriptSource: @$"
+                INT n
+                n++
+            ",
+            expectedAssembly: @$"
+                ENTER 0, 3
+
+                LOCAL_U8_LOAD 2
+                IADD_U8 1
+                LOCAL_U8_STORE 2
+
+                LEAVE 0, 0
+            ");
+    }
+    [Fact]
+    public void PostfixDecrement()
+    {
+        CompileScript(
+            scriptSource: @$"
+                INT n
+                INT m = n--
+            ",
+            expectedAssembly: @$"
+                ENTER 0, 4
+
+                LOCAL_U8_LOAD 2
+                DUP
+                PUSH_CONST_1
+                ISUB
+                LOCAL_U8_STORE 2
+                LOCAL_U8_STORE 3
+
+                LEAVE 0, 0
+            ");
+    }
+
+    [Fact]
+    public void PostfixDecrementAsStatement()
+    {
+        CompileScript(
+            scriptSource: @$"
+                INT n
+                n--
+            ",
+            expectedAssembly: @$"
+                ENTER 0, 3
+
+                LOCAL_U8_LOAD 2
+                PUSH_CONST_1
+                ISUB
+                LOCAL_U8_STORE 2
+
+                LEAVE 0, 0
+            ");
+    }
 }

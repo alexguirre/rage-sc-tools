@@ -43,7 +43,7 @@ public class InvocationTests : SemanticsTestsBase
 
         False(s.Diagnostics.HasErrors);
         var stmt = ast.FindFirstNodeOfType<ScriptDeclaration>().Body[0];
-        True(stmt is InvocationExpression { Semantics.ValueKind: ValueKind.RValue } inv
+        True(stmt is ExpressionStatement { Expression: InvocationExpression { Semantics.ValueKind: ValueKind.RValue } inv }
             && inv.Semantics.Type == (TypeInfo)Activator.CreateInstance(type)!);
     }
 
@@ -81,7 +81,7 @@ public class InvocationTests : SemanticsTestsBase
 
         False(s.Diagnostics.HasErrors);
         var stmt = ast.FindFirstNodeOfType<ScriptDeclaration>().Body[0];
-        True(stmt is InvocationExpression { Semantics.ValueKind: ValueKind.RValue } inv
+        True(stmt is ExpressionStatement { Expression: InvocationExpression { Semantics.ValueKind: ValueKind.RValue } inv }
             && inv.Semantics.Type == (TypeInfo)Activator.CreateInstance(type)!);
     }
 
@@ -100,6 +100,6 @@ public class InvocationTests : SemanticsTestsBase
 
         False(s.Diagnostics.HasErrors);
         var stmt = ast.FindFirstNodeOfType<ScriptDeclaration>().Body[0];
-        True(stmt is InvocationExpression { Semantics: { Type: IntType, ValueKind: ValueKind.RValue } });
+        True(stmt is ExpressionStatement { Expression: InvocationExpression { Semantics: { Type: IntType, ValueKind: ValueKind.RValue } } });
     }
 }

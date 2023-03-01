@@ -47,6 +47,9 @@ public sealed partial class BinaryExpression : BaseExpression
 
 public static class BinaryOperatorExtensions
 {
+    public static string ToLexeme(this BinaryOperator op)
+        => ToToken(op).GetCanonicalLexeme();
+
     public static TokenKind ToToken(this BinaryOperator op)
         => op switch
         {

@@ -128,8 +128,8 @@ public partial class ParserTests
                     RHS: NameExpression { Name: "b" },
                 },
                 then => Collection(then,
-                    _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args)),
-                    _1 => AssertInvocation(_1, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))),
+                    _0 => AssertInvocationStmt(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args)),
+                    _1 => AssertInvocationStmt(_1, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))),
                 @else => Empty(@else));
             NoErrorsAndIsAtEOF(p);
         }
@@ -148,9 +148,9 @@ public partial class ParserTests
             AssertIfStmt(p.ParseStatement(),
                 condition => condition is NameExpression { Name: "a" },
                 then => Collection(then,
-                    _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args))),
+                    _0 => AssertInvocationStmt(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args))),
                 @else => Collection(@else,
-                    _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))));
+                    _0 => AssertInvocationStmt(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))));
             NoErrorsAndIsAtEOF(p);
         }
 
@@ -168,12 +168,12 @@ public partial class ParserTests
             AssertIfStmt(p.ParseStatement(),
                 condition => condition is NameExpression { Name: "a" },
                 then => Collection(then,
-                    _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args))),
+                    _0 => AssertInvocationStmt(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args))),
                 @else => Collection(@else,
                     _0 => AssertIfStmt(_0,
                         condition => condition is NameExpression { Name: "b" },
                         then => Collection(then,
-                            _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))),
+                            _0 => AssertInvocationStmt(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))),
                         @else => Empty(@else))));
             NoErrorsAndIsAtEOF(p);
         }
@@ -194,14 +194,14 @@ public partial class ParserTests
             AssertIfStmt(p.ParseStatement(),
                 condition => condition is NameExpression { Name: "a" },
                 then => Collection(then,
-                    _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args))),
+                    _0 => AssertInvocationStmt(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args))),
                 @else => Collection(@else,
                     _0 => AssertIfStmt(_0,
                         condition => condition is NameExpression { Name: "b" },
                         then => Collection(then,
-                            _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))),
+                            _0 => AssertInvocationStmt(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))),
                         @else => Collection(@else,
-                            _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "baz" }, args => Empty(args))))));
+                            _0 => AssertInvocationStmt(_0, callee => callee is NameExpression { Name: "baz" }, args => Empty(args))))));
             NoErrorsAndIsAtEOF(p);
         }
 
@@ -225,24 +225,24 @@ public partial class ParserTests
             AssertIfStmt(p.ParseStatement(),
                 condition => condition is NameExpression { Name: "a" },
                 then => Collection(then,
-                    _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args))),
+                    _0 => AssertInvocationStmt(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args))),
                 @else => Collection(@else,
                     _0 => AssertIfStmt(_0,
                         condition => condition is NameExpression { Name: "b" },
                         then => Collection(then,
-                            _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))),
+                            _0 => AssertInvocationStmt(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))),
                         @else => Collection(@else,
                             _0 => AssertIfStmt(_0,
                                 condition => condition is NameExpression { Name: "c" },
                                 then => Collection(then,
-                                    _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "baz" }, args => Empty(args))),
+                                    _0 => AssertInvocationStmt(_0, callee => callee is NameExpression { Name: "baz" }, args => Empty(args))),
                                 @else => Collection(@else,
                                     _0 => AssertIfStmt(_0,
                                         condition => condition is NameExpression { Name: "d" },
                                         then => Collection(then,
-                                            _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "hello" }, args => Empty(args))),
+                                            _0 => AssertInvocationStmt(_0, callee => callee is NameExpression { Name: "hello" }, args => Empty(args))),
                                         @else => Collection(@else,
-                                            _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "world" }, args => Empty(args))))))))));
+                                            _0 => AssertInvocationStmt(_0, callee => callee is NameExpression { Name: "world" }, args => Empty(args))))))))));
             NoErrorsAndIsAtEOF(p);
         }
 
@@ -264,14 +264,14 @@ public partial class ParserTests
             AssertIfStmt(p.ParseStatement(),
                 condition => condition is NameExpression { Name: "a" },
                 then => Collection(then,
-                    _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args))),
+                    _0 => AssertInvocationStmt(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args))),
                 @else => Collection(@else,
                     _0 => AssertIfStmt(_0,
                         condition => condition is NameExpression { Name: "b" },
                         then => Collection(then,
-                            _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))),
+                            _0 => AssertInvocationStmt(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))),
                         @else => Collection(@else,
-                            _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "baz" }, args => Empty(args))))));
+                            _0 => AssertInvocationStmt(_0, callee => callee is NameExpression { Name: "baz" }, args => Empty(args))))));
             NoErrorsAndIsAtEOF(p);
         }
 
@@ -330,8 +330,8 @@ public partial class ParserTests
                     RHS: NameExpression { Name: "b" },
                 },
                 body => Collection(body,
-                    _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args)),
-                    _1 => AssertInvocation(_1, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))));
+                    _0 => AssertInvocationStmt(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args)),
+                    _1 => AssertInvocationStmt(_1, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))));
             NoErrorsAndIsAtEOF(p);
         }
 
@@ -350,11 +350,11 @@ public partial class ParserTests
             AssertWhileStmt(p.ParseStatement(),
                 condition => condition is NameExpression { Name: "a" },
                 body => Collection(body,
-                    _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args)),
+                    _0 => AssertInvocationStmt(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args)),
                     _1 => AssertWhileStmt(_1,
                         condition => condition is NameExpression { Name: "b" },
                         body => Collection(body,
-                            _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))))));
+                            _0 => AssertInvocationStmt(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))))));
             NoErrorsAndIsAtEOF(p);
         }
 
@@ -385,7 +385,7 @@ public partial class ParserTests
                 limit => limit is IntLiteralExpression { Value: 10 },
                 counter => counter is NameExpression { Name: "i" },
                 body => Collection(body,
-                    _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args))));
+                    _0 => AssertInvocationStmt(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args))));
             NoErrorsAndIsAtEOF(p);
         }
 
@@ -405,12 +405,12 @@ public partial class ParserTests
                 limit => limit is NameExpression { Name: "a" },
                 counter => counter is NameExpression { Name: "i" },
                 body => Collection(body,
-                    _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args)),
+                    _0 => AssertInvocationStmt(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args)),
                     _1 => AssertRepeatStmt(_1,
                         limit => limit is NameExpression { Name: "b" },
                         counter => counter is NameExpression { Name: "k" },
                         body => Collection(body,
-                            _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))))));
+                            _0 => AssertInvocationStmt(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))))));
             NoErrorsAndIsAtEOF(p);
         }
 
@@ -443,7 +443,7 @@ public partial class ParserTests
                 initializer => initializer is IntLiteralExpression { Value: 0 },
                 limit => limit is IntLiteralExpression { Value: 10 },
                 body => Collection(body,
-                    _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args))));
+                    _0 => AssertInvocationStmt(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args))));
             NoErrorsAndIsAtEOF(p);
         }
 
@@ -464,13 +464,13 @@ public partial class ParserTests
                 initializer => initializer is IntLiteralExpression { Value: 0 },
                 limit => limit is IntLiteralExpression { Value: 10 },
                 body => Collection(body,
-                    _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args)),
+                    _0 => AssertInvocationStmt(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args)),
                     _1 => AssertForStmt(_1,
                         counter => counter is NameExpression { Name: "k" },
                         initializer => initializer is IntLiteralExpression { Value: 0 },
                         limit => limit is IntLiteralExpression { Value: 10 },
                         body => Collection(body,
-                            _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))))));
+                            _0 => AssertInvocationStmt(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))))));
             NoErrorsAndIsAtEOF(p);
         }
 
@@ -512,16 +512,16 @@ public partial class ParserTests
                     _0 => AssertSwitchCase(_0,
                         @case => @case is ValueSwitchCase { Value: IntLiteralExpression { Value: 1 } },
                         body => Collection(body,
-                            _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args)))),
+                            _0 => AssertInvocationStmt(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args)))),
                     _1 => AssertSwitchCase(_1,
                         @case => @case is ValueSwitchCase { Value: IntLiteralExpression { Value: 2 } },
                         body => Collection(body,
-                            _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args)),
+                            _0 => AssertInvocationStmt(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args)),
                             _1 => True(_1 is BreakStatement))),
                     _2 => AssertSwitchCase(_2,
                         @case => @case is DefaultSwitchCase,
                         body => Collection(body,
-                            _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "baz" }, args => Empty(args)),
+                            _0 => AssertInvocationStmt(_0, callee => callee is NameExpression { Name: "baz" }, args => Empty(args)),
                             _1 => True(_1 is BreakStatement)))));
             NoErrorsAndIsAtEOF(p);
         }
@@ -547,7 +547,7 @@ public partial class ParserTests
                     _0 => AssertSwitchCase(_0,
                         @case => @case is ValueSwitchCase { Value: IntLiteralExpression { Value: 1 } },
                         body => Collection(body,
-                            _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args)))),
+                            _0 => AssertInvocationStmt(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args)))),
                     _1 => AssertSwitchCase(_1,
                         @case => @case is ValueSwitchCase { Value: IntLiteralExpression { Value: 2 } },
                         body => Collection(body,
@@ -557,7 +557,7 @@ public partial class ParserTests
                                     _0 => AssertSwitchCase(_0,
                                         @case => @case is ValueSwitchCase { Value: IntLiteralExpression { Value: 3 } },
                                         body => Collection(body,
-                                            _0 => AssertInvocation(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))))))))));
+                                            _0 => AssertInvocationStmt(_0, callee => callee is NameExpression { Name: "bar" }, args => Empty(args))))))))));
             NoErrorsAndIsAtEOF(p);
         }
 
@@ -773,7 +773,7 @@ public partial class ParserTests
                   baz(0)"
             );
 
-            AssertInvocation(p.ParseStatement(),
+            AssertInvocationStmt(p.ParseStatement(),
                 callee => callee is NameExpression { Name: "foo" },
                 args => Collection(args,
                     _0 => True(_0 is BinaryExpression
@@ -785,12 +785,12 @@ public partial class ParserTests
                     _1 => True(_1 is NameExpression { Name: "a" })
                     )
                 );
-            AssertInvocation(p.ParseStatement(),
+            AssertInvocationStmt(p.ParseStatement(),
                 callee => callee is NameExpression { Name: "bar" },
                 args => Empty(args)
                 );
             True(p.IsPossibleExpression());
-            AssertInvocation(p.ParseStatement(),
+            AssertInvocationStmt(p.ParseStatement(),
                 callee => callee is NameExpression { Name: "baz" },
                 args => Collection(args,
                     _0 => True(_0 is IntLiteralExpression { Value: 0 })
@@ -800,15 +800,23 @@ public partial class ParserTests
         }
 
         [Fact]
-        public void ExpressionAsStatementError()
+        public void ExpressionAsStatement()
         {
             var p = ParserFor(
                 @"1 + 2"
             );
 
-            AssertError(p.ParseStatement(), n => n is ErrorStatement);
-            CheckError(ErrorCode.ParserExpressionAsStatement, (1, 1), (1, 5), p.Diagnostics);
-            True(p.IsAtEOF);
+            Assert(p.ParseStatement(), 
+                n => n is ExpressionStatement
+                {
+                    Expression: BinaryExpression
+                    {
+                        Operator: BinaryOperator.Add,
+                        LHS: IntLiteralExpression { Value: 1 },
+                        RHS: IntLiteralExpression { Value: 2 },
+                    }
+                });
+            NoErrorsAndIsAtEOF(p); // error is reported during semantic analysis, not parsing
         }
 
         [Fact]
@@ -856,8 +864,15 @@ public partial class ParserTests
             AssertWhileStmt(p.ParseStatement(),
                 condition => condition is NameExpression { Name: "a" },
                 body => Collection(body,
-                    _0 => Assert(_0, n => n is EmptyStatement { Label: Label { Name: "my_label" } }),
-                    _1 => Assert(_1, n => n is InvocationExpression { Label: Label { Name: "other_label" }, Callee: NameExpression { Name: "bar" } })));
+                    _0 => Assert(_0, n => n is EmptyStatement { Label.Name: "my_label" }),
+                    _1 => Assert(_1, n => n is ExpressionStatement
+                    {
+                        Label.Name: "other_label", 
+                        Expression: InvocationExpression
+                        {
+                            Callee: NameExpression { Name: "bar" }
+                        }
+                    })));
             NoErrorsAndIsAtEOF(p);
         }
     }

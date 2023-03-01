@@ -449,7 +449,7 @@ public class Parser
             | K_CONTINUE                                                #continueStatement
             | K_RETURN expression?                                      #returnStatement
             | K_GOTO identifier                                         #gotoStatement
-            | expression argumentList                                   #invocationStatement
+            | expression                                                #expressionStatement
             ;
 
             labeledStatement
@@ -477,9 +477,7 @@ public class Parser
             var lhs = ParseExpression();
             if (IsAtEOS)
             {
-                stmt = lhs is InvocationExpression invocation ?
-                            invocation.WithLabel(label) :
-                            ExpressionAsStatementError(lhs, label);
+                stmt = new ExpressionStatement(lhs, label);
             }
             else if (Accept(AssignmentStatement.IsAssignmentOperator, out var assignmentOp))
             {
@@ -689,6 +687,7 @@ public class Parser
             | expression '.' identifier                                     #fieldAccessExpression
             | expression argumentList                                       #invocationExpression
             | expression arrayIndexer                                       #indexingExpression
+            | expression op=('++' | '--')                                   #postfixUnaryExpression
             | op=(K_NOT | '-') expression                                   #unaryExpression
             | left=expression op=('*' | '/' | '%') right=expression         #binaryExpression
             | left=expression op=('+' | '-') right=expression               #binaryExpression
@@ -941,6 +940,11 @@ public class Parser
 
                 newExpr = new InvocationExpression(openParen, closeParen, expr, args ?? Enumerable.Empty<IExpression>());
             }
+            else if (Accept(TokenKind.PlusPlus, out var postfixUnaryOpToken) ||
+                     Accept(TokenKind.MinusMinus, out postfixUnaryOpToken))
+            {
+                expr = new PostfixUnaryExpression(postfixUnaryOpToken, expr);
+            }
 
             return newExpr is null ? expr : TryParseExpressionTermSuffix(newExpr);
         }
@@ -1111,12 +1115,6 @@ public class Parser
     { 
         Error(ErrorCode.ParserUnknownStatement, $"Expected statement, found '{Current.Lexeme}' ({Current.Kind})", Current.Location);
         return new(LastError!, label, Current);
-    }
-
-    private ErrorStatement ExpressionAsStatementError(IExpression parsedExpr, Label? label)
-    {
-        Error(ErrorCode.ParserExpressionAsStatement, $"Only invocation expressions can be used as a statement, found '{parsedExpr.GetType().Name}'", parsedExpr.Location);
-        return new(LastError!, label, parsedExpr.Tokens.ToArray());
     }
 
     private ErrorExpression UnknownExpressionError()
