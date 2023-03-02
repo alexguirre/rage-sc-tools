@@ -986,7 +986,7 @@ public class Parser
         }
         else
         {
-            ExpectOrMissing(TokenKind.Identifier, out typeIdent, MissingIdentifier);
+            ExpectEitherOrMissing(TokenKind.Identifier, TokenKind.STRUCT, out typeIdent, MissingIdentifier);
             decl = ParseDeclarator();
         }
 
@@ -1202,6 +1202,16 @@ public class Parser
         if (!Expect(token, out t))
         {
             t = createMissingToken is not null ? createMissingToken() : Missing(token);
+            return false;
+        }
+        return true;
+    }
+
+    private bool ExpectEitherOrMissing(TokenKind tokenA, TokenKind tokenB, out Token t, Func<Token>? createMissingToken = null)
+    {
+        if (!ExpectEither(tokenA, tokenB, out t))
+        {
+            t = createMissingToken is not null ? createMissingToken() : Missing(tokenA);
             return false;
         }
         return true;

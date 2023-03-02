@@ -40,7 +40,7 @@ public sealed partial class TypeName : BaseNode
     public TypeName(Token nameIdentifier)
         : base(OfTokens(nameIdentifier), OfChildren())
     {
-        Debug.Assert(nameIdentifier.Kind is TokenKind.Identifier);
+        Debug.Assert(nameIdentifier.Kind is TokenKind.Identifier or TokenKind.STRUCT);
     }
 
     public override string DebuggerDisplay =>
