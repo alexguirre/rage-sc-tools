@@ -641,8 +641,9 @@ public class Parser
                 }
                 else if (Accept(TokenKind.CASE, out var caseToken))
                 {
-                    if (Expect(ParseExpression, out var valueExpr) && ExpectEOS())
+                    if (Expect(ParseExpression, out var valueExpr))
                     {
+                        AcceptEOS();
                         var body = ParseBodyUntilAny(TokenKind.CASE, TokenKind.DEFAULT, TokenKind.ENDSWITCH);
                         cases.Add(new ValueSwitchCase(caseToken, valueExpr, body));
                         continue;
@@ -650,12 +651,10 @@ public class Parser
                 }
                 else if (Accept(TokenKind.DEFAULT, out var defaultToken))
                 {
-                    if (ExpectEOS())
-                    {
-                        var body = ParseBodyUntilAny(TokenKind.CASE, TokenKind.DEFAULT, TokenKind.ENDSWITCH);
-                        cases.Add(new DefaultSwitchCase(defaultToken, body));
-                        continue;
-                    }
+                    AcceptEOS();
+                    var body = ParseBodyUntilAny(TokenKind.CASE, TokenKind.DEFAULT, TokenKind.ENDSWITCH);
+                    cases.Add(new DefaultSwitchCase(defaultToken, body));
+                    continue;
                 }
                 else
                 {
@@ -1185,6 +1184,8 @@ public class Parser
 
         return false;
     }
+
+    private bool AcceptEOS() => Accept(TokenKind.EOS, out _) || Accept(TokenKind.EOF, out _);
 
     private bool Expect(TokenKind token, out Token t)
     {

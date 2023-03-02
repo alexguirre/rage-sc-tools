@@ -606,6 +606,30 @@ public partial class ParserTests
         }
 
         [Fact]
+        public void SwitchStatementAllowsStatementInSameLineAsCase()
+        {
+            var p = ParserFor(
+                @"  SWITCH a
+                    CASE 1   foo()
+                    DEFAULT  RETURN 1
+                    ENDSWITCH"
+            );
+
+            AssertSwitchStmt(p.ParseStatement(),
+                expr => expr is NameExpression { Name: "a" },
+                cases => Collection(cases,
+                    _0 => AssertSwitchCase(_0,
+                        @case => @case is ValueSwitchCase { Value: IntLiteralExpression { Value: 1 } },
+                        body => Collection(body,
+                            _0 => AssertInvocationStmt(_0, callee => callee is NameExpression { Name: "foo" }, args => Empty(args)))),
+                    _1 => AssertSwitchCase(_1,
+                        @case => @case is DefaultSwitchCase,
+                        body => Collection(body,
+                            _0 => True(_0 is ReturnStatement { Expression: IntLiteralExpression { Value: 1 } })))));
+            NoErrorsAndIsAtEOF(p);
+        }
+
+        [Fact]
         public void VarDeclarationStatement()
         {
             var p = ParserFor(
