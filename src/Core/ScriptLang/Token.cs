@@ -43,6 +43,7 @@ public enum TokenKind
     LessThanEquals,         // <=
     GreaterThanEquals,      // >=
     EqualsEquals,           // ==
+    ExclamationEquals,      // !=
     LessThanGreaterThan,    // <>
     LessThanLessThan,       // <<
     GreaterThanGreaterThan, // >>
@@ -144,6 +145,7 @@ public static class TokenLexemes
     public const string LessThanEquals = "<=";
     public const string GreaterThanEquals = ">=";
     public const string EqualsEquals = "==";
+    public const string ExclamationEquals = "!=";
     public const string LessThanGreaterThan = "<>";
     public const string LessThanLessThan = "<<";
     public const string GreaterThanGreaterThan = ">>";
@@ -240,6 +242,7 @@ public static class TokenKindExtensions
             TokenKind.LessThanEquals => TokenLexemes.LessThanEquals,
             TokenKind.GreaterThanEquals => TokenLexemes.GreaterThanEquals,
             TokenKind.EqualsEquals => TokenLexemes.EqualsEquals,
+            TokenKind.ExclamationEquals => TokenLexemes.ExclamationEquals,
             TokenKind.LessThanGreaterThan => TokenLexemes.LessThanGreaterThan,
             TokenKind.LessThanLessThan => TokenLexemes.LessThanLessThan,
             TokenKind.GreaterThanGreaterThan => TokenLexemes.GreaterThanGreaterThan,

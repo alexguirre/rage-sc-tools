@@ -23,6 +23,7 @@ public class Parser
     private readonly Queue<Token> lookAheadTokens = new();
     private bool isInsideCommaSeparatedVarDeclaration = false;
     private Token commaSeparatedVarDeclarationTypeIdentifier = default; // set when isInsideVarDeclaration is true
+    private bool disallowSingleEqualsInBinaryExpression = false; // workaround to deal with ambiguity between assignment and equality with '='
 
     public Lexer Lexer { get; }
     public DiagnosticsReport Diagnostics { get; }
@@ -474,7 +475,9 @@ public class Parser
         else if (IsPossibleExpression() &&
                  !IsPossibleLabel()) // in case of sequential labels, avoid parsing the second label identifier as an expression
         {
+            disallowSingleEqualsInBinaryExpression = true;
             var lhs = ParseExpression();
+            disallowSingleEqualsInBinaryExpression = false;
             if (IsAtEOS)
             {
                 stmt = new ExpressionStatement(lhs, label);
@@ -523,9 +526,16 @@ public class Parser
         }
         else if (Accept(TokenKind.FOR, out var forToken))
         {
-            if (Expect(ParseExpression, out var counterExpr) &&
-                Expect(TokenKind.Equals, out _) &&
-                Expect(ParseExpression, out var initializerExpr) &&
+            disallowSingleEqualsInBinaryExpression = true;
+            // 'initializerExpr' only used if foundCounterAndInitializer is true so it is safe to initialize it to null
+            // here to prevent compiler error "Local variable 'initializerExpr' might not be initialized before accessing"
+            IExpression initializerExpr = null!;
+            var foundCounterAndInitializer =
+                    Expect(ParseExpression, out var counterExpr) &&
+                    Expect(TokenKind.Equals, out _) &&
+                    Expect(ParseExpression, out initializerExpr);
+            disallowSingleEqualsInBinaryExpression = false;
+            if (foundCounterAndInitializer &&
                 Expect(TokenKind.TO, out var toToken) &&
                 Expect(ParseExpression, out var limitExpr) &&
                 ExpectEOS())
@@ -807,6 +817,8 @@ public class Parser
         {
             IExpression expr = ParseBinaryOp7();
             while (Accept(TokenKind.EqualsEquals, out var opToken) ||
+                   (!disallowSingleEqualsInBinaryExpression && Accept(TokenKind.Equals, out opToken)) ||
+                   Accept(TokenKind.ExclamationEquals, out opToken) ||
                    Accept(TokenKind.LessThanGreaterThan, out opToken))
             {
                 expr = new BinaryExpression(opToken, expr, ParseBinaryOp7());

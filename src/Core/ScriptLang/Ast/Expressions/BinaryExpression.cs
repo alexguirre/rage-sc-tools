@@ -26,6 +26,7 @@ public enum BinaryOperator
 public sealed partial class BinaryExpression : BaseExpression
 {
     public BinaryOperator Operator { get; }
+    public Token OperatorToken => Tokens[0];
     public IExpression LHS => (IExpression)Children[0];
     public IExpression RHS => (IExpression)Children[1];
 
@@ -37,6 +38,7 @@ public sealed partial class BinaryExpression : BaseExpression
             TokenKind.Percent or TokenKind.Ampersand or TokenKind.Caret or TokenKind.Bar or
             TokenKind.EqualsEquals or TokenKind.LessThanGreaterThan or TokenKind.LessThan or
             TokenKind.LessThanEquals or TokenKind.GreaterThan or TokenKind.GreaterThanEquals or
+            TokenKind.ExclamationEquals or TokenKind.Equals or
             TokenKind.AND or TokenKind.OR);
         Operator = BinaryOperatorExtensions.FromToken(operatorToken.Kind);
     }
@@ -83,7 +85,9 @@ public static class BinaryOperatorExtensions
             TokenKind.Ampersand => BinaryOperator.And,
             TokenKind.Caret => BinaryOperator.Xor,
             TokenKind.Bar => BinaryOperator.Or,
+            TokenKind.Equals => BinaryOperator.Equals,
             TokenKind.EqualsEquals => BinaryOperator.Equals,
+            TokenKind.ExclamationEquals => BinaryOperator.NotEquals,
             TokenKind.LessThanGreaterThan => BinaryOperator.NotEquals,
             TokenKind.LessThan => BinaryOperator.LessThan,
             TokenKind.LessThanEquals => BinaryOperator.LessThanOrEqual,

@@ -3,6 +3,7 @@
 using ScTools.ScriptLang;
 using ScTools.ScriptLang.Ast.Errors;
 using ScTools.ScriptLang.Ast.Expressions;
+using ScTools.ScriptLang.Ast.Statements;
 
 public partial class ParserTests
 {
@@ -593,6 +594,64 @@ public partial class ParserTests
                             },
                         },
                     },
+                },
+            });
+            NoErrorsAndIsAtEOF(p);
+        }
+
+        [Theory]
+        [InlineData("==")]
+        [InlineData("=")]
+        public void AlternativeEqualsOperator(string op)
+        {
+            var p = ParserFor(
+                $@"a {op} b"
+            );
+
+            ParseExpressionAndAssert(p, n => n is BinaryExpression
+            {
+                Operator: BinaryOperator.Equals,
+                LHS: NameExpression { Name: "a" },
+                RHS: NameExpression { Name: "b" },
+            });
+            NoErrorsAndIsAtEOF(p);
+        }
+
+        [Theory]
+        [InlineData("!=")]
+        [InlineData("<>")]
+        public void AlternativeNotEqualsOperator(string op)
+        {
+            var p = ParserFor(
+                $@"a {op} b"
+            );
+
+            ParseExpressionAndAssert(p, n => n is BinaryExpression
+            {
+                Operator: BinaryOperator.NotEquals,
+                LHS: NameExpression { Name: "a" },
+                RHS: NameExpression { Name: "b" },
+            });
+            NoErrorsAndIsAtEOF(p);
+        }
+
+        [Fact]
+        public void EqualsOperatorAndAssignmentDisambiguation()
+        {
+            var p = ParserFor(
+                $@"a = b = c"
+            );
+
+            Assert(p.ParseStatement(), 
+                n => n is AssignmentStatement
+            {
+                CompoundOperator: null,
+                LHS: NameExpression { Name: "a" },
+                RHS: BinaryExpression
+                {
+                    Operator: BinaryOperator.Equals,
+                    LHS: NameExpression { Name: "b" },
+                    RHS: NameExpression { Name: "c" },
                 },
             });
             NoErrorsAndIsAtEOF(p);

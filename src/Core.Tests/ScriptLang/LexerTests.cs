@@ -27,12 +27,12 @@
         [Fact]
         public void Symbols()
         {
-            var (tokens, diag) = Lex(".,()[]=+-*/%&^|+=-=*=/=%=&=^=|=< > <= >= == <> <<  >>:#++--");
+            var (tokens, diag) = Lex(".,()[]=+-*/%&^|+=-=*=/=%=&=^=|=< > <= >= == != <> <<  >>:#++--");
 
             False(diag.HasErrors);
             False(diag.HasWarnings);
 
-            Equal(36, tokens.Length);
+            Equal(37, tokens.Length);
 
             int checkTokenIndex = 0;
             (int Line, int Column) checkStart, checkEnd;
@@ -79,6 +79,8 @@
             check(TokenKind.GreaterThanEquals, ">=");
             checkSkip(1);
             check(TokenKind.EqualsEquals, "==");
+            checkSkip(1);
+            check(TokenKind.ExclamationEquals, "!=");
             checkSkip(1);
             check(TokenKind.LessThanGreaterThan, "<>");
             checkSkip(1);

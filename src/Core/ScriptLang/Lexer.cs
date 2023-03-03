@@ -88,6 +88,7 @@ public sealed class Lexer : LexerBase<Token, TokenKind, ErrorCode>
                 '>' => NextIf('=') ? NewToken(TokenKind.GreaterThanEquals) :      // >=
                         NextIf('>') ? NewToken(TokenKind.GreaterThanGreaterThan) : // >>
                                         NewToken(TokenKind.GreaterThan),
+                '!' => NextIf('=') ? NewToken(TokenKind.ExclamationEquals) : null, // !=
                 _ when IsIdentifierStartChar(c) => LexIdentifierLikeToken(),
 
                 _ => null
