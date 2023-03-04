@@ -18,7 +18,6 @@ public class ConstantsTests : SemanticsTestsBase
         var s = Analyze(
             @$"CONST_INT foo {initializerExpr}"
         );
-
         False(s.Diagnostics.HasErrors);
         AssertConst(s, "foo", IntType.Instance, expected);
     }
@@ -90,5 +89,32 @@ public class ConstantsTests : SemanticsTestsBase
         AssertConst(s, "foo", IntType.Instance, 1);
 
         CheckError(ErrorCode.SemanticUndefinedSymbol, (1, 15), (1, 17), s.Diagnostics);
+    }
+
+    [Fact]
+    public void ConstantAsParameterDefaultValue()
+    {
+        var s = Analyze(
+            @$"CONST_INT foo 1
+            PROC bar(INT a = foo)
+            ENDPROC"
+        );
+
+        False(s.Diagnostics.HasErrors);
+        AssertConst(s, "foo", IntType.Instance, 1);
+    }
+
+    [Fact]
+    public void ConstantWithErrorDoesntReportMoreErrorsWhenUsed()
+    {
+        var s = Analyze(
+            @$"CONST_INT foo does_not_exist
+            PROC bar(INT a = foo)
+            ENDPROC"
+        );
+
+        True(s.Diagnostics.HasErrors);
+        Single(s.Diagnostics.Errors);
+        CheckError(ErrorCode.SemanticUndefinedSymbol, (1, 15), (1, 28), s.Diagnostics);
     }
 }

@@ -270,6 +270,16 @@ public sealed class SemanticsAnalyzer : AstVisitor
                     }
 
                     CheckConstantInitializer(this, node);
+                    var value = node.Semantics.ConstantValue;
+                    value ??= varType switch
+                    {
+                        // give default values to prevent null references in ConstantExpressionEvaluator
+                        IntType => ConstantValue.Int(0),
+                        FloatType => ConstantValue.Float(0),
+                        _ => null,
+                    };
+                    Debug.Assert(value is not null);
+                    node.Semantics = node.Semantics with { ConstantValue = value };
                 }
                 break;
             case VarKind.Static:
