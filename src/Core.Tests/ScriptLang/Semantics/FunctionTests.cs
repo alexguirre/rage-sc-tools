@@ -148,4 +148,28 @@ public class FunctionTests : SemanticsTestsBase
         True(s.Diagnostics.HasErrors);
         CheckError(ErrorCode.SemanticTooManyArguments, (5, 26), (5, 33), s.Diagnostics);
     }
+
+    [Fact]
+    public void OptionalParametersOnNativeFunctionsAreAllowed()
+    {
+        var (s, _) = AnalyzeAndAst(
+            @"
+                NATIVE FUNC INT foo1(INT v1, INT v2, INT v3 = 123, INT v4 = 456)
+                NATIVE PROC foo2(INT v1, INT v2, INT v3 = 123, INT v4 = 456)"
+        );
+
+        False(s.Diagnostics.HasErrors);
+    }
+
+    [Fact]
+    public void OptionalParametersOnFunctionTypeDefsAreAllowed()
+    {
+        var (s, _) = AnalyzeAndAst(
+            @"
+                TYPEDEF FUNC INT foo1(INT v1, INT v2, INT v3 = 123, INT v4 = 456)
+                TYPEDEF PROC foo2(INT v1, INT v2, INT v3 = 123, INT v4 = 456)"
+        );
+
+        False(s.Diagnostics.HasErrors);
+    }
 }

@@ -192,18 +192,22 @@ public sealed class SemanticsAnalyzer : AstVisitor
     {
         AddSymbol(node);
 
+        currentFunctionHasOptionalParameter = false;
         EnterScope();
         node.Parameters.ForEach(p => p.Accept(this));
         ExitScope();
+        currentFunctionHasOptionalParameter = false;
     }
 
     public override void Visit(NativeFunctionDeclaration node)
     {
         AddSymbol(node);
 
+        currentFunctionHasOptionalParameter = false;
         EnterScope();
         node.Parameters.ForEach(p => p.Accept(this));
         ExitScope();
+        currentFunctionHasOptionalParameter = false;
     }
 
     public override void Visit(NativeTypeDeclaration node)
