@@ -65,6 +65,7 @@ public sealed class SemanticsAnalyzer : AstVisitor
         AddSymbol(new BuiltInTypeSymbol("VECTOR", VectorType.Instance));
 
         TextLabelType.All64.ForEach(tl => AddSymbol(new BuiltInTypeSymbol(TextLabelType.GetTypeNameForLength(tl.Length), tl)));
+        AddSymbol(new BuiltInTypeSymbol("TEXT_LABEL", TextLabelType.All64.First(tl => tl.Length == 32)));
     }
 
     private void RegisterIntrinsics()
@@ -769,7 +770,7 @@ public sealed class SemanticsAnalyzer : AstVisitor
         }
     }
 
-    private void AddSymbol(ISymbol symbol)
+    public void AddSymbol(ISymbol symbol)
     {
         // resolve the declaration type
         // the TypeFactory takes care of setting TypeDeclarationSemantics.DeclaredType or ValueDeclarationSemantics.ValueType
