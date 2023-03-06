@@ -971,5 +971,46 @@ public partial class ParserTests
             AssertNativeTypeDeclaration(p.ParseNativeTypeDeclaration(), "FOO_ID");
             NoErrorsAndIsAtEOF(p);
         }
+
+        [Theory]
+        [InlineData(@"
+            PROC foo(INT a,
+                     INT b,
+                     INT c)
+            ENDPROC")]
+        [InlineData(@"
+            PROC foo(
+                     INT a,
+                     INT b,
+                     INT c)
+            ENDPROC")]
+        [InlineData(@"
+            PROC foo(INT a,
+                     INT b,
+                     INT c
+                    )
+            ENDPROC")]
+        [InlineData(@"
+            PROC foo(
+                     INT a,
+                     INT b,
+                     INT c
+                    )
+            ENDPROC")]
+        public void ParametersOnMultipleLines(string src)
+        {
+            var p = ParserFor(src);
+            p.AcceptEOS();
+            True(p.IsPossibleFunctionDeclaration());
+            AssertFunctionDeclaration(p.ParseFunctionDeclaration(), "foo",
+                retTy => retTy is null,
+                @params => Collection(@params,
+                    _0 => True(_0 is { Name: "a", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
+                    _1 => True(_1 is { Name: "b", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter }),
+                    _2 => True(_2 is { Name: "c", Type: TypeName { Name: "INT" }, Kind: VarKind.Parameter })),
+                body => Empty(body),
+                isDebugOnly: false);
+            NoErrorsAndIsAtEOF(p);
+        }
     }
 }

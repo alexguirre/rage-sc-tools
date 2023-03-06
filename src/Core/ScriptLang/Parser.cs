@@ -396,7 +396,9 @@ public class Parser
                 @params = new();
                 do
                 {
+                    AcceptEOS();
                     @params.Add(ParseVarDeclaration(isScriptParameterList ? VarKind.ScriptParameter : VarKind.Parameter, allowMultipleDeclarations: false));
+                    AcceptEOS();
                 } while (Accept(TokenKind.Comma, out _));
             }
         }
