@@ -1140,7 +1140,7 @@ public class Parser
     private void UsingAfterDeclarationError(UsingDirective @using)
         => Error(ErrorCode.ParserUsingAfterDeclaration, $"USING directives must precede all declarations", @using.Location);
 
-    private Token Peek(int offset)
+    public Token Peek(int offset)
     {
         Debug.Assert(offset >= 0);
 
@@ -1160,7 +1160,7 @@ public class Parser
         return lookAheadTokens.ElementAt(offset - 1);
     }
 
-    private void Next()
+    public void Next()
     {
         if (lookAheadTokens.TryDequeue(out var nextToken))
         {
@@ -1173,7 +1173,7 @@ public class Parser
         }
     }
 
-    private bool Accept(TokenKind token, out Token t)
+    public bool Accept(TokenKind token, out Token t)
     {
         t = Current;
         if (Current.Kind == token)
@@ -1185,7 +1185,7 @@ public class Parser
         return false;
     }
 
-    private bool Accept(Predicate<TokenKind> tokenPredicate, out Token t)
+    public bool Accept(Predicate<TokenKind> tokenPredicate, out Token t)
     {
         t = Current;
         if (tokenPredicate(Current.Kind))
@@ -1197,9 +1197,9 @@ public class Parser
         return false;
     }
 
-    private bool AcceptEOS() => Accept(TokenKind.EOS, out _) || Accept(TokenKind.EOF, out _);
+    public bool AcceptEOS() => Accept(TokenKind.EOS, out _) || Accept(TokenKind.EOF, out _);
 
-    private bool Expect(TokenKind token, out Token t)
+    public bool Expect(TokenKind token, out Token t)
     {
         if (Accept(token, out t))
         {
@@ -1210,7 +1210,7 @@ public class Parser
         return false;
     }
 
-    private bool ExpectOrMissing(TokenKind token, out Token t, Func<Token>? createMissingToken = null)
+    public bool ExpectOrMissing(TokenKind token, out Token t, Func<Token>? createMissingToken = null)
     {
         if (!Expect(token, out t))
         {
@@ -1220,7 +1220,7 @@ public class Parser
         return true;
     }
 
-    private bool ExpectEitherOrMissing(TokenKind tokenA, TokenKind tokenB, out Token t, Func<Token>? createMissingToken = null)
+    public bool ExpectEitherOrMissing(TokenKind tokenA, TokenKind tokenB, out Token t, Func<Token>? createMissingToken = null)
     {
         if (!ExpectEither(tokenA, tokenB, out t))
         {
@@ -1230,15 +1230,15 @@ public class Parser
         return true;
     }
 
-    private bool Expect<TNode>(Func<TNode> parseFunc, out TNode node) where TNode : INode
+    public bool Expect<TNode>(Func<TNode> parseFunc, out TNode node) where TNode : INode
     {
         node = parseFunc();
         return node is not IError;
     }
 
-    private bool ExpectEOS() => ExpectEither(TokenKind.EOS, TokenKind.EOF, out _);
+    public bool ExpectEOS() => ExpectEither(TokenKind.EOS, TokenKind.EOF, out _);
 
-    private bool ExpectEither(TokenKind tokenA, TokenKind tokenB, out Token t)
+    public bool ExpectEither(TokenKind tokenA, TokenKind tokenB, out Token t)
     {
         if (Accept(tokenA, out t) || Accept(tokenB, out t))
         {
@@ -1248,7 +1248,7 @@ public class Parser
         UnexpectedTokenError(tokenA, tokenB);
         return false;
     }
-    private bool ExpectEither(TokenKind tokenA, TokenKind tokenB, TokenKind tokenC, out Token t)
+    public bool ExpectEither(TokenKind tokenA, TokenKind tokenB, TokenKind tokenC, out Token t)
     {
         if (Accept(tokenA, out t) || Accept(tokenB, out t) || Accept(tokenC, out t))
         {
