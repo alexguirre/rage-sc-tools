@@ -461,6 +461,28 @@ public partial class ParserTests
         }
 
         [Fact]
+        public void LogicalExpressionOnMultipleLines()
+        {
+            var p = ParserFor(
+                @"a
+                    OR b
+                    OR c
+                    AND d
+                    AND e
+                    OR f
+                    OR g"
+            );
+            var ep = ParserFor(
+                @"a OR b OR c AND d AND e OR f OR g"
+            );
+
+            var expr = p.ParseExpression();
+            var expectedExpr = ep.ParseExpression();
+            Equal(expectedExpr.DebuggerDisplay, expr.DebuggerDisplay);
+            NoErrorsAndIsAtEOF(p);
+        }
+        
+        [Fact]
         public void BitwiseExpressionPrecedence()
         {
             var p = ParserFor(

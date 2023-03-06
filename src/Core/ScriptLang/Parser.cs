@@ -768,7 +768,9 @@ public class Parser
         IExpression ParseBinaryOp1()
         {
             IExpression expr = ParseBinaryOp2();
-            while (Accept(TokenKind.OR, out var orToken))
+            while (Accept(TokenKind.OR, out var orToken)
+                   // allow OR to be on the next line
+                   || (Peek(0).Kind is TokenKind.EOS && Peek(1).Kind is TokenKind.OR && AcceptEOS() && Accept(TokenKind.OR, out orToken)))
             {
                 expr = new BinaryExpression(orToken, expr, ParseBinaryOp2());
             }
@@ -778,7 +780,9 @@ public class Parser
         IExpression ParseBinaryOp2()
         {
             IExpression expr = ParseBinaryOp3();
-            while (Accept(TokenKind.AND, out var andToken))
+            while (Accept(TokenKind.AND, out var andToken)
+                   // allow AND to be on the next line
+                   || (Peek(0).Kind is TokenKind.EOS && Peek(1).Kind is TokenKind.AND && AcceptEOS() && Accept(TokenKind.AND, out andToken)))
             {
                 expr = new BinaryExpression(andToken, expr, ParseBinaryOp3());
             }
