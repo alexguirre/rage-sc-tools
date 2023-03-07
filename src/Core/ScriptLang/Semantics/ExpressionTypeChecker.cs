@@ -17,7 +17,11 @@ using ScTools.ScriptLang.Types;
 /// </summary>
 public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyzer>
 {
-    private static readonly ErrorType ErrorType = ErrorType.Instance;
+    private static ErrorType ErrorSemantics(IExpression node)
+    {
+        node.Semantics = new(ErrorType.Instance, 0, ArgumentKind.None);
+        return ErrorType.Instance;
+    }
 
     private static TypeInfo Literal(IExpression node, TypeInfo type)
     {
@@ -36,7 +40,7 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
         var type = node.SubExpression.Accept(this, s);
         if (type.IsError)
         {
-            return ErrorType;
+            return ErrorSemantics(node);
         }
 
         return type switch
@@ -61,10 +65,7 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
                 _ => throw new ArgumentOutOfRangeException(nameof(node), $"Unknown unary operator '{node.Operator}'")
             };
 
-            if (!result.IsError)
-            {
-                node.Semantics = new(result, ValueKind.RValue | (node.SubExpression.ValueKind & ValueKind.Constant), ArgumentKind.None);
-            }
+            node.Semantics = new(result, ValueKind.RValue | (node.SubExpression.ValueKind & ValueKind.Constant), ArgumentKind.None);
             return result;
         }
     }
@@ -74,7 +75,7 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
         var type = node.SubExpression.Accept(this, s);
         if (type.IsError)
         {
-            return ErrorType;
+            return ErrorSemantics(node);
         }
 
         switch (type)
@@ -98,7 +99,7 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
 
         if (lhs.IsError || rhs.IsError)
         {
-            return ErrorType;
+            return ErrorSemantics(node);
         }
 
         TypeInfo INT = IntType.Instance,
@@ -196,10 +197,7 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
 
         static TypeInfo SetBinaryOpResultType(BinaryExpression node, TypeInfo type)
         {
-            if (!type.IsError)
-            {
-                node.Semantics = new(type, ValueKind.RValue | (node.LHS.ValueKind & node.RHS.ValueKind & ValueKind.Constant), ArgumentKind.None);
-            }
+            node.Semantics = new(type, ValueKind.RValue | (node.LHS.ValueKind & node.RHS.ValueKind & ValueKind.Constant), ArgumentKind.None);
             return type;
         }
     }
@@ -209,7 +207,7 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
         var type = node.SubExpression.Accept(this, s);
         if (type.IsError)
         {
-            return ErrorType;
+            return ErrorSemantics(node);
         }
 
         var field = type.Fields.SingleOrDefault(f => Parser.CaseInsensitiveComparer.Equals(f.Name, node.FieldName));
@@ -228,7 +226,7 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
         var idxTy = node.Index.Accept(this, s);
         if (arrTy.IsError)
         {
-            return ErrorType;
+            return ErrorSemantics(node);
         }
 
         if (arrTy is ArrayType arr)
@@ -242,8 +240,7 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
             return arr.Item;
         }
 
-        IndexingNotSupportedError(s, node, arrTy);
-        return ErrorType;
+        return IndexingNotSupportedError(s, node, arrTy);
     }
 
     public override TypeInfo Visit(InvocationExpression node, SemanticsAnalyzer s)
@@ -261,13 +258,12 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
             node.Arguments.ForEach(a => a.Accept(this, s));
             if (calleeType.IsError)
             {
-                return ErrorType;
+                return ErrorSemantics(node);
             }
 
             if (calleeType is not FunctionType funcType)
             {
-                TypeNotCallableError(s, node.Callee, calleeType);
-                return ErrorType;
+                return TypeNotCallableError(s, node.Callee, calleeType);
             }
 
             // check number of arguments passed
@@ -361,7 +357,7 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
     {
         if (!s.GetSymbol(node, out var symbol))
         {
-            return ErrorType;
+            return ErrorSemantics(node);
         }
 
         if (symbol is ScriptDeclaration)
@@ -378,8 +374,8 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
             _ => throw new ArgumentException($"Unknown declaration with name '{node.Name}'", nameof(node)),
         };
 
-        node.Semantics = new(type, valueKind, ArgumentKind.None, symbol);
-        return type ?? ErrorType;
+        node.Semantics = new(type ?? ErrorType.Instance, valueKind, ArgumentKind.None, symbol);
+        return node.Semantics.Type!;
 
         static ValueKind ValueKindOfDeclaration(IValueDeclaration valueDecl)
             => valueDecl switch
@@ -403,11 +399,6 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
         CheckComponent(s, node.Y, y);
         CheckComponent(s, node.Z, z);
 
-        if (x.IsError || y.IsError || z.IsError)
-        {
-            return ErrorType;
-        }
-
         node.Semantics = new(
             VectorType.Instance,
             ValueKind.RValue | (node.X.ValueKind & node.Y.ValueKind & node.Z.ValueKind & ValueKind.Constant),
@@ -424,7 +415,7 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
         }
     }
 
-    public override TypeInfo Visit(ErrorExpression node, SemanticsAnalyzer s) => ErrorType;
+    public override TypeInfo Visit(ErrorExpression node, SemanticsAnalyzer s) => ErrorSemantics(node);
 
     #region Errors
     private static void Error(SemanticsAnalyzer s, ErrorCode code, string message, SourceRange location)
@@ -433,35 +424,45 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
     private static TypeInfo UnaryOperatorNotSupportedError(SemanticsAnalyzer s, UnaryExpression node, TypeInfo type)
     {
         Error(s, ErrorCode.SemanticBadUnaryOp, $"Unary operator '{node.Operator.ToLexeme()}' not supported on type '{type.ToPrettyString()}'", node.Location);
-        return ErrorType;
+        return ErrorSemantics(node);
     }
 
     private static TypeInfo PostfixUnaryOperatorNotSupportedError(SemanticsAnalyzer s, PostfixUnaryExpression node, TypeInfo type)
     {
         Error(s, ErrorCode.SemanticBadPostfixUnaryOp, $"Postfix unary operator '{node.Operator.ToLexeme()}' not supported on type '{type.ToPrettyString()}'", node.Location);
-        return ErrorType;
+        return ErrorSemantics(node);
     }
 
     private static TypeInfo BinaryOperatorNotSupportedError(SemanticsAnalyzer s, BinaryExpression node, (TypeInfo LHS, TypeInfo RHS) typePair)
     {
         Error(s, ErrorCode.SemanticBadBinaryOp, $"Binary operator '{node.Operator.ToLexeme()}' not supported on types '{typePair.LHS.ToPrettyString()}' and '{typePair.RHS.ToPrettyString()}'", node.Location);
-        return ErrorType;
+        return ErrorSemantics(node);
     }
 
     private static TypeInfo UnknownFieldError(SemanticsAnalyzer s, FieldAccessExpression node, TypeInfo type)
     {
         Error(s, ErrorCode.SemanticUnknownField, $"'{type.ToPrettyString()}' does not contain a field named '{node.FieldName}'", node.FieldNameToken.Location);
-        return ErrorType;
+        return ErrorSemantics(node);
     }
 
     private static TypeInfo ScriptNameNotAllowedInExpressionError(SemanticsAnalyzer s, NameExpression name)
     {
         Error(s, ErrorCode.SemanticScriptNameNotAllowedInExpression, $"Script names are not allowed in expressions", name.Location);
-        return ErrorType;
+        return ErrorSemantics(name);
     }
 
-    internal static void TypeNotCallableError(SemanticsAnalyzer s, IExpression expr, TypeInfo type)
-        => Error(s, ErrorCode.SemanticTypeNotCallable, $"Type '{type.ToPrettyString()}' is not callable", expr.Location);
+    private static TypeInfo IndexingNotSupportedError(SemanticsAnalyzer s, IndexingExpression node, TypeInfo arrType)
+    {
+        Error(s, ErrorCode.SemanticIndexingNotSupported, $"Indexing not supported on type '{arrType.ToPrettyString()}'", node.Location);
+        return ErrorSemantics(node);
+    }
+
+    private static TypeInfo TypeNotCallableError(SemanticsAnalyzer s, IExpression node, TypeInfo type)
+    {
+        Error(s, ErrorCode.SemanticTypeNotCallable, $"Type '{type.ToPrettyString()}' is not callable", node.Location);
+        return ErrorSemantics(node);
+    }
+
     internal static void MissingRequiredParameterError(SemanticsAnalyzer s, InvocationExpression expr, int parameterIndex)
         => Error(s, ErrorCode.SemanticMissingRequiredParameter, $"Missing argument for required parameter {parameterIndex + 1}", expr.Callee.Location);
     internal static void TooManyArgumentsError(SemanticsAnalyzer s, InvocationExpression expr, int parameterCount)
@@ -484,8 +485,6 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
         => Error(s, ErrorCode.SemanticArgNotANativeTypeValue, $"Argument {argIndex + 1}: type '{argType.ToPrettyString()}' is not a NATIVE type value", arg.Location);
     internal static void ArgNotAnNativeTypeError(SemanticsAnalyzer s, int argIndex, IExpression arg)
         => Error(s, ErrorCode.SemanticArgNotANativeType, $"Argument {argIndex + 1}: expected NATIVE type name", arg.Location);
-    internal static void IndexingNotSupportedError(SemanticsAnalyzer s, IndexingExpression expr, TypeInfo arrType)
-        => Error(s, ErrorCode.SemanticIndexingNotSupported, $"Indexing not supported on type '{arrType.ToPrettyString()}'", expr.Location);
     internal static void InvalidIndexTypeError(SemanticsAnalyzer s, IExpression expr, TypeInfo exprType, TypeInfo expectedIndexType)
         => Error(s, ErrorCode.SemanticInvalidIndexType, $"Type '{exprType.ToPrettyString()}' is not a valid index type, expected '{expectedIndexType.ToPrettyString()}'", expr.Location);
     #endregion Errors
