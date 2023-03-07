@@ -34,7 +34,7 @@ public static partial class Intrinsics
             ExpressionTypeChecker.CheckArgumentCount(parameterCount: 1, node, semantics);
 
             // check that the argument is a NATIVE type value
-            if (argTypes.Length > 0 && argTypes[0] is not NativeType)
+            if (argTypes.Length > 0  && !argTypes[0].IsError && argTypes[0] is not NativeType)
             {
                 ExpressionTypeChecker.ArgNotANativeTypeValueError(semantics, 0, args[0], argTypes[0]);
             }

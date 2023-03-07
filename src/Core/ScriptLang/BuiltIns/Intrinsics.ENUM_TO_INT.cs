@@ -34,12 +34,20 @@ public static partial class Intrinsics
             ExpressionTypeChecker.CheckArgumentCount(parameterCount: 1, node, semantics);
 
             // check that the argument is an ENUM value
-            if (argTypes.Length > 0 && argTypes[0] is not EnumType)
+            var valueKind = ValueKind.RValue;
+            if (argTypes.Length > 0 && !argTypes[0].IsError)
             {
-                ExpressionTypeChecker.ArgNotAnEnumError(semantics, 0, args[0], argTypes[0]);
+                if (argTypes[0] is EnumType)
+                {
+                    valueKind |= (args[0].ValueKind & ValueKind.Constant);
+                }
+                else
+                {
+                    ExpressionTypeChecker.ArgNotAnEnumError(semantics, 0, args[0], argTypes[0]);
+                }
             }
 
-            return new(IntType.Instance, ValueKind.RValue | (args[0].ValueKind & ValueKind.Constant), ArgumentKind.None);
+            return new(IntType.Instance, valueKind, ArgumentKind.None);
         }
 
         public override ConstantValue ConstantEval(InvocationExpression node, SemanticsAnalyzer semantics)

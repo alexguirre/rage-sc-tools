@@ -32,14 +32,21 @@ public static partial class Intrinsics
             // type-check arguments
             var args = node.Arguments;
             ExpressionTypeChecker.CheckArgumentCount(parameterCount: 1, node, semantics);
-
+            
             // check that the argument is an array
-            if (argTypes.Length > 0 && argTypes[0] is not ArrayType)
+            bool isIncomplete = false;
+            if (argTypes.Length > 0 && !argTypes[0].IsError)
             {
-                ExpressionTypeChecker.ArgNotAnArrayError(semantics, 0, args[0], argTypes[0]);
+                if (argTypes[0] is ArrayType arrTy)
+                {
+                    isIncomplete = arrTy.IsIncomplete;
+                }
+                else
+                {
+                    ExpressionTypeChecker.ArgNotAnArrayError(semantics, 0, args[0], argTypes[0]);
+                }
             }
 
-            bool isIncomplete = (argTypes[0] as ArrayType)?.IsIncomplete ?? false;
             return new(IntType.Instance, ValueKind.RValue | (isIncomplete ? 0 : ValueKind.Constant), ArgumentKind.None);
         }
 

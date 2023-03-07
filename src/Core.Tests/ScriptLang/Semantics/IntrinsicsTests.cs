@@ -1,6 +1,7 @@
 ﻿namespace ScTools.Tests.ScriptLang.Semantics;
 
 using ScTools.ScriptLang;
+using ScTools.ScriptLang.BuiltIns;
 using ScTools.ScriptLang.Types;
 
 public class IntrinsicsTests : SemanticsTestsBase
@@ -178,4 +179,50 @@ public class IntrinsicsTests : SemanticsTestsBase
         AssertEnum(s, "MY_B", enumTy, unchecked((int)"B".ToLowercaseHash()));
         AssertEnum(s, "MY_C", enumTy, unchecked((int)"C".ToLowercaseHash()));
     }
+
+    [Theory]
+    [InlineData("F2I(doesnotexist)", 1)]
+    [InlineData("I2F(doesnotexist)", 1)]
+    [InlineData("F2V(doesnotexist)", 1)]
+    [InlineData("HASH(doesnotexist)", 1)]
+    [InlineData("COUNT_OF(doesnotexist)", 1)]
+    [InlineData("ENUM_TO_INT(doesnotexist)", 1)]
+    [InlineData("ENUM_TO_STRING(doesnotexist)", 1)]
+    [InlineData("INT_TO_ENUM(doesnotexist1, doesnotexist2)", 2)]
+    [InlineData("NATIVE_TO_INT(doesnotexist)", 1)]
+    [InlineData("INT_TO_NATIVE(doesnotexist1, doesnotexist2)", 2)]
+    [InlineData("IS_BIT_SET(doesnotexist1, doesnotexist2)", 2)]
+    [InlineData("SIZE_OF(doesnotexist)", 1)]
+    [InlineData("THROW(doesnotexist)", 1)]
+    public void ErrorOnIntrinsicArgumentsDoesntGenerateMoreErrors(string src, int numExpectedErrors)
+    {
+        var s = Analyze(
+            @$"PROC p()
+            {src}
+            ENDPROC"
+        );
+
+        var errors = s.Diagnostics.Errors;
+        Equal(numExpectedErrors, errors.Length);
+        All(errors, e => Equal((int)ErrorCode.SemanticUndefinedSymbol, e.Code));
+    }
+
+    [Theory]
+    [MemberData(nameof(GetIntrinsicsWithParameters))]
+    public void EmptyArgumentListOnIntrinsicDoesntGenerateMoreErrors(IIntrinsic intrinsic)
+    {
+        var s = Analyze(
+            @$"PROC p()
+            {intrinsic.Name}()
+            ENDPROC"
+        );
+
+        var errors = s.Diagnostics.Errors;
+        Single(errors);
+        Equal((int)ErrorCode.SemanticMissingRequiredParameter, errors[0].Code);
+    }
+    public static IEnumerable<object[]> GetIntrinsicsWithParameters()
+        => Intrinsics.All
+            .Where(i => i.Name != "CATCH"/*doesn't have params*/)
+            .Select(i => new object[] { i });
 }

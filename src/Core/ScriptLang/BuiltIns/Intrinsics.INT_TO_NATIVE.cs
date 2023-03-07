@@ -36,7 +36,7 @@ public static partial class Intrinsics
 
             TypeInfo returnType = ErrorType.Instance;
             ValueKind constantFlag = ValueKind.Constant;
-            if (argTypes.Length > 0)
+            if (argTypes.Length > 0 && !argTypes[0].IsError)
             {
                 if (argTypes[0] is TypeNameType { TypeSymbol: NativeTypeDeclaration nativeTyDecl })
                 {
@@ -48,7 +48,7 @@ public static partial class Intrinsics
                 }
             }
 
-            if (argTypes.Length > 1)
+            if (argTypes.Length > 1 && !argTypes[1].IsError)
             {
                 ExpressionTypeChecker.TypeCheckArgumentAgainstParameter(1, args[1], new(IntType.Instance, IsReference: false), semantics);
                 constantFlag &= args[1].ValueKind;
