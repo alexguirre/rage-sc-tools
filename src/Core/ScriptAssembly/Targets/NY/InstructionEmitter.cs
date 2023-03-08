@@ -7,14 +7,16 @@ internal class InstructionEmitter : InstructionEmitter<Opcode>
 
     private void EmitLengthPrefixedString(string s)
     {
-        Debug.Assert(s.Length <= byte.MaxValue, $"String is too long to fit length in a single byte");
+        Debug.Assert(s.Length < byte.MaxValue, $"String is too long to fit length in a single byte");
+        Debug.Assert(s.Length < byte.MaxValue, $"String is too long to fit length in a single byte");
 
-        EmitU8((byte)s.Length);
+        EmitU8((byte)(s.Length + 1));
         var bytes = System.Text.Encoding.UTF8.GetBytes(s);
         foreach (var b in bytes)
         {
             EmitU8(b);
         }
+        EmitU8(0);
     }
 
     private InstructionReference EmitInstStr(Opcode opcode, string operand)
