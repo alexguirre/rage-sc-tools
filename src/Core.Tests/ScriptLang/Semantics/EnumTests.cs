@@ -235,4 +235,39 @@ public class EnumTests : SemanticsTestsBase
         AssertEnum(s, "B", enumTy, 1);
         AssertEnum(s, "C", enumTy, 2);
     }
+
+    [Theory]
+    [InlineData(@"PROC myProc()
+                    MY_ENUM v = 0
+                  ENDPROC")]
+    [InlineData(@"PROC myProc()
+                    MY_ENUM v
+                    v = 0
+                  ENDPROC")]
+    [InlineData(@"PROC myProc(MY_ENUM v = 0)
+                  ENDPROC")]
+    [InlineData(@"FUNC INT myFunc(MY_ENUM v = 0)
+                    RETURN 0
+                  ENDFUNC")]
+    [InlineData(@"TYPEDEF PROC myProcTypeDef(MY_ENUM v = 0)")]
+    [InlineData(@"TYPEDEF FUNC INT myFuncTypeDef(MY_ENUM v = 0)")]
+    [InlineData(@"NATIVE PROC myProcNative(MY_ENUM v = 0)")]
+    [InlineData(@"NATIVE FUNC INT myFuncNative(MY_ENUM v = 0)")]
+    [InlineData(@"PROC myProc(MY_ENUM v = 1-1)
+                  ENDPROC")]
+    public void ZeroCanBeAssignedToEnums(string src)
+    {
+        var s = Analyze(
+            @$"
+                ENUM MY_ENUM
+                    MY_ENUM_A = 1,
+                    MY_ENUM_B
+                ENDENUM
+
+                {src}
+            "
+        );
+        
+        False(s.Diagnostics.HasErrors);
+    }
 }

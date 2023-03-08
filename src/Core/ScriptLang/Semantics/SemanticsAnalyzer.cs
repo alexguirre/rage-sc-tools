@@ -342,7 +342,7 @@ public sealed class SemanticsAnalyzer : AstVisitor
                 {
                     value = ConstantExpressionEvaluator.Eval(node.Initializer, s);
                 }
-                else
+                else if (!s.IsZeroAssignedToEnum(varType, node.Initializer, out value))
                 {
                     s.CannotConvertTypeError(initializerType, varType, node.Initializer.Location);
                 }
@@ -416,12 +416,20 @@ public sealed class SemanticsAnalyzer : AstVisitor
     {
         if (!lhsType.IsError && !rhsType.IsError)
         {
-            if (!lhsType.IsAssignableFrom(rhsType))
+            if (!lhsType.IsAssignableFrom(rhsType) && !IsZeroAssignedToEnum(lhsType, rhsNode, out _))
             {
                 Debug.Assert(rhsNode is not null);
                 CannotConvertTypeError(rhsType, lhsType, rhsNode.Location);
             }
         }
+    }
+
+    private bool IsZeroAssignedToEnum(TypeInfo lhsType, INode? rhsNode, [NotNullWhen(true)] out ConstantValue? value)
+    {
+        value = null;
+        return lhsType is EnumType && rhsNode is IExpression { Type: IntType } rhsExpr &&
+               rhsExpr.ValueKind.Is(ValueKind.Constant) &&
+               (value = ConstantExpressionEvaluator.Eval(rhsExpr, this)) is { Type: IntType, IntValue: 0 };
     }
 
     public override void Visit(BreakStatement node)
