@@ -21,6 +21,7 @@ public sealed partial class CodeEmitter : ICodeEmitter
 
     private readonly HashSet<FunctionDeclaration> usedFunctions = new();
     private readonly Queue<FunctionDeclaration> functionsToCompile = new();
+    private readonly List<NativeFunctionDeclaration> usedNativeFunctions = new();
 
     private readonly VarAllocator statics;
     private int numScriptParams = 0;
@@ -66,6 +67,25 @@ public sealed partial class CodeEmitter : ICodeEmitter
         return staticsBuffer;
     }
 
+    private ulong[] GetNativesTable(uint codeLength)
+    {
+        if (usedNativeFunctions.Count == 0)
+        {
+            return Array.Empty<ulong>();
+        }
+        
+        var natives = new ulong[usedNativeFunctions.Count];
+        for (int i = 0; i < usedNativeFunctions.Count; i++)
+        {
+            Debug.Assert(usedNativeFunctions[i].Id is StringLiteralExpression);
+            var hashStr = ((StringLiteralExpression)usedNativeFunctions[i].Id!).Value;
+            Debug.Assert(hashStr.StartsWith("0x"));
+            natives[i] = Script.EncodeNativeHash(hashStr.ParseAsUInt64(), i, codeLength);
+        }
+
+        return natives;
+    }
+
     public IScript EmitScript(ScriptDeclaration script)
     {
         EmitScriptEntryPoint(script);
@@ -83,9 +103,10 @@ public sealed partial class CodeEmitter : ICodeEmitter
     private IScript FinalizeScript(ScriptDeclaration script)
     {
         var codePages = ToCodePages();
+        var codeLength = codePages.Length;
         var statics = GetStaticSegment(out var argsCount);
         //var globals = globalSegmentBuilder.Length != 0 ? globalSegmentBuilder.ToPages<ScriptValue>() : null;
-        var natives = Array.Empty<ulong>();
+        var natives = GetNativesTable(codeLength);
         var strings = Strings.ByteLength != 0 ? Strings.ToPages() : null;
         return new Script
         {
@@ -93,7 +114,7 @@ public sealed partial class CodeEmitter : ICodeEmitter
             NameHash = script.Name.ToLowercaseHash(),
             GlobalsSignature = 0, // TODO: include a way to set the hash in the SCRIPT declaration
             CodePages = codePages,
-            CodeLength = codePages?.Length ?? 0,
+            CodeLength = codeLength,
             //GlobalsPages = globals,
             //GlobalsLength = globals?.Length ?? 0,
             Statics = statics,
@@ -260,12 +281,19 @@ public sealed partial class CodeEmitter : ICodeEmitter
 
     public void EmitNativeCall(NativeFunctionDeclaration nativeFunction)
     {
+        var nativeIndex = usedNativeFunctions.FindIndex(decl => decl == nativeFunction);
+        if (nativeIndex == -1)
+        {
+            nativeIndex = usedNativeFunctions.Count;
+            usedNativeFunctions.Add(nativeFunction);
+        }
         var funcType = (FunctionType)nativeFunction.Semantics.ValueType!;
         var argCount = funcType.Parameters.Sum(p => p.SizeOf);
         var returnCount = funcType.Return.SizeOf;
         Debug.Assert(argCount <= byte.MaxValue);
         Debug.Assert(returnCount <= byte.MaxValue);
-        instEmitter.EmitNative((byte)argCount, (byte)returnCount, 0); // TODO: convert native name to index
+        Debug.Assert(nativeIndex <= ushort.MaxValue);
+        instEmitter.EmitNative((byte)argCount, (byte)returnCount, (ushort)nativeIndex);
     }
 
     public void EmitIndirectCall()

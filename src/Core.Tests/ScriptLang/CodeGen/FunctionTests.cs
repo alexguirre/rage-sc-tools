@@ -245,4 +245,92 @@ public class FunctionTests : CodeGenTestsBase
                 LEAVE 2, 0
             ");
     }
+
+
+
+    [Fact]
+    public void NativeProcedureInvocation()
+    {
+        CompileScript(
+        scriptSource: @"
+                TEST(123, 456)
+            ",
+        declarationsSource: @"
+                NATIVE PROC TEST(INT a, INT b) = '0x11223344AABBCCDD'
+            ",
+        expectedAssembly: $@"
+                ENTER 0, 2
+
+                ; TEST(123, 456)
+                {IntToPushInst(123)}
+                {IntToPushInst(456)}
+                NATIVE 2, 0, TEST
+
+                LEAVE 0, 0
+
+              .include
+                TEST: .native 0x11223344AABBCCDD
+            ",
+        expectedAssemblyIV: $@"
+                ENTER 0, 2
+
+                ; TEST(123, 456)
+                {IntToPushInstIV(123)}
+                {IntToPushInstIV(456)}
+                NATIVE 2, 0, TEST
+
+                LEAVE 0, 0
+            ");
+    }
+
+    [Fact]
+    public void NativeFunctionInvocation()
+    {
+        CompileScript(
+        scriptSource: @"
+                INT n = TEST(123, 456)
+                TEST(123, 456)
+            ",
+        declarationsSource: @"
+                NATIVE FUNC INT TEST(INT a, INT b) = '0x11223344AABBCCDD'
+            ",
+        expectedAssembly: $@"
+                ENTER 0, 3
+
+                ; INT n = TEST(123, 456)
+                {IntToPushInst(123)}
+                {IntToPushInst(456)}
+                NATIVE 2, 1, TEST
+                LOCAL_U8_STORE 2
+
+                ; TEST(123, 456)
+                {IntToPushInst(123)}
+                {IntToPushInst(456)}
+                NATIVE 2, 1, TEST
+                DROP
+
+                LEAVE 0, 0
+
+              .include
+                TEST: .native 0x11223344AABBCCDD
+            ",
+        expectedAssemblyIV: $@"
+                ENTER 0, 3
+
+                ; INT n = TEST(123, 456)
+                {IntToPushInstIV(123)}
+                {IntToPushInstIV(456)}
+                NATIVE 2, 1, TEST
+                LOCAL_2
+                STORE
+
+                ; TEST(123, 456)
+                {IntToPushInstIV(123)}
+                {IntToPushInstIV(456)}
+                NATIVE 2, 1, TEST
+                DROP
+
+                LEAVE 0, 0
+            ");
+    }
 }
