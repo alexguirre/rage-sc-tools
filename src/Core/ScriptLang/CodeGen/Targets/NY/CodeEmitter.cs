@@ -258,7 +258,7 @@ public sealed partial class CodeEmitter : ICodeEmitter
     public void EmitSwitch(IEnumerable<ValueSwitchCase> valueCases)
     {
         var cases = valueCases.ToArray();
-        var inst = instEmitter.EmitSwitch(cases.Select(c => unchecked((uint)c.Semantics.Value!.Value)).ToArray());
+        var inst = instEmitter.EmitSwitch(cases.Select(c => (unchecked((uint)c.Semantics.Value!.Value), 0u)).ToArray());
         for (int i = 0; i < cases.Length; i++)
         {
             var @case = cases[i];
@@ -451,7 +451,7 @@ public sealed partial class CodeEmitter : ICodeEmitter
         EmitAddress(expr.Array);
 
         var itemSize = expr.Semantics.Type!.SizeOf;
-        EmitPushInt(itemSize); // TODO: VERIFY THIS IS THE CORRECT ORDER ARRAY OPCODE
+        EmitPushInt(itemSize);
         instEmitter.EmitArray();
     }
 
@@ -464,6 +464,12 @@ public sealed partial class CodeEmitter : ICodeEmitter
 
     public void EmitOffset(int offset)
     {
+        if (offset == 0)
+        {
+            // offset doesn't change, don't need to emit anything
+            return;
+        }
+
         EmitPushInt(offset);
         instEmitter.EmitIAdd();
     }

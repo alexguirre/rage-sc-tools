@@ -525,6 +525,8 @@ public static class OpcodeNYExtensions
     public static int NumberOfOperands(this Opcode opcode)
         => opcode switch
         {
+            Opcode.NATIVE => 3,
+
             Opcode.LEAVE or
             Opcode.ENTER => 2,
 
@@ -535,8 +537,6 @@ public static class OpcodeNYExtensions
             Opcode.PUSH_CONST_U32 or
             Opcode.PUSH_CONST_F or
             Opcode.CALL or
-            Opcode.NATIVE => 7,
-
             Opcode.TEXT_LABEL_ASSIGN_STRING or
             Opcode.TEXT_LABEL_ASSIGN_INT or
             Opcode.TEXT_LABEL_APPEND_STRING or

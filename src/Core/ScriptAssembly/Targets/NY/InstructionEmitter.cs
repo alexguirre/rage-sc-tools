@@ -88,15 +88,15 @@ internal class InstructionEmitter : InstructionEmitter<Opcode>
     public InstructionReference EmitStatic() => EmitInst(Opcode.STATIC);
     public InstructionReference EmitGlobal() => EmitInst(Opcode.GLOBAL);
     public InstructionReference EmitArray() => EmitInst(Opcode.ARRAY);
-    public InstructionReference EmitSwitch(uint[] cases) // cases jump offset will be backfilled later
+    public InstructionReference EmitSwitch((uint Value, uint Offset)[] cases)
     {
         Debug.Assert(cases.Length <= byte.MaxValue, $"Too many SWITCH cases (numCases: {cases.Length})");
         EmitOpcode(Opcode.SWITCH);
         EmitU8((byte)cases.Length);
         for (int i = 0; i < cases.Length; i++)
         {
-            EmitU32(cases[i]); // value
-            EmitU32(0); // label offset
+            EmitU32(cases[i].Value); // value
+            EmitU32(cases[i].Offset); // label offset
         }
         return Flush();
     }

@@ -8,14 +8,13 @@ using System.Linq;
 
 using ScTools.GameFiles;
 using ScTools.ScriptAssembly.Targets.Five;
+using ScTools.ScriptAssembly.Targets.NY;
 using ScTools.ScriptLang;
 using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.CodeGen;
 using ScTools.ScriptLang.Semantics;
 using ScTools.ScriptLang.Types;
 using ScTools.ScriptLang.Workspace;
-
-using Xunit;
 
 public abstract class CodeGenTestsBase
 {
@@ -49,7 +48,33 @@ public abstract class CodeGenTestsBase
         }
     }
 
-    protected static void CompileScript(string scriptSource, string expectedAssembly, string declarationsSource = "", NativeDB? nativeDB = null)
+    protected static string IntToPushInstIV(int value)
+    {
+        switch (value)
+        {
+            case >= -16 and <= 159: return ((Opcode)((int)Opcode.PUSH_CONST_0 + value)).ToString();
+
+            case >= ushort.MinValue and <= ushort.MaxValue:
+                return $"{Opcode.PUSH_CONST_U16} {unchecked((ushort)value)}";
+
+            default:
+                return $"{Opcode.PUSH_CONST_U32} {unchecked((uint)value)}";
+        }
+    }
+
+    protected static string IntToLocalIV(int value)
+    {
+        switch (value)
+        {
+            case >= 0 and <= 6: return ((Opcode)((int)Opcode.LOCAL_0 + value)).ToString();
+
+            default:
+                return $@"{IntToPushInstIV(value)}
+                          {Opcode.LOCAL}";
+        }
+    }
+
+    protected static void CompileScript(string scriptSource, string expectedAssembly, string declarationsSource = "", string? expectedAssemblyIV = null, NativeDB? nativeDB = null)
         => CompileRaw(
             source: $@"
                 {declarationsSource}
@@ -62,10 +87,15 @@ public abstract class CodeGenTestsBase
                 .code
                 SCRIPT:
                 {expectedAssembly}",
-                
+
+            expectedAssemblyIV: expectedAssemblyIV is null ? null : $@"
+                .code
+                SCRIPT:
+                {expectedAssemblyIV}",
+            
             nativeDB: nativeDB);
 
-    protected static void CompileRaw(string source, string expectedAssembly, NativeDB? nativeDB = null)
+    protected static void CompileRaw(string source, string expectedAssembly, string? expectedAssemblyIV = null, NativeDB? nativeDB = null)
     {
         nativeDB ??= NativeDB.Empty;
 
@@ -75,21 +105,44 @@ public abstract class CodeGenTestsBase
         var s = new SemanticsAnalyzer(d);
 
         var u = p.ParseCompilationUnit();
-        Assert.False(d.HasErrors);
+        False(d.HasErrors);
         u.Accept(s);
-        Assert.False(d.HasErrors);
+        False(d.HasErrors);
 
-        var compiledScripts = ScriptCompiler.Compile(u, new(Game.GTAV, Platform.x64));
-        Assert.False(d.HasErrors);
-        var compiledScript = Assert.Single(compiledScripts);
-        var compiledScriptGTAV = IsType<GameFiles.Five.Script>(compiledScript);
+        // GTA V codegen
+        {
+            var compiledScripts = ScriptCompiler.Compile(u, new(Game.GTAV, Platform.x64));
+            False(d.HasErrors);
+            var compiledScript = Single(compiledScripts);
+            var compiledScriptGTAV = IsType<GameFiles.Five.Script>(compiledScript);
 
-        using var expectedAssemblyReader = new StringReader(expectedAssembly);
-        var expectedAssembler = Assembler.Assemble(expectedAssemblyReader, "test_expected.scasm", nativeDB, options: new() { IncludeFunctionNames = true });
+            using var expectedAssemblyReader = new StringReader(expectedAssembly);
+            var expectedAssembler = ScTools.ScriptAssembly.Targets.Five.Assembler.Assemble(expectedAssemblyReader, "test_expected.scasm", nativeDB,
+                options: new() { IncludeFunctionNames = true });
+            False(expectedAssembler.Diagnostics.HasErrors);
 
-        string sourceDump = new DumperFiveV10().DumpToString(compiledScriptGTAV);
-        string expectedDump = new DumperFiveV10().DumpToString(expectedAssembler.OutputScript);
+            string sourceDump = new DumperFiveV10().DumpToString(compiledScriptGTAV);
+            string expectedDump = new DumperFiveV10().DumpToString(expectedAssembler.OutputScript);
 
-        Util.AssertScriptsAreEqual(compiledScriptGTAV, expectedAssembler.OutputScript);
+            Util.AssertScriptsAreEqual(compiledScriptGTAV, expectedAssembler.OutputScript);
+        }
+        
+        // GTA IV codegen
+        if (expectedAssemblyIV is not null)
+        {
+            var compiledScripts = ScriptCompiler.Compile(u, new(Game.GTAIV, Platform.x86));
+            False(d.HasErrors);
+            var compiledScript = Single(compiledScripts);
+            var compiledScriptGTAIV = IsType<GameFiles.ScriptNY>(compiledScript);
+
+            using var expectedAssemblyReader = new StringReader(expectedAssemblyIV);
+            var expectedAssembler = ScTools.ScriptAssembly.Targets.NY.Assembler.Assemble(expectedAssemblyReader, "test_expected_ny.scasm", nativeDB);
+            False(expectedAssembler.Diagnostics.HasErrors);
+
+            string sourceDump = compiledScriptGTAIV.DumpToString();
+            string expectedDump = expectedAssembler.OutputScript.DumpToString();
+
+            Util.AssertScriptsAreEqual(compiledScriptGTAIV, expectedAssembler.OutputScript);
+        }
     }
 }

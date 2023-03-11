@@ -25,6 +25,19 @@ public class FunctionTests : CodeGenTestsBase
             foo:
                 ENTER 1, 3
                 LEAVE 1, 0
+            ",
+        expectedAssemblyIV: $@"
+                ENTER 0, 2
+
+                ; foo()
+                {IntToPushInstIV(123)}
+                CALL foo
+
+                LEAVE 0, 0
+
+            foo:
+                ENTER 1, 3
+                LEAVE 1, 0
             ");
     }
 
@@ -45,6 +58,20 @@ public class FunctionTests : CodeGenTestsBase
                 ; foo()
                 {IntToPushInst(123)}
                 {IntToPushInst(456)}
+                CALL foo
+
+                LEAVE 0, 0
+
+            foo:
+                ENTER 2, 4
+                LEAVE 2, 0
+            ",
+        expectedAssemblyIV: $@"
+                ENTER 0, 2
+
+                ; foo()
+                {IntToPushInstIV(123)}
+                {IntToPushInstIV(456)}
                 CALL foo
 
                 LEAVE 0, 0
@@ -79,6 +106,20 @@ public class FunctionTests : CodeGenTestsBase
             foo:
                 ENTER 2, 4
                 LEAVE 2, 0
+            ",
+        expectedAssemblyIV: $@"
+                ENTER 0, 2
+
+                ; foo(789, 321)
+                {IntToPushInstIV(789)}
+                {IntToPushInstIV(321)}
+                CALL foo
+
+                LEAVE 0, 0
+
+            foo:
+                ENTER 2, 4
+                LEAVE 2, 0
             ");
     }
 
@@ -99,6 +140,20 @@ public class FunctionTests : CodeGenTestsBase
                 ; foo(789)
                 {IntToPushInst(789)}
                 {IntToPushInst(456)}
+                CALL foo
+
+                LEAVE 0, 0
+
+            foo:
+                ENTER 2, 4
+                LEAVE 2, 0
+            ",
+        expectedAssemblyIV: $@"
+                ENTER 0, 2
+
+                ; foo(789)
+                {IntToPushInstIV(789)}
+                {IntToPushInstIV(456)}
                 CALL foo
 
                 LEAVE 0, 0
@@ -133,6 +188,20 @@ public class FunctionTests : CodeGenTestsBase
             foo:
                 ENTER 2, 4
                 LEAVE 2, 0
+            ",
+        expectedAssemblyIV: $@"
+                ENTER 0, 2
+
+                ; foo(789)
+                {IntToPushInstIV(789)}
+                {IntToPushInstIV(456)}
+                CALL foo
+
+                LEAVE 0, 0
+
+            foo:
+                ENTER 2, 4
+                LEAVE 2, 0
             ");
     }
 
@@ -153,6 +222,20 @@ public class FunctionTests : CodeGenTestsBase
                 ; foo(789, 321)
                 {IntToPushInst(789)}
                 {IntToPushInst(321)}
+                CALL foo
+
+                LEAVE 0, 0
+
+            foo:
+                ENTER 2, 4
+                LEAVE 2, 0
+            ",
+        expectedAssemblyIV: $@"
+                ENTER 0, 2
+
+                ; foo(789, 321)
+                {IntToPushInstIV(789)}
+                {IntToPushInstIV(321)}
                 CALL foo
 
                 LEAVE 0, 0

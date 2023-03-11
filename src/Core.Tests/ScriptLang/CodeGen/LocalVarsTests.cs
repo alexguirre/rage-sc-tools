@@ -15,6 +15,10 @@ public class LocalVarsTests : CodeGenTestsBase
         expectedAssembly: @"
             ENTER 0, 8
             LEAVE 0, 0
+        ",
+        expectedAssemblyIV: @"
+            ENTER 0, 8
+            LEAVE 0, 0
         ");
     }
 
@@ -31,6 +35,16 @@ public class LocalVarsTests : CodeGenTestsBase
             LOCAL_U8_STORE 2
             PUSH_CONST_S16 300
             LOCAL_U8_STORE 3
+            LEAVE 0, 0
+        ",
+        expectedAssemblyIV: @"
+            ENTER 0, 4
+            PUSH_CONST_10
+            LOCAL_2
+            STORE
+            PUSH_CONST_U16 300
+            LOCAL_3
+            STORE
             LEAVE 0, 0
         ");
     }
@@ -63,6 +77,23 @@ public class LocalVarsTests : CodeGenTestsBase
             .string
             strHelloWorld: .str 'hello world'
             strTest: .str 'test'
+        ",
+        expectedAssemblyIV: @"
+            ENTER 0, 6
+            NULL
+            LOAD
+            LOCAL_2
+            STORE
+            STRING 'hello world'
+            LOCAL_3
+            STORE
+            STRING 'test'
+            LOCAL_4
+            STORE
+            STRING 'hello world'
+            LOCAL_5
+            STORE
+            LEAVE 0, 0
         ");
     }
 
@@ -127,6 +158,53 @@ public class LocalVarsTests : CodeGenTestsBase
 
             DROP
             LEAVE 0, 0
+        ",
+        expectedAssemblyIV: @"
+            ENTER 0, 11
+            LOCAL_2
+
+            ; init field b
+            DUP
+            PUSH_CONST_1
+            IADD
+            PUSH_CONST_M1
+            STORE_REV
+            DROP
+
+            ; init field c
+            DUP
+            PUSH_CONST_2
+            IADD
+            PUSH_CONST_M1
+            STORE_REV
+            DROP
+
+            ; init field d
+            DUP
+            PUSH_CONST_3
+            IADD
+            PUSH_CONST_M1
+            STORE_REV
+            DROP
+
+            ; init field e
+            DUP
+            PUSH_CONST_4
+            IADD
+            PUSH_CONST_M1
+            STORE_REV
+            DROP
+
+            ; init field i
+            DUP
+            PUSH_CONST_8
+            IADD
+            PUSH_CONST_M1
+            STORE_REV
+            DROP
+
+            DROP
+            LEAVE 0, 0
         ");
     }
 
@@ -181,6 +259,51 @@ public class LocalVarsTests : CodeGenTestsBase
             DUP
             IOFFSET_U8 49
             PUSH_CONST_U8 9
+            STORE_REV
+            DROP
+
+            DROP
+            LEAVE 0, 0
+        ",
+        expectedAssemblyIV: @"
+            ENTER 0, 61
+            LOCAL_2
+
+            ; init field a
+            DUP
+            PUSH_CONST_12
+            STORE_REV
+            DROP
+
+            ; init field b
+            DUP
+            PUSH_CONST_13
+            IADD
+            PUSH_CONST_12
+            STORE_REV
+            DROP
+
+            ; init field c
+            DUP
+            PUSH_CONST_26
+            IADD
+            PUSH_CONST_12
+            STORE_REV
+            DROP
+
+            ; init field d
+            DUP
+            PUSH_CONST_39
+            IADD
+            PUSH_CONST_9
+            STORE_REV
+            DROP
+
+            ; init field e
+            DUP
+            PUSH_CONST_49
+            IADD
+            PUSH_CONST_9
             STORE_REV
             DROP
 

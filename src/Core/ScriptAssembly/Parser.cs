@@ -53,7 +53,7 @@ public class Parser
 
     public enum InstructionOperandType
     {
-        Identifier, Integer, Float, SwitchCase
+        Identifier, Integer, Float, String, SwitchCase
     }
 
     public record struct InstructionOperand(InstructionOperandType Type, Token A, Token B)
@@ -253,13 +253,14 @@ public class Parser
         //     : identifier                                    #identifierOperand
         //     | integer                                       #integerOperand
         //     | float                                         #floatOperand
+        //     | string                                        #stringOperand
         //     | value=operand ':' jumpTo=operand              #switchCaseOperand
         //     ;
-        if (ExpectEitherOrMissing(TokenKind.Identifier, TokenKind.Integer, TokenKind.Float, out var a, MissingIdentifier))
+        if (ExpectEitherOrMissing(TokenKind.Identifier, TokenKind.Integer, TokenKind.Float, TokenKind.String, out var a, MissingIdentifier))
         {
             if (Accept(TokenKind.Colon, out _))
             {
-                ExpectEitherOrMissing(TokenKind.Identifier, TokenKind.Integer, TokenKind.Float, out var b, MissingIdentifier);
+                ExpectEitherOrMissing(TokenKind.Identifier, TokenKind.Integer, TokenKind.Float, TokenKind.String, out var b, MissingIdentifier);
                 return new(InstructionOperandType.SwitchCase, a, b);
             }
 
@@ -268,6 +269,7 @@ public class Parser
                 TokenKind.Identifier => InstructionOperandType.Identifier,
                 TokenKind.Integer => InstructionOperandType.Integer,
                 TokenKind.Float => InstructionOperandType.Float,
+                TokenKind.String => InstructionOperandType.String,
                 _ => throw new InvalidOperationException(),
             };
             return new(type, a, Missing(TokenKind.Bad.Create(string.Empty)));
@@ -301,6 +303,9 @@ public class Parser
 
     private void UnexpectedTokenError(TokenKind expectedTokenA, TokenKind expectedTokenB, TokenKind expectedTokenC)
         => Error(ErrorCode.ParserUnexpectedToken, $"Unexpected token '{Current.Kind}', expected '{expectedTokenA}', '{expectedTokenB}' or '{expectedTokenC}'", Current.Location);
+
+    private void UnexpectedTokenError(TokenKind expectedTokenA, TokenKind expectedTokenB, TokenKind expectedTokenC, TokenKind expectedTokenD)
+        => Error(ErrorCode.ParserUnexpectedToken, $"Unexpected token '{Current.Kind}', expected '{expectedTokenA}', '{expectedTokenB}', '{expectedTokenC}' or '{expectedTokenD}'", Current.Location);
 
     private Token Peek(int offset)
     {
@@ -390,7 +395,8 @@ public class Parser
     private bool ExpectEOS() => ExpectEither(TokenKind.EOS, TokenKind.EOF, out _);
 
     private bool AcceptEither(TokenKind tokenA, TokenKind tokenB, out Token t) => Accept(tokenA, out t) || Accept(tokenB, out t);
-    private bool AcceptEither(TokenKind tokenA, TokenKind tokenB, TokenKind tokenC, out Token t) => Accept(tokenA, out t) || Accept(tokenB, out t) || Accept(tokenC, out t);
+    private bool AcceptEither(TokenKind tokenA, TokenKind tokenB, TokenKind tokenC, TokenKind tokenD, out Token t)
+        => Accept(tokenA, out t) || Accept(tokenB, out t) || Accept(tokenC, out t) || Accept(tokenD, out t);
     private bool ExpectEither(TokenKind tokenA, TokenKind tokenB, out Token t)
     {
         if (AcceptEither(tokenA, tokenB, out t))
@@ -401,19 +407,19 @@ public class Parser
         UnexpectedTokenError(tokenA, tokenB);
         return false;
     }
-    private bool ExpectEither(TokenKind tokenA, TokenKind tokenB, TokenKind tokenC, out Token t)
+    private bool ExpectEither(TokenKind tokenA, TokenKind tokenB, TokenKind tokenC, TokenKind tokenD, out Token t)
     {
-        if (AcceptEither(tokenA, tokenB, tokenC, out t))
+        if (AcceptEither(tokenA, tokenB, tokenC, tokenD, out t))
         {
             return true;
         }
 
-        UnexpectedTokenError(tokenA, tokenB, tokenC);
+        UnexpectedTokenError(tokenA, tokenB, tokenC, tokenD);
         return false;
     }
-    private bool ExpectEitherOrMissing(TokenKind tokenA, TokenKind tokenB, TokenKind tokenC, out Token t, Func<Token>? createMissingToken = null)
+    private bool ExpectEitherOrMissing(TokenKind tokenA, TokenKind tokenB, TokenKind tokenC, TokenKind tokenD, out Token t, Func<Token>? createMissingToken = null)
     {
-        if (!ExpectEither(tokenA, tokenB, tokenC, out t))
+        if (!ExpectEither(tokenA, tokenB, tokenC, tokenD, out t))
         {
             t = createMissingToken is not null ? createMissingToken() : Missing(tokenA);
             return false;
