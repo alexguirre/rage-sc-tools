@@ -37,7 +37,7 @@
 
         private Command BuildCommands()
         {
-            var exit = new Command("exit") { };
+            /*var exit = new Command("exit") { };
             exit.Handler = CommandHandler.Create(Command_Exit);
 
             var help = new Command("help")
@@ -81,11 +81,11 @@
             {
                 new Argument<uint>("thread-id"),
             };
-            kill.Handler = CommandHandler.Create<uint>(Command_Kill);
+            kill.Handler = CommandHandler.Create<uint>(Command_Kill);*/
 
             return new Command(Prompt)
             {
-                exit, help, list, listThreads, listStacks, register, unregister, start, kill
+               /* exit, help, list, listThreads, listStacks, register, unregister, start, kill*/
             };
         }
 
@@ -117,7 +117,7 @@
 
         private void Command_Help(string? command)
         {
-            var helpBuilder = new RootHelpBuilder(console);
+            /*var helpBuilder = new RootHelpBuilder(console);
 
             if (command is not null && rootCommand.Children.GetByAlias(command) is ICommand cmd)
             {
@@ -126,7 +126,7 @@
             else
             {
                 helpBuilder.Write(rootCommand);
-            }
+            }*/
         }
 
         private void Command_List()
@@ -183,7 +183,7 @@
             scriptMgr.KillThread(threadId);
         }
 
-        private sealed class RootHelpBuilder : HelpBuilder
+        /*private sealed class RootHelpBuilder : HelpBuilder
         {
             public RootHelpBuilder(IConsole console, int? columnGutter = null, int? indentationSize = null, int? maxWidth = null) : base(console, columnGutter, indentationSize, maxWidth)
             {
@@ -207,6 +207,6 @@
                     base.AddUsage(command);
                 }
             }
-        }
+        }*/
     }
 }

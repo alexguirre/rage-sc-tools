@@ -8,7 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-internal static class ScriptCompiler
+public static class ScriptCompiler
 {
     public static IScript[] Compile(CompilationUnit compilationUnit, Workspace.BuildTarget target)
     {
