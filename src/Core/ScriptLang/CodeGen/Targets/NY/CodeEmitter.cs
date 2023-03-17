@@ -249,7 +249,16 @@ public sealed partial class CodeEmitter : ICodeEmitter
         var returnCount = funcType.Return.SizeOf;
         Debug.Assert(argCount <= byte.MaxValue);
         Debug.Assert(returnCount <= byte.MaxValue);
-        instEmitter.EmitNative((byte)argCount, (byte)returnCount, nativeFunction.Name.ToLowercaseHash());
+        // NOTE: this isn't how hashes since 1.0.7.0 are computed, that's why we allow to override the hash with the Id expression
+        var hash = nativeFunction.Name.ToLowercaseHash();
+        if (nativeFunction.Id is not null)
+        {
+            Debug.Assert(nativeFunction.Id is StringLiteralExpression);
+            var hashStr = ((StringLiteralExpression)nativeFunction.Id).Value;
+            Debug.Assert(hashStr.StartsWith("0x"));
+            hash = hashStr.ParseAsUInt();
+        }
+        instEmitter.EmitNative((byte)argCount, (byte)returnCount, hash);
     }
 
     public void EmitIndirectCall()
