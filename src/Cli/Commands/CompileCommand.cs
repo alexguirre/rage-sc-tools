@@ -50,11 +50,11 @@ internal static class CompileCommand
             Target,
             Unencrypted,
         };
-        cmd.SetHandler(Run, Input, Output, Include, Target, Unencrypted);
+        cmd.SetHandler(InvokeAsync, Input, Output, Include, Target, Unencrypted);
         return cmd;
     }
 
-    public static async void Run(FileGlob[] input, DirectoryInfo output, DirectoryInfo[] include, BuildTarget target, bool unencrypted)
+    public static async Task InvokeAsync(FileGlob[] input, DirectoryInfo output, DirectoryInfo[] include, BuildTarget target, bool unencrypted)
     {
         static void Print(string str)
         {
@@ -67,7 +67,7 @@ internal static class CompileCommand
         var totalTime = Stopwatch.StartNew();
 
         var inputFiles = input.SelectMany(i => i.Matches);
-        Parallel.ForEachAsync(inputFiles, async (inputFile, cancellationToken) =>
+        await Parallel.ForEachAsync(inputFiles, async (inputFile, cancellationToken) =>
         {
             var extension = target switch
             {
@@ -164,7 +164,7 @@ internal static class CompileCommand
                     Console.ForegroundColor = ConsoleColor.White;
                 }
             }
-        }).Wait();
+        });
 
         totalTime.Stop();
         Print($"Total time: {totalTime.Elapsed}");

@@ -4,7 +4,28 @@ using System.Text.Json.Serialization;
 
 public readonly record struct BuildTarget(Game Game, Platform Platform)
 {
-    public string ToDisplayString() => $"{Game}-{Platform}";
+    public override string ToString() => $"{Game}-{Platform}";
+
+    public static bool TryParse(ReadOnlySpan<char> str, out BuildTarget result)
+    {
+        result = default;
+        var sep = str.IndexOf('-');
+        if (sep == -1)
+        {
+            return false;
+        }
+
+        var gameStr = str[..sep];
+        var platformStr = str[(sep + 1)..];
+        if (Enum.TryParse<Game>(gameStr, ignoreCase: true, out var game) &&
+            Enum.TryParse<Platform>(platformStr, ignoreCase: true, out var platform))
+        {
+            result = new(game, platform);
+            return true;
+        }
+
+        return false;
+    }
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter))]

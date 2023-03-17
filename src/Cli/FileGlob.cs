@@ -10,7 +10,7 @@ using Microsoft.Extensions.FileSystemGlobbing.Abstractions;
 
 public class FileGlob
 {
-    private PatternMatchingResult result;
+    private PatternMatchingResult? result;
     private PatternMatchingResult Result => result ??= Execute();
 
     public ImmutableArray<string> Patterns { get; }

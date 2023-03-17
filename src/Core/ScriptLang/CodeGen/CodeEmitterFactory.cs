@@ -11,7 +11,7 @@ public static class CodeEmitterFactory
         {
             (Game.GTAIV, Platform.x86) => new Targets.NY.CodeEmitter(createParams.Statics),
             (Game.GTAV, Platform.x64) => new Targets.Five.CodeEmitter(createParams.Statics),
-            _ => throw new NotSupportedException($"Target '{target.ToDisplayString()}' is not supported"),
+            _ => throw new NotSupportedException($"Target '{target}' is not supported"),
         };
 
     public static bool IsTargetSupported(BuildTarget target)

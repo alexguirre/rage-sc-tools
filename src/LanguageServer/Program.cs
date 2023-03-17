@@ -13,7 +13,7 @@ internal static class Program
 {
     private static int Main(string[] args)
     {
-        var rootCmd = new RootCommand("Language server for ScriptLang (.sc).")
+        var rootCmd = new RootCommand("Language server for RAGE-Script (.sc).")
         {
             new Option<bool>("--launch-debugger", () => false)
         };

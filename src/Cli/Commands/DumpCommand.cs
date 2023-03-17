@@ -5,6 +5,7 @@ using System.CommandLine;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using CodeWalker.GameFiles;
 using GameFiles;
@@ -36,11 +37,11 @@ internal static class DumpCommand
             Output,
             Target,
         };
-        cmd.SetHandler(Run, Input, Output, Target);
+        cmd.SetHandler(InvokeAsync, Input, Output, Target);
         return cmd;
     }
 
-    public static async void Run(FileGlob[] input, DirectoryInfo output, BuildTarget target)
+    public static async Task InvokeAsync(FileGlob[] input, DirectoryInfo output, BuildTarget target)
     {
         static void Print(string str)
         {
@@ -53,7 +54,7 @@ internal static class DumpCommand
         var totalTime = Stopwatch.StartNew();
 
         var inputFiles = input.SelectMany(i => i.Matches);
-        Parallel.ForEachAsync(inputFiles, async (inputFile, cancellationToken) =>
+        await Parallel.ForEachAsync(inputFiles, async (inputFile, cancellationToken) =>
         {
             var extension = "dump.txt";
             
@@ -65,17 +66,34 @@ internal static class DumpCommand
 
                 switch (target)
                 {
-                    case (Game.GTAV, Platform.x64): throw new NotImplementedException("GTAV x64 not supported");
+                    case (Game.GTAV, Platform.x64):
+                        throw new NotImplementedException("GTAV x64 not supported");
+
+                    case (Game.MC4, Platform.Xenon):
                     case (Game.GTAIV, Platform.x86):
                     {
-                        Keys.NY.Load("D:\\programs\\SteamLibrary\\steamapps\\common\\Grand Theft Auto IV\\GTAIV\\GTAIV.exe");
+                        byte[] aesKey = null!;
+                        if (target.Game == Game.GTAIV)
+                        {
+                            Keys.NY.Load("D:\\programs\\SteamLibrary\\steamapps\\common\\Grand Theft Auto IV\\GTAIV\\GTAIV.exe");
+                            aesKey = Keys.NY.AesKeyPC;
+                        }
+                        else if (target.Game == Game.MC4)
+                        {
+                            Keys.MC4.Load("");
+                            aesKey = Keys.MC4.AesKeyXenon;
+                        }
+
                         var sc = new ScriptNY();
-                        sc.Read(new DataReader(new MemoryStream(source)), Keys.NY.AesKeyPC);
+                        sc.Read(new DataReader(new MemoryStream(source)), aesKey);
                         await using var outputStream = outputFile.OpenWrite();
                         await using var outputWriter = new StreamWriter(outputStream);
                         sc.Dump(DumpOptions.Default(outputWriter));
                         break;
                     }
+                    
+                    default:
+                        throw new InvalidOperationException($"Unsupported build target '{target}'");
                 }
             }
             catch (Exception e)
@@ -87,7 +105,7 @@ internal static class DumpCommand
                     Console.ForegroundColor = ConsoleColor.White;
                 }
             }
-        }).Wait();
+        });
 
         totalTime.Stop();
         Print($"Total time: {totalTime.Elapsed}");
