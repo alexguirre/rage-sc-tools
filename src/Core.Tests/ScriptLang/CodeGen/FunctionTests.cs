@@ -256,7 +256,7 @@ public class FunctionTests : CodeGenTestsBase
                 TEST(123, 456)
             ",
         declarationsSource: @"
-                NATIVE PROC TEST(INT a, INT b) = '0x11223344AABBCCDD'
+                NATIVE PROC TEST(INT a, INT b) = '0x1234ABCD'
             ",
         expectedAssembly: $@"
                 ENTER 0, 2
@@ -269,7 +269,7 @@ public class FunctionTests : CodeGenTestsBase
                 LEAVE 0, 0
 
               .include
-                TEST: .native 0x11223344AABBCCDD
+                TEST: .native 0x1234ABCD
             ",
         expectedAssemblyIV: $@"
                 ENTER 0, 2
@@ -277,7 +277,7 @@ public class FunctionTests : CodeGenTestsBase
                 ; TEST(123, 456)
                 {IntToPushInstIV(123)}
                 {IntToPushInstIV(456)}
-                NATIVE 2, 0, TEST
+                NATIVE 2, 0, 0x1234ABCD
 
                 LEAVE 0, 0
             ");
@@ -292,7 +292,7 @@ public class FunctionTests : CodeGenTestsBase
                 TEST(123, 456)
             ",
         declarationsSource: @"
-                NATIVE FUNC INT TEST(INT a, INT b) = '0x11223344AABBCCDD'
+                NATIVE FUNC INT TEST(INT a, INT b) = '0x1234ABCD'
             ",
         expectedAssembly: $@"
                 ENTER 0, 3
@@ -312,7 +312,7 @@ public class FunctionTests : CodeGenTestsBase
                 LEAVE 0, 0
 
               .include
-                TEST: .native 0x11223344AABBCCDD
+                TEST: .native 0x1234ABCD
             ",
         expectedAssemblyIV: $@"
                 ENTER 0, 3
@@ -320,14 +320,14 @@ public class FunctionTests : CodeGenTestsBase
                 ; INT n = TEST(123, 456)
                 {IntToPushInstIV(123)}
                 {IntToPushInstIV(456)}
-                NATIVE 2, 1, TEST
+                NATIVE 2, 1, 0x1234ABCD
                 LOCAL_2
                 STORE
 
                 ; TEST(123, 456)
                 {IntToPushInstIV(123)}
                 {IntToPushInstIV(456)}
-                NATIVE 2, 1, TEST
+                NATIVE 2, 1, 0x1234ABCD
                 DROP
 
                 LEAVE 0, 0
