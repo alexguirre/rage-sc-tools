@@ -6,41 +6,15 @@ using System.Globalization;
 
 internal static class SpanExtensions
 {
-    public static uint ToLowercaseHash(this ReadOnlySpan<char> s)
-    {
-        uint h = 0;
-        for (int i = 0; i < s.Length; i++)
-        {
-            h += (byte)char.ToLowerInvariant(s[i]);
-            h += (h << 10);
-            h ^= (h >> 6);
-        }
-        h += (h << 3);
-        h ^= (h >> 11);
-        h += (h << 15);
+    public static uint ToLowercaseHash(this ReadOnlySpan<char> str, uint seed = 0) => JenkHash.LowercaseHash(str, seed);
+    public static uint ToLowercaseHash(this ReadOnlyMemory<char> str, uint seed = 0) => JenkHash.LowercaseHash(str, seed);
+    public static uint ToLowercaseHash(this string str, uint seed = 0) => JenkHash.LowercaseHash(str, seed);
 
-        return h;
-    }
-    public static uint ToLowercaseHash(this ReadOnlyMemory<char> str) => str.Span.ToLowercaseHash();
-    public static uint ToLowercaseHash(this string s) => s.AsSpan().ToLowercaseHash();
-
-    public static uint ToHash(this ReadOnlySpan<char> s)
-    {
-        uint h = 0;
-        for (int i = 0; i < s.Length; i++)
-        {
-            h += (byte)s[i];
-            h += (h << 10);
-            h ^= (h >> 6);
-        }
-        h += (h << 3);
-        h ^= (h >> 11);
-        h += (h << 15);
-
-        return h;
-    }
-    public static uint ToHash(this ReadOnlyMemory<char> str) => str.Span.ToHash();
-    public static uint ToHash(this string str) => str.AsSpan().ToHash();
+    public static uint ToHash(this ReadOnlySpan<byte> data, uint seed = 0) => JenkHash.Hash(data, seed); 
+    public static uint ToHash(this ReadOnlyMemory<byte> data, uint seed = 0) => JenkHash.Hash(data, seed);
+    public static uint ToHash(this ReadOnlySpan<char> str, uint seed = 0) => JenkHash.Hash(str, seed); 
+    public static uint ToHash(this ReadOnlyMemory<char> str, uint seed = 0) => JenkHash.Hash(str, seed);
+    public static uint ToHash(this string str, uint seed = 0) => JenkHash.Hash(str, seed);
 
     private static bool NeedsEscaping(char c) => c is '\n' or '\r' or '\t' or '\0' or '\\' or '\"' or '\'';
     private static string EscapeSequence(char c) => c switch
