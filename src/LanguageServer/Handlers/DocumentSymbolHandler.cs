@@ -7,13 +7,15 @@ using ScTools.ScriptLang.Ast.Errors;
 
 public class DocumentSymbolHandler : ILspRequestHandler<DocumentSymbolParams, DocumentSymbol[]>
 {
+    private readonly ILogger<DocumentSymbolHandler> logger;
     private readonly ITextDocumentTracker textDocumentTracker;
     private readonly NodeToDocumentSymbol nodeToSymbol = new ();
 
     public string MethodName => Methods.TextDocumentDocumentSymbolName;
 
-    public DocumentSymbolHandler(ITextDocumentTracker textDocumentTracker)
+    public DocumentSymbolHandler(ITextDocumentTracker textDocumentTracker, ILogger<DocumentSymbolHandler> logger)
     {
+        this.logger = logger;
         this.textDocumentTracker = textDocumentTracker;
     }
 
@@ -24,22 +26,34 @@ public class DocumentSymbolHandler : ILspRequestHandler<DocumentSymbolParams, Do
 
     public async Task<DocumentSymbol[]> HandleAsync(DocumentSymbolParams param, CancellationToken cancellationToken)
     {
-        var ast = await textDocumentTracker.GetDocumentAstAsync(param.TextDocument.Uri);
-        if (ast is null)
+        try
         {
-            return Array.Empty<DocumentSymbol>();
-        }
-
-        var symbols = new List<DocumentSymbol>(capacity: ast.Declarations.Length);
-        foreach (var decl in ast.Declarations)
-        {
-            var symbol = decl.Accept(nodeToSymbol);
-            if (symbol is not null)
+            var ast = await textDocumentTracker.GetDocumentAstAsync(param.TextDocument.Uri);
+            if (ast is null)
             {
-                symbols.Add(symbol);
+                return Array.Empty<DocumentSymbol>();
             }
-        }            
-        return symbols.ToArray();
+
+            var symbols = new List<DocumentSymbol>(capacity: ast.Declarations.Length);
+            foreach (var decl in ast.Declarations)
+            {
+                var symbol = decl.Accept(nodeToSymbol);
+                if (symbol is not null)
+                {
+                    symbols.Add(symbol);
+                }
+            }
+
+            return symbols.ToArray();
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e,
+                "Failed to handle '{method}' request for document '{uri}'",
+                MethodName,
+                param.TextDocument.Uri);
+            throw;
+        }
     }
 
     private class NodeToDocumentSymbol : AstVisitor<DocumentSymbol?>
@@ -144,6 +158,15 @@ public class DocumentSymbolHandler : ILspRequestHandler<DocumentSymbolParams, Do
                 Range = ProtocolConversions.ToLspRange(node.Location),
                 SelectionRange = ProtocolConversions.ToLspRange(node.NameToken.Location),
                 Children = node.Vars.Select(Visit).ToArray(),
+            };
+
+        public override DocumentSymbol Visit(NativeTypeDeclaration node)
+            => new()
+            {
+                Name = node.Name,
+                Kind = SymbolKind.Struct,
+                Range = ProtocolConversions.ToLspRange(node.Location),
+                SelectionRange = ProtocolConversions.ToLspRange(node.NameToken.Location),
             };
     }
 }

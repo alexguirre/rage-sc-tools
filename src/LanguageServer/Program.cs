@@ -6,8 +6,7 @@ using System.Diagnostics;
 using ScTools.LanguageServer.Handlers;
 using ScTools.LanguageServer.Services;
 
-//using Serilog;
-//using Serilog.Extensions;
+using Serilog;
 
 internal static class Program
 {
@@ -30,9 +29,9 @@ internal static class Program
         var services = new ServiceCollection()
             .AddLogging(logging => 
                 logging.AddDebug()
-                       /*.AddSerilog(new LoggerConfiguration()
-                            .WriteTo.File("log.txt")
-                            .CreateLogger())*/)
+                       .AddSerilog(new LoggerConfiguration()
+                            .WriteTo.File("ScTools.LanguageServer.log")
+                            .CreateLogger()))
             .AddLspRequestHandlers()
             .AddSingleton<ILspRequestHandlerDispatcher, LspRequestHandlerDispatcher>()
             .AddSingleton<ITextDocumentTracker, TextDocumentTracker>()
