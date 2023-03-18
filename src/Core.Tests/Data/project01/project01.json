@@ -1,5 +1,10 @@
 {
-  "buildConfigurations": {
+  "sources": [
+    "my_math.sch",
+    "my_script.sc"
+  ],
+  "outputPath": "bin/",
+  "configurations": {
     "Debug": {
       "target": {
         "game": "GTAV",

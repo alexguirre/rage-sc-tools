@@ -76,8 +76,8 @@ public class ProjectTests
 
         False(compilation.Diagnostics.HasErrors);
 
-        Single(compilation.Scripts);
-        AssertAgainstExpectedAssembly(1, "my_script_expected_assembly.gtav.scasm", compilation.Scripts[0]);
+        NotNull(compilation.Script);
+        AssertAgainstExpectedAssembly(1, "my_script_expected_assembly.gtav.scasm", compilation.Script!);
 
 
         project.BuildConfigurationName = "Release-GTAIV";
@@ -86,8 +86,8 @@ public class ProjectTests
 
         False(compilation.Diagnostics.HasErrors);
 
-        Single(compilation.Scripts);
-        AssertAgainstExpectedAssembly(1, "my_script_expected_assembly.gtaiv.scasm", compilation.Scripts[0]);
+        NotNull(compilation.Script);
+        AssertAgainstExpectedAssembly(1, "my_script_expected_assembly.gtaiv.scasm", compilation.Script!);
 
     }
 
