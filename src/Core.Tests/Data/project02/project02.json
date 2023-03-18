@@ -1,0 +1,16 @@
+{
+  "sources": [
+    "src/my_math.sch",
+    "src/my_script.sc"
+  ],
+  "outputPath": "bin/",
+  "configurations": {
+    "Debug": {
+      "target": {
+        "game": "GTAV",
+        "platform": "x64"
+      },
+      "defines": []
+    }
+  }
+}

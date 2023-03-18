@@ -88,7 +88,24 @@ public class ProjectTests
 
         NotNull(compilation.Script);
         AssertAgainstExpectedAssembly(1, "my_script_expected_assembly.gtaiv.scasm", compilation.Script!);
+    }
 
+    [Fact]
+    public async Task ImportRelativeToSourceFile()
+    {
+        using var project = await OpenTestProjectAsync(2);
+        var myMath = project.GetSourceFile("src/my_math.sch");
+        NotNull(myMath);
+        var myScript = project.GetSourceFile("src/my_script.sc");
+        NotNull(myScript);
+
+        var myMathAst = (await myMath!.GetAstAsync())!;
+        NotNull(myMathAst);
+        var myScriptAst = (await myScript!.GetAstAsync())!;
+        NotNull(myScriptAst);
+
+        False((await myMath!.GetDiagnosticsAsync())!.HasErrors);
+        False((await myScript!.GetDiagnosticsAsync())!.HasErrors);
     }
 
     private static Task<Project> OpenTestProjectAsync(int id)

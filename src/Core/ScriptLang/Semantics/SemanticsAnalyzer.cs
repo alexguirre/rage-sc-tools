@@ -89,7 +89,7 @@ public sealed class SemanticsAnalyzer : AstVisitor
             return;
         }
 
-        var resolveResult = usingResolver.ResolveUsingAsync(node.Path).Result;
+        var resolveResult = usingResolver.ResolveUsingAsync(node).Result;
         switch (resolveResult.Status)
         {
             case UsingResolveStatus.Valid:

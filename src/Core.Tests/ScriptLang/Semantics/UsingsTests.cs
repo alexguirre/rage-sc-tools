@@ -35,9 +35,9 @@ public class UsingsTests : SemanticsTestsBase
         var b = AnalyzeAndAst(LibB).Ast;
 
         var usingResolver = new Mock<IUsingResolver>();
-        usingResolver.Setup(r => r.ResolveUsingAsync("a.sch").Result)
+        usingResolver.Setup(r => r.ResolveUsingAsync(It.Is<UsingDirective>(u => u.Path == "a.sch"), It.IsAny<CancellationToken>()).Result)
                      .Returns(new UsingResolveResult(UsingResolveStatus.Valid, a));
-        usingResolver.Setup(r => r.ResolveUsingAsync("b.sch").Result)
+        usingResolver.Setup(r => r.ResolveUsingAsync(It.Is<UsingDirective>(u => u.Path == "b.sch"), It.IsAny<CancellationToken>()).Result)
                      .Returns(new UsingResolveResult(UsingResolveStatus.Valid, b));
 
         var (s, ast) = AnalyzeAndAst(Script, usingResolver.Object);
@@ -47,8 +47,8 @@ public class UsingsTests : SemanticsTestsBase
         Same(a.Declarations[0], ast.FindNthNodeOfType<NameExpression>(1).Semantics.Symbol);
         Same(b.Declarations[0], ast.FindNthNodeOfType<NameExpression>(2).Semantics.Symbol);
 
-        usingResolver.Verify(r => r.ResolveUsingAsync("a.sch").Result, Times.Once);
-        usingResolver.Verify(r => r.ResolveUsingAsync("b.sch").Result, Times.Once);
+        usingResolver.Verify(r => r.ResolveUsingAsync(It.Is<UsingDirective>(u => u.Path == "a.sch"), It.IsAny<CancellationToken>()).Result, Times.Once);
+        usingResolver.Verify(r => r.ResolveUsingAsync(It.Is<UsingDirective>(u => u.Path == "b.sch"), It.IsAny<CancellationToken>()).Result, Times.Once);
     }
 
     [Fact]
@@ -77,16 +77,16 @@ public class UsingsTests : SemanticsTestsBase
 
         var a = AnalyzeAndAst(LibA).Ast;
         var usingResolverForLibB = new Mock<IUsingResolver>();
-        usingResolverForLibB.Setup(r => r.ResolveUsingAsync("a.sch").Result)
+        usingResolverForLibB.Setup(r => r.ResolveUsingAsync(It.Is<UsingDirective>(u => u.Path == "a.sch"), It.IsAny<CancellationToken>()).Result)
                             .Returns(new UsingResolveResult(UsingResolveStatus.Valid, a));
         var (sb, b) = AnalyzeAndAst(LibB, usingResolverForLibB.Object);
         False(sb.Diagnostics.HasErrors);
         Same(a.Declarations[0], b.FindNthNodeOfType<NameExpression>(1).Semantics.Symbol);
 
         var usingResolver = new Mock<IUsingResolver>();
-        usingResolver.Setup(r => r.ResolveUsingAsync("a.sch").Result)
+        usingResolver.Setup(r => r.ResolveUsingAsync(It.Is<UsingDirective>(u => u.Path == "a.sch"), It.IsAny<CancellationToken>()).Result)
                      .Returns(new UsingResolveResult(UsingResolveStatus.Valid, a));
-        usingResolver.Setup(r => r.ResolveUsingAsync("b.sch").Result)
+        usingResolver.Setup(r => r.ResolveUsingAsync(It.Is<UsingDirective>(u => u.Path == "b.sch"), It.IsAny<CancellationToken>()).Result)
                      .Returns(new UsingResolveResult(UsingResolveStatus.Valid, b));
 
         var (s, ast) = AnalyzeAndAst(Script, usingResolver.Object);
@@ -96,9 +96,9 @@ public class UsingsTests : SemanticsTestsBase
         Null(ast.FindNthNodeOfType<NameExpression>(1).Semantics.Symbol);
         Same(b.Declarations[0], ast.FindNthNodeOfType<NameExpression>(2).Semantics.Symbol);
 
-        usingResolver.Verify(r => r.ResolveUsingAsync("a.sch").Result, Times.Never);
-        usingResolver.Verify(r => r.ResolveUsingAsync("b.sch").Result, Times.Once);
-        usingResolverForLibB.Verify(r => r.ResolveUsingAsync("a.sch").Result, Times.Once);
+        usingResolver.Verify(r => r.ResolveUsingAsync(It.Is<UsingDirective>(u => u.Path == "a.sch"), It.IsAny<CancellationToken>()).Result, Times.Never);
+        usingResolver.Verify(r => r.ResolveUsingAsync(It.Is<UsingDirective>(u => u.Path == "b.sch"), It.IsAny<CancellationToken>()).Result, Times.Once);
+        usingResolverForLibB.Verify(r => r.ResolveUsingAsync(It.Is<UsingDirective>(u => u.Path == "a.sch"), It.IsAny<CancellationToken>()).Result, Times.Once);
     }
 
     [Fact]
@@ -112,13 +112,13 @@ public class UsingsTests : SemanticsTestsBase
         ";
 
         var usingResolver = new Mock<IUsingResolver>();
-        usingResolver.Setup(r => r.ResolveUsingAsync("doesnotexist.sch").Result)
+        usingResolver.Setup(r => r.ResolveUsingAsync(It.Is<UsingDirective>(u => u.Path == "doesnotexist.sch"), It.IsAny<CancellationToken>()).Result)
                      .Returns(new UsingResolveResult(UsingResolveStatus.NotFound, null));
 
         var (s, ast) = AnalyzeAndAst(Script, usingResolver.Object);
         True(s.Diagnostics.HasErrors);
         CheckError(ErrorCode.SemanticUsingNotFound, (2, 15), (2, 32), s.Diagnostics);
 
-        usingResolver.Verify(r => r.ResolveUsingAsync("doesnotexist.sch").Result, Times.Once);
+        usingResolver.Verify(r => r.ResolveUsingAsync(It.Is<UsingDirective>(u => u.Path == "doesnotexist.sch"), It.IsAny<CancellationToken>()).Result, Times.Once);
     }
 }

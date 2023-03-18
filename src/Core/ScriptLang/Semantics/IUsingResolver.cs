@@ -13,5 +13,5 @@ public readonly record struct UsingResolveResult(UsingResolveStatus Status, Comp
 
 public interface IUsingResolver
 {
-    Task<UsingResolveResult> ResolveUsingAsync(string filePath);
+    Task<UsingResolveResult> ResolveUsingAsync(UsingDirective usingDirective, CancellationToken cancellationToken = default);
 }

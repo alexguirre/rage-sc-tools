@@ -101,16 +101,20 @@ public class Project : IDisposable, IUsingResolver
         return project;
     }
 
-    async Task<UsingResolveResult> IUsingResolver.ResolveUsingAsync(string filePath)
+    async Task<UsingResolveResult> IUsingResolver.ResolveUsingAsync(UsingDirective usingDirective, CancellationToken cancellationToken)
     {
-        var absoluteFilePath = Path.GetFullPath(Path.Combine(RootDirectory, filePath));
-        if (!sources.TryGetValue(absoluteFilePath, out var sourceFile))
+        var path = usingDirective.Path;
+        var sourceFileDir = Path.GetDirectoryName(usingDirective.Location.FilePath);
+        var pathRelativeToSourceFileDir = sourceFileDir is null ? null : Path.GetFullPath(Path.Combine(sourceFileDir, path));
+        var pathRelativeToRoot = Path.GetFullPath(Path.Combine(RootDirectory, path));
+        if (!(pathRelativeToSourceFileDir != null && sources.TryGetValue(pathRelativeToSourceFileDir, out var sourceFile)) &&
+            !sources.TryGetValue(pathRelativeToRoot, out sourceFile))
         {
             return new(UsingResolveStatus.NotFound, Ast: null);
         }
 
         // TODO: check cyclic dependencies
-        var ast = await sourceFile.GetAstAsync().ConfigureAwait(false);
+        var ast = await sourceFile.GetAstAsync(cancellationToken).ConfigureAwait(false);
         return new(UsingResolveStatus.Valid, ast);
     }
 }
