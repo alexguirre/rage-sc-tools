@@ -5,11 +5,10 @@ using System.CommandLine;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using CodeWalker.GameFiles;
-using GameFiles;
-using ScriptLang.Workspace;
+using ScTools.GameFiles;
+using ScTools.ScriptLang.Workspace;
 
 internal static class DumpCommand
 {

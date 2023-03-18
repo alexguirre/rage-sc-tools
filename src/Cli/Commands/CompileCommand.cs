@@ -9,10 +9,10 @@ using System.Threading.Tasks;
 using CodeWalker.GameFiles;
 using GameFiles;
 using GameFiles.Five;
-using ScriptLang;
-using ScriptLang.CodeGen;
-using ScriptLang.Semantics;
-using ScriptLang.Workspace;
+using ScTools.ScriptLang;
+using ScTools.ScriptLang.CodeGen;
+using ScTools.ScriptLang.Semantics;
+using ScTools.ScriptLang.Workspace;
 
 internal static class CompileCommand
 {
@@ -30,7 +30,7 @@ internal static class CompileCommand
             new[] { "--include", "-I" },
             () => Array.Empty<DirectoryInfo>(),
             "Additional directories to lookup for source files imported with USINGs.")
-        .ExistingOnly();
+            .ExistingOnly();
     public static readonly Option<BuildTarget> Target = new Option<BuildTarget>(
             new[] { "--target", "-t" },
             parseArgument: Parsers.ParseBuildTarget,

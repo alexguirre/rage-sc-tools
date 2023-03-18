@@ -1,13 +1,11 @@
 ﻿namespace ScTools.Cli.Commands;
 
-using System;
 using System.Collections.Immutable;
 using System.CommandLine;
-using System.CommandLine.Invocation;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using ScriptLang.Workspace;
+using ScTools.ScriptLang.Workspace;
 
 internal static class InitProjectCommand
 {

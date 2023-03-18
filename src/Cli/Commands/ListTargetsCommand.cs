@@ -2,7 +2,7 @@
 
 using System;
 using System.CommandLine;
-using ScriptLang.Workspace;
+using ScTools.ScriptLang.Workspace;
 
 internal static class ListTargetsCommand
 {

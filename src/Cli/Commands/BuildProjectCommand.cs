@@ -2,14 +2,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.CommandLine;
-using System.CommandLine.Invocation;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using ScTools.ScriptLang;
 
 internal static class BuildProjectCommand
 {
@@ -101,6 +98,7 @@ internal static class BuildProjectCommand
                 Console.Write($"Compilation of '{sourcePath}' succeeded.");
                 if (result.Script is not null)
                 {
+                    Console.WriteLine();
                     Console.ForegroundColor = ConsoleColor.White;
 
                     var outputFile = Path.Combine(outputDir.FullName, $"{Path.GetFileNameWithoutExtension(sourcePath)}.sco");
