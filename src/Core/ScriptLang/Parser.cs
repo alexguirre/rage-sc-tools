@@ -947,9 +947,10 @@ public class Parser
                         args ??= new();
                         args.Add(ParseExpression());
 
-                        if (Accept(TokenKind.CloseParen, out closeParen) ||
-                            !Expect(TokenKind.Comma, out _))
+                        ExpectEitherOrMissing(TokenKind.CloseParen, TokenKind.Comma, out var tok);
+                        if (tok.Kind is TokenKind.CloseParen)
                         {
+                            closeParen = tok;
                             break;
                         }
                     }

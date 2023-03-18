@@ -314,6 +314,19 @@ public partial class ParserTests
         }
 
         [Fact]
+        public void InvocationWithMissingCloseParenReportsError()
+        {
+            var p = ParserFor(
+                @"foo(a
+                "
+            );
+
+            var expr = p.ParseExpression();
+            True(p.Diagnostics.HasErrors);
+            CheckError(ErrorCode.ParserUnexpectedToken, (1, 6), (2, 16), p.Diagnostics);
+        }
+
+        [Fact]
         public void ArithmeticExpressionPrecedence()
         {
             var p = ParserFor(
