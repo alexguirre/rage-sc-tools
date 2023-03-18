@@ -27,6 +27,7 @@ public sealed class SemanticsAnalyzer : AstVisitor
     private readonly SymbolTable<ISymbol> symbols = new();
     private readonly SymbolTable<Label> labels = new();
     private readonly TypeRegistry typeRegistry = new();
+    private bool hasScriptDeclaration = false;
     private EnumMemberDeclaration? previousEnumMember = null;
     private StructDeclaration? currentStructDeclaration = null;
     private TypeInfo? currentFunctionReturnType = null;
@@ -76,6 +77,7 @@ public sealed class SemanticsAnalyzer : AstVisitor
     public override void Visit(CompilationUnit node)
     {
         node.Usings.ForEach(@using => @using.Accept(this));
+        hasScriptDeclaration = false;
         node.Declarations.ForEach(decl => decl.Accept(this));
     }
 
@@ -163,6 +165,15 @@ public sealed class SemanticsAnalyzer : AstVisitor
 
     public override void Visit(ScriptDeclaration node)
     {
+        if (hasScriptDeclaration)
+        {
+            MultipleScriptDeclarationsError(node);
+        }
+        else
+        {
+            hasScriptDeclaration = true;
+        }
+        
         AddSymbol(node);
 
         currentFunctionReturnType = VoidType.Instance;
@@ -955,5 +966,7 @@ public sealed class SemanticsAnalyzer : AstVisitor
         => Error(ErrorCode.SemanticReferenceNotAllowed, $"References are not allowed in this context", varDecl.Declarator.RefAmpersandToken!.Value.Location); 
     internal void InvalidExpressionStatementError(ExpressionStatement stmt)
         => Error(ErrorCode.SemanticInvalidExpressionStatement, $"Only invocation, increment, and decrement expressions can be used as a statement", stmt.Location);
-    #endregion Errors
+    internal void MultipleScriptDeclarationsError(ScriptDeclaration scriptDecl)
+        => Error(ErrorCode.SemanticMultipleScriptDeclarations, $"Multiple SCRIPT declarations are not allowed", scriptDecl.Location);
+#endregion Errors
 }

@@ -2237,9 +2237,9 @@
             u.Accept(s);
             Assert.False(d.HasErrors);
 
-            var compiledScripts = ScriptCompiler.Compile(u, new(Game.GTAV, Platform.x64));
+            var compiledScript = ScriptCompiler.Compile(u, new(Game.GTAV, Platform.x64));
             Assert.False(d.HasErrors);
-            var compiledScript = Assert.Single(compiledScripts);
+            NotNull(compiledScript);
             var compiledScriptGTAV = IsType<GameFiles.Five.Script>(compiledScript);
 
             using var expectedAssemblyReader = new StringReader(expectedAssembly);

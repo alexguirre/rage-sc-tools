@@ -99,14 +99,13 @@ internal static class BuildProjectCommand
             {
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.Write($"Compilation of '{sourcePath}' succeeded.");
-                if (result.Scripts.Length > 0)
+                if (result.Script is not null)
                 {
-                    Console.WriteLine($" {result.Scripts.Length} script{(result.Scripts.Length == 1 ? "" : "s")} generated.");
                     Console.ForegroundColor = ConsoleColor.White;
 
                     var outputFile = Path.Combine(outputDir.FullName, $"{Path.GetFileNameWithoutExtension(sourcePath)}.sco");
                     Console.WriteLine($"  Writing '{Path.GetRelativePath(p.RootDirectory, outputFile)}'");
-                    switch (result.Scripts[0])
+                    switch (result.Script)
                     {
                         case GameFiles.Five.Script scriptGTAV:
                         {
@@ -137,7 +136,7 @@ internal static class BuildProjectCommand
                 }
                 else
                 {
-                    Console.WriteLine(" No scripts were generated.");
+                    Console.WriteLine(" No script was generated.");
                 }
                 Console.WriteLine();
                 Console.ForegroundColor = ConsoleColor.White;

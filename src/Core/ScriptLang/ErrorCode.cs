@@ -65,6 +65,7 @@ public enum ErrorCode
     SemanticInvalidIndexType = 0x202A,
     SemanticInvalidExpressionStatement = 0x202B,
     SemanticBadPostfixUnaryOp = 0x202C,
+    SemanticMultipleScriptDeclarations = 0x202D,
 
     // Preprocessor errors   0x3000 - 0x3FFF
     PreprocessorUnexpectedDirective = 0x3000,

@@ -111,9 +111,9 @@ public abstract class CodeGenTestsBase
 
         // GTA V codegen
         {
-            var compiledScripts = ScriptCompiler.Compile(u, new(Game.GTAV, Platform.x64));
+            var compiledScript = ScriptCompiler.Compile(u, new(Game.GTAV, Platform.x64));
             False(d.HasErrors);
-            var compiledScript = Single(compiledScripts);
+            NotNull(compiledScript);
             var compiledScriptGTAV = IsType<GameFiles.Five.Script>(compiledScript);
 
             using var expectedAssemblyReader = new StringReader(expectedAssembly);
@@ -130,9 +130,9 @@ public abstract class CodeGenTestsBase
         // GTA IV codegen
         if (expectedAssemblyIV is not null)
         {
-            var compiledScripts = ScriptCompiler.Compile(u, new(Game.GTAIV, Platform.x86));
+            var compiledScript = ScriptCompiler.Compile(u, new(Game.GTAIV, Platform.x86));
             False(d.HasErrors);
-            var compiledScript = Single(compiledScripts);
+            NotNull(compiledScript);
             var compiledScriptGTAIV = IsType<GameFiles.ScriptNY>(compiledScript);
 
             using var expectedAssemblyReader = new StringReader(expectedAssemblyIV);

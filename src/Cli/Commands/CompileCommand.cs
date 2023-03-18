@@ -93,12 +93,11 @@ internal static class CompileCommand
 
                 if (!d.HasErrors)
                 {
-                    var compiledScripts = ScriptCompiler.Compile(u, target);
-                    if (compiledScripts.Length > 1)
+                    var compiledScript = ScriptCompiler.Compile(u, target);
+                    if (compiledScript is null)
                     {
-                        throw new InvalidOperationException("Multiple scripts in a single file are not supported");
+                        throw new InvalidOperationException("No SCRIPT declaration found");
                     }
-                    var compiledScript = compiledScripts[0];
 
                     var outputFileName = outputFile.FullName;
                     Print($"Successful compilation, writing '{Path.GetRelativePath(Directory.GetCurrentDirectory(), outputFileName)}'...");

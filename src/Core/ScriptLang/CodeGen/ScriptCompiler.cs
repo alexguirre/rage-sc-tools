@@ -10,9 +10,8 @@ using System.Diagnostics;
 
 public static class ScriptCompiler
 {
-    public static IScript[] Compile(CompilationUnit compilationUnit, Workspace.BuildTarget target)
+    public static IScript? Compile(CompilationUnit compilationUnit, Workspace.BuildTarget target)
     {
-        var scripts = new List<IScript>();
         var staticAllocator = new VarAllocator();
         AddImportedStatics(staticAllocator, compilationUnit);
         foreach (var decl in compilationUnit.Declarations)
@@ -23,11 +22,12 @@ public static class ScriptCompiler
             }
             else if (decl is ScriptDeclaration scriptDecl)
             {
-                scripts.Add(CompileScript(scriptDecl, staticAllocator, target));
+                return CompileScript(scriptDecl, staticAllocator, target);
             }
         }
 
-        return scripts.ToArray();
+        // no script found in the compilation unit
+        return null;
     }
 
     private static IScript CompileScript(ScriptDeclaration scriptDecl, VarAllocator statics, Workspace.BuildTarget target)

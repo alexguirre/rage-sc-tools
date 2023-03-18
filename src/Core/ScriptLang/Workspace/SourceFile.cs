@@ -9,7 +9,7 @@ using System.IO;
 public class SourceFile : IDisposable
 {
     private record AnalysisResult(DiagnosticsReport Diagnostics, CompilationUnit Ast);
-    public record CompilationResult(SourceFile Source, DiagnosticsReport Diagnostics, CompilationUnit Ast, IScript[] Scripts);
+    public record CompilationResult(SourceFile Source, DiagnosticsReport Diagnostics, CompilationUnit Ast, IScript? Script);
 
     private bool isDisposed;
     private CancellationTokenSource? analyzeTaskCts;
@@ -52,12 +52,12 @@ public class SourceFile : IDisposable
             return null;
         }
 
-        var scripts = Array.Empty<IScript>();
+        IScript? script = null;
         if (!result.Diagnostics.HasErrors)
         {
-            scripts = await Task.Run(() => CodeGen.ScriptCompiler.Compile(result.Ast, Project.BuildConfiguration.Target), cancellationToken).ConfigureAwait(false);
+            script = await Task.Run(() => CodeGen.ScriptCompiler.Compile(result.Ast, Project.BuildConfiguration.Target), cancellationToken).ConfigureAwait(false);
         }
-        return new(this, result.Diagnostics, result.Ast, scripts);
+        return new(this, result.Diagnostics, result.Ast, script);
     }
 
     private void CancelAnalysis()

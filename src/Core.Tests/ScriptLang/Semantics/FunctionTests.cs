@@ -172,4 +172,24 @@ public class FunctionTests : SemanticsTestsBase
 
         False(s.Diagnostics.HasErrors);
     }
+
+    [Fact]
+    public void ErrorOnMultipleScriptDeclarations()
+    {
+        var (s, _) = AnalyzeAndAst(
+            @"
+                SCRIPT a
+                ENDSCRIPT
+
+                SCRIPT b
+                ENDSCRIPT
+
+                SCRIPT c
+                ENDSCRIPT"
+        );
+
+        True(s.Diagnostics.HasErrors);
+        CheckError(ErrorCode.SemanticMultipleScriptDeclarations, (5, 17), (6, 25), s.Diagnostics);
+        CheckError(ErrorCode.SemanticMultipleScriptDeclarations, (8, 17), (9, 25), s.Diagnostics);
+    }
 }
