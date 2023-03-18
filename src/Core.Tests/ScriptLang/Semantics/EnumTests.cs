@@ -270,4 +270,20 @@ public class EnumTests : SemanticsTestsBase
         
         False(s.Diagnostics.HasErrors);
     }
+
+    [Fact]
+    public void EnumsCanUseBinaryAddOperator()
+    {
+        var s = Analyze(
+            @"ENUM MY_ENUM
+                A, B
+              ENDENUM
+
+              PROC myProc()
+                MY_ENUM v = A + B
+              ENDPROC"
+        );
+        
+        False(s.Diagnostics.HasErrors);
+    }
 }

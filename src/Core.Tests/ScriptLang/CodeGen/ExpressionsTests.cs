@@ -1107,6 +1107,112 @@ public class ExpressionsTests : CodeGenTestsBase
         ");
     }
 
+
+
+    [Fact]
+    public void EnumOperations()
+    {
+        const int n1 = 2, n2 = 3, n3 = 4; // var stack positions in assembly
+        CompileScript(
+        scriptSource: @"
+            MY_ENUM n1 = A, n2 = B, n3
+            n3 = n1 + n2
+            n3 = n1 & n2
+            n3 = n1 ^ n2
+            n3 = n1 | n2
+        ",
+        declarationsSource: @"
+            ENUM MY_ENUM
+                A,
+                B
+            ENDENUM
+        ",
+        expectedAssembly: $@"
+            ENTER 0, 5
+            ; n1 = A
+            PUSH_CONST_0
+            LOCAL_U8_STORE {n1}
+            ; n1 = B
+            PUSH_CONST_1
+            LOCAL_U8_STORE {n2}
+
+            ; n3 = n1 + n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
+            IADD
+            LOCAL_U8_STORE {n3}
+
+            ; n3 = n1 & n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
+            IAND
+            LOCAL_U8_STORE {n3}
+
+            ; n3 = n1 ^ n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
+            IXOR
+            LOCAL_U8_STORE {n3}
+
+            ; n3 = n1 | n2
+            LOCAL_U8_LOAD {n1}
+            LOCAL_U8_LOAD {n2}
+            IOR
+            LOCAL_U8_STORE {n3}
+
+            LEAVE 0, 0
+        ",
+        expectedAssemblyIV: $@"
+            ENTER 0, 5
+            ; n1 = 0
+            PUSH_CONST_0
+            {IntToLocalIV(n1)}
+            STORE
+            ; n1 = 1
+            PUSH_CONST_1
+            {IntToLocalIV(n2)}
+            STORE
+
+            ; n3 = n1 + n2
+            {IntToLocalIV(n1)}
+            LOAD
+            {IntToLocalIV(n2)}
+            LOAD
+            IADD
+            {IntToLocalIV(n3)}
+            STORE
+
+            ; n3 = n1 & n2
+            {IntToLocalIV(n1)}
+            LOAD
+            {IntToLocalIV(n2)}
+            LOAD
+            IAND
+            {IntToLocalIV(n3)}
+            STORE
+
+            ; n3 = n1 ^ n2
+            {IntToLocalIV(n1)}
+            LOAD
+            {IntToLocalIV(n2)}
+            LOAD
+            IXOR
+            {IntToLocalIV(n3)}
+            STORE
+
+            ; n3 = n1 | n2
+            {IntToLocalIV(n1)}
+            LOAD
+            {IntToLocalIV(n2)}
+            LOAD
+            IOR
+            {IntToLocalIV(n3)}
+            STORE
+
+            LEAVE 0, 0
+        ");
+    }
+
     [Fact]
     public void VectorOperations()
     {

@@ -110,6 +110,11 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
         if (node.Operator is BinaryOperator.Add or BinaryOperator.Subtract or
                              BinaryOperator.Multiply or BinaryOperator.Divide)
         {
+            if (node.Operator is BinaryOperator.Add && lhs is EnumType && lhs == rhs)
+            {
+                return SetBinaryOpResultType(node, lhs);
+            }
+
             return CheckBinaryOp(s, node, (lhs, rhs),
             //   LHS  op RHS  -> Result
                 (INT,    INT,    INT),
