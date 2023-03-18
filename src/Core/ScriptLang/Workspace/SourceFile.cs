@@ -9,7 +9,7 @@ using System.IO;
 public class SourceFile : IDisposable
 {
     private record AnalysisResult(DiagnosticsReport Diagnostics, CompilationUnit Ast);
-    public record CompilationResult(DiagnosticsReport Diagnostics, CompilationUnit Ast, IScript[] Scripts);
+    public record CompilationResult(SourceFile Source, DiagnosticsReport Diagnostics, CompilationUnit Ast, IScript[] Scripts);
 
     private bool isDisposed;
     private CancellationTokenSource? analyzeTaskCts;
@@ -57,7 +57,7 @@ public class SourceFile : IDisposable
         {
             scripts = await Task.Run(() => CodeGen.ScriptCompiler.Compile(result.Ast, Project.BuildConfiguration.Target), cancellationToken).ConfigureAwait(false);
         }
-        return new(result.Diagnostics, result.Ast, scripts);
+        return new(this, result.Diagnostics, result.Ast, scripts);
     }
 
     private void CancelAnalysis()
@@ -121,7 +121,7 @@ public class SourceFile : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    public static async Task<SourceFile> Open(Project project, string filePath, CancellationToken ct = default)
+    public static async Task<SourceFile> OpenAsync(Project project, string filePath, CancellationToken ct = default)
     {
         var text = await File.ReadAllTextAsync(filePath, ct).ConfigureAwait(false);
         return new SourceFile(project, filePath, text);

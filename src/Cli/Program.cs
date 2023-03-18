@@ -17,6 +17,7 @@ internal static class Program
         rootCmd.AddCommand(CompileCommand.Command);
         rootCmd.AddCommand(DumpCommand.Command);
         rootCmd.AddCommand(InitProjectCommand.Command);
+        rootCmd.AddCommand(BuildProjectCommand.Command);
         return await rootCmd.InvokeAsync(args);
     }
 }

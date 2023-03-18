@@ -36,9 +36,17 @@ public enum Game
     /// </summary>
     GTAIV,
     /// <summary>
+    /// Grand Theft Auto IV
+    /// </summary>
+    GTA4 = GTAIV,
+    /// <summary>
     /// Midnight Club: Los Angeles
     /// </summary>
     MC4,
+    /// <summary>
+    /// Midnight Club: Los Angeles
+    /// </summary>
+    MCLA = MC4,
     /// <summary>
     /// Red Dead Redemption
     /// </summary>
@@ -51,6 +59,10 @@ public enum Game
     /// Grand Theft Auto V
     /// </summary>
     GTAV,
+    /// <summary>
+    /// Grand Theft Auto V
+    /// </summary>
+    GTA5 = GTAV,
     /// <summary>
     /// Red Dead Redemption 2
     /// </summary>

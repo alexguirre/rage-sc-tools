@@ -6,10 +6,11 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 
 public record ProjectConfiguration(
-    [property: JsonConverter(typeof(Json.BuildConfigurationsConverter))]
-    ImmutableArray<BuildConfiguration> BuildConfigurations)
+    ImmutableArray<string> Sources,
+    string OutputPath,
+    [property: JsonConverter(typeof(Json.BuildConfigurationsConverter))] ImmutableArray<BuildConfiguration> Configurations)
 {
-    public BuildConfiguration? GetBuildConfiguration(string name) => BuildConfigurations.FirstOrDefault(c => c.Name == name);
+    public BuildConfiguration? GetBuildConfiguration(string name) => Configurations.FirstOrDefault(c => c.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
 
     public Task WriteToFileAsync(string filePath, CancellationToken cancellationToken = default)
     {

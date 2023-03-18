@@ -27,13 +27,13 @@ public class Project : IDisposable, IUsingResolver
     {
         RootDirectory = rootDirectoryPath;
         Configuration = config;
-        BuildConfigurationName = config.BuildConfigurations.First().Name;
+        BuildConfigurationName = config.Configurations.First().Name;
         Debug.Assert(buildConfiguration is not null, "BuildConfigurationName setter should have set buildConfiguration field");
     }
 
     public SourceFile? GetSourceFile(string filePath)
     {
-        var absoluteFilePath = Path.Combine(RootDirectory, filePath);
+        var absoluteFilePath = Path.GetFullPath(Path.Combine(RootDirectory, filePath));
         if (sources.TryGetValue(absoluteFilePath, out var sourceFile))
         {
             return sourceFile;
@@ -42,7 +42,7 @@ public class Project : IDisposable, IUsingResolver
         return null;
     }
 
-    public async Task<SourceFile> AddSourceFile(string filePath, CancellationToken cancellationToken = default)
+    public async Task<SourceFile> AddSourceFileAsync(string filePath, CancellationToken cancellationToken = default)
     {
         filePath = Path.GetFullPath(filePath);
 
@@ -51,7 +51,7 @@ public class Project : IDisposable, IUsingResolver
             throw new ArgumentException($"File '{filePath}' is already added to project", nameof(filePath));
         }
 
-        var sourceFile = await SourceFile.Open(this, filePath, cancellationToken).ConfigureAwait(false);
+        var sourceFile = await SourceFile.OpenAsync(this, filePath, cancellationToken).ConfigureAwait(false);
         if (!sources.TryAdd(sourceFile.Path, sourceFile))
         {
             throw new ArgumentException($"File '{filePath}' is already added to project", nameof(filePath));
@@ -60,12 +60,11 @@ public class Project : IDisposable, IUsingResolver
         return sourceFile;
     }
 
-    private async Task OpenSourceFilesFromRoot(CancellationToken cancellationToken)
+    private async Task OpenSourceFilesAsync(CancellationToken cancellationToken)
     {
         Debug.Assert(sources.IsEmpty);
-        var sourceFilesTasks = Directory.EnumerateFiles(RootDirectory, "*.sc*", SearchOption.AllDirectories)
-                                       .Where(path => Path.GetExtension(path) is ".sc" or ".sch")
-                                       .Select(path => AddSourceFile(path, cancellationToken));
+        var sourceFilesTasks = Configuration.Sources
+            .Select(path => AddSourceFileAsync(Path.Combine(RootDirectory, path), cancellationToken));
         await Task.WhenAll(sourceFilesTasks).ConfigureAwait(false);
     }
     
@@ -98,13 +97,13 @@ public class Project : IDisposable, IUsingResolver
         Debug.Assert(rootDir is not null, "File exists so the directory name should not be null");
 
         var project = new Project(rootDir, config);
-        await project.OpenSourceFilesFromRoot(cancellationToken).ConfigureAwait(false);
+        await project.OpenSourceFilesAsync(cancellationToken).ConfigureAwait(false);
         return project;
     }
 
     async Task<UsingResolveResult> IUsingResolver.ResolveUsingAsync(string filePath)
     {
-        var absoluteFilePath = Path.Combine(RootDirectory, filePath);
+        var absoluteFilePath = Path.GetFullPath(Path.Combine(RootDirectory, filePath));
         if (!sources.TryGetValue(absoluteFilePath, out var sourceFile))
         {
             return new(UsingResolveStatus.NotFound, Ast: null);
