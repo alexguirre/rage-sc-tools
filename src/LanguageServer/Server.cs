@@ -70,7 +70,7 @@ internal sealed partial class Server : IServer, IDisposable
     {
         var capabilities = new ServerCapabilities();
         handlerDispatcher.AddProvidedCapabilities(capabilities);
-        logger.LogInformation("Initialize with capabilities: {capabilities}", capabilities);
+        logger.LogInformation("Initialize with capabilities: {@capabilities}",  capabilities);
         return new InitializeResult { Capabilities = capabilities };
     }
 }

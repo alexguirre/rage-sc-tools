@@ -6,6 +6,7 @@ using ScTools.ScriptLang.Semantics;
 
 public interface ITextDocumentTracker
 {
+    Task<SemanticsAnalyzer?> GetDocumentSemanticsAsync(Uri uri);
     Task<CompilationUnit?> GetDocumentAstAsync(Uri uri);
     Task OpenDocumentAsync(Uri uri, string text);
     Task UpdateDocumentAsync(Uri uri, string text);
@@ -22,6 +23,16 @@ public class TextDocumentTracker : ITextDocumentTracker
     {
         this.logger = logger;
         this.diagnosticsPublisher = diagnosticsPublisher;
+    }
+
+    public async Task<SemanticsAnalyzer?> GetDocumentSemanticsAsync(Uri uri)
+    {
+        if (files.TryGetValue(uri, out var file))
+        {
+            return await file.GetSemanticsAsync();
+        }
+
+        throw new ArgumentException($"Unknown document '{uri.AbsolutePath}'", nameof(uri));
     }
 
     public async Task<CompilationUnit?> GetDocumentAstAsync(Uri uri)
@@ -79,6 +90,7 @@ public class TextDocumentTracker : ITextDocumentTracker
         public Uri Uri { get; }
         public string Text { get; private set; }
         private DiagnosticsReport? Diagnostics { get; set; } = null;
+        private SemanticsAnalyzer? Semantics { get; set; } = null;
         private CompilationUnit? Ast { get; set; } = null;
         
         public ScriptFile(Uri uri, string text)
@@ -98,6 +110,12 @@ public class TextDocumentTracker : ITextDocumentTracker
         {
             Text = text;
             StartAnalysis();
+        }
+
+        public async Task<SemanticsAnalyzer?> GetSemanticsAsync()
+        {
+            await analyzeTask.ConfigureAwait(false);
+            return Semantics;
         }
 
         public async Task<CompilationUnit?> GetAstAsync()
@@ -127,7 +145,7 @@ public class TextDocumentTracker : ITextDocumentTracker
 
         private async Task AnalyzeAsync(CancellationToken ct)
         {
-            (Diagnostics, Ast) = await Task.Run<(DiagnosticsReport, CompilationUnit)>(() =>
+            (Diagnostics, Semantics, Ast) = await Task.Run<(DiagnosticsReport, SemanticsAnalyzer, CompilationUnit)>(() =>
             {
                 try
                 {
@@ -136,9 +154,9 @@ public class TextDocumentTracker : ITextDocumentTracker
                     var parser = new Parser(lexer, diagnosticsReport);
                     var compilationUnit = parser.ParseCompilationUnit();
                     ct.ThrowIfCancellationRequested();
-                    var sema = new SemanticsAnalyzer(diagnosticsReport);
-                    compilationUnit.Accept(sema);
-                    return (diagnosticsReport, compilationUnit);
+                    var semantics = new SemanticsAnalyzer(diagnosticsReport);
+                    compilationUnit.Accept(semantics);
+                    return (diagnosticsReport, semantics, compilationUnit);
                 }
                 catch(OperationCanceledException e)
                 {

@@ -30,7 +30,7 @@ internal static class Program
             .AddLogging(logging => 
                 logging.AddDebug()
                        .AddSerilog(new LoggerConfiguration()
-                            .WriteTo.File("ScTools.LanguageServer.log")
+                            .WriteTo.File("ScTools/LanguageServer/ScTools.LanguageServer.log", rollingInterval: RollingInterval.Minute)
                             .CreateLogger()))
             .AddLspRequestHandlers()
             .AddSingleton<ILspRequestHandlerDispatcher, LspRequestHandlerDispatcher>()
