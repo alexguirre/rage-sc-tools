@@ -24,6 +24,7 @@ public sealed partial class CodeEmitter : ICodeEmitter
     private readonly List<NativeFunctionDeclaration> usedNativeFunctions = new();
 
     private readonly VarAllocator statics;
+    private readonly GlobalsAllocator globals;
     private int numScriptParams = 0;
 
     private readonly List<LabelInfo> labels = new();
@@ -36,9 +37,10 @@ public sealed partial class CodeEmitter : ICodeEmitter
 
     public StringsTable Strings { get; } = new();
 
-    public CodeEmitter(VarAllocator statics)
+    public CodeEmitter(VarAllocator statics, GlobalsAllocator globals)
     {
         this.statics = new(statics);
+        this.globals = new(globals);
         instBuffer = new();
         instEmitter = new(new AppendInstructionFlushStrategy(instBuffer));
 
@@ -65,6 +67,34 @@ public sealed partial class CodeEmitter : ICodeEmitter
 
         numScriptParams = this.numScriptParams;
         return staticsBuffer;
+    }
+
+    private ScriptPageTable<ScriptValue64>? GetGlobalSegment(ScriptDeclaration script, out int blockIndex)
+    {
+        var block = globals.GetGlobalsBlockForScript(script);
+        if (block is null)
+        {
+            blockIndex = 0;
+            return null;
+        }
+
+        blockIndex = block.BlockIndex;
+        // TODO: global segment generation and globals offset calculation may be wrong in page boundaries, check it
+        var globalSegment = new ScTools.ScriptAssembly.SegmentBuilder(Assembler.GetSegmentAlignment(Assembler.Segment.Global), isPaged: true);
+
+        foreach (var g in block.Vars)
+        {
+            var type = g.Semantics.ValueType!;
+            for (int i = 0; i < type.SizeOf; i++) { globalSegment.UInt64(0); }
+            if (type.IsDefaultInitialized())
+            {
+                var offset = globals.OffsetOf(g);
+                var globalsBuffer = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, ScriptValue64>(globalSegment.RawDataBuffer);
+                StaticDefaultInit(  globalsBuffer.Slice(offset, type.SizeOf), type);
+            }
+        }
+
+        return globalSegment.Length != 0 ? globalSegment.ToPages<ScriptValue64>() : null;;
     }
 
     private ulong[] GetNativesTable(uint codeLength)
@@ -105,7 +135,7 @@ public sealed partial class CodeEmitter : ICodeEmitter
         var codePages = ToCodePages();
         var codeLength = codePages.Length;
         var statics = GetStaticSegment(out var argsCount);
-        //var globals = globalSegmentBuilder.Length != 0 ? globalSegmentBuilder.ToPages<ScriptValue>() : null;
+        var globals = GetGlobalSegment(script, out var globalBlockIndex);
         var natives = GetNativesTable(codeLength);
         var strings = Strings.ByteLength != 0 ? Strings.ToPages() : null;
         return new Script
@@ -115,8 +145,9 @@ public sealed partial class CodeEmitter : ICodeEmitter
             GlobalsSignature = 0, // TODO: include a way to set the hash in the SCRIPT declaration
             CodePages = codePages,
             CodeLength = codeLength,
-            //GlobalsPages = globals,
-            //GlobalsLength = globals?.Length ?? 0,
+            GlobalsPages = globals,
+            GlobalsLength = globals?.Length ?? 0,
+            GlobalsBlock = (uint)globalBlockIndex,
             Statics = statics,
             StaticsCount = (uint)(statics?.Length ?? 0),
             ArgsCount = (uint)argsCount,
@@ -133,16 +164,16 @@ public sealed partial class CodeEmitter : ICodeEmitter
         script.Parameters.ForEach(p => statics.Allocate(p));
         numScriptParams = statics.AllocatedSize - staticsWithoutScriptParamsSize;
 
-        EmitFunctionCommon("SCRIPT", script.Parameters, script.Body, VoidType.Instance, isScriptEntryPoint: true);
+        EmitFunctionCommon("SCRIPT", script.Parameters, script.Body, VoidType.Instance, script);
     }
     
     private void EmitFunction(FunctionDeclaration function)
     {
         Label(function.Name, isFunctionLabel: true);
-        EmitFunctionCommon(function.Name, function.Parameters, function.Body, ((FunctionType)function.Semantics.ValueType!).Return, isScriptEntryPoint: false);
+        EmitFunctionCommon(function.Name, function.Parameters, function.Body, ((FunctionType)function.Semantics.ValueType!).Return, script: null);
     }
 
-    private void EmitFunctionCommon(string name, ImmutableArray<VarDeclaration> parameters, ImmutableArray<IStatement> body, TypeInfo returnType, bool isScriptEntryPoint)
+    private void EmitFunctionCommon(string name, ImmutableArray<VarDeclaration> parameters, ImmutableArray<IStatement> body, TypeInfo returnType, ScriptDeclaration? script)
     {
         currentFunctionReturnType = returnType;
         Debug.Assert(returnType.SizeOf <= byte.MaxValue, $"Return type too big (sizeof: {returnType.SizeOf})");
@@ -150,6 +181,7 @@ public sealed partial class CodeEmitter : ICodeEmitter
         currentFunctionFrame.Clear();
         localLabelNameToIndex.Clear();
 
+        var isScriptEntryPoint = script is not null;
         if (!isScriptEntryPoint)
         {
             // allocate space for parameters
@@ -170,7 +202,7 @@ public sealed partial class CodeEmitter : ICodeEmitter
         if (isScriptEntryPoint)
         {
             EmitStaticInitializers();
-            // TODO: EmitGlobalInitializers()
+            EmitGlobalInitializers(script!);
         }
 
         // body
@@ -197,6 +229,23 @@ public sealed partial class CodeEmitter : ICodeEmitter
             if (s.Initializer is not null)
             {
                 EmitAssignmentToVar(s, s.Initializer);
+            }
+        }
+    }
+
+    private void EmitGlobalInitializers(ScriptDeclaration script)
+    {
+        var block = globals.GetGlobalsBlockForScript(script);
+        if (block is null)
+        {
+            return;
+        }
+
+        foreach (var g in block.Vars)
+        {
+            if (g.Initializer is not null)
+            {
+                EmitAssignmentToVar(g, g.Initializer);
             }
         }
     }
@@ -544,20 +593,20 @@ public sealed partial class CodeEmitter : ICodeEmitter
 
     private void EmitGlobalAddress(VarDeclaration declaration)
     {
-        throw new NotImplementedException(nameof(EmitGlobalAddress));
-        // TODO: EmitGlobal
-        //switch (varDecl.Address)
-        //{
-        //    case >= 0 and <= 0x0000FFFF:
-        //        CG.Emit(Opcode.GLOBAL_U16, varDecl.Address);
-        //        break;
+        int address = globals.OffsetOf(declaration);
 
-        //    case >= 0 and <= 0x00FFFFFF:
-        //        CG.Emit(Opcode.GLOBAL_U24, varDecl.Address);
-        //        break;
+        switch (address)
+        {
+            case >= ushort.MinValue and <= ushort.MaxValue:
+                instEmitter.EmitGlobalU16((ushort)address);
+                break;
 
-        //    default: Debug.Assert(false, "Global var address too big"); break;
-        //}
+            case >= 0 and <= 0x00FFFFFF:
+                instEmitter.EmitGlobalU24((uint)address);
+                break;
+
+            default: Debug.Assert(false, "Global var address too big"); break;
+        }
     }
     private void EmitStaticAddress(VarDeclaration declaration)
     {

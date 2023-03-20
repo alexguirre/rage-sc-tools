@@ -15,7 +15,7 @@ public enum VarKind
     /// </summary>
     Constant,
     /// <summary>
-    /// A variable defined in a GLOBAL block, shared between script threads.
+    /// A variable defined in a GLOBALS block, shared between script threads.
     /// </summary>
     Global,
     /// <summary>

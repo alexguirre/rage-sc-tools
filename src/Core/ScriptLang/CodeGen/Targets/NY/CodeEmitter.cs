@@ -23,6 +23,7 @@ public sealed partial class CodeEmitter : ICodeEmitter
     private readonly Queue<FunctionDeclaration> functionsToCompile = new();
 
     private readonly VarAllocator statics;
+    private readonly GlobalsAllocator globals;
     private int numScriptParams = 0;
 
     private readonly List<LabelInfo> labels = new();
@@ -33,9 +34,10 @@ public sealed partial class CodeEmitter : ICodeEmitter
     private readonly VarAllocator currentFunctionFrame = new();
     private TypeInfo? currentFunctionReturnType = null;
 
-    public CodeEmitter(VarAllocator statics)
+    public CodeEmitter(VarAllocator statics, GlobalsAllocator globals)
     {
         this.statics = new(statics);
+        this.globals = new(globals);
         instBuffer = new();
         instEmitter = new(new AppendInstructionFlushStrategy(instBuffer));
 
@@ -64,6 +66,29 @@ public sealed partial class CodeEmitter : ICodeEmitter
         return staticsBuffer;
     }
 
+    private ScriptValue32[] GetGlobalSegment(ScriptDeclaration script)
+    {
+        var block = globals.GetGlobalsBlockForScript(script);
+        if (block is null)
+        {
+            return Array.Empty<ScriptValue32>();
+        }
+
+        var globalsBuffer = new ScriptValue32[globals.SizeOf(block)];
+
+        foreach (var g in block.Vars)
+        {
+            var type = g.Semantics.ValueType!;
+            if (type.IsDefaultInitialized())
+            {
+                var offset = globals.OffsetOf(g);
+                StaticDefaultInit(globalsBuffer.AsSpan(offset, type.SizeOf), type);
+            }
+        }
+
+        return globalsBuffer;
+    }
+
     public IScript EmitScript(ScriptDeclaration script)
     {
         EmitScriptEntryPoint(script);
@@ -80,14 +105,14 @@ public sealed partial class CodeEmitter : ICodeEmitter
     {
         var code = ToCodeBuffer();
         var statics = GetStaticSegment(out var argsCount);
-        //var globals = globalSegmentBuilder.Length != 0 ? globalSegmentBuilder.ToPages<ScriptValue>() : null;
+        var globals = GetGlobalSegment(script);
         return new ScriptNY
         {
             GlobalsSignature = 0, // TODO: include a way to set the hash in the SCRIPT declaration
             Code = code,
             CodeLength = (uint)(code?.Length ?? 0),
-            //GlobalsPages = globals,
-            //GlobalsLength = globals?.Length ?? 0,
+            Globals = globals,
+            GlobalsCount = (uint)(globals?.Length ?? 0),
             Statics = statics,
             StaticsCount = (uint)(statics?.Length ?? 0),
             ArgsCount = (uint)argsCount,
@@ -100,16 +125,16 @@ public sealed partial class CodeEmitter : ICodeEmitter
         script.Parameters.ForEach(p => statics.Allocate(p));
         numScriptParams = statics.AllocatedSize - staticsWithoutScriptParamsSize;
 
-        EmitFunctionCommon("SCRIPT", script.Parameters, script.Body, VoidType.Instance, isScriptEntryPoint: true);
+        EmitFunctionCommon("SCRIPT", script.Parameters, script.Body, VoidType.Instance, script);
     }
     
     private void EmitFunction(FunctionDeclaration function)
     {
         Label(function.Name, isFunctionLabel: true);
-        EmitFunctionCommon(function.Name, function.Parameters, function.Body, ((FunctionType)function.Semantics.ValueType!).Return, isScriptEntryPoint: false);
+        EmitFunctionCommon(function.Name, function.Parameters, function.Body, ((FunctionType)function.Semantics.ValueType!).Return, script: null);
     }
 
-    private void EmitFunctionCommon(string name, ImmutableArray<VarDeclaration> parameters, ImmutableArray<IStatement> body, TypeInfo returnType, bool isScriptEntryPoint)
+    private void EmitFunctionCommon(string name, ImmutableArray<VarDeclaration> parameters, ImmutableArray<IStatement> body, TypeInfo returnType, ScriptDeclaration? script)
     {
         currentFunctionReturnType = returnType;
         Debug.Assert(returnType.SizeOf <= byte.MaxValue, $"Return type too big (sizeof: {returnType.SizeOf})");
@@ -117,6 +142,7 @@ public sealed partial class CodeEmitter : ICodeEmitter
         currentFunctionFrame.Clear();
         localLabelNameToIndex.Clear();
 
+        var isScriptEntryPoint = script is not null;
         if (!isScriptEntryPoint)
         {
             // allocate space for parameters
@@ -137,7 +163,7 @@ public sealed partial class CodeEmitter : ICodeEmitter
         if (isScriptEntryPoint)
         {
             EmitStaticInitializers();
-            // TODO: EmitGlobalInitializers()
+            EmitGlobalInitializers(script!);
         }
 
         // body
@@ -164,6 +190,23 @@ public sealed partial class CodeEmitter : ICodeEmitter
             if (s.Initializer is not null)
             {
                 EmitAssignmentToVar(s, s.Initializer);
+            }
+        }
+    }
+
+    private void EmitGlobalInitializers(ScriptDeclaration script)
+    {
+        var block = globals.GetGlobalsBlockForScript(script);
+        if (block is null)
+        {
+            return;
+        }
+
+        foreach (var g in block.Vars)
+        {
+            if (g.Initializer is not null)
+            {
+                EmitAssignmentToVar(g, g.Initializer);
             }
         }
     }
@@ -485,8 +528,9 @@ public sealed partial class CodeEmitter : ICodeEmitter
 
     private void EmitGlobalAddress(VarDeclaration declaration)
     {
-        throw new NotImplementedException(nameof(EmitGlobalAddress));
-        // TODO: EmitGlobal
+        int address = globals.OffsetOf(declaration);
+        EmitPushInt(address);
+        instEmitter.EmitGlobal();
     }
     private void EmitStaticAddress(VarDeclaration declaration)
     {

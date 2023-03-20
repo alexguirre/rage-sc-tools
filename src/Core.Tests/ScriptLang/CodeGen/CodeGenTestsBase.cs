@@ -74,6 +74,12 @@ public abstract class CodeGenTestsBase
         }
     }
 
+    protected static string IntToGlobalIV(int value)
+    {
+        return $@"{IntToPushInstIV(value)}
+                  {Opcode.GLOBAL}";
+    }
+
     protected static void CompileScript(string scriptSource, string expectedAssembly, string declarationsSource = "", string? expectedAssemblyIV = null, NativeDB? nativeDB = null)
         => CompileRaw(
             source: $@"

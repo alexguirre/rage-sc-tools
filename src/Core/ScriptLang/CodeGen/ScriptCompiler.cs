@@ -13,16 +13,20 @@ public static class ScriptCompiler
     public static IScript? Compile(CompilationUnit compilationUnit, Workspace.BuildTarget target)
     {
         var staticAllocator = new VarAllocator();
-        AddImportedStatics(staticAllocator, compilationUnit);
+        var globalsAllocator = new GlobalsAllocator(AreGlobalsIndexed(target));
+        AddImportedStaticsAndGlobals(staticAllocator, globalsAllocator, compilationUnit);
         foreach (var decl in compilationUnit.Declarations)
         {
-            if (decl is VarDeclaration { Kind: VarKind.Static } staticVar)
+            switch (decl)
             {
-                staticAllocator.Allocate(staticVar);
-            }
-            else if (decl is ScriptDeclaration scriptDecl)
-            {
-                return CompileScript(scriptDecl, staticAllocator, target);
+                case VarDeclaration { Kind: VarKind.Static } staticVar:
+                    staticAllocator.Allocate(staticVar);
+                    break;
+                case GlobalBlockDeclaration globalsDecl:
+                    globalsAllocator.Allocate(globalsDecl);
+                    break;
+                case ScriptDeclaration scriptDecl:
+                    return CompileScript(scriptDecl, staticAllocator, globalsAllocator, target);
             }
         }
 
@@ -30,18 +34,18 @@ public static class ScriptCompiler
         return null;
     }
 
-    private static IScript CompileScript(ScriptDeclaration scriptDecl, VarAllocator statics, Workspace.BuildTarget target)
+    private static IScript CompileScript(ScriptDeclaration scriptDecl, VarAllocator statics, GlobalsAllocator globals, Workspace.BuildTarget target)
     {
-        var codeEmitter = CodeEmitterFactory.CreateForTarget(target, new(statics));
+        var codeEmitter = CodeEmitterFactory.CreateForTarget(target, new(statics, globals));
         return codeEmitter.EmitScript(scriptDecl);
     }
 
-    private static void AddImportedStatics(VarAllocator staticAllocator, CompilationUnit compilationUnit)
+    private static void AddImportedStaticsAndGlobals(VarAllocator staticAllocator, GlobalsAllocator globalsAllocator, CompilationUnit compilationUnit)
     {
         var importedSet = new HashSet<CompilationUnit>();
-        AddImportedStaticsRecursive(staticAllocator, compilationUnit, importedSet);
+        AddImportedStaticsAndGlobalsRecursive(staticAllocator, globalsAllocator, compilationUnit, importedSet);
 
-        static void AddImportedStaticsRecursive(VarAllocator staticAllocator, CompilationUnit compilationUnit, HashSet<CompilationUnit> importedSet)
+        static void AddImportedStaticsAndGlobalsRecursive(VarAllocator staticAllocator, GlobalsAllocator globalsAllocator, CompilationUnit compilationUnit, HashSet<CompilationUnit> importedSet)
         {
             if (!importedSet.Add(compilationUnit))
             {
@@ -49,18 +53,32 @@ public static class ScriptCompiler
                 return;
             }
 
-            foreach (var import in compilationUnit.Usings.Select(u => u.Semantics.ImportedCompilationUnit!).Where(i => i is not null))
+            foreach (var import in compilationUnit.Usings.Select(u => u.Semantics.ImportedCompilationUnit).Where(i => i is not null))
             {
-                AddImportedStatics(staticAllocator, import);
+                Debug.Assert(import is not null);
+                AddImportedStaticsAndGlobals(staticAllocator, globalsAllocator, import);
 
                 foreach (var decl in import.Declarations)
                 {
-                    if (decl is VarDeclaration { Kind: VarKind.Static } staticVar)
+                    switch (decl)
                     {
-                        staticAllocator.Allocate(staticVar);
+                        case VarDeclaration { Kind: VarKind.Static } staticVar:
+                            staticAllocator.Allocate(staticVar);
+                            break;
+                        case GlobalBlockDeclaration globalsDecl:
+                            globalsAllocator.Allocate(globalsDecl);
+                            break;
                     }
                 }
             }
         }
     }
+
+    // TODO: move AreGlobalsIndexed to a central place where build targets configurations would be defined
+    private static bool AreGlobalsIndexed(Workspace.BuildTarget target)
+        => target.Game switch
+        {
+            Workspace.Game.GTAV => true,
+            _ => false,
+        };
 }

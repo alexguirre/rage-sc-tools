@@ -229,7 +229,7 @@ public sealed class SemanticsAnalyzer : AstVisitor
 
     public override void Visit(GlobalBlockDeclaration node)
     {
-        throw new System.NotImplementedException();
+        node.Vars.ForEach(v => v.Accept(this));
     }
 
     public override void Visit(StructDeclaration node)
@@ -264,8 +264,6 @@ public sealed class SemanticsAnalyzer : AstVisitor
     {
         var varType = typeFactory.GetFrom(node);
 
-        // TODO: global variables
-
         if (node is { IsReference: true, Kind: not VarKind.Parameter })
         {
             ReferenceNotAllowedError(node);
@@ -297,6 +295,10 @@ public sealed class SemanticsAnalyzer : AstVisitor
                     Debug.Assert(value is not null);
                     node.Semantics = node.Semantics with { ConstantValue = value };
                 }
+                break;
+            case VarKind.Global:
+                CheckRuntimeInitializer(this, node);
+                // TODO: check if global var types are safe to use
                 break;
             case VarKind.Static:
                 CheckRuntimeInitializer(this, node);
@@ -833,7 +835,22 @@ public sealed class SemanticsAnalyzer : AstVisitor
              return;
         }
 
-        compilationUnit.Declarations.ForEach(AddSymbol);
+        foreach (var decl in compilationUnit.Declarations)
+        {
+            switch (decl)
+            {
+                case EnumDeclaration enumDecl:
+                    AddSymbol(enumDecl);
+                    enumDecl.Members.ForEach(AddSymbol);
+                    break;
+                case GlobalBlockDeclaration globalsDecl:
+                    globalsDecl.Vars.ForEach(AddSymbol);
+                    break;
+                default:
+                    AddSymbol(decl);
+                    break;
+            }
+        }
     }
 
     public bool GetSymbol(NameExpression expr, [MaybeNullWhen(false)] out ISymbol symbol) => GetSymbol(expr.Name, expr.Location, out symbol);

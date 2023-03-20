@@ -233,12 +233,12 @@ public partial class ParserTests
         public void GlobalBlockDeclaration()
         {
             var p = ParserFor(
-                @"GLOBAL foo 1
+                @"GLOBALS foo 1
                     INT a, b = 1, c
                     FLOAT d[5]
                     INT e = 2 + 1
                     BOOL f
-                  ENDGLOBAL"
+                  ENDGLOBALS"
             );
 
             True(p.IsPossibleGlobalBlockDeclaration());

@@ -197,16 +197,16 @@ public class Parser
     }
 
     public bool IsPossibleGlobalBlockDeclaration()
-        => Peek(0).Kind is TokenKind.GLOBAL;
+        => Peek(0).Kind is TokenKind.GLOBALS;
     public GlobalBlockDeclaration ParseGlobalBlockDeclaration()
     {
-        ExpectOrMissing(TokenKind.GLOBAL, out var globalKeyword);
+        ExpectOrMissing(TokenKind.GLOBALS, out var globalsKeyword);
         ExpectOrMissing(TokenKind.Identifier, out var nameIdent, MissingIdentifier);
         ExpectOrMissing(TokenKind.Integer, out var blockIndex, () => Missing(Token.Integer(MissingGlobalBlockIndex)));
         ExpectEOS();
 
         var vars = new List<VarDeclaration>();
-        while (Peek(0).Kind is not TokenKind.ENDGLOBAL)
+        while (Peek(0).Kind is not TokenKind.ENDGLOBALS)
         {
             vars.Add(ParseVarDeclaration(VarKind.Global, allowMultipleDeclarations: true));
 
@@ -216,10 +216,10 @@ public class Parser
             }
         }
 
-        ExpectOrMissing(TokenKind.ENDGLOBAL, out var endglobalKeyword);
+        ExpectOrMissing(TokenKind.ENDGLOBALS, out var endglobalsKeyword);
         ExpectEOS();
 
-        return new(globalKeyword, nameIdent, blockIndex, endglobalKeyword, vars);
+        return new(globalsKeyword, nameIdent, blockIndex, endglobalsKeyword, vars);
     }
 
     public bool IsPossibleScriptDeclaration()

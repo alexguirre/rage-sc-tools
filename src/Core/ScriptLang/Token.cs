@@ -99,8 +99,8 @@ public enum TokenKind
     USING,
     CONST_INT,
     CONST_FLOAT,
-    GLOBAL,
-    ENDGLOBAL,
+    GLOBALS,
+    ENDGLOBALS,
 
     /// <summary>
     /// End-of-statement. A new line (\n) except if it is escaped with \.
@@ -197,8 +197,8 @@ public static class TokenLexemes
     public const string USING = nameof(TokenKind.USING);
     public const string CONST_INT = nameof(TokenKind.CONST_INT);
     public const string CONST_FLOAT = nameof(TokenKind.CONST_FLOAT);
-    public const string GLOBAL = nameof(TokenKind.GLOBAL);
-    public const string ENDGLOBAL = nameof(TokenKind.ENDGLOBAL);
+    public const string GLOBALS = nameof(TokenKind.GLOBALS);
+    public const string ENDGLOBALS = nameof(TokenKind.ENDGLOBALS);
 
     public const string EOS = "\n";
     public const string EOF = "";
@@ -207,7 +207,7 @@ public static class TokenLexemes
 public static class TokenKindExtensions
 {
     public static bool IsKeyword(this TokenKind kind)
-        => kind >= TokenKind.SCRIPT && kind <= TokenKind.ENDGLOBAL;
+        => kind is >= TokenKind.SCRIPT and <= TokenKind.ENDGLOBALS;
 
     public static string GetCanonicalLexeme(this TokenKind kind)
         => kind switch
@@ -290,8 +290,8 @@ public static class TokenKindExtensions
             TokenKind.USING => TokenLexemes.USING,
             TokenKind.CONST_INT => TokenLexemes.CONST_INT,
             TokenKind.CONST_FLOAT => TokenLexemes.CONST_FLOAT,
-            TokenKind.GLOBAL => TokenLexemes.GLOBAL,
-            TokenKind.ENDGLOBAL => TokenLexemes.ENDGLOBAL,
+            TokenKind.GLOBALS => TokenLexemes.GLOBALS,
+            TokenKind.ENDGLOBALS => TokenLexemes.ENDGLOBALS,
             TokenKind.EOS => TokenLexemes.EOS,
             TokenKind.EOF => TokenLexemes.EOF,
             _ => throw new ArgumentException($"Token '{kind}' has no canonical lexeme", nameof(kind)),
