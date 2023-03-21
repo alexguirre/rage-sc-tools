@@ -33,13 +33,11 @@ public class Parser
     private Token Current { get; set; }
     private Diagnostic? LastError { get; set; }
 
-    public Parser(Lexer lexer, DiagnosticsReport diagnostics, bool runPreprocessor = true)
+    public Parser(Lexer lexer, DiagnosticsReport diagnostics, Preprocessor? preprocessor)
     {
         Lexer = lexer;
         Diagnostics = diagnostics;
-        tokenEnumerator = runPreprocessor ?
-            new Preprocessor(diagnostics).Preprocess(lexer).GetEnumerator():
-            lexer.GetEnumerator();
+        tokenEnumerator = preprocessor?.Preprocess(lexer).GetEnumerator() ?? lexer.GetEnumerator();
         Next();
     }
 

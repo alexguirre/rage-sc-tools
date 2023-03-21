@@ -8,8 +8,8 @@ using System.IO;
 
 public class SourceFile : IDisposable
 {
-    private record AnalysisResult(DiagnosticsReport Diagnostics, CompilationUnit Ast);
-    public record CompilationResult(SourceFile Source, DiagnosticsReport Diagnostics, CompilationUnit Ast, IScript? Script);
+    private record AnalysisResult(DiagnosticsReport Diagnostics, SemanticsAnalyzer Semantics, CompilationUnit Ast);
+    public record CompilationResult(SourceFile Source, DiagnosticsReport Diagnostics, SemanticsAnalyzer Semantics, CompilationUnit Ast, IScript? Script);
 
     private bool isDisposed;
     private CancellationTokenSource? analyzeTaskCts;
@@ -57,7 +57,7 @@ public class SourceFile : IDisposable
         {
             script = await Task.Run(() => CodeGen.ScriptCompiler.Compile(result.Ast, Project.BuildConfiguration.Target), cancellationToken).ConfigureAwait(false);
         }
-        return new(this, result.Diagnostics, result.Ast, script);
+        return new(this, result.Diagnostics, result.Semantics, result.Ast, script);
     }
 
     private void CancelAnalysis()
@@ -89,13 +89,15 @@ public class SourceFile : IDisposable
             {
                 var diagnosticsReport = new DiagnosticsReport();
                 var lexer = new Lexer(Path, Text, diagnosticsReport);
-                var parser = new Parser(lexer, diagnosticsReport);
+                var preprocessor = new Preprocessor(diagnosticsReport);
+                Project.BuildConfiguration.Defines.ForEach(preprocessor.Define);
+                var parser = new Parser(lexer, diagnosticsReport, preprocessor);
                 var compilationUnit = parser.ParseCompilationUnit();
                 ct.ThrowIfCancellationRequested();
-                var sema = new SemanticsAnalyzer(diagnosticsReport, usingResolver: Project);
-                compilationUnit.Accept(sema);
+                var semantics = new SemanticsAnalyzer(diagnosticsReport, usingResolver: Project);
+                compilationUnit.Accept(semantics);
                 ct.ThrowIfCancellationRequested();
-                return new AnalysisResult(diagnosticsReport, compilationUnit);
+                return new AnalysisResult(diagnosticsReport, semantics, compilationUnit);
             }
             catch (OperationCanceledException)
             {

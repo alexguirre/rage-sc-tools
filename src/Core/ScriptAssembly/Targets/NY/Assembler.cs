@@ -106,7 +106,7 @@ public partial class Assembler : IDisposable
     /// </summary>
     private void FirstPass()
     {
-        var parser = new Parser(Lexer, Diagnostics);
+        var parser = new Parser(Lexer, Diagnostics, new(Diagnostics));
         parser.ParseProgram().ForEach(ProcessLine);
         FixArgLabels();
     }

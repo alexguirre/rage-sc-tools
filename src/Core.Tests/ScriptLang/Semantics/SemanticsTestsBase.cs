@@ -24,7 +24,7 @@ public abstract class SemanticsTestsBase
     protected static Parser ParserFor(string source)
     {
         var lexer = new Lexer(TestFileName, source, new DiagnosticsReport());
-        return new(lexer, lexer.Diagnostics);
+        return new(lexer, lexer.Diagnostics, new(lexer.Diagnostics));
     }
 
     protected static SemanticsAnalyzer Analyze(string source, IUsingResolver? usingResolver = null)

@@ -214,6 +214,6 @@ public partial class ParserTests
     private static Parser ParserFor(string source)
     {
         var lexer = new Lexer(TestFileName, source, new DiagnosticsReport());
-        return new(lexer, lexer.Diagnostics);
+        return new(lexer, lexer.Diagnostics, new(lexer.Diagnostics));
     }
 }

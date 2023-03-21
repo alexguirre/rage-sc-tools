@@ -83,7 +83,7 @@ internal static class CompileCommand
                 var source = await File.ReadAllTextAsync(inputFile.FullName, cancellationToken);
                 var d = new DiagnosticsReport();
                 var l = new Lexer(inputFile.FullName, source, d);
-                var p = new ScriptLang.Parser(l, d);
+                var p = new ScriptLang.Parser(l, d, new(d));
                 var s = new SemanticsAnalyzer(d);
 
                 var u = p.ParseCompilationUnit();

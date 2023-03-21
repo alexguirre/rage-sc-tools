@@ -151,7 +151,8 @@ public class TextDocumentTracker : ITextDocumentTracker
                 {
                     var diagnosticsReport = new DiagnosticsReport();
                     var lexer = new Lexer(Uri.AbsolutePath, Text, diagnosticsReport);
-                    var parser = new Parser(lexer, diagnosticsReport);
+                    var preprocessor = new Preprocessor(diagnosticsReport);
+                    var parser = new Parser(lexer, diagnosticsReport, preprocessor);
                     var compilationUnit = parser.ParseCompilationUnit();
                     ct.ThrowIfCancellationRequested();
                     var semantics = new SemanticsAnalyzer(diagnosticsReport);
