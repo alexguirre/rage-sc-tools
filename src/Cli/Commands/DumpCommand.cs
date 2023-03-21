@@ -52,17 +52,20 @@ internal static class DumpCommand
 
         var totalTime = Stopwatch.StartNew();
 
+        Keys.LoadAll();
+
         var inputFiles = input.SelectMany(i => i.Matches);
         await Parallel.ForEachAsync(inputFiles, async (inputFile, cancellationToken) =>
         {
-            var extension = "dump.txt";
-            
-            var outputFile = new FileInfo(Path.Combine(output.FullName, Path.ChangeExtension(inputFile.Name, extension)));
             try
             {
+                var extension = "dump.txt";
+                var outputFile = new FileInfo(Path.Combine(output.FullName, Path.ChangeExtension(inputFile.Name, extension)));
+
                 Print($"Dumping '{inputFile}'...");
                 var source = await File.ReadAllBytesAsync(inputFile.FullName, cancellationToken);
 
+                IScript script;
                 switch (target)
                 {
                     case (Game.GTAV, Platform.x64):
@@ -71,29 +74,33 @@ internal static class DumpCommand
                     case (Game.MC4, Platform.Xenon):
                     case (Game.GTAIV, Platform.x86):
                     {
-                        byte[] aesKey = null!;
-                        if (target.Game == Game.GTAIV)
+                        byte[] aesKey = target.Game switch
                         {
-                            Keys.NY.Load("D:\\programs\\SteamLibrary\\steamapps\\common\\Grand Theft Auto IV\\GTAIV\\GTAIV.exe");
-                            aesKey = Keys.NY.AesKeyPC;
-                        }
-                        else if (target.Game == Game.MC4)
-                        {
-                            Keys.MC4.Load("");
-                            aesKey = Keys.MC4.AesKeyXenon;
-                        }
+                            Game.GTAIV => Keys.NY.AesKeyPC,
+                            Game.MC4 => Keys.MC4.AesKeyXenon,
+                            _ => throw new UnreachableException("Game already restricted by parent switch")
+                        };
 
                         var sc = new ScriptNY();
                         sc.Read(new DataReader(new MemoryStream(source)), aesKey);
-                        await using var outputStream = outputFile.Open(FileMode.Create);
-                        await using var outputWriter = new StreamWriter(outputStream);
-                        sc.Dump(DumpOptions.Default(outputWriter));
+                        script = sc;
+                        break;
+                    }
+                    case (Game.MP3, Platform.x86):
+                    {
+                        var sc = new ScriptPayne();
+                        sc.Read(new DataReader(new MemoryStream(source)), Keys.Payne.AesKeyPC);
+                        script = sc;
                         break;
                     }
                     
                     default:
                         throw new InvalidOperationException($"Unsupported build target '{target}'");
                 }
+
+                await using var outputStream = outputFile.Open(FileMode.Create);
+                await using var outputWriter = new StreamWriter(outputStream);
+                script.Dump(outputWriter, DumpOptions.Default);
             }
             catch (Exception e)
             {

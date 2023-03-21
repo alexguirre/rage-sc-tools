@@ -156,4 +156,6 @@ public class ScriptNY : IScript
             default: throw new InvalidOperationException($"Unknown magic header 0x{Magic:X8}");
         }
     }
+
+    public void Dump(TextWriter sink, DumpOptions options) => DumperNY.Dump(this, sink, options);
 }

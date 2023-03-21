@@ -1,4 +1,4 @@
-﻿namespace ScTools.GameFiles;
+﻿namespace ScTools.GameFiles.Five;
 
 using System;
 using System.IO;
@@ -8,27 +8,18 @@ using ScTools.GameFiles.Five;
 using ScTools.ScriptAssembly;
 using ScTools.ScriptAssembly.Targets.Five;
 
-public interface IDumperFive
+internal interface IDumperFive
 {
-    string DumpToString(Script sc);
-    void Dump(Script sc, in DumpOptions options);
+    void Dump(Script sc, TextWriter sink, DumpOptions options);
 }
 
-public class DumperFive<TOpcode, TOpcodeTraits> : IDumperFive
+internal class DumperFive<TOpcode, TOpcodeTraits> : IDumperFive
     where TOpcode : struct, Enum
     where TOpcodeTraits : IOpcodeTraitsFive<TOpcode>
 {
-    public string DumpToString(Script sc)
-    {
-        using var sw = new StringWriter();
-        Dump(sc, DumpOptions.Default(sw));
-        return sw.ToString();
-    }
-
-    public void Dump(Script sc, in DumpOptions options)
+    public void Dump(Script sc, TextWriter w, DumpOptions options)
     {
         sc = sc ?? throw new ArgumentNullException(nameof(sc));
-        var w = options.Sink;
 
         if (options.IncludeMetadata)
         {
@@ -87,13 +78,12 @@ public class DumperFive<TOpcode, TOpcodeTraits> : IDumperFive
 
         if (options.IncludeDisassembly)
         {
-            Disassemble(sc, options);
+            Disassemble(sc, w, options);
         }
     }
 
-    private static void Disassemble(Script sc, in DumpOptions options)
+    private static void Disassemble(Script sc, TextWriter w, DumpOptions options)
     {
-        var w = options.Sink;
         w.WriteLine("Disassembly:");
 
         var lineSB = new StringBuilder();
@@ -323,6 +313,6 @@ public class DumperFive<TOpcode, TOpcodeTraits> : IDumperFive
     }
 }
 
-public class DumperFiveV10 : DumperFive<OpcodeV10, OpcodeTraitsV10> { }
-public class DumperFiveV11 : DumperFive<OpcodeV11, OpcodeTraitsV11> { }
-public class DumperFiveV12 : DumperFive<OpcodeV12, OpcodeTraitsV12> { }
+internal  class DumperFiveV10 : DumperFive<OpcodeV10, OpcodeTraitsV10> { }
+internal  class DumperFiveV11 : DumperFive<OpcodeV11, OpcodeTraitsV11> { }
+internal  class DumperFiveV12 : DumperFive<OpcodeV12, OpcodeTraitsV12> { }

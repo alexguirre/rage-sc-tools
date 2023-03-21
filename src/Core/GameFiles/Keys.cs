@@ -6,6 +6,15 @@ using System.Security.Cryptography;
 
 public static class Keys
 {
+    public static void LoadAll()
+    {
+        // TODO: make Keys paths user configurable
+        NY.Load("D:\\programs\\SteamLibrary\\steamapps\\common\\Grand Theft Auto IV\\GTAIV\\GTAIV.exe");
+        MC4.Load("");
+        RDR2.Load("");
+        Payne.Load("D:\\programs\\SteamLibrary\\steamapps\\common\\Max Payne 3\\Max Payne 3\\MaxPayne3.exe");
+    }
+    
     private const int SHA1HashLength = 20;
 
     public static class NY
@@ -18,6 +27,11 @@ public static class Keys
             if (KeyCache.ReadKeysFromCache(CacheFile, out var keys, Aes.KeyLength))
             {
                 AesKeyPC = keys[0];
+                return;
+            }
+
+            if (!File.Exists(exeFilePath))
+            {
                 return;
             }
 
@@ -50,6 +64,11 @@ public static class Keys
                 return;
             }
 
+            if (!File.Exists(xexFilePath))
+            {
+                return;
+            }
+            
             var xexFile = File.ReadAllBytes(xexFilePath).AsSpan();
             // TODO: .xex files are not readable as-is so SearchAesKeyXenon doesn't find the key
             //AesKeyXenon = SearchAesKeyXenon(xexFile, out var aesKey) ? aesKey.ToArray() : throw new InvalidDataException("AES key not found");
@@ -77,6 +96,11 @@ public static class Keys
             if (KeyCache.ReadKeysFromCache(CacheFile, out var keys, Aes.KeyLength))
             {
                 AesKeyXenon = keys[0];
+                return;
+            }
+
+            if (!File.Exists(xexFilePath))
+            {
                 return;
             }
 
@@ -108,6 +132,11 @@ public static class Keys
             if (KeyCache.ReadKeysFromCache(CacheFile, out var keys, Aes.KeyLength))
             {
                 AesKeyPC = keys[0];
+                return;
+            }
+
+            if (!File.Exists(exeFilePath))
+            {
                 return;
             }
 

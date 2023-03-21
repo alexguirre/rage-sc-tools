@@ -7,19 +7,11 @@ using System.Buffers.Binary;
 using ScTools.ScriptAssembly;
 using ScTools.ScriptAssembly.Targets.NY;
 
-public static class DumperNY
+internal static class DumperNY
 {
-    public static string DumpToString(this ScriptNY sc)
-    {
-        using var sw = new StringWriter();
-        Dump(sc, DumpOptions.Default(sw));
-        return sw.ToString();
-    }
-    
-    public static void Dump(this ScriptNY sc, in DumpOptions options)
+    public static void Dump(ScriptNY sc, TextWriter w,  DumpOptions options)
     {
         sc = sc ?? throw new ArgumentNullException(nameof(sc));
-        var w = options.Sink;
 
         if (options.IncludeMetadata)
         {
@@ -49,13 +41,12 @@ public static class DumperNY
 
         if (options.IncludeDisassembly)
         {
-            Disassemble(sc, options);
+            Disassemble(sc, w, options);
         }
     }
 
-    private static void Disassemble(ScriptNY sc, in DumpOptions options)
+    private static void Disassemble(ScriptNY sc, TextWriter w, DumpOptions options)
     {
-        var w = options.Sink;
         w.WriteLine("Disassembly:");
 
         var lineSB = new StringBuilder();

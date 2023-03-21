@@ -2245,8 +2245,8 @@
             using var expectedAssemblyReader = new StringReader(expectedAssembly);
             var expectedAssembler = Assembler.Assemble(expectedAssemblyReader, "test_expected.scasm", nativeDB, options: new() { IncludeFunctionNames = true });
 
-            string sourceDump = new DumperFiveV10().DumpToString(compiledScriptGTAV);
-            string expectedDump = new DumperFiveV10().DumpToString(expectedAssembler.OutputScript);
+            string sourceDump = compiledScriptGTAV.DumpToString();
+            string expectedDump = expectedAssembler.OutputScript.DumpToString();
 
             Util.AssertScriptsAreEqual(compiledScriptGTAV, expectedAssembler.OutputScript);
         }

@@ -21,6 +21,7 @@ internal static class ListTargetsCommand
         {
             new(Game.GTAV, Platform.x64),
             new(Game.GTAIV, Platform.x86),
+            new(Game.MP3, Platform.x86),
             new(Game.MC4, Platform.Xenon),
         };
         foreach (var target in targets)

@@ -154,4 +154,6 @@ public class ScriptPayne : IScript
             default: throw new InvalidOperationException($"Unknown magic header 0x{Magic:X8}");
         }
     }
+
+    public void Dump(TextWriter sink, DumpOptions options) => DumperPayne.Dump(this, sink, options);
 }

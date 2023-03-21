@@ -6,19 +6,11 @@ using System.Text;
 using System.Buffers.Binary;
 using ScTools.ScriptAssembly;
 
-public static class DumperRDR2
+internal static class DumperRDR2
 {
-    public static string DumpToString(this ScriptRDR2 sc)
-    {
-        using var sw = new StringWriter();
-        Dump(sc, DumpOptions.Default(sw));
-        return sw.ToString();
-    }
-    
-    public static void Dump(this ScriptRDR2 sc, in DumpOptions options)
+    public static void Dump(ScriptRDR2 sc, TextWriter w, DumpOptions options)
     {
         sc = sc ?? throw new ArgumentNullException(nameof(sc));
-        var w = options.Sink;
 
         if (options.IncludeMetadata)
         {
@@ -60,14 +52,13 @@ public static class DumperRDR2
 
         if (options.IncludeDisassembly)
         {
-            Disassemble(sc, options);
+            Disassemble(sc, w, options);
         }
     }
 
-    private static void Disassemble(ScriptRDR2 sc, in DumpOptions options)
+    private static void Disassemble(ScriptRDR2 sc, TextWriter w, DumpOptions options)
     {
         var code = sc.MergeCodePages();
-        var w = options.Sink;
         w.WriteLine("Disassembly:");
 
         var lineSB = new StringBuilder();

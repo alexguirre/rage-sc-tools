@@ -6,19 +6,11 @@ using System.Text;
 using System.Buffers.Binary;
 using ScTools.ScriptAssembly;
 
-public static class DumperPayne
+internal static class DumperPayne
 {
-    public static string DumpToString(this ScriptPayne sc)
-    {
-        using var sw = new StringWriter();
-        Dump(sc, DumpOptions.Default(sw));
-        return sw.ToString();
-    }
-    
-    public static void Dump(this ScriptPayne sc, in DumpOptions options)
+    public static void Dump(ScriptPayne sc, TextWriter w, DumpOptions options)
     {
         sc = sc ?? throw new ArgumentNullException(nameof(sc));
-        var w = options.Sink;
 
         if (options.IncludeMetadata)
         {
@@ -49,13 +41,12 @@ public static class DumperPayne
 
         if (options.IncludeDisassembly)
         {
-            Disassemble(sc, options);
+            Disassemble(sc, w, options);
         }
     }
 
-    private static void Disassemble(ScriptPayne sc, in DumpOptions options)
+    private static void Disassemble(ScriptPayne sc, TextWriter w, DumpOptions options)
     {
-        var w = options.Sink;
         w.WriteLine("Disassembly:");
 
         var lineSB = new StringBuilder();

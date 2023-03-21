@@ -66,6 +66,8 @@ internal static class CompileCommand
 
         var totalTime = Stopwatch.StartNew();
 
+        Keys.LoadAll();
+
         var inputFiles = input.SelectMany(i => i.Matches);
         await Parallel.ForEachAsync(inputFiles, async (inputFile, cancellationToken) =>
         {
@@ -73,12 +75,13 @@ internal static class CompileCommand
             {
                 (Game.GTAIV, Platform.x86) => "sco",
                 (Game.GTAV, Platform.x64) => "ysc",
-                _ => throw new NotImplementedException("Unsupported build target"),
+                _ => throw new NotImplementedException($"Unsupported build target '{target}'"),
             };
-            
-            var outputFile = new FileInfo(Path.Combine(output.FullName, Path.ChangeExtension(inputFile.Name, extension)));
+
             try
             {
+                var outputFile = new FileInfo(Path.Combine(output.FullName, Path.ChangeExtension(inputFile.Name, extension)));
+
                 Print($"Compiling '{inputFile}'...");
                 var source = await File.ReadAllTextAsync(inputFile.FullName, cancellationToken);
                 var d = new DiagnosticsReport();
@@ -123,7 +126,6 @@ internal static class CompileCommand
 
                         case ScriptNY scriptGTAIV:
                         {
-                            Keys.NY.Load("D:\\programs\\SteamLibrary\\steamapps\\common\\Grand Theft Auto IV\\GTAIV\\GTAIV.exe");
                             await using var outputStream = outputFile.OpenWrite();
                             scriptGTAIV.Magic = ScriptNY.MagicEncrypted;
                             scriptGTAIV.Write(new DataWriter(outputStream), Keys.NY.AesKeyPC);

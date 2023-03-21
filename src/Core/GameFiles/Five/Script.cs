@@ -285,6 +285,13 @@ public class Script : ResourceFileBase, IScript
         }
         return buffer;
     }
+
+
+    public void Dump(System.IO.TextWriter sink, DumpOptions options)
+    {
+        var d = new DumperFiveV10(); // TODO: update to V12 once InstructionEmitter starts using V12
+        d.Dump(this, sink, options);
+    }
 }
 
 public class ScriptPage<T> : ResourceSystemBlock where T : unmanaged

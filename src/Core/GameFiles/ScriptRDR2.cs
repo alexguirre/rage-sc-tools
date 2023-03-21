@@ -217,4 +217,6 @@ public class ScriptRDR2 : IScript
             }
         }
     }
+
+    public void Dump(TextWriter sink, DumpOptions options) => DumperRDR2.Dump(this, sink, options);
 }

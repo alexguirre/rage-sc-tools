@@ -127,8 +127,8 @@ public abstract class CodeGenTestsBase
                 options: new() { IncludeFunctionNames = true });
             False(expectedAssembler.Diagnostics.HasErrors);
 
-            string sourceDump = new DumperFiveV10().DumpToString(compiledScriptGTAV);
-            string expectedDump = new DumperFiveV10().DumpToString(expectedAssembler.OutputScript);
+            string sourceDump = compiledScriptGTAV.DumpToString();
+            string expectedDump = expectedAssembler.OutputScript.DumpToString();
 
             Util.AssertScriptsAreEqual(compiledScriptGTAV, expectedAssembler.OutputScript);
         }

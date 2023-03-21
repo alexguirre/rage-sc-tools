@@ -74,4 +74,6 @@ public class ScriptNYOld : IScript
             default: throw new InvalidOperationException($"Unknown magic header 0x{Magic:X8}");
         }
     }
+
+    public void Dump(System.IO.TextWriter sink, DumpOptions options) => throw new NotImplementedException(nameof(Dump));
 }
