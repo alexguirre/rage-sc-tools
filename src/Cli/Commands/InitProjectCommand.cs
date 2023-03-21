@@ -27,7 +27,7 @@ internal static class InitProjectCommand
 
     private static Command BuildCommand()
     {
-        var cmd = new Command("init-project")
+        var cmd = new Command("init-project", "Create a new RAGE-Script project.")
         {
             Name,
             Target,

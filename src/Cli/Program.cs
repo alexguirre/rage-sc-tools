@@ -13,11 +13,11 @@ internal static class Program
         Thread.CurrentThread.CurrentCulture = CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 
         var rootCmd = new RootCommand("Tool for working with RAGE scripts.");
-        rootCmd.AddCommand(ListTargetsCommand.Command);
+        rootCmd.AddCommand(BuildProjectCommand.Command);
         rootCmd.AddCommand(CompileCommand.Command);
         rootCmd.AddCommand(DumpCommand.Command);
         rootCmd.AddCommand(InitProjectCommand.Command);
-        rootCmd.AddCommand(BuildProjectCommand.Command);
+        rootCmd.AddCommand(ListTargetsCommand.Command);
         return await rootCmd.InvokeAsync(args);
     }
 }

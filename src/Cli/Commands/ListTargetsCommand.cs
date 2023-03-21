@@ -10,7 +10,7 @@ internal static class ListTargetsCommand
 
     private static Command BuildCommand()
     {
-        var cmd = new Command("list-targets", "Display the supported build targets");
+        var cmd = new Command("list-targets", "Display the supported build targets.");
         cmd.SetHandler(Invoke);
         return cmd;
     }

@@ -19,7 +19,7 @@ internal static class CompileCommand
     public static readonly Argument<FileGlob[]> Input = new Argument<FileGlob[]>(
             "input",
             parse: Parsers.ParseFileGlobs,
-            description: "The input SC files. Supports glob patterns.")
+            description: "The input RAGE-Script files (.sc). Supports glob patterns.")
             .AtLeastOne();
     public static  readonly Option<DirectoryInfo> Output = new Option<DirectoryInfo>(
             new[] { "--output", "-o" },
@@ -42,7 +42,7 @@ internal static class CompileCommand
 
     private static Command BuildCommand()
     {
-        var cmd = new Command("compile")
+        var cmd = new Command("compile", "Compile RAGE-Script files.")
         {
             Input,
             Output,

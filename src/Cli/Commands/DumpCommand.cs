@@ -30,7 +30,7 @@ internal static class DumpCommand
 
     private static Command BuildCommand()
     {
-        var cmd = new Command("dump")
+        var cmd = new Command("dump", "Basic disassembly of script files.")
         {
             Input,
             Output,
@@ -85,7 +85,7 @@ internal static class DumpCommand
 
                         var sc = new ScriptNY();
                         sc.Read(new DataReader(new MemoryStream(source)), aesKey);
-                        await using var outputStream = outputFile.OpenWrite();
+                        await using var outputStream = outputFile.Open(FileMode.Create);
                         await using var outputWriter = new StreamWriter(outputStream);
                         sc.Dump(DumpOptions.Default(outputWriter));
                         break;
