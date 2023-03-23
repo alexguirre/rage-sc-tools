@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using CodeWalker.GameFiles;
 using ScTools.GameFiles;
 using ScTools.ScriptLang.Workspace;
+using Spectre.Console;
 
 internal static class DumpCommand
 {
@@ -44,9 +45,9 @@ internal static class DumpCommand
     {
         static void Print(string str)
         {
-            lock (Console.Out)
+            lock (Command)
             {
-                Console.WriteLine(str);
+                Std.Out.WriteLine(str);
             }
         }
 
@@ -86,6 +87,13 @@ internal static class DumpCommand
                         script = sc;
                         break;
                     }
+                    case (Game.RDR2, Platform.Xenon):
+                    {
+                        var sc = new ScriptRDR2();
+                        sc.Read(new DataReader(new MemoryStream(source), Endianess.BigEndian), Keys.RDR2.AesKeyXenon);
+                        script = sc;
+                        break;
+                    }
                     case (Game.MP3, Platform.x86):
                     {
                         var sc = new ScriptPayne();
@@ -104,11 +112,10 @@ internal static class DumpCommand
             }
             catch (Exception e)
             {
-                lock (Console.Error)
+                lock (Command)
                 {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.Error.Write(e.ToString());
-                    Console.ForegroundColor = ConsoleColor.White;
+                    Std.Err.MarkupLineInterpolated($"[red]Unhandled error:[/]");
+                    Std.Err.WriteException(e);
                 }
             }
         });

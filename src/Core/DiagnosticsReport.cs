@@ -47,13 +47,8 @@ public sealed class DiagnosticsReport
 
     public void Clear() => diagnostics.Clear();
 
-    public void PrintAll(TextWriter dest)
-    {
-        foreach (var d in diagnostics.OrderBy(d => d.Source.FilePath).ThenBy(d => d.Source.Start))
-        {
-            dest.WriteLine(d);
-        }
-    }
+    public IEnumerable<Diagnostic> GetDiagnosticsSorted()
+        => diagnostics.OrderBy(d => d.Source.FilePath).ThenBy(d => d.Source.Start);
 
     public static DiagnosticsReport Combine(IEnumerable<DiagnosticsReport> diagnosticsReports)
     {

@@ -8,6 +8,15 @@
         "resolved": "7.0.0",
         "contentHash": "2jONjKHiF+E92ynz2ZFcr9OvxIw+rTGMPEH+UZGeHTEComVav93jQUWGkso8yWwVBcEJGcNcZAaqY01FFJcj7w=="
       },
+      "Spectre.Console": {
+        "type": "Direct",
+        "requested": "[0.46.1-preview.0.18, )",
+        "resolved": "0.46.1-preview.0.18",
+        "contentHash": "68zNWmwlxPxvSWuzuzEmkHGQt+TWIVIjrdo/fZhxLI8l0iB09wvjBPDgiKQ/HQOZbW9G1U/M0hWNOKVJFER2mA==",
+        "dependencies": {
+          "System.Memory": "4.5.5"
+        }
+      },
       "System.CommandLine": {
         "type": "Direct",
         "requested": "[2.0.0-beta4.22272.1, )",
@@ -452,6 +461,11 @@
           "System.Runtime.Extensions": "4.3.0",
           "System.Threading": "4.3.0"
         }
+      },
+      "System.Memory": {
+        "type": "Transitive",
+        "resolved": "4.5.5",
+        "contentHash": "XIWiDvKPXaTveaB7HVganDlOCRoj03l+jrwNvcge/t8vhGYKvqV+dMv6G4SAX2NoNmN0wZfVPTAlFwZcZvVOUw=="
       },
       "System.Net.Http": {
         "type": "Transitive",

@@ -7,6 +7,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using ScTools.ScriptLang.Workspace;
+using Spectre.Console;
+using Spectre.Console.Rendering;
 
 internal static class BuildProjectCommand
 {
@@ -35,6 +38,8 @@ internal static class BuildProjectCommand
 
     public static async Task<int> InvokeAsync(FileInfo? project, string config)
     {
+        var stopwatch = Stopwatch.StartNew();
+
         if (project is null)
         {
             // user didn't provide a project file, try to find a project in the current directory
@@ -68,41 +73,60 @@ internal static class BuildProjectCommand
         }
 
         p.BuildConfigurationName = config;
-        var compileTasks = p.Sources.Select(s => s.Value.CompileAsync());
+
+        async Task<SourceFile.CompilationResult?> CompileAndReportProgressAsync(SourceFile sf, ProgressTask progress)
+        {
+            var res = await sf.CompileAsync();
+            progress.Increment(1);
+            return res;
+        }
+        var compileTask = Std.Out.Progress()
+            .Columns(
+                new TaskDescriptionColumn(),
+                new ProgressBarColumn() ,
+                new CounterColumn(),
+                new SpinnerColumn()
+            ).StartAsync(async ctx =>
+            {
+                var progress = ctx.AddTask("Compiling scripts")
+                    .MaxValue(p.Sources.Count)
+                    .Value(0);
+                progress.StartTask();
+                var tasks = p.Sources.Select(s => CompileAndReportProgressAsync(s.Value, progress));
+                var results = await Task.WhenAll(tasks);
+                progress.StopTask();
+                return results;
+            });
 
         var outputDir = new DirectoryInfo(Path.Combine(p.RootDirectory, p.Configuration.OutputPath));
         outputDir.Create();
         outputDir = outputDir.CreateSubdirectory(config);
-        
-        var results = await Task.WhenAll(compileTasks);
+
+        var results = await compileTask;
+        var warningCount = 0;
+        var errorCount = 0;
+        var scriptCount = 0;
         var tasks = new List<Task>(results.Length);
         foreach (var result in results)
         {
-            if (result is null)
-            {
-                continue;
-            }
+            Debug.Assert(result is not null);
 
             var sourcePath = Path.GetRelativePath(p.RootDirectory, result.Source.Path);
             if (result.Diagnostics.HasErrors)
             {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.Error.WriteLine($"Compilation of '{sourcePath}' failed:");
-                result.Diagnostics.PrintAll(Console.Error);
-                Console.Error.WriteLine();
-                Console.ForegroundColor = ConsoleColor.White;
+                Std.Err.MarkupLineInterpolated($"[red]Compilation of '{sourcePath}' failed:[/]");
+                Std.Err.WriteDiagnostics(result.Diagnostics);
+                Std.Err.WriteLine();
             }
             else
             {
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.Write($"Compilation of '{sourcePath}' succeeded.");
+                Std.Out.MarkupLineInterpolated($"[green]Compilation of '{sourcePath}' succeeded:[/]");
+                Std.Out.WriteDiagnostics(result.Diagnostics); // in case of warnings
                 if (result.Script is not null)
                 {
-                    Console.WriteLine();
-                    Console.ForegroundColor = ConsoleColor.White;
-
                     var outputFile = Path.Combine(outputDir.FullName, $"{Path.GetFileNameWithoutExtension(sourcePath)}.sco");
-                    Console.WriteLine($"  Writing '{Path.GetRelativePath(p.RootDirectory, outputFile)}'");
+                    Std.Out.WriteLine($"  Writing '{Path.GetRelativePath(p.RootDirectory, outputFile)}'.");
+                    scriptCount++;
                     switch (result.Script)
                     {
                         case GameFiles.Five.Script scriptGTAV:
@@ -134,14 +158,50 @@ internal static class BuildProjectCommand
                 }
                 else
                 {
-                    Console.WriteLine(" No script was generated.");
+                    Std.Out.WriteLine("  No script was generated.");
                 }
-                Console.WriteLine();
-                Console.ForegroundColor = ConsoleColor.White;
+                Std.Out.WriteLine();
             }
+
+            warningCount += result.Diagnostics.Warnings.Length;
+            errorCount += result.Diagnostics.Errors.Length;
         }
 
         await Task.WhenAll(tasks);
+
+        if (errorCount != 0)
+        {
+            Std.Out.MarkupLine("[red]Build FAILED.[/]");
+        }
+        else
+        {
+            Std.Out.MarkupLine("[green]Build SUCCEEDED.[/]");
+        }
+        Std.Out.WriteLine();
+        Std.Out.WriteLine($"  {warningCount} Warning(s)");
+        Std.Out.WriteLine($"  {errorCount} Error(s)");
+        Std.Out.WriteLine();
+        Std.Out.WriteLine($"  {scriptCount} Script(s) generated");
+        Std.Out.WriteLine();
+
+        stopwatch.Stop();
+        Std.Out.MarkupLineInterpolated($"Time Elapsed [blue]{stopwatch.Elapsed}[/]");
+        
         return Exit.Success;
+    }
+
+    /// <summary>
+    /// A column showing a counter with the current and maximum value (`{Value}/{MaxValue}`).
+    /// </summary>
+    private sealed class CounterColumn : ProgressColumn
+    {
+        private readonly Style completedStyle = new(foreground: Color.Green);
+
+        /// <inheritdoc/>
+        public override IRenderable Render(RenderOptions options, ProgressTask task, TimeSpan deltaTime)
+        {
+            var style = task.IsFinished ? completedStyle : Style.Plain;
+            return new Text($"{(long)task.Value}/{(long)task.MaxValue}", style).RightJustified();
+        }
     }
 }

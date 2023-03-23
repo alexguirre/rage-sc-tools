@@ -65,7 +65,7 @@
                 //Console.WriteLine($"{token.Kind}\t=\t`{token.Lexeme.Span.Escape()}`");
             }
             Console.WriteLine();
-            d.PrintAll(Console.Out);
+            //d.PrintAll(Console.Out);
 
             ;
         }

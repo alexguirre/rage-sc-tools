@@ -13,6 +13,7 @@ using ScTools.ScriptLang;
 using ScTools.ScriptLang.CodeGen;
 using ScTools.ScriptLang.Semantics;
 using ScTools.ScriptLang.Workspace;
+using Spectre.Console;
 
 internal static class CompileCommand
 {
@@ -58,9 +59,9 @@ internal static class CompileCommand
     {
         static void Print(string str)
         {
-            lock (Console.Out)
+            lock (Command)
             {
-                Console.WriteLine(str);
+                Std.Out.WriteLine(str);
             }
         }
 
@@ -146,23 +147,20 @@ internal static class CompileCommand
                 }
                 else
                 {
-                    lock (Console.Error)
+                    lock (Command)
                     {
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        Console.Error.WriteLine($"Compilation of '{inputFile}' failed:");
-                        d.PrintAll(Console.Error);
-                        Console.Error.WriteLine();
-                        Console.ForegroundColor = ConsoleColor.White;
+                        Std.Err.MarkupLineInterpolated($"[red]Compilation of '{inputFile}' failed:[/]");
+                        Std.Err.WriteDiagnostics(d);
+                        Std.Err.WriteLine();
                     }
                 }
             }
             catch (Exception e)
             {
-                lock (Console.Error)
+                lock (Command)
                 {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.Error.Write(e.ToString());
-                    Console.ForegroundColor = ConsoleColor.White;
+                    Std.Err.MarkupLineInterpolated($"[red]Unhandled error:[/]");
+                    Std.Err.WriteException(e);
                 }
             }
         });

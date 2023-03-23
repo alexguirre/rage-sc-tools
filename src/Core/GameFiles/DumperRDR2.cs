@@ -110,7 +110,7 @@ internal static class DumperRDR2
         var opcode = (OpcodeRDR2)code[ip];
         if (opcode.IsInvalid())
         {
-            sb.Append($"<invalid opcode {opcode:X2}>");
+            sb.Append($"<invalid opcode {(byte)opcode:X2}>");
             return;
         }
         

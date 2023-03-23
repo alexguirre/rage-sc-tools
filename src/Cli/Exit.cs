@@ -1,14 +1,12 @@
 ﻿namespace ScTools.Cli;
 
-using System;
+using Spectre.Console;
 
 internal static class Exit
 {
     public static int Error(string message, int errorCode = DefaultError)
     {
-        Console.ForegroundColor = ConsoleColor.Red;
-        Console.Error.WriteLine(message);
-        Console.ForegroundColor = ConsoleColor.White;
+        Std.Err.MarkupLineInterpolated($"[red]{message}[/]");
         return errorCode;
     }
 

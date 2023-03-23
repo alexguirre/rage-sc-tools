@@ -9,9 +9,10 @@ public static class Keys
     public static void LoadAll()
     {
         // TODO: make Keys paths user configurable
+        //CodeWalker.GameFiles.GTA5Keys.LoadFromPath("D:\\programs\\Rockstar Games\\Grand Theft Auto V"); // a bit slow without cache
         NY.Load("D:\\programs\\SteamLibrary\\steamapps\\common\\Grand Theft Auto IV\\GTAIV\\GTAIV.exe");
-        MC4.Load("");
-        RDR2.Load("");
+        MC4.Load("D:\\media\\mcla\\default.unencrypted.xex");
+        RDR2.Load("D:\\media\\rdr2\\default.unencrypted.xex");
         Payne.Load("D:\\programs\\SteamLibrary\\steamapps\\common\\Max Payne 3\\Max Payne 3\\MaxPayne3.exe");
     }
     
@@ -70,8 +71,7 @@ public static class Keys
             }
             
             var xexFile = File.ReadAllBytes(xexFilePath).AsSpan();
-            // TODO: .xex files are not readable as-is so SearchAesKeyXenon doesn't find the key
-            //AesKeyXenon = SearchAesKeyXenon(xexFile, out var aesKey) ? aesKey.ToArray() : throw new InvalidDataException("AES key not found");
+            AesKeyXenon = SearchAesKeyXenon(xexFile, out var aesKey) ? aesKey.ToArray() : throw new InvalidDataException("AES key not found");
             KeyCache.CacheKeys(CacheFile, AesKeyXenon);
         }
 
@@ -105,8 +105,7 @@ public static class Keys
             }
 
             var xexFile = File.ReadAllBytes(xexFilePath).AsSpan();
-            // TODO: .xex files are not readable as-is so SearchAesKeyXenon doesn't find the key
-            //AesKeyXenon = SearchAesKeyXenon(xexFile, out var aesKey) ? aesKey.ToArray() : throw new InvalidDataException("AES key not found");
+            AesKeyXenon = SearchAesKeyXenon(xexFile, out var aesKey) ? aesKey.ToArray() : throw new InvalidDataException("AES key not found");
             KeyCache.CacheKeys(CacheFile, AesKeyXenon);
         }
 
@@ -114,8 +113,7 @@ public static class Keys
         {
             var aesKeyHash = new byte[SHA1HashLength]
             {
-                // TODO: change hash
-                0x59, 0x9F, 0xA7, 0x13, 0xE0, 0x50, 0x85, 0xD9, 0xB8, 0x84, 0x94, 0x91, 0x39, 0xBA, 0x1F, 0x95, 0xBA, 0x20, 0x71, 0xA7
+                0x87, 0x86, 0x24, 0x97, 0xEE, 0x46, 0x85, 0x53, 0x72, 0xB5, 0x1C, 0x7A, 0x32, 0x4A, 0x2B, 0xB5, 0xCD, 0x66, 0xF4, 0xAF
             };
 
             return SearchKey(xexFile, aesKeyHash, Aes.KeyLength, out aesKey);
