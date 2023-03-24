@@ -1,0 +1,27 @@
+{
+  "sources": [
+    "src/startup.sc",
+    "src/main.sc",
+    "src/puzzle.sc",
+    "src/common.sch"
+  ],
+  "outputPath": "bin/",
+  "configurations": {
+    "Debug": {
+      "target": {
+        "game": "GTAIV",
+        "platform": "x86"
+      },
+      "defines": [
+        "IS_DEBUG_BUILD"
+      ]
+    },
+    "Release": {
+      "target": {
+        "game": "GTAIV",
+        "platform": "x86"
+      },
+      "defines": []
+    }
+  }
+}

@@ -1,6 +1,28 @@
 
 USING 'natives.sch'
 
+ENUM SCRIPT_STATE
+    SCRIPT_STATE_WAITING_FOR_ASSETS,
+    SCRIPT_STATE_VENDING_MACHINE_READY,
+    SCRIPT_STATE_VENDING_MACHINE_EMPTY
+ENDENUM
+
+ENUM VENDING_STATE
+    VENDING_STATE_PLAYER_OUT_OF_RANGE,
+    VENDING_STATE_WAIT_FOR_PLAYER,
+    VENDING_STATE_GRAB_PLAYER,
+    VENDING_STATE_3, // in original script it is waiting for the player to remove his helmet, we don't check for that in this script
+    VENDING_STATE_RUN_VEND,
+    VENDING_STATE_RESET_VEND
+ENDENUM
+
+ENUM VENDING_MACHINE_TYPE
+    VENDING_MACHINE_UNKNOWN,
+    VENDING_MACHINE_SODA_01,
+    VENDING_MACHINE_SODA_02,
+    VENDING_MACHINE_SNACK
+ENDENUM
+
 OBJECT_INDEX objVendingMachine
 VENDING_MACHINE_TYPE eVendType = VENDING_MACHINE_UNKNOWN
 SCRIPT_STATE eState
@@ -13,88 +35,88 @@ BOOL bIsPlayerControlDisabled = FALSE
 OBJECT_INDEX objSodaCan = NULL
 INT iNumberOfSodaCansSold = 0
 
-CONST INT k_iMaxNumberOfSodaCans = 10
+CONST_INT k_iMaxNumberOfSodaCans 10
 
-SCRIPT ob_vend(OBJECT_INDEX objVendingMachineArg)
-    IF HAS_FORCE_CLEANUP_OCCURRED(2)
-        TERMINATE()
+
+
+FUNC BOOL IS_PLAYER_AVAILABLE(BOOL bNotAvailableIfDead, BOOL bOnlyInVehicle, BOOL bDriverOnly)
+
+    IF IS_MINIGAME_IN_PROGRESS()
+        RETURN FALSE
     ENDIF
 
-    objVendingMachine = objVendingMachineArg
-    IF NOT DOES_ENTITY_EXIST(objVendingMachine)
-        TERMINATE()
-    ENDIF
-
-    eVendType = GET_VENDING_MACHINE_TYPE(objVendingMachine)
-    IF eVendType == VENDING_MACHINE_UNKNOWN
-        TERMINATE()
-    ENDIF
-
-    eState = SCRIPT_STATE_WAITING_FOR_ASSETS
-    WHILE TRUE
-        WAIT(0)
-
-        IF DOES_ENTITY_EXIST(objVendingMachine)
-            IF IS_OBJECT_WITHIN_BRAIN_ACTIVATION_RANGE(objVendingMachine) AND NOT IS_ENTITY_DEAD(objVendingMachine, FALSE)
-                TEXT_LABEL_127 tl = "VENDING MACHINE (type: "
-                APPEND(tl, ENUM_TO_INT(eVendType))
-                APPEND(tl, ", state: ")
-                APPEND(tl, ENUM_TO_INT(eState))
-                APPEND(tl, ", vending state: ")
-                APPEND(tl, ENUM_TO_INT(eVendingState))
-                APPEND(tl, ", sold: ")
-                APPEND(tl, iNumberOfSodaCansSold)
-                APPEND(tl, "/")
-                APPEND(tl, k_iMaxNumberOfSodaCans)
-                APPEND(tl, ")")
-
-                SET_TEXT_SCALE(0.3, 0.3)
-                SET_TEXT_CENTRE(TRUE)
-                DRAW_TEXT(tl, 0.5, 0.125)
-
-                RUN_SCRIPT_STATE_MACHINE()
-            ELSE
-                TERMINATE()
-            ENDIF
-        ELSE
-            TERMINATE()
+    IF bNotAvailableIfDead
+        IF IS_ENTITY_DEAD(PLAYER_PED_ID(), FALSE)
+            RETURN FALSE
         ENDIF
-    ENDWHILE
-ENDSCRIPT
+    ENDIF
 
-ENUM SCRIPT_STATE
-    SCRIPT_STATE_WAITING_FOR_ASSETS
-    SCRIPT_STATE_VENDING_MACHINE_READY
-    SCRIPT_STATE_VENDING_MACHINE_EMPTY
-ENDENUM
+    IF IS_PED_IN_ANY_VEHICLE(PLAYER_PED_ID(), FALSE)
+        IF NOT IS_PED_SITTING_IN_ANY_VEHICLE(PLAYER_PED_ID())
+            RETURN FALSE
+        ENDIF
 
-ENUM VENDING_STATE
-    VENDING_STATE_PLAYER_OUT_OF_RANGE
-    VENDING_STATE_WAIT_FOR_PLAYER
-    VENDING_STATE_GRAB_PLAYER
-    VENDING_STATE_3 // in original script it is waiting for the player to remove his helmet, we don't check for that in this script
-    VENDING_STATE_RUN_VEND
-    VENDING_STATE_RESET_VEND
-ENDENUM
+        VEHICLE_INDEX vehPlayer = GET_VEHICLE_PED_IS_IN(PLAYER_PED_ID(), FALSE)
 
-ENUM VENDING_MACHINE_TYPE
-    VENDING_MACHINE_UNKNOWN
-    VENDING_MACHINE_SODA_01
-    VENDING_MACHINE_SODA_02
-    VENDING_MACHINE_SNACK
-ENDENUM
+        IF bNotAvailableIfDead
+            IF IS_ENTITY_DEAD(vehPlayer, FALSE)
+                RETURN FALSE
+            ENDIF
+        ENDIF
+
+        IF bDriverOnly
+            IF NOT IS_ENTITY_DEAD(vehPlayer, FALSE)
+                IF GET_PED_IN_VEHICLE_SEAT(vehPlayer, -1, FALSE) <> PLAYER_PED_ID()
+                    RETURN FALSE
+                ENDIF
+            ENDIF
+        ENDIF
+
+        IF NOT IS_ENTITY_DEAD(vehPlayer, FALSE)
+            IF GET_ENTITY_UPRIGHT_VALUE(vehPlayer) < 0.95 OR GET_ENTITY_UPRIGHT_VALUE(vehPlayer) > 1.011
+                RETURN FALSE
+            ENDIF
+        ENDIF
+    ELIF bOnlyInVehicle
+        RETURN FALSE
+    ENDIF
+
+    IF NOT IS_PLAYER_READY_FOR_CUTSCENE(PLAYER_ID())
+        RETURN FALSE
+    ENDIF
+
+    IF NOT CAN_PLAYER_START_MISSION(PLAYER_ID())
+        RETURN FALSE
+    ENDIF
+
+    RETURN TRUE
+ENDFUNC
+
+FUNC BOOL HAS_PLAYER_BEEN_DAMAGED()
+    IF HAS_ENTITY_BEEN_DAMAGED_BY_ANY_OBJECT(PLAYER_PED_ID()) OR HAS_ENTITY_BEEN_DAMAGED_BY_ANY_PED(PLAYER_PED_ID()) OR HAS_ENTITY_BEEN_DAMAGED_BY_ANY_VEHICLE(PLAYER_PED_ID()) OR HAS_ENTITY_BEEN_DAMAGED_BY_WEAPON(PLAYER_PED_ID(), HASH("weapon_smokegrenade"), 0)
+        CLEAR_ENTITY_LAST_DAMAGE_ENTITY(PLAYER_PED_ID())
+        RETURN TRUE
+    ENDIF
+    RETURN FALSE
+ENDFUNC
+
+FUNC BOOL HAS_MONEY()
+    RETURN TRUE
+ENDFUNC
+
+
 
 FUNC VENDING_MACHINE_TYPE GET_VENDING_MACHINE_TYPE(OBJECT_INDEX objVendingMachine)
     IF DOES_ENTITY_EXIST(objVendingMachine)
         SWITCH GET_ENTITY_MODEL(objVendingMachine)
 
-            CASE `prop_vend_soda_01`
+            CASE HASH("prop_vend_soda_01")
                 RETURN VENDING_MACHINE_SODA_01
 
-            CASE `prop_vend_soda_02`
+            CASE HASH("prop_vend_soda_02")
                 RETURN VENDING_MACHINE_SODA_02
 
-            CASE `prop_vend_snak_01`
+            CASE HASH("prop_vend_snak_01")
                 RETURN VENDING_MACHINE_SNACK
 
         ENDSWITCH
@@ -282,71 +304,6 @@ PROC RESET_VENDING_STATE_MACHINE()
     eVendingState = VENDING_STATE_PLAYER_OUT_OF_RANGE
 ENDPROC
 
-FUNC BOOL IS_PLAYER_AVAILABLE(BOOL bNotAvailableIfDead, BOOL bOnlyInVehicle, BOOL bDriverOnly)
-
-    IF IS_MINIGAME_IN_PROGRESS()
-        RETURN FALSE
-    ENDIF
-
-    IF bNotAvailableIfDead
-        IF IS_ENTITY_DEAD(PLAYER_PED_ID(), FALSE)
-            RETURN FALSE
-        ENDIF
-    ENDIF
-
-    IF IS_PED_IN_ANY_VEHICLE(PLAYER_PED_ID(), FALSE)
-        IF NOT IS_PED_SITTING_IN_ANY_VEHICLE(PLAYER_PED_ID())
-            RETURN FALSE
-        ENDIF
-
-        VEHICLE_INDEX vehPlayer = GET_VEHICLE_PED_IS_IN(PLAYER_PED_ID(), FALSE)
-
-        IF bNotAvailableIfDead
-            IF IS_ENTITY_DEAD(vehPlayer, FALSE)
-                RETURN FALSE
-            ENDIF
-        ENDIF
-
-        IF bDriverOnly
-            IF NOT IS_ENTITY_DEAD(vehPlayer, FALSE)
-                IF GET_PED_IN_VEHICLE_SEAT(vehPlayer, -1, FALSE) <> PLAYER_PED_ID()
-                    RETURN FALSE
-                ENDIF
-            ENDIF
-        ENDIF
-
-        IF NOT IS_ENTITY_DEAD(vehPlayer, FALSE)
-            IF GET_ENTITY_UPRIGHT_VALUE(vehPlayer) < 0.95 OR GET_ENTITY_UPRIGHT_VALUE(vehPlayer) > 1.011
-                RETURN FALSE
-            ENDIF
-        ENDIF
-    ELIF bOnlyInVehicle
-        RETURN FALSE
-    ENDIF
-
-    IF NOT IS_PLAYER_READY_FOR_CUTSCENE(PLAYER_ID())
-        RETURN FALSE
-    ENDIF
-
-    IF NOT CAN_PLAYER_START_MISSION(PLAYER_ID())
-        RETURN FALSE
-    ENDIF
-
-    RETURN TRUE
-ENDFUNC
-
-FUNC BOOL HAS_PLAYER_BEEN_DAMAGED()
-    IF HAS_ENTITY_BEEN_DAMAGED_BY_ANY_OBJECT(PLAYER_PED_ID()) OR HAS_ENTITY_BEEN_DAMAGED_BY_ANY_PED(PLAYER_PED_ID()) OR HAS_ENTITY_BEEN_DAMAGED_BY_ANY_VEHICLE(PLAYER_PED_ID()) OR HAS_ENTITY_BEEN_DAMAGED_BY_WEAPON(PLAYER_PED_ID(), `weapon_smokegrenade`, 0)
-        CLEAR_ENTITY_LAST_DAMAGE_ENTITY(PLAYER_PED_ID())
-        RETURN TRUE
-    ENDIF
-    RETURN FALSE
-ENDFUNC
-
-FUNC BOOL HAS_MONEY()
-    RETURN TRUE
-ENDFUNC
-
 PROC DISCARD_SODA_CAN(BOOL bDetachWithForce)
     DISABLE_CONTROL_ACTIONS()
     IF DOES_ENTITY_EXIST(objSodaCan)
@@ -369,10 +326,10 @@ ENDPROC
 FUNC INT GET_SODA_CAN_MODEL()
     SWITCH eVendType
         CASE VENDING_MACHINE_SNACK
-            RETURN `prop_ld_snack_01`
+            RETURN HASH("prop_ld_snack_01")
     ENDSWITCH
 
-    RETURN `prop_ld_can_01b`
+    RETURN HASH("prop_ld_can_01b")
 ENDFUNC
 
 PROC DISABLE_CONTROL_ACTIONS()
@@ -440,3 +397,50 @@ PROC DRAW_TEXT(STRING text, FLOAT x, FLOAT y)
     ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(text)
     END_TEXT_COMMAND_DISPLAY_TEXT(x, y, 0)
 ENDPROC
+
+SCRIPT ob_vend(OBJECT_INDEX objVendingMachineArg)
+    IF HAS_FORCE_CLEANUP_OCCURRED(2)
+        TERMINATE()
+    ENDIF
+
+    objVendingMachine = objVendingMachineArg
+    IF NOT DOES_ENTITY_EXIST(objVendingMachine)
+        TERMINATE()
+    ENDIF
+
+    eVendType = GET_VENDING_MACHINE_TYPE(objVendingMachine)
+    IF eVendType == VENDING_MACHINE_UNKNOWN
+        TERMINATE()
+    ENDIF
+
+    eState = SCRIPT_STATE_WAITING_FOR_ASSETS
+    WHILE TRUE
+        WAIT(0)
+
+        IF DOES_ENTITY_EXIST(objVendingMachine)
+            IF IS_OBJECT_WITHIN_BRAIN_ACTIVATION_RANGE(objVendingMachine) AND NOT IS_ENTITY_DEAD(objVendingMachine, FALSE)
+                TEXT_LABEL_127 tl = "VENDING MACHINE (type: "
+                tl += ENUM_TO_INT(eVendType)
+                tl += ", state: "
+                tl += ENUM_TO_INT(eState)
+                tl += ", vending state: "
+                tl += ENUM_TO_INT(eVendingState)
+                tl += ", sold: "
+                tl += iNumberOfSodaCansSold
+                tl += "/"
+                tl += k_iMaxNumberOfSodaCans
+                tl += ")"
+
+                SET_TEXT_SCALE(0.3, 0.3)
+                SET_TEXT_CENTRE(TRUE)
+                DRAW_TEXT(tl, 0.5, 0.125)
+
+                RUN_SCRIPT_STATE_MACHINE()
+            ELSE
+                TERMINATE()
+            ENDIF
+        ELSE
+            TERMINATE()
+        ENDIF
+    ENDWHILE
+ENDSCRIPT

@@ -1,1 +1,0 @@
-NATIVE PROC GIVE_WEAPON_TO_PED(PED_INDEX ped, INT weaponHash, INT ammoCount, BOOL isHidden, BOOL equipNow)

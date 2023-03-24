@@ -1,6 +1,14 @@
 
 USING 'natives.sch'
 
+
+
+TYPEDEF PROC MENU_ITEM_CALLBACK()
+STRUCT MENU_ITEM
+    TEXT_LABEL_31 tlName
+    MENU_ITEM_CALLBACK procCallback
+ENDSTRUCT
+
 STRUCT MENU
     TEXT_LABEL_31 tlTitle
     MENU_ITEM sItems[32]
@@ -9,14 +17,8 @@ STRUCT MENU
     INT iLastInputTime = 0
 ENDSTRUCT
 
-STRUCT MENU_ITEM
-    TEXT_LABEL_31 tlName
-    MENU_ITEM_CALLBACK procCallback
-ENDSTRUCT
 
-PROTO PROC MENU_ITEM_CALLBACK(MENU_ITEM& item)
-
-CONST INT MENU_TIME_BETWEEN_INPUTS = 175
+CONST_INT MENU_TIME_BETWEEN_INPUTS 175
 
 PROC MENU_INIT(MENU& sMenu, STRING tlTitle)
     MENU sResultMenu
@@ -52,25 +54,12 @@ PROC MENU_PROCESS_CONTROLS(MENU& sMenu)
     IF sMenu.iSelectedItem >= 0 AND sMenu.iSelectedItem < sMenu.iItemCount AND IS_CONTROL_JUST_PRESSED(2, INPUT_FRONTEND_ACCEPT)
         IF sMenu.sItems[sMenu.iSelectedItem].procCallback <> NULL 
             PLAY_SOUND_FRONTEND(-1, "SELECT", "HUD_FRONTEND_DEFAULT_SOUNDSET", FALSE)
-            sMenu.sItems[sMenu.iSelectedItem].procCallback(sMenu.sItems[sMenu.iSelectedItem])
+            sMenu.sItems[sMenu.iSelectedItem].procCallback()
         ELSE
             PLAY_SOUND_FRONTEND(-1, "ERROR", "HUD_FRONTEND_DEFAULT_SOUNDSET", FALSE)
         ENDIF
     ENDIF
 
-ENDPROC
-
-PROC MENU_DRAW(MENU& sMenu)
-    SET_TEXT_SCALE(0.6, 0.6)
-    SET_TEXT_CENTRE(TRUE)
-    BEGIN_TEXT_COMMAND_DISPLAY_TEXT("STRING")
-    ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(sMenu.tlTitle)
-    END_TEXT_COMMAND_DISPLAY_TEXT(0.1, 0.05, 0)
-
-    INT i
-    REPEAT sMenu.iItemCount i
-        MENU_DRAW_ITEM(sMenu.sItems[i], sMenu.iSelectedItem == i, 0.1, 0.125 + 0.04 * I2F(i))
-    ENDREPEAT
 ENDPROC
 
 PROC MENU_DRAW_ITEM(MENU_ITEM& sItem, BOOL bSelected, FLOAT x, FLOAT y)
@@ -90,6 +79,19 @@ PROC MENU_DRAW_ITEM(MENU_ITEM& sItem, BOOL bSelected, FLOAT x, FLOAT y)
     BEGIN_TEXT_COMMAND_DISPLAY_TEXT("STRING")
     ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(sItem.tlName)
     END_TEXT_COMMAND_DISPLAY_TEXT(x, y - 0.01, 0)
+ENDPROC
+
+PROC MENU_DRAW(MENU& sMenu)
+    SET_TEXT_SCALE(0.6, 0.6)
+    SET_TEXT_CENTRE(TRUE)
+    BEGIN_TEXT_COMMAND_DISPLAY_TEXT("STRING")
+    ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(sMenu.tlTitle)
+    END_TEXT_COMMAND_DISPLAY_TEXT(0.1, 0.05, 0)
+
+    INT i
+    REPEAT sMenu.iItemCount i
+        MENU_DRAW_ITEM(sMenu.sItems[i], sMenu.iSelectedItem == i, 0.1, 0.125 + 0.04 * I2F(i))
+    ENDREPEAT
 ENDPROC
 
 PROC MENU_ADD_ITEM(MENU& sMenu, STRING tlName, MENU_ITEM_CALLBACK procCallback)

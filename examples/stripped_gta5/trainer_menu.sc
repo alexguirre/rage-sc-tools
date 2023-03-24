@@ -12,18 +12,45 @@ BOOL bFreecam = FALSE
 TEXT_LABEL_31 tlScriptToStart
 BOOL bStartScript = FALSE
 
+PROC SPAWN_CAR_CALLBACK()
+    bSpawnCar = TRUE
+ENDPROC
+
+PROC GIVE_WEAPONS_CALLBACK()
+    bGiveWeapons = TRUE
+ENDPROC
+
+PROC TOGGLE_FREECAM_CALLBACK()
+    bToggleFreecam = TRUE
+ENDPROC
+
+PROC START_SCRIPT_1_CALLBACK()
+    bStartScript = TRUE
+    tlScriptToStart = "fps_display"
+ENDPROC
+
+PROC START_SCRIPT_2_CALLBACK()
+    bStartScript = TRUE
+    tlScriptToStart = "random_vehicle_colors"
+ENDPROC
+
+PROC START_SCRIPT_3_CALLBACK()
+    bStartScript = TRUE
+    tlScriptToStart = "spawn_enemies"
+ENDPROC
+
 SCRIPT trainer_menu
     MENU_INIT(sTrainerMenu, "Trainer")
     MENU_ADD_ITEM(sTrainerMenu, "Spawn Car", SPAWN_CAR_CALLBACK)
     MENU_ADD_ITEM(sTrainerMenu, "Give Weapons", GIVE_WEAPONS_CALLBACK)
     MENU_ADD_ITEM(sTrainerMenu, "Toggle Freecam", TOGGLE_FREECAM_CALLBACK)
-    MENU_ADD_ITEM(sTrainerMenu, "fps_display", START_SCRIPT_CALLBACK)
-    MENU_ADD_ITEM(sTrainerMenu, "random_vehicle_colors", START_SCRIPT_CALLBACK)
-    MENU_ADD_ITEM(sTrainerMenu, "spawn_enemies", START_SCRIPT_CALLBACK)
+    MENU_ADD_ITEM(sTrainerMenu, "Start Script 'fps_display'", START_SCRIPT_1_CALLBACK)
+    MENU_ADD_ITEM(sTrainerMenu, "Start Script 'random_vehicle_colors'", START_SCRIPT_2_CALLBACK)
+    MENU_ADD_ITEM(sTrainerMenu, "Start Script 'spawn_enemies'", START_SCRIPT_3_CALLBACK)
     // INT i
     // REPEAT 5 i
     //     TEXT_LABEL_15 tlName = "Item #"
-    //     APPEND(tlName, i + 4)
+    //     tlName += i + 4
     //     MENU_ADD_ITEM(sTrainerMenu, tlName, NULL)
     // ENDREPEAT
 
@@ -43,20 +70,20 @@ SCRIPT trainer_menu
                 vehSpawned = NULL
             ENDIF
 
-            REQUEST_MODEL(`zentorno`)
-            IF HAS_MODEL_LOADED(`zentorno`)
+            REQUEST_MODEL(HASH("zentorno"))
+            IF HAS_MODEL_LOADED(HASH("zentorno"))
                 VECTOR vPlayerPos = GET_ENTITY_COORDS(PLAYER_PED_ID(), FALSE)
-                vehSpawned = CREATE_VEHICLE(`zentorno`, vPlayerPos, 0.0, FALSE, FALSE, FALSE)
-                SET_MODEL_AS_NO_LONGER_NEEDED(`zentorno`)
+                vehSpawned = CREATE_VEHICLE(HASH("zentorno"), vPlayerPos, 0.0, FALSE, FALSE, FALSE)
+                SET_MODEL_AS_NO_LONGER_NEEDED(HASH("zentorno"))
                 bSpawnCar = FALSE
             ENDIF
         ENDIF
 
         IF bGiveWeapons
-            GIVE_WEAPON_TO_PED(PLAYER_PED_ID(), `WEAPON_PISTOL`, 999, FALSE, FALSE)
-            GIVE_WEAPON_TO_PED(PLAYER_PED_ID(), `WEAPON_ASSAULTRIFLE`, 999, FALSE, FALSE)
-            GIVE_WEAPON_TO_PED(PLAYER_PED_ID(), `WEAPON_PUMPSHOTGUN`, 999, FALSE, FALSE)
-            GIVE_WEAPON_TO_PED(PLAYER_PED_ID(), `WEAPON_RPG`, 999, FALSE, FALSE)
+            GIVE_WEAPON_TO_PED(PLAYER_PED_ID(), HASH("WEAPON_PISTOL"), 999, FALSE, FALSE)
+            GIVE_WEAPON_TO_PED(PLAYER_PED_ID(), HASH("WEAPON_ASSAULTRIFLE"), 999, FALSE, FALSE)
+            GIVE_WEAPON_TO_PED(PLAYER_PED_ID(), HASH("WEAPON_PUMPSHOTGUN"), 999, FALSE, FALSE)
+            GIVE_WEAPON_TO_PED(PLAYER_PED_ID(), HASH("WEAPON_RPG"), 999, FALSE, FALSE)
             bGiveWeapons = FALSE
         ENDIF
 
@@ -84,23 +111,6 @@ SCRIPT trainer_menu
     ENDWHILE
 ENDSCRIPT
 
-PROC SPAWN_CAR_CALLBACK(MENU_ITEM& sItem)
-    bSpawnCar = TRUE
-ENDPROC
-
-PROC GIVE_WEAPONS_CALLBACK(MENU_ITEM& sItem)
-    bGiveWeapons = TRUE
-ENDPROC
-
-PROC TOGGLE_FREECAM_CALLBACK(MENU_ITEM& sItem)
-    bToggleFreecam = TRUE
-ENDPROC
-
-PROC START_SCRIPT_CALLBACK(MENU_ITEM& sItem)
-    bStartScript = TRUE
-    tlScriptToStart = sItem.tlName
-ENDPROC
-
 PROC ENABLE_FREECAM(BOOL bEnable)
     IF bEnable
         IF NOT DOES_CAM_EXIST(camFreecam)
@@ -123,8 +133,8 @@ PROC ENABLE_FREECAM(BOOL bEnable)
     ENDIF
 ENDPROC
 
-CONST FLOAT FREECAM_MOVE_SPEED = 15.0   // meters/second
-CONST FLOAT FREECAM_ROT_SPEED = 10.0     // degrees/second
+CONST_FLOAT FREECAM_MOVE_SPEED 15.0   // meters/second
+CONST_FLOAT FREECAM_ROT_SPEED 10.0    // degrees/second
 
 PROC PROCESS_FREECAM_CONTROLS()
     FLOAT fLookLR = GET_CONTROL_NORMAL(2, INPUT_SCALED_LOOK_LR)
