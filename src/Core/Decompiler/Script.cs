@@ -47,5 +47,5 @@ public class Script
     public static Script FromGTA5(GameFiles.GTA5.Script script) => new(IRDisassemblerGTA5.Disassemble(script));
     public static Script FromRDR2(GameFiles.ScriptRDR2 script) => new(IRDisassemblerRDR2.Disassemble(script));
     public static Script FromPayne(GameFiles.ScriptPayne script) => new(IRDisassemblerPayne.Disassemble(script));
-    public static Script FromNY(GameFiles.ScriptNY script) => new(IRDisassemblerNY.Disassemble(script));
+    public static Script FromGTA4(GameFiles.GTA4.Script script) => new(IRDisassemblerGTA4.Disassemble(script));
 }

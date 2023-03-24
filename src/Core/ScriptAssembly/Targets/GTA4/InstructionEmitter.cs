@@ -1,4 +1,4 @@
-﻿namespace ScTools.ScriptAssembly.Targets.NY;
+﻿namespace ScTools.ScriptAssembly.Targets.GTA4;
 internal class InstructionEmitter : InstructionEmitter<Opcode>
 {
     public InstructionEmitter(IInstructionEmitterFlushStrategy flushStrategy) : base(flushStrategy)

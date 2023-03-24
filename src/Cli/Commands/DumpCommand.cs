@@ -73,16 +73,16 @@ internal static class DumpCommand
                         throw new NotImplementedException("GTAV x64 not supported");
 
                     case (Game.MC4, Platform.Xenon):
-                    case (Game.GTAIV, Platform.x86):
+                    case (Game.GTA4, Platform.x86):
                     {
                         byte[] aesKey = target.Game switch
                         {
-                            Game.GTAIV => Keys.NY.AesKeyPC,
+                            Game.GTA4 => Keys.GTA4.AesKeyPC,
                             Game.MC4 => Keys.MC4.AesKeyXenon,
                             _ => throw new UnreachableException("Game already restricted by parent switch")
                         };
 
-                        var sc = new ScriptNY();
+                        var sc = new GameFiles.GTA4.Script();
                         sc.Read(new DataReader(new MemoryStream(source)), aesKey);
                         script = sc;
                         break;

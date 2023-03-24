@@ -34,11 +34,7 @@ public enum Game
     /// <summary>
     /// Grand Theft Auto IV
     /// </summary>
-    GTAIV,
-    /// <summary>
-    /// Grand Theft Auto IV
-    /// </summary>
-    GTA4 = GTAIV,
+    GTA4,
     /// <summary>
     /// Midnight Club: Los Angeles
     /// </summary>

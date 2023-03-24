@@ -6,18 +6,18 @@ using System.Globalization;
 using System.IO;
 using System.Collections.Generic;
 
-using ScTools.GameFiles;
+using ScTools.GameFiles.GTA4;
 using ScTools.ScriptAssembly;
 using System.Collections.Immutable;
-using ScTools.ScriptAssembly.Targets.NY;
+using ScriptAssembly.Targets.GTA4;
 
-public sealed class IRDisassemblerNY
+public sealed class IRDisassemblerGTA4
 {
-    public static IRScript Disassemble(ScriptNY script) => new IRDisassemblerNY(script).Disassemble();
+    public static IRScript Disassemble(Script script) => new IRDisassemblerGTA4(script).Disassemble();
 
-    private ScriptNY Script { get; }
+    private Script Script { get; }
 
-    private IRDisassemblerNY(ScriptNY sc)
+    private IRDisassemblerGTA4(Script sc)
     {
         Script = sc ?? throw new ArgumentNullException(nameof(sc));
     }

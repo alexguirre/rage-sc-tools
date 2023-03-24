@@ -1,4 +1,4 @@
-﻿namespace ScTools.GameFiles;
+﻿namespace ScTools.GameFiles.GTA4;
 
 using System;
 
@@ -7,7 +7,7 @@ using CodeWalker.GameFiles;
 /// <summary>
 /// Version 13. Only appears in a GTA IV left-over script: `\common\data\cdimages\navgen_script.img\navgen_main.sco`.
 /// </summary>
-public class ScriptNYOld : IScript
+public class ScriptOld : IScript
 {
     public const uint MagicUnencrypted = 0x0D524353;         // "SCR\x0D"
 

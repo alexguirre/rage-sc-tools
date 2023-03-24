@@ -140,14 +140,14 @@ internal static class BuildProjectCommand
                         }
                         break;
 
-                        case GameFiles.ScriptNY scriptGTAIV:
+                        case GameFiles.GTA4.Script scriptGTAIV:
                         {
                             tasks.Add(Task.Run(() =>
                             {
-                                GameFiles.Keys.NY.Load("D:\\programs\\SteamLibrary\\steamapps\\common\\Grand Theft Auto IV\\GTAIV\\GTAIV.exe");
+                                GameFiles.Keys.GTA4.Load("D:\\programs\\SteamLibrary\\steamapps\\common\\Grand Theft Auto IV\\GTAIV\\GTAIV.exe");
                                 using var outputStream = new FileStream(outputFile, FileMode.Create);
-                                scriptGTAIV.Magic = GameFiles.ScriptNY.MagicEncrypted;
-                                scriptGTAIV.Write(new CodeWalker.GameFiles.DataWriter(outputStream), GameFiles.Keys.NY.AesKeyPC);
+                                scriptGTAIV.Magic = GameFiles.GTA4.Script.MagicEncrypted;
+                                scriptGTAIV.Write(new CodeWalker.GameFiles.DataWriter(outputStream), GameFiles.Keys.GTA4.AesKeyPC);
                             }));
                         }
                         break;

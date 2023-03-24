@@ -1,4 +1,4 @@
-﻿namespace ScTools.ScriptAssembly.Targets.NY;
+﻿namespace ScTools.ScriptAssembly.Targets.GTA4;
 
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;

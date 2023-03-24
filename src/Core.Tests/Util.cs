@@ -101,7 +101,7 @@
             }
         }
 
-        public static void AssertScriptsAreEqual(GameFiles.ScriptNY sc1, GameFiles.ScriptNY sc2)
+        public static void AssertScriptsAreEqual(GameFiles.GTA4.Script sc1, GameFiles.GTA4.Script sc2)
         {
             static void FailIf(bool condition, string message) => False(condition, message);
             static string S(string str) => str;

@@ -1,4 +1,4 @@
-﻿namespace ScTools.ScriptAssembly;
+﻿namespace ScTools.ScriptAssembly.Targets.GTA4;
 
 using System;
 using System.Globalization;
@@ -8,12 +8,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Diagnostics;
 
-using ScTools.GameFiles;
-using System.Buffers.Binary;
-using System.Text;
-using ScTools.ScriptAssembly.Targets.NY;
+using ScTools.GameFiles.GTA4;
 
-public class DisassemblerNY
+public class Disassembler
 {
     private const string CodeFuncPrefix = "func_",
                          CodeLabelPrefix = "lbl_",
@@ -25,9 +22,9 @@ public class DisassemblerNY
     private readonly Dictionary<uint, string> nativeCommands;
 
     public string ScriptName { get; }
-    public ScriptNY Script { get; }
+    public Script Script { get; }
 
-    public DisassemblerNY(ScriptNY sc, string scriptName, Dictionary<uint, string> nativeCommands)
+    public Disassembler(Script sc, string scriptName, Dictionary<uint, string> nativeCommands)
     {
         Script = sc ?? throw new ArgumentNullException(nameof(sc));
         ScriptName = scriptName;
@@ -371,9 +368,9 @@ public class DisassemblerNY
         //}
     }
 
-    public static void Disassemble(TextWriter output, ScriptNY sc, string scriptName, Dictionary<uint, string> nativeCommands)
+    public static void Disassemble(TextWriter output, Script sc, string scriptName, Dictionary<uint, string> nativeCommands)
     {
-        var a = new DisassemblerNY(sc, scriptName, nativeCommands);
+        var a = new Disassembler(sc, scriptName, nativeCommands);
         a.Disassemble(output);
     }
 }

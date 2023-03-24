@@ -1,4 +1,4 @@
-﻿namespace ScTools.ScriptAssembly.Targets.NY;
+﻿namespace ScTools.ScriptAssembly.Targets.GTA4;
 
 using System;
 using System.Collections.Generic;
@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 
 using ScTools;
 using ScTools.GameFiles;
+using ScTools.GameFiles.GTA4;
 using ScTools.ScriptAssembly;
 
 public partial class Assembler : IDisposable
@@ -49,7 +50,7 @@ public partial class Assembler : IDisposable
 
     public Lexer Lexer { get; }
     public DiagnosticsReport Diagnostics { get; }
-    public ScriptNY OutputScript { get; }
+    public Script OutputScript { get; }
     public bool HasGlobalsSignature { get; private set; }
     public NativeDB? NativeDB { get; set; }
 

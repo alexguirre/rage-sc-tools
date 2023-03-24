@@ -110,7 +110,7 @@ public sealed partial class CodeEmitter : ICodeEmitter
             Debug.Assert(usedNativeFunctions[i].Id is StringLiteralExpression);
             var hashStr = ((StringLiteralExpression)usedNativeFunctions[i].Id!).Value;
             Debug.Assert(hashStr.StartsWith("0x"));
-            natives[i] = Script.EncodeNativeHash(hashStr.ParseAsUInt64(), i, codeLength);
+            natives[i] = ScTools.GameFiles.GTA5.Script.EncodeNativeHash(hashStr.ParseAsUInt64(), i, codeLength);
         }
 
         return natives;
@@ -138,7 +138,7 @@ public sealed partial class CodeEmitter : ICodeEmitter
         var globals = GetGlobalSegment(script, out var globalBlockIndex);
         var natives = GetNativesTable(codeLength);
         var strings = Strings.ByteLength != 0 ? Strings.ToPages() : null;
-        return new Script
+        return new ScTools.GameFiles.GTA5.Script
         {
             Name = script.Name,
             NameHash = script.Name.ToLowercaseHash(),

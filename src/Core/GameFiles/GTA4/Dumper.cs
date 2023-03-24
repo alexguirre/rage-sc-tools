@@ -1,15 +1,15 @@
-﻿namespace ScTools.GameFiles;
+﻿namespace ScTools.GameFiles.GTA4;
 
 using System;
 using System.IO;
 using System.Text;
 using System.Buffers.Binary;
 using ScTools.ScriptAssembly;
-using ScTools.ScriptAssembly.Targets.NY;
+using ScriptAssembly.Targets.GTA4;
 
-internal static class DumperNY
+internal static class Dumper
 {
-    public static void Dump(ScriptNY sc, TextWriter w,  DumpOptions options)
+    public static void Dump(Script sc, TextWriter w,  DumpOptions options)
     {
         sc = sc ?? throw new ArgumentNullException(nameof(sc));
 
@@ -45,7 +45,7 @@ internal static class DumperNY
         }
     }
 
-    private static void Disassemble(ScriptNY sc, TextWriter w, DumpOptions options)
+    private static void Disassemble(Script sc, TextWriter w, DumpOptions options)
     {
         w.WriteLine("Disassembly:");
 
@@ -93,7 +93,7 @@ internal static class DumperNY
         }
     }
 
-    private static void DisassembleInstructionAt(StringBuilder sb, ScriptNY sc, uint ip)
+    private static void DisassembleInstructionAt(StringBuilder sb, Script sc, uint ip)
     {
         var inst = sc.Code.AsSpan((int)ip, (int)SizeOf(sc, ip));
         var opcode = (Opcode)inst[0];
@@ -168,7 +168,7 @@ internal static class DumperNY
         }
     }
 
-    public static uint SizeOf(ScriptNY sc, uint ip)
+    public static uint SizeOf(Script sc, uint ip)
     {
         Opcode opcode = (Opcode)sc.Code![ip];
         uint s = (uint)opcode.ConstantByteSize();

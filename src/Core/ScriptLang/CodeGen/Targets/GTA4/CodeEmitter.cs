@@ -1,8 +1,9 @@
-﻿namespace ScTools.ScriptLang.CodeGen.Targets.NY;
+﻿namespace ScTools.ScriptLang.CodeGen.Targets.GTA4;
 
 using ScTools.GameFiles;
+using ScTools.GameFiles.GTA4;
 using ScTools.ScriptAssembly.Targets;
-using ScTools.ScriptAssembly.Targets.NY;
+using ScriptAssembly.Targets.GTA4;
 using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.Ast.Expressions;
 using ScTools.ScriptLang.Ast.Statements;
@@ -106,7 +107,7 @@ public sealed partial class CodeEmitter : ICodeEmitter
         var code = ToCodeBuffer();
         var statics = GetStaticSegment(out var argsCount);
         var globals = GetGlobalSegment(script);
-        return new ScriptNY
+        return new Script
         {
             GlobalsSignature = 0, // TODO: include a way to set the hash in the SCRIPT declaration
             Code = code,
@@ -877,7 +878,7 @@ public sealed partial class CodeEmitter : ICodeEmitter
     public void EmitCastFloatToInt() => instEmitter.EmitF2I();
     public void EmitCastFloatToVector() => instEmitter.EmitF2V();
 
-    public void EmitStringHash() => throw new NotImplementedException($"{nameof(EmitStringHash)} is not supported"); // TODO: call GET_HASH_KEY for NY's EmitStringHash?
+    public void EmitStringHash() => throw new NotImplementedException($"{nameof(EmitStringHash)} is not supported"); // TODO: call GET_HASH_KEY for GTA4's EmitStringHash?
 
     public void EmitCatch() => instEmitter.EmitCatch();
     public void EmitThrow() => instEmitter.EmitThrow();

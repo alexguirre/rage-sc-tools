@@ -8,7 +8,7 @@ using System.Linq;
 
 using ScTools.GameFiles;
 using ScTools.ScriptAssembly.Targets.GTA5;
-using ScTools.ScriptAssembly.Targets.NY;
+using ScTools.ScriptAssembly.Targets.GTA4;
 using ScTools.ScriptLang;
 using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.CodeGen;
@@ -123,7 +123,7 @@ public abstract class CodeGenTestsBase
             var compiledScriptGTAV = IsType<GameFiles.GTA5.Script>(compiledScript);
 
             using var expectedAssemblyReader = new StringReader(expectedAssembly);
-            var expectedAssembler = ScTools.ScriptAssembly.Targets.GTA5.Assembler.Assemble(expectedAssemblyReader, "test_expected.scasm", nativeDB,
+            var expectedAssembler = ScTools.ScriptAssembly.Targets.GTA5.Assembler.Assemble(expectedAssemblyReader, "test_expected_gta5.scasm", nativeDB,
                 options: new() { IncludeFunctionNames = true });
             False(expectedAssembler.Diagnostics.HasErrors);
 
@@ -136,13 +136,13 @@ public abstract class CodeGenTestsBase
         // GTA IV codegen
         if (expectedAssemblyIV is not null)
         {
-            var compiledScript = ScriptCompiler.Compile(u, new(Game.GTAIV, Platform.x86));
+            var compiledScript = ScriptCompiler.Compile(u, new(Game.GTA4, Platform.x86));
             False(d.HasErrors);
             NotNull(compiledScript);
-            var compiledScriptGTAIV = IsType<GameFiles.ScriptNY>(compiledScript);
+            var compiledScriptGTAIV = IsType<GameFiles.GTA4.Script>(compiledScript);
 
             using var expectedAssemblyReader = new StringReader(expectedAssemblyIV);
-            var expectedAssembler = ScTools.ScriptAssembly.Targets.NY.Assembler.Assemble(expectedAssemblyReader, "test_expected_ny.scasm", nativeDB);
+            var expectedAssembler = ScTools.ScriptAssembly.Targets.GTA4.Assembler.Assemble(expectedAssemblyReader, "test_expected_gta4.scasm", nativeDB);
             False(expectedAssembler.Diagnostics.HasErrors);
 
             string sourceDump = compiledScriptGTAIV.DumpToString();

@@ -14,11 +14,11 @@ using ScriptAssembly.Targets.GTA5;
 
 public sealed class IRDisassemblerGTA5
 {
-    public static IRScript Disassemble(Script script) => new IRDisassemblerGTA5(script).Disassemble();
+    public static IRScript Disassemble(ScTools.GameFiles.GTA5.Script script) => new IRDisassemblerGTA5(script).Disassemble();
 
-    private Script Script { get; }
+    private ScTools.GameFiles.GTA5.Script Script { get; }
 
-    private IRDisassemblerGTA5(Script sc)
+    private IRDisassemblerGTA5(ScTools.GameFiles.GTA5.Script sc)
     {
         Script = sc ?? throw new ArgumentNullException(nameof(sc));
     }

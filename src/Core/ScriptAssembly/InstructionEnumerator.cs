@@ -3,7 +3,7 @@
 using ScTools.GameFiles;
 using GameFiles.GTA5;
 using Targets.GTA5;
-using ScTools.ScriptAssembly.Targets.NY;
+using Targets.GTA4;
 using System;
 
 public readonly ref struct Instruction<TOpcode> where TOpcode : struct, Enum
@@ -56,12 +56,12 @@ public ref struct InstructionEnumerator<TOpcode> where TOpcode : struct, Enum
 
 public static class InstructionEnumeratorScriptExtensions
 {
-    public static InstructionEnumerator<Opcode> EnumerateInstructions(this ScriptNY script)
-        => new(script.Code, OpcodeNYExtensions.GetInstructionSpan);
+    public static InstructionEnumerator<Opcode> EnumerateInstructions(this ScTools.GameFiles.GTA4.Script script)
+        => new(script.Code, Targets.GTA4.OpcodeExtensions.GetInstructionSpan);
     public static InstructionEnumerator<OpcodePayne> EnumerateInstructions(this ScriptPayne script)
         => new(script.Code, OpcodePayneExtensions.GetInstructionSpan);
     public static InstructionEnumerator<OpcodeRDR2> EnumerateInstructions(this ScriptRDR2 script)
         => new(script.MergeCodePages(), OpcodeRDR2Extensions.GetInstructionSpan);
-    public static InstructionEnumerator<OpcodeV10> EnumerateInstructions(this Script script)
-        => new(script.MergeCodePages(), OpcodeExtensions.GetInstructionSpan);
+    public static InstructionEnumerator<OpcodeV10> EnumerateInstructions(this ScTools.GameFiles.GTA5.Script script)
+        => new(script.MergeCodePages(), Targets.GTA5.OpcodeExtensions.GetInstructionSpan);
 }

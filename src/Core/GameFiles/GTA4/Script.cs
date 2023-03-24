@@ -1,4 +1,4 @@
-﻿namespace ScTools.GameFiles;
+﻿namespace ScTools.GameFiles.GTA4;
 
 using System;
 using System.IO;
@@ -14,7 +14,7 @@ using CodeWalker.GameFiles;
 /// <remarks>
 /// GTA IV does not support <see cref="MagicUnencrypted"/>.
 /// </remarks>
-public class ScriptNY : IScript
+public class Script : IScript
 {
     public const uint MagicUnencrypted = 0x0E524353,         // "SCR\x0E"
                       MagicEncrypted = 0x0E726373,           // "scr\x0E"
@@ -157,5 +157,5 @@ public class ScriptNY : IScript
         }
     }
 
-    public void Dump(TextWriter sink, DumpOptions options) => DumperNY.Dump(this, sink, options);
+    public void Dump(TextWriter sink, DumpOptions options) => Dumper.Dump(this, sink, options);
 }

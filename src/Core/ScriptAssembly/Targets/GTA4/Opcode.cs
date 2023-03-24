@@ -1,4 +1,4 @@
-﻿namespace ScTools.ScriptAssembly.Targets.NY;
+﻿namespace ScTools.ScriptAssembly.Targets.GTA4;
 
 using GTA5;
 
@@ -7,7 +7,7 @@ using System.Buffers.Binary;
 using System.Text;
 
 /// <summary>
-/// Instruction set used with <see cref="GameFiles.ScriptNY"/>.
+/// Instruction set used with <see cref="GameFiles.Script"/>.
 /// </summary>
 public enum Opcode : byte
 {
@@ -337,7 +337,7 @@ public abstract class OpcodeTraits : IOpcodeTraits<Opcode>
         };
 }
 
-public static class OpcodeNYExtensions
+public static class OpcodeExtensions
 {
     public static bool IsInvalid(this Opcode opcode)
         => opcode is < Opcode.IADD or > Opcode._XPROTECT_REF and < Opcode.PUSH_CONST_M16;

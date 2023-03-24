@@ -10,7 +10,7 @@ public static class Keys
     {
         // TODO: make Keys paths user configurable
         //CodeWalker.GameFiles.GTA5Keys.LoadFromPath("D:\\programs\\Rockstar Games\\Grand Theft Auto V"); // a bit slow without cache
-        NY.Load("D:\\programs\\SteamLibrary\\steamapps\\common\\Grand Theft Auto IV\\GTAIV\\GTAIV.exe");
+        GTA4.Load("D:\\programs\\SteamLibrary\\steamapps\\common\\Grand Theft Auto IV\\GTAIV\\GTAIV.exe");
         MC4.Load("D:\\media\\mcla\\default.unencrypted.xex");
         RDR2.Load("D:\\media\\rdr2\\default.unencrypted.xex");
         Payne.Load("D:\\programs\\SteamLibrary\\steamapps\\common\\Max Payne 3\\Max Payne 3\\MaxPayne3.exe");
@@ -18,9 +18,9 @@ public static class Keys
     
     private const int SHA1HashLength = 20;
 
-    public static class NY
+    public static class GTA4
     {
-        private const string CacheFile = "keys_ny.dat";
+        private const string CacheFile = "keys_gta4.dat";
         public static byte[] AesKeyPC { get; private set; } = Array.Empty<byte>();
 
         public static void Load(string exeFilePath)

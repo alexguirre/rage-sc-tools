@@ -67,7 +67,7 @@ public partial class Assembler : IDisposable
 
     public Lexer Lexer { get; }
     public DiagnosticsReport Diagnostics { get; }
-    public Script OutputScript { get; }
+    public ScTools.GameFiles.GTA5.Script OutputScript { get; }
     public bool HasScriptName { get; private set; }
     public bool HasGlobalsSignature { get; private set; }
     public bool HasGlobalBlock { get; private set; }
@@ -1021,7 +1021,7 @@ public partial class Assembler : IDisposable
         var nativeHashes = MemoryMarshal.Cast<byte, ulong>(segment.RawDataBuffer).ToArray();
         for (int i = 0; i < nativeHashes.Length; i++)
         {
-            nativeHashes[i] = Script.EncodeNativeHash(nativeHashes[i], i, codeLength);
+            nativeHashes[i] = ScTools.GameFiles.GTA5.Script.EncodeNativeHash(nativeHashes[i], i, codeLength);
         }
         return (nativeHashes, (uint)nativeHashes.Length);
     }
@@ -1129,7 +1129,7 @@ public partial class Assembler : IDisposable
         /// </summary>
         public (int InstructionOffset, int InstructionLength) Flush()
         {
-            int offset = (int)(segment.Length & Script.MaxPageLength - 1);
+            int offset = (int)(segment.Length & ScTools.GameFiles.GTA5.Script.MaxPageLength - 1);
 
             OpcodeV10 opcode = (OpcodeV10)buffer[0];
 
@@ -1139,16 +1139,16 @@ public partial class Assembler : IDisposable
             bool needsNopAtBoundary = !opcode.IsControlFlow() &&
                                       opcode != OpcodeV10.NOP;
 
-            if (offset + buffer.Count > Script.MaxPageLength - (needsNopAtBoundary ? 1u : 0)) // the instruction doesn't fit in the current page
+            if (offset + buffer.Count > ScTools.GameFiles.GTA5.Script.MaxPageLength - (needsNopAtBoundary ? 1u : 0)) // the instruction doesn't fit in the current page
             {
-                var bytesUntilNextPage = (int)Script.MaxPageLength - offset; // padding needed to skip to the next page
+                var bytesUntilNextPage = (int)ScTools.GameFiles.GTA5.Script.MaxPageLength - offset; // padding needed to skip to the next page
                 var requiredNops = bytesUntilNextPage;
 
                 const int JumpInstructionSize = 3;
                 if (bytesUntilNextPage > JumpInstructionSize)
                 {
                     // if there is enough space for a J instruction, add it to jump to the next page
-                    short relIP = (short)(Script.MaxPageLength - (offset + JumpInstructionSize)); // get how many bytes until the next page
+                    short relIP = (short)(ScTools.GameFiles.GTA5.Script.MaxPageLength - (offset + JumpInstructionSize)); // get how many bytes until the next page
                     segment.Byte((byte)OpcodeV10.J);
                     segment.Byte((byte)(relIP & 0xFF));
                     segment.Byte((byte)(relIP >> 8));

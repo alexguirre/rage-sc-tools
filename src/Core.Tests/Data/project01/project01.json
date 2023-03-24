@@ -23,9 +23,9 @@
         "MY_RELEASE"
       ]
     },
-    "Release-GTAIV": {
+    "Release-GTA4": {
       "target": {
-        "game": "GTAIV",
+        "game": "GTA4",
         "platform": "x86"
       },
       "defines": [

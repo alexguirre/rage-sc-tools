@@ -74,7 +74,7 @@ internal static class CompileCommand
         {
             var extension = target switch
             {
-                (Game.GTAIV, Platform.x86) => "sco",
+                (Game.GTA4, Platform.x86) => "sco",
                 (Game.GTA5, Platform.x64) => "ysc",
                 _ => throw new NotImplementedException($"Unsupported build target '{target}'"),
             };
@@ -107,7 +107,7 @@ internal static class CompileCommand
                     Print($"Successful compilation, writing '{Path.GetRelativePath(Directory.GetCurrentDirectory(), outputFileName)}'...");
                     switch (compiledScript)
                     {
-                        case Script scriptGTAV:
+                        case ScTools.GameFiles.GTA5.Script scriptGTAV:
                         {
                             var ysc = new YscFile { Script = scriptGTAV };
                             var data = ysc.Save(Path.GetFileName(outputFileName));
@@ -125,18 +125,18 @@ internal static class CompileCommand
                         }
                         break;
 
-                        case ScriptNY scriptGTAIV:
+                        case ScTools.GameFiles.GTA4.Script scriptGTAIV:
                         {
                             await using var outputStream = outputFile.OpenWrite();
-                            scriptGTAIV.Magic = ScriptNY.MagicEncrypted;
-                            scriptGTAIV.Write(new DataWriter(outputStream), Keys.NY.AesKeyPC);
+                            scriptGTAIV.Magic = ScTools.GameFiles.GTA4.Script.MagicEncrypted;
+                            scriptGTAIV.Write(new DataWriter(outputStream), Keys.GTA4.AesKeyPC);
 
                             if (unencrypted)
                             {
                                 var outputFileUnencrypted = new FileInfo(Path.ChangeExtension(outputFileName, "unencrypted.sco"));
                                 await using var outputStreamUnencrypted = outputFileUnencrypted.OpenWrite();
-                                scriptGTAIV.Magic = ScriptNY.MagicUnencrypted;
-                                scriptGTAIV.Write(new DataWriter(outputStreamUnencrypted), Keys.NY.AesKeyPC);
+                                scriptGTAIV.Magic = ScTools.GameFiles.GTA4.Script.MagicUnencrypted;
+                                scriptGTAIV.Write(new DataWriter(outputStreamUnencrypted), Keys.GTA4.AesKeyPC);
                             }
                         }
                         break;

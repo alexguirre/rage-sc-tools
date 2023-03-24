@@ -80,7 +80,7 @@ public class ProjectTests
         AssertAgainstExpectedAssembly(1, "my_script_expected_assembly.gtav.scasm", compilation.Script!);
 
 
-        project.BuildConfigurationName = "Release-GTAIV";
+        project.BuildConfigurationName = "Release-GTA4";
         compilation = (await myScript.CompileAsync())!;
         NotNull(compilation);
 
@@ -125,10 +125,10 @@ public class ProjectTests
 
             Util.AssertScriptsAreEqual(compiledScriptGTAV, expectedAssembler.OutputScript);
         }
-        else if (compiledScript is ScriptNY compiledScriptGTAIV)
+        else if (compiledScript is GameFiles.GTA4.Script compiledScriptGTAIV)
         {
             string sourceDump = compiledScriptGTAIV.DumpToString();
-            // TODO: NY assembly
+            // TODO: GTA4 assembly
             ;
         }
     }

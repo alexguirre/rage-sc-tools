@@ -1,4 +1,4 @@
-﻿namespace ScTools.ScriptAssembly;
+﻿namespace ScTools.ScriptAssembly.Targets.GTA5;
 
 using System;
 using System.Globalization;
@@ -8,8 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Diagnostics;
 
-using GameFiles.GTA5;
-using Targets.GTA5;
+using ScTools.GameFiles.GTA5;
 
 public class Disassembler
 {
