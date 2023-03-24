@@ -6,7 +6,7 @@
 
     using ScTools.GameFiles;
     using ScTools.ScriptAssembly;
-    using ScTools.ScriptAssembly.Targets.Five;
+    using ScTools.ScriptAssembly.Targets.GTA5;
     using ScTools.ScriptLang;
 
     using Xunit;
@@ -19,14 +19,14 @@
             return Assembler.Assemble(r, path);
         }
 
-        public static string Disassemble(GameFiles.Five.Script sc)
+        public static string Disassemble(GameFiles.GTA5.Script sc)
         {
             using var w = new StringWriter();
             Disassembler.Disassemble(w, sc);
             return w.ToString();
         }
 
-        public static void AssertScriptsAreEqual(GameFiles.Five.Script sc1, GameFiles.Five.Script sc2)
+        public static void AssertScriptsAreEqual(GameFiles.GTA5.Script sc1, GameFiles.GTA5.Script sc2)
         {
             static void FailIf(bool condition, string message) => Assert.False(condition, message);
             static string S(string str) => str;

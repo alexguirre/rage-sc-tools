@@ -1,7 +1,7 @@
 ﻿namespace ScTools.Tests.ScriptLang.Workspace;
 
 using ScTools.GameFiles;
-using ScTools.ScriptAssembly.Targets.Five;
+using ScTools.ScriptAssembly.Targets.GTA5;
 using ScTools.ScriptLang.Ast;
 using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.Ast.Expressions;

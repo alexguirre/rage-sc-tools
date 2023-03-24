@@ -1,4 +1,4 @@
-﻿namespace ScTools.ScriptAssembly.Targets.Five;
+﻿namespace ScTools.ScriptAssembly.Targets.GTA5;
 
 using ScTools.GameFiles;
 
@@ -416,7 +416,7 @@ public enum OpcodeV12 : byte
     IBITTEST = 0x82,
 }
 
-public abstract class OpcodeTraitsV10 : IOpcodeTraitsFive<OpcodeV10>
+public abstract class OpcodeTraitsV10 : IOpcodeTraitsGTA5<OpcodeV10>
 {
     public const int NumberOfOpcodes = 127;
 
@@ -571,7 +571,7 @@ public abstract class OpcodeTraitsV10 : IOpcodeTraitsFive<OpcodeV10>
     };
 }
 
-public abstract class OpcodeTraitsV11 : IOpcodeTraitsFive<OpcodeV11>
+public abstract class OpcodeTraitsV11 : IOpcodeTraitsGTA5<OpcodeV11>
 {
     public const int NumberOfOpcodes = 128;
 
@@ -727,7 +727,7 @@ public abstract class OpcodeTraitsV11 : IOpcodeTraitsFive<OpcodeV11>
     };
 }
 
-public abstract class OpcodeTraitsV12 : IOpcodeTraitsFive<OpcodeV12>
+public abstract class OpcodeTraitsV12 : IOpcodeTraitsGTA5<OpcodeV12>
 {
     public const int NumberOfOpcodes = 131;
 

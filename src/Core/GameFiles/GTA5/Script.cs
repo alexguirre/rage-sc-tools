@@ -1,4 +1,4 @@
-﻿namespace ScTools.GameFiles.Five;
+﻿namespace ScTools.GameFiles.GTA5;
 
 using System;
 using System.Collections.Generic;
@@ -289,7 +289,7 @@ public class Script : ResourceFileBase, IScript
 
     public void Dump(System.IO.TextWriter sink, DumpOptions options)
     {
-        var d = new DumperFiveV10(); // TODO: update to V12 once InstructionEmitter starts using V12
+        var d = new DumperV10(); // TODO: update to V12 once InstructionEmitter starts using V12
         d.Dump(this, sink, options);
     }
 }

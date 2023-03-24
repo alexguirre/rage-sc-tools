@@ -8,7 +8,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using CodeWalker.GameFiles;
 using GameFiles;
-using GameFiles.Five;
+using GameFiles.GTA5;
 using ScTools.ScriptLang;
 using ScTools.ScriptLang.CodeGen;
 using ScTools.ScriptLang.Semantics;
@@ -75,7 +75,7 @@ internal static class CompileCommand
             var extension = target switch
             {
                 (Game.GTAIV, Platform.x86) => "sco",
-                (Game.GTAV, Platform.x64) => "ysc",
+                (Game.GTA5, Platform.x64) => "ysc",
                 _ => throw new NotImplementedException($"Unsupported build target '{target}'"),
             };
 

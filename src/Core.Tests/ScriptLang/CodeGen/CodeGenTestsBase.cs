@@ -1,4 +1,4 @@
-﻿using ScTools.ScriptAssembly.Targets.Five;
+﻿using ScTools.ScriptAssembly.Targets.GTA5;
 
 namespace ScTools.Tests.ScriptLang.CodeGen;
 
@@ -7,7 +7,7 @@ using System.IO;
 using System.Linq;
 
 using ScTools.GameFiles;
-using ScTools.ScriptAssembly.Targets.Five;
+using ScTools.ScriptAssembly.Targets.GTA5;
 using ScTools.ScriptAssembly.Targets.NY;
 using ScTools.ScriptLang;
 using ScTools.ScriptLang.Ast.Declarations;
@@ -117,13 +117,13 @@ public abstract class CodeGenTestsBase
 
         // GTA V codegen
         {
-            var compiledScript = ScriptCompiler.Compile(u, new(Game.GTAV, Platform.x64));
+            var compiledScript = ScriptCompiler.Compile(u, new(Game.GTA5, Platform.x64));
             False(d.HasErrors);
             NotNull(compiledScript);
-            var compiledScriptGTAV = IsType<GameFiles.Five.Script>(compiledScript);
+            var compiledScriptGTAV = IsType<GameFiles.GTA5.Script>(compiledScript);
 
             using var expectedAssemblyReader = new StringReader(expectedAssembly);
-            var expectedAssembler = ScTools.ScriptAssembly.Targets.Five.Assembler.Assemble(expectedAssemblyReader, "test_expected.scasm", nativeDB,
+            var expectedAssembler = ScTools.ScriptAssembly.Targets.GTA5.Assembler.Assemble(expectedAssemblyReader, "test_expected.scasm", nativeDB,
                 options: new() { IncludeFunctionNames = true });
             False(expectedAssembler.Diagnostics.HasErrors);
 

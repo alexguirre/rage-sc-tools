@@ -1,6 +1,6 @@
 ﻿namespace ScTools.ScriptAssembly.Targets.NY;
 
-using ScTools.ScriptAssembly.Targets.Five;
+using GTA5;
 
 using System;
 using System.Buffers.Binary;

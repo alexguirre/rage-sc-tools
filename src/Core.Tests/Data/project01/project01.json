@@ -7,7 +7,7 @@
   "configurations": {
     "Debug": {
       "target": {
-        "game": "GTAV",
+        "game": "GTA5",
         "platform": "x64"
       },
       "defines": [
@@ -16,7 +16,7 @@
     },
     "Release": {
       "target": {
-        "game": "GTAV",
+        "game": "GTA5",
         "platform": "x64"
       },
       "defines": [

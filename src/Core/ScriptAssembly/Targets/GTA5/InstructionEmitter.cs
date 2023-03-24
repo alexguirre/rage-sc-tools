@@ -1,4 +1,4 @@
-﻿namespace ScTools.ScriptAssembly.Targets.Five;
+﻿namespace ScTools.ScriptAssembly.Targets.GTA5;
 internal class InstructionEmitter : InstructionEmitter<OpcodeV10>
 {
     private const bool IncludeFunctionNames = true;

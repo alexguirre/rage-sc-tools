@@ -1,21 +1,21 @@
-﻿namespace ScTools.GameFiles.Five;
+﻿namespace ScTools.GameFiles.GTA5;
 
 using System;
 using System.IO;
 using System.Text;
 using System.Runtime.CompilerServices;
-using ScTools.GameFiles.Five;
+using GTA5;
 using ScTools.ScriptAssembly;
-using ScTools.ScriptAssembly.Targets.Five;
+using ScriptAssembly.Targets.GTA5;
 
-internal interface IDumperFive
+internal interface IDumper
 {
     void Dump(Script sc, TextWriter sink, DumpOptions options);
 }
 
-internal class DumperFive<TOpcode, TOpcodeTraits> : IDumperFive
+internal class Dumper<TOpcode, TOpcodeTraits> : IDumper
     where TOpcode : struct, Enum
-    where TOpcodeTraits : IOpcodeTraitsFive<TOpcode>
+    where TOpcodeTraits : IOpcodeTraitsGTA5<TOpcode>
 {
     public void Dump(Script sc, TextWriter w, DumpOptions options)
     {
@@ -313,6 +313,6 @@ internal class DumperFive<TOpcode, TOpcodeTraits> : IDumperFive
     }
 }
 
-internal  class DumperFiveV10 : DumperFive<OpcodeV10, OpcodeTraitsV10> { }
-internal  class DumperFiveV11 : DumperFive<OpcodeV11, OpcodeTraitsV11> { }
-internal  class DumperFiveV12 : DumperFive<OpcodeV12, OpcodeTraitsV12> { }
+internal  class DumperV10 : Dumper<OpcodeV10, OpcodeTraitsV10> { }
+internal  class DumperV11 : Dumper<OpcodeV11, OpcodeTraitsV11> { }
+internal  class DumperV12 : Dumper<OpcodeV12, OpcodeTraitsV12> { }

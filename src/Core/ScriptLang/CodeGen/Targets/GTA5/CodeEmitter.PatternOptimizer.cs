@@ -1,7 +1,7 @@
-﻿namespace ScTools.ScriptLang.CodeGen.Targets.Five;
+﻿namespace ScTools.ScriptLang.CodeGen.Targets.GTA5;
 
 using ScTools.ScriptAssembly.Targets;
-using ScTools.ScriptAssembly.Targets.Five;
+using ScriptAssembly.Targets.GTA5;
 
 public partial class CodeEmitter
 {

@@ -58,11 +58,7 @@ public enum Game
     /// <summary>
     /// Grand Theft Auto V
     /// </summary>
-    GTAV,
-    /// <summary>
-    /// Grand Theft Auto V
-    /// </summary>
-    GTA5 = GTAV,
+    GTA5,
     /// <summary>
     /// Red Dead Redemption 2
     /// </summary>

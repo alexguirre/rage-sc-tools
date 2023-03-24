@@ -1,7 +1,7 @@
 ﻿namespace ScTools.Tests.ScriptLang.Workspace;
 
 using ScTools.GameFiles;
-using ScTools.ScriptAssembly.Targets.Five;
+using ScTools.ScriptAssembly.Targets.GTA5;
 using ScTools.ScriptLang.Ast;
 using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.Ast.Expressions;
@@ -116,7 +116,7 @@ public class ProjectTests
         var expectedAssemblyPath = $"./Data/project{projectId:00}/{expectedAssemblyFileName}";
 
         using var expectedAssemblyReader = new StreamReader(expectedAssemblyPath, Encoding.UTF8);
-        if (compiledScript is GameFiles.Five.Script compiledScriptGTAV)
+        if (compiledScript is GameFiles.GTA5.Script compiledScriptGTAV)
         {
             var expectedAssembler = Assembler.Assemble(expectedAssemblyReader, expectedAssemblyFileName, options: new() { IncludeFunctionNames = true });
 

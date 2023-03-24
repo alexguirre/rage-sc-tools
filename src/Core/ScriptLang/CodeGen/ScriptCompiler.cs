@@ -78,7 +78,7 @@ public static class ScriptCompiler
     private static bool AreGlobalsIndexed(Workspace.BuildTarget target)
         => target.Game switch
         {
-            Workspace.Game.GTAV => true,
+            Workspace.Game.GTA5 => true,
             _ => false,
         };
 }

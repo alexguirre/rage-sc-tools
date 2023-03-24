@@ -1,9 +1,9 @@
-﻿namespace ScTools.ScriptLang.CodeGen.Targets.Five;
+﻿namespace ScTools.ScriptLang.CodeGen.Targets.GTA5;
 
 using ScTools.GameFiles;
-using ScTools.GameFiles.Five;
+using GameFiles.GTA5;
 using ScTools.ScriptAssembly.Targets;
-using ScTools.ScriptAssembly.Targets.Five;
+using ScriptAssembly.Targets.GTA5;
 using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.Ast.Expressions;
 using ScTools.ScriptLang.Ast.Statements;

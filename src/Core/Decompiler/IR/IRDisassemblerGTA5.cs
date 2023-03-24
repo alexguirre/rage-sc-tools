@@ -9,16 +9,16 @@ using System.Collections.Generic;
 using ScTools.GameFiles;
 using ScTools.ScriptAssembly;
 using System.Collections.Immutable;
-using ScTools.GameFiles.Five;
-using ScTools.ScriptAssembly.Targets.Five;
+using GameFiles.GTA5;
+using ScriptAssembly.Targets.GTA5;
 
-public sealed class IRDisassemblerFive
+public sealed class IRDisassemblerGTA5
 {
-    public static IRScript Disassemble(Script script) => new IRDisassemblerFive(script).Disassemble();
+    public static IRScript Disassemble(Script script) => new IRDisassemblerGTA5(script).Disassemble();
 
     private Script Script { get; }
 
-    private IRDisassemblerFive(Script sc)
+    private IRDisassemblerGTA5(Script sc)
     {
         Script = sc ?? throw new ArgumentNullException(nameof(sc));
     }

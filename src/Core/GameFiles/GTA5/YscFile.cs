@@ -1,4 +1,4 @@
-﻿namespace ScTools.GameFiles.Five;
+﻿namespace ScTools.GameFiles.GTA5;
 
 using System.IO;
 using System;

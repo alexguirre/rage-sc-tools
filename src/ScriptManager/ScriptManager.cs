@@ -7,7 +7,7 @@
     using System.Runtime.CompilerServices;
     using System.Threading;
 
-    using ScTools.Five;
+    using ScTools.GTA5;
 
     internal sealed class ScriptManager : IDisposable
     {

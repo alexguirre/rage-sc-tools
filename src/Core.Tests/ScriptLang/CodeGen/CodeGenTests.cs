@@ -4,7 +4,7 @@
     using System.Linq;
 
     using ScTools.GameFiles;
-    using ScTools.ScriptAssembly.Targets.Five;
+    using ScTools.ScriptAssembly.Targets.GTA5;
     using ScTools.ScriptLang;
     using ScTools.ScriptLang.Ast.Declarations;
     using ScTools.ScriptLang.CodeGen;
@@ -2237,10 +2237,10 @@
             u.Accept(s);
             Assert.False(d.HasErrors);
 
-            var compiledScript = ScriptCompiler.Compile(u, new(Game.GTAV, Platform.x64));
+            var compiledScript = ScriptCompiler.Compile(u, new(Game.GTA5, Platform.x64));
             Assert.False(d.HasErrors);
             NotNull(compiledScript);
-            var compiledScriptGTAV = IsType<GameFiles.Five.Script>(compiledScript);
+            var compiledScriptGTAV = IsType<GameFiles.GTA5.Script>(compiledScript);
 
             using var expectedAssemblyReader = new StringReader(expectedAssembly);
             var expectedAssembler = Assembler.Assemble(expectedAssemblyReader, "test_expected.scasm", nativeDB, options: new() { IncludeFunctionNames = true });

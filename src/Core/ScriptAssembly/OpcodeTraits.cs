@@ -12,7 +12,7 @@ public interface IOpcodeTraits<TOpcode> where TOpcode : struct, Enum
     public static abstract int ConstantByteSize(TOpcode opcode);
 }
 
-public interface IOpcodeTraitsFive<TOpcode> : IOpcodeTraits<TOpcode> where TOpcode : struct, Enum
+public interface IOpcodeTraitsGTA5<TOpcode> : IOpcodeTraits<TOpcode> where TOpcode : struct, Enum
 {
     public static abstract TOpcode ENTER { get; }
     public static abstract TOpcode SWITCH { get; }

@@ -1,8 +1,8 @@
-﻿namespace ScTools.ScriptAssembly.Targets.Five;
+﻿namespace ScTools.ScriptAssembly.Targets.GTA5;
 
 using System.Runtime.InteropServices;
 
-using ScTools.GameFiles.Five;
+using GameFiles.GTA5;
 using ScTools.ScriptAssembly;
 
 internal class InstructionBuffer : InstructionBuffer<OpcodeV10, LabelInfo, ScriptPageTable<byte>>

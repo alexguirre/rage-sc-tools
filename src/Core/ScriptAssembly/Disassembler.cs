@@ -8,8 +8,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Diagnostics;
 
-using ScTools.GameFiles.Five;
-using ScTools.ScriptAssembly.Targets.Five;
+using GameFiles.GTA5;
+using Targets.GTA5;
 
 public class Disassembler
 {

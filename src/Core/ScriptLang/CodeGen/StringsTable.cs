@@ -2,9 +2,9 @@
 
 using System.Collections.Generic;
 
-using ScTools.GameFiles.Five;
+using GameFiles.GTA5;
 using ScTools.ScriptAssembly;
-using ScTools.ScriptAssembly.Targets.Five;
+using ScriptAssembly.Targets.GTA5;
 
 public sealed class StringsTable
 {

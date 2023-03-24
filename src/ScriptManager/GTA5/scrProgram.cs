@@ -1,4 +1,4 @@
-﻿namespace ScTools.Five
+﻿namespace ScTools.GTA5
 {
     using System;
     using System.Runtime.InteropServices;

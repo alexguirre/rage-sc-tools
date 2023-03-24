@@ -69,7 +69,7 @@ internal static class DumpCommand
                 IScript script;
                 switch (target)
                 {
-                    case (Game.GTAV, Platform.x64):
+                    case (Game.GTA5, Platform.x64):
                         throw new NotImplementedException("GTAV x64 not supported");
 
                     case (Game.MC4, Platform.Xenon):

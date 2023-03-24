@@ -129,11 +129,11 @@ internal static class BuildProjectCommand
                     scriptCount++;
                     switch (result.Script)
                     {
-                        case GameFiles.Five.Script scriptGTAV:
+                        case GameFiles.GTA5.Script scriptGTAV:
                         {
                             tasks.Add(Task.Run(() =>
                             {
-                                var ysc = new GameFiles.Five.YscFile { Script = scriptGTAV };
+                                var ysc = new GameFiles.GTA5.YscFile { Script = scriptGTAV };
                                 var data = ysc.Save(Path.GetFileName(outputFile));
                                 File.WriteAllBytes(outputFile, data);
                             }));

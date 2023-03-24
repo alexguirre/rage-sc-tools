@@ -1,4 +1,4 @@
-﻿namespace ScTools.ScriptAssembly.Targets.Five;
+﻿namespace ScTools.ScriptAssembly.Targets.GTA5;
 
 using System;
 using System.Collections.Generic;
@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 
 using ScTools;
 using ScTools.GameFiles;
-using ScTools.GameFiles.Five;
+using GameFiles.GTA5;
 using ScTools.ScriptAssembly;
 
 public readonly struct AssemblerOptions
@@ -1137,7 +1137,7 @@ public partial class Assembler : IDisposable
             // the interpreter only does this with control flow instructions and NOP
             // If the NOP is needed, skip 1 byte at the end of the page
             bool needsNopAtBoundary = !opcode.IsControlFlow() &&
-                                      opcode != Five.OpcodeV10.NOP;
+                                      opcode != OpcodeV10.NOP;
 
             if (offset + buffer.Count > Script.MaxPageLength - (needsNopAtBoundary ? 1u : 0)) // the instruction doesn't fit in the current page
             {
@@ -1149,7 +1149,7 @@ public partial class Assembler : IDisposable
                 {
                     // if there is enough space for a J instruction, add it to jump to the next page
                     short relIP = (short)(Script.MaxPageLength - (offset + JumpInstructionSize)); // get how many bytes until the next page
-                    segment.Byte((byte)Five.OpcodeV10.J);
+                    segment.Byte((byte)OpcodeV10.J);
                     segment.Byte((byte)(relIP & 0xFF));
                     segment.Byte((byte)(relIP >> 8));
                     requiredNops -= JumpInstructionSize;

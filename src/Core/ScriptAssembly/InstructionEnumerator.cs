@@ -1,8 +1,8 @@
 ﻿namespace ScTools.ScriptAssembly;
 
 using ScTools.GameFiles;
-using ScTools.GameFiles.Five;
-using ScTools.ScriptAssembly.Targets.Five;
+using GameFiles.GTA5;
+using Targets.GTA5;
 using ScTools.ScriptAssembly.Targets.NY;
 using System;
 

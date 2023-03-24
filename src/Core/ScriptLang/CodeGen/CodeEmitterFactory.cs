@@ -10,7 +10,7 @@ public static class CodeEmitterFactory
         => target switch
         {
             (Game.GTAIV, Platform.x86) => new Targets.NY.CodeEmitter(createParams.Statics, createParams.Globals),
-            (Game.GTAV, Platform.x64) => new Targets.Five.CodeEmitter(createParams.Statics, createParams.Globals),
+            (Game.GTA5, Platform.x64) => new Targets.GTA5.CodeEmitter(createParams.Statics, createParams.Globals),
             _ => throw new NotSupportedException($"Target '{target}' is not supported"),
         };
 
@@ -18,7 +18,7 @@ public static class CodeEmitterFactory
         => target switch
         {
             (Game.GTAIV, Platform.x86) => true,
-            (Game.GTAV, Platform.x64) => true,
+            (Game.GTA5, Platform.x64) => true,
             _ => false,
         };
 }

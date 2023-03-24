@@ -5,7 +5,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 
-using ScTools.GameFiles.Five;
+using GameFiles.GTA5;
 
 public class SegmentBuilder : IDisposable
 {
