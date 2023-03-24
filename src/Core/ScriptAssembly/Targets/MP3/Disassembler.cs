@@ -1,13 +1,13 @@
-﻿namespace ScTools.ScriptAssembly;
+﻿namespace ScTools.ScriptAssembly.Targets.MP3;
 
 using System;
 using System.Globalization;
 using System.IO;
 using System.Collections.Generic;
 
-using ScTools.GameFiles;
+using ScTools.GameFiles.MP3;
 
-public class DisassemblerPayne
+public class Disassembler
 {
     private const string CodeFuncPrefix = "func_",
                          CodeLabelPrefix = "lbl_",
@@ -19,9 +19,9 @@ public class DisassemblerPayne
     private readonly Dictionary<uint, string> nativeCommands;
 
     public string ScriptName { get; }
-    public ScriptPayne Script { get; }
+    public Script Script { get; }
 
-    public DisassemblerPayne(ScriptPayne sc, string scriptName, Dictionary<uint, string> nativeCommands)
+    public Disassembler(Script sc, string scriptName, Dictionary<uint, string> nativeCommands)
     {
         Script = sc ?? throw new ArgumentNullException(nameof(sc));
         ScriptName = scriptName;
@@ -202,7 +202,7 @@ public class DisassemblerPayne
 
     private void DisassembleInstruction(TextWriter w, int ip, ReadOnlySpan<byte> inst)
     {
-        var opcode = (OpcodePayne)inst[0];
+        var opcode = (Opcode)inst[0];
 
         w.Write("\t\t");
         w.Write(opcode.ToString());
@@ -213,24 +213,24 @@ public class DisassemblerPayne
 
         switch (opcode)
         {
-            case OpcodePayne.LEAVE:
+            case Opcode.LEAVE:
                 var leave = opcode.GetLeaveOperands(inst);
                 w.Write($" {leave.ParamCount}, {leave.ReturnCount}");
                 break;
-            case OpcodePayne.ENTER:
+            case Opcode.ENTER:
                 var enter = opcode.GetEnterOperands(inst);
                 w.Write($" {enter.ParamCount}, {enter.FrameSize}");
                 break;
-            case OpcodePayne.PUSH_CONST_U16:
+            case Opcode.PUSH_CONST_U16:
                 w.Write(opcode.GetU16Operand(inst));
                 break;
-            case OpcodePayne.PUSH_CONST_U32:
+            case Opcode.PUSH_CONST_U32:
                 w.Write(opcode.GetU32Operand(inst));
                 break;
-            case OpcodePayne.PUSH_CONST_F:
+            case Opcode.PUSH_CONST_F:
                 w.Write(opcode.GetFloatOperand(inst).ToString("G9", CultureInfo.InvariantCulture));
                 break;
-            case OpcodePayne.NATIVE:
+            case Opcode.NATIVE:
                 var native = opcode.GetNativeOperands(inst);
                 if (nativeCommands.TryGetValue(native.CommandHash, out var nativeName))
                 {
@@ -241,10 +241,10 @@ public class DisassemblerPayne
                     w.Write($"{native.ParamCount}, {native.ReturnCount}, 0x{native.CommandHash:X8}");
                 }
                 break;
-            case OpcodePayne.J:
-            case OpcodePayne.JZ:
-            case OpcodePayne.JNZ:
-            case OpcodePayne.CALL:
+            case Opcode.J:
+            case Opcode.JZ:
+            case Opcode.JNZ:
+            case Opcode.CALL:
                 var addr = opcode.GetU32Operand(inst);
                 if (codeLabels.TryGetValue((int)addr, out var label))
                 {
@@ -255,7 +255,7 @@ public class DisassemblerPayne
                     w.Write(addr);
                 }
                 break;
-            case OpcodePayne.SWITCH:
+            case Opcode.SWITCH:
                 var firstCase = true;
                 foreach (var c in opcode.GetSwitchOperands(inst))
                 {
@@ -275,13 +275,13 @@ public class DisassemblerPayne
                     }
                 }
                 break;
-            case OpcodePayne.STRING:
+            case Opcode.STRING:
                 w.Write($"'{opcode.GetStringOperand(inst).Escape()}'");
                 break;
-            case OpcodePayne.TEXT_LABEL_ASSIGN_STRING:
-            case OpcodePayne.TEXT_LABEL_ASSIGN_INT:
-            case OpcodePayne.TEXT_LABEL_APPEND_STRING:
-            case OpcodePayne.TEXT_LABEL_APPEND_INT:
+            case Opcode.TEXT_LABEL_ASSIGN_STRING:
+            case Opcode.TEXT_LABEL_ASSIGN_INT:
+            case Opcode.TEXT_LABEL_APPEND_STRING:
+            case Opcode.TEXT_LABEL_APPEND_INT:
                 w.Write($"{opcode.GetTextLabelLength(inst)}");
                 break;
         }
@@ -299,19 +299,19 @@ public class DisassemblerPayne
             {
                 switch (inst.Opcode)
                 {
-                    case OpcodePayne.J:
-                    case OpcodePayne.JZ:
-                    case OpcodePayne.JNZ:
+                    case Opcode.J:
+                    case Opcode.JZ:
+                    case Opcode.JNZ:
                         var jumpAddress = inst.Opcode.GetU32Operand(inst.Bytes);
                         AddLabel(codeLabels, (int)jumpAddress);
                         break;
-                    case OpcodePayne.SWITCH:
+                    case Opcode.SWITCH:
                         foreach (var c in inst.Opcode.GetSwitchOperands(inst.Bytes))
                         {
                             AddLabel(codeLabels, c.JumpAddress);
                         }
                         break;
-                    case OpcodePayne.ENTER:
+                    case Opcode.ENTER:
                         var funcAddress = inst.Address;
                         var funcName = inst.Opcode.GetEnterFunctionName(inst.Bytes) ?? (funcAddress == 0 ? "main" : null);
                         AddFuncLabel(codeLabels, funcAddress, funcName);
@@ -365,9 +365,9 @@ public class DisassemblerPayne
         //}
     }
 
-    public static void Disassemble(TextWriter output, ScriptPayne sc, string scriptName, Dictionary<uint, string> nativeCommands)
+    public static void Disassemble(TextWriter output, Script sc, string scriptName, Dictionary<uint, string> nativeCommands)
     {
-        var a = new DisassemblerPayne(sc, scriptName, nativeCommands);
+        var a = new Disassembler(sc, scriptName, nativeCommands);
         a.Disassemble(output);
     }
 }

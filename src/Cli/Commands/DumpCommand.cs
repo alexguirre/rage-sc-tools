@@ -96,8 +96,8 @@ internal static class DumpCommand
                     }
                     case (Game.MP3, Platform.x86):
                     {
-                        var sc = new ScriptPayne();
-                        sc.Read(new DataReader(new MemoryStream(source)), Keys.Payne.AesKeyPC);
+                        var sc = new GameFiles.MP3.Script();
+                        sc.Read(new DataReader(new MemoryStream(source)), Keys.MP3.AesKeyPC);
                         script = sc;
                         break;
                     }

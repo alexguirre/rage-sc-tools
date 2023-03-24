@@ -101,7 +101,7 @@ public abstract class CodeGenTestsBase
             
             nativeDB: nativeDB);
 
-    protected static void CompileRaw(string source, string expectedAssembly, string? expectedAssemblyIV = null, NativeDB? nativeDB = null)
+    protected static void CompileRaw(string source, string expectedAssembly, string? expectedAssemblyIV = null, string? expectedAssemblyMP3 = null, NativeDB? nativeDB = null)
     {
         nativeDB ??= NativeDB.Empty;
 
@@ -132,7 +132,7 @@ public abstract class CodeGenTestsBase
 
             Util.AssertScriptsAreEqual(compiledScriptGTAV, expectedAssembler.OutputScript);
         }
-        
+
         // GTA IV codegen
         if (expectedAssemblyIV is not null)
         {
@@ -149,6 +149,24 @@ public abstract class CodeGenTestsBase
             string expectedDump = expectedAssembler.OutputScript.DumpToString();
 
             Util.AssertScriptsAreEqual(compiledScriptGTAIV, expectedAssembler.OutputScript);
+        }
+
+        // MP3 codegen
+        if (expectedAssemblyMP3 is not null)
+        {
+            var compiledScript = ScriptCompiler.Compile(u, new(Game.MP3, Platform.x86));
+            False(d.HasErrors);
+            NotNull(compiledScript);
+            var compiledScriptMP3 = IsType<GameFiles.MP3.Script>(compiledScript);
+
+            // using var expectedAssemblyReader = new StringReader(expectedAssemblyMP3);
+            // var expectedAssembler = ScTools.ScriptAssembly.Targets.MP3.Assembler.Assemble(expectedAssemblyReader, "test_expected_mp3.scasm", nativeDB);
+            // False(expectedAssembler.Diagnostics.HasErrors);
+            //
+            // string sourceDump = compiledScriptMP3.DumpToString();
+            // string expectedDump = expectedAssembler.OutputScript.DumpToString();
+            //
+            // Util.AssertScriptsAreEqual(compiledScriptMP3, expectedAssembler.OutputScript);
         }
     }
 }

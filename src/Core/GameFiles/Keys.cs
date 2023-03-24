@@ -13,7 +13,7 @@ public static class Keys
         GTA4.Load("D:\\programs\\SteamLibrary\\steamapps\\common\\Grand Theft Auto IV\\GTAIV\\GTAIV.exe");
         MC4.Load("D:\\media\\mcla\\default.unencrypted.xex");
         RDR2.Load("D:\\media\\rdr2\\default.unencrypted.xex");
-        Payne.Load("D:\\programs\\SteamLibrary\\steamapps\\common\\Max Payne 3\\Max Payne 3\\MaxPayne3.exe");
+        MP3.Load("D:\\programs\\SteamLibrary\\steamapps\\common\\Max Payne 3\\Max Payne 3\\MaxPayne3.exe");
     }
     
     private const int SHA1HashLength = 20;
@@ -120,9 +120,9 @@ public static class Keys
         }
     }
 
-    public static class Payne
+    public static class MP3
     {
-        private const string CacheFile = "keys_payne.dat";
+        private const string CacheFile = "keys_mp3.dat";
         public static byte[] AesKeyPC { get; private set; } = Array.Empty<byte>();
 
         public static void Load(string exeFilePath)

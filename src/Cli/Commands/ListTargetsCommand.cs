@@ -23,7 +23,7 @@ internal static class ListTargetsCommand
         {
             ("Grand Theft Auto V", "x64", "gta5-x64", CodeWalker.GameFiles.GTA5Keys.PC_AES_KEY != null, true, false),
             ("Grand Theft Auto IV", "x86", "gta4-x86", Keys.GTA4.AesKeyPC.Length != 0, true, false),
-            ("Max Payne 3", "x86", "mp3-x86", Keys.Payne.AesKeyPC.Length != 0, false, false),
+            ("Max Payne 3", "x86", "mp3-x86", Keys.MP3.AesKeyPC.Length != 0, false, false),
             ("Midnight Club: Los Angeles", "Xenon", "mc4-xenon", Keys.MC4.AesKeyXenon.Length != 0, false, false),
             ("Red Dead Redemption", "Xenon", "rdr2-xenon", Keys.RDR2.AesKeyXenon.Length != 0, false, false),
         };

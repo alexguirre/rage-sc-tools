@@ -1,4 +1,4 @@
-﻿namespace ScTools.GameFiles;
+﻿namespace ScTools.GameFiles.MP3;
 
 using System;
 using System.IO;
@@ -11,7 +11,7 @@ using CodeWalker.GameFiles;
 /// <summary>
 /// Version 16 and 17. Used in Max Payne 3.
 /// </summary>
-public class ScriptPayne : IScript
+public class Script : IScript
 {
     public const uint MagicEncryptedV16 = 0x10726373,           // "scr\x10"
                       MagicEncryptedCompressedV16 = 0x10726353; // "Scr\x10"
@@ -155,5 +155,5 @@ public class ScriptPayne : IScript
         }
     }
 
-    public void Dump(TextWriter sink, DumpOptions options) => DumperPayne.Dump(this, sink, options);
+    public void Dump(TextWriter sink, DumpOptions options) => Dumper.Dump(this, sink, options);
 }

@@ -1,14 +1,14 @@
-﻿namespace ScTools.GameFiles;
+﻿namespace ScTools.GameFiles.MP3;
 
 using System;
 using System.IO;
 using System.Text;
 using System.Buffers.Binary;
-using ScTools.ScriptAssembly;
+using ScTools.ScriptAssembly.Targets.MP3;
 
-internal static class DumperPayne
+internal static class Dumper
 {
-    public static void Dump(ScriptPayne sc, TextWriter w, DumpOptions options)
+    public static void Dump(Script sc, TextWriter w, DumpOptions options)
     {
         sc = sc ?? throw new ArgumentNullException(nameof(sc));
 
@@ -45,7 +45,7 @@ internal static class DumperPayne
         }
     }
 
-    private static void Disassemble(ScriptPayne sc, TextWriter w, DumpOptions options)
+    private static void Disassemble(Script sc, TextWriter w, DumpOptions options)
     {
         w.WriteLine("Disassembly:");
 
@@ -55,7 +55,7 @@ internal static class DumperPayne
         {
             lineSB.Clear();
 
-            var size = OpcodePayneExtensions.ByteSize(sc.Code.AsSpan(ip));
+            var size = OpcodeExtensions.ByteSize(sc.Code.AsSpan(ip));
 
             // write offset
             if (options.IncludeOffsets)
@@ -93,63 +93,63 @@ internal static class DumperPayne
         }
     }
 
-    private static void DisassembleInstructionAt(StringBuilder sb, ScriptPayne sc, int ip)
+    private static void DisassembleInstructionAt(StringBuilder sb, Script sc, int ip)
     {
-        var opcode = (OpcodePayne)sc.Code[ip];
+        var opcode = (Opcode)sc.Code[ip];
         if (opcode.IsInvalid())
         {
             sb.Append($"<invalid opcode {opcode:X2}>");
             return;
         }
         
-        var inst = OpcodePayneExtensions.GetInstructionSpan(sc.Code, ip);
+        var inst = OpcodeExtensions.GetInstructionSpan(sc.Code, ip);
 
         sb.Append(opcode.Mnemonic());
 
         switch (opcode)
         {
-            case OpcodePayne.TEXT_LABEL_ASSIGN_STRING:
-            case OpcodePayne.TEXT_LABEL_ASSIGN_INT:
-            case OpcodePayne.TEXT_LABEL_APPEND_STRING:
-            case OpcodePayne.TEXT_LABEL_APPEND_INT:
+            case Opcode.TEXT_LABEL_ASSIGN_STRING:
+            case Opcode.TEXT_LABEL_ASSIGN_INT:
+            case Opcode.TEXT_LABEL_APPEND_STRING:
+            case Opcode.TEXT_LABEL_APPEND_INT:
                 sb.Append($" {opcode.GetTextLabelLength(inst)}");
                 break;
                 
-            case OpcodePayne.STRING:
+            case Opcode.STRING:
                 sb.Append($" '{opcode.GetStringOperand(inst).Escape()}'");
                 break;
 
-            case OpcodePayne.PUSH_CONST_U16:
+            case Opcode.PUSH_CONST_U16:
                 var u16 = opcode.GetU16Operand(inst);
                 sb.Append($" {u16} (0x{u16:X})");
                 break;
 
-            case OpcodePayne.PUSH_CONST_U32:
+            case Opcode.PUSH_CONST_U32:
                 var u32 = opcode.GetU32Operand(inst);
                 sb.Append($" {unchecked((int)u32)} (0x{u32:X})");
                 break;
 
-            case OpcodePayne.PUSH_CONST_F:
+            case Opcode.PUSH_CONST_F:
                 var f = opcode.GetFloatOperand(inst);
                 sb.Append($" {f}");
                 break;
 
-            case OpcodePayne.J:
-            case OpcodePayne.JZ:
-            case OpcodePayne.JNZ:
-            case OpcodePayne.CALL:
+            case Opcode.J:
+            case Opcode.JZ:
+            case Opcode.JNZ:
+            case Opcode.CALL:
                 var addr = opcode.GetU32Operand(inst);
                 sb.Append($" {addr:000000}");
                 break;
 
-            case OpcodePayne.SWITCH:
+            case Opcode.SWITCH:
                 foreach (var c in opcode.GetSwitchOperands(inst))
                 {
                     sb.Append($" {c.Value}:{c.JumpAddress:000000}");
                 }
                 break;
 
-            case OpcodePayne.ENTER:
+            case Opcode.ENTER:
                 var enter = opcode.GetEnterOperands(inst);
                 var funcName = opcode.GetEnterFunctionName(inst);
                 sb.Append($" {enter.ParamCount} {enter.FrameSize}");
@@ -159,12 +159,12 @@ internal static class DumperPayne
                 }
                 break;
 
-            case OpcodePayne.LEAVE:
+            case Opcode.LEAVE:
                 var leave = opcode.GetLeaveOperands(inst);
                 sb.Append($" {leave.ParamCount} {leave.ReturnCount}");
                 break;
 
-            case OpcodePayne.NATIVE:
+            case Opcode.NATIVE:
                 var native = opcode.GetNativeOperands(inst);
                 sb.Append($" {native.ParamCount} {native.ReturnCount} 0x{native.CommandHash:X8}");
                 break;
