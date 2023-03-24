@@ -102,6 +102,8 @@ internal static class BuildProjectCommand
         outputDir.Create();
         outputDir = outputDir.CreateSubdirectory(config);
 
+        var keys = Program.Keys;
+
         var results = await compileTask;
         var warningCount = 0;
         var errorCount = 0;
@@ -144,10 +146,9 @@ internal static class BuildProjectCommand
                         {
                             tasks.Add(Task.Run(() =>
                             {
-                                GameFiles.Keys.GTA4.Load("D:\\programs\\SteamLibrary\\steamapps\\common\\Grand Theft Auto IV\\GTAIV\\GTAIV.exe");
                                 using var outputStream = new FileStream(outputFile, FileMode.Create);
                                 scriptGTAIV.Magic = GameFiles.GTA4.Script.MagicEncrypted;
-                                scriptGTAIV.Write(new CodeWalker.GameFiles.DataWriter(outputStream), GameFiles.Keys.GTA4.AesKeyPC);
+                                scriptGTAIV.Write(new CodeWalker.GameFiles.DataWriter(outputStream), keys.GTA4.AesKeyPC);
                             }));
                         }
                         break;

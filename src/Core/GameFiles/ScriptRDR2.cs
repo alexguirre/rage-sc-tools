@@ -39,11 +39,9 @@ public class ScriptRDR2 : IScript
     public ScriptValue32[] Statics { get; set; } = Array.Empty<ScriptValue32>();
     public ScriptValue32[] Globals { get; set; } = Array.Empty<ScriptValue32>();
 
-    public void Read(DataReader reader, byte[] aesKey)
+    public void Read(DataReader reader, byte[]? aesKey)
     {
         Debug.Assert(reader.Endianess is Endianess.BigEndian, "Expected BE reader");
-
-        Aes.ThrowIfInvalidKey(aesKey);
 
         Magic = reader.ReadUInt32();
         GlobalsSignature = reader.ReadUInt32();
@@ -65,8 +63,12 @@ public class ScriptRDR2 : IScript
                     var compressed = reader.ReadBytes((int)compressedSize);
                     switch (AesKeyId)
                     {
-                        case AesKeyId_None: break;
-                        case AesKeyId_Default: Aes.Decrypt(compressed, aesKey); break;
+                        case AesKeyId_None:
+                            break;
+                        case AesKeyId_Default:
+                            Aes.ThrowIfInvalidKey(aesKey);
+                            Aes.Decrypt(compressed, aesKey);
+                            break;
                         default: throw new InvalidOperationException($"Unknown AES key ID {AesKeyId}");
                     }
 

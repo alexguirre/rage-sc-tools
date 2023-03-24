@@ -1,5 +1,6 @@
 ﻿namespace ScTools.LanguageServer;
 
+using System.IO;
 using System.CommandLine;
 using System.Diagnostics;
 
@@ -10,6 +11,15 @@ using Serilog;
 
 internal static class Program
 {
+    private static readonly Lazy<string> dataDirectory = new(() =>
+    {
+        var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ScTools", "LanguageServer");
+        Directory.CreateDirectory(path);
+        return path;
+    });
+
+    public static string DataDirectory => dataDirectory.Value; 
+
     private static int Main(string[] args)
     {
         var rootCmd = new RootCommand("Language server for RAGE-Script (.sc).")
@@ -30,7 +40,7 @@ internal static class Program
             .AddLogging(logging => 
                 logging.AddDebug()
                        .AddSerilog(new LoggerConfiguration()
-                            .WriteTo.File("ScTools/LanguageServer/ScTools.LanguageServer.log", rollingInterval: RollingInterval.Minute)
+                            .WriteTo.File(Path.Combine(DataDirectory, "Logs", "main.log"), rollingInterval: RollingInterval.Minute)
                             .CreateLogger()))
             .AddLspRequestHandlers()
             .AddSingleton<ILspRequestHandlerDispatcher, LspRequestHandlerDispatcher>()

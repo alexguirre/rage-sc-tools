@@ -53,7 +53,7 @@ internal static class DumpCommand
 
         var totalTime = Stopwatch.StartNew();
 
-        Keys.LoadAll();
+        var keys = Program.Keys;
 
         var inputFiles = input.SelectMany(i => i.Matches);
         await Parallel.ForEachAsync(inputFiles, async (inputFile, cancellationToken) =>
@@ -75,10 +75,10 @@ internal static class DumpCommand
                     case (Game.MC4, Platform.Xenon):
                     case (Game.GTA4, Platform.x86):
                     {
-                        byte[] aesKey = target.Game switch
+                        byte[]? aesKey = target.Game switch
                         {
-                            Game.GTA4 => Keys.GTA4.AesKeyPC,
-                            Game.MC4 => Keys.MC4.AesKeyXenon,
+                            Game.GTA4 => keys.GTA4.AesKeyPC,
+                            Game.MC4 => keys.MC4.AesKeyXenon,
                             _ => throw new UnreachableException("Game already restricted by parent switch")
                         };
 
@@ -90,14 +90,14 @@ internal static class DumpCommand
                     case (Game.RDR2, Platform.Xenon):
                     {
                         var sc = new ScriptRDR2();
-                        sc.Read(new DataReader(new MemoryStream(source), Endianess.BigEndian), Keys.RDR2.AesKeyXenon);
+                        sc.Read(new DataReader(new MemoryStream(source), Endianess.BigEndian), keys.RDR2.AesKeyXenon);
                         script = sc;
                         break;
                     }
                     case (Game.MP3, Platform.x86):
                     {
                         var sc = new GameFiles.MP3.Script();
-                        sc.Read(new DataReader(new MemoryStream(source)), Keys.MP3.AesKeyPC);
+                        sc.Read(new DataReader(new MemoryStream(source)), keys.MP3.AesKeyPC!); // AES key checked for null inside Read
                         script = sc;
                         break;
                     }

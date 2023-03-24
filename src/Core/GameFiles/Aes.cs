@@ -44,4 +44,9 @@ public static class Aes
         if (aesKey is null) { throw new ArgumentNullException(paramName); }
         if (aesKey.Length != KeyLength) { throw new ArgumentException($"{paramName} must be {KeyLength} bytes long"); }
     }
+
+    public static bool IsValidKey([NotNullWhen(true)] byte[]? aesKey)
+    {
+        return aesKey is not null && aesKey.Length == KeyLength;
+    }
 }

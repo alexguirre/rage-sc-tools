@@ -67,7 +67,7 @@ internal static class CompileCommand
 
         var totalTime = Stopwatch.StartNew();
 
-        Keys.LoadAll();
+        var keys = Program.Keys;
 
         var inputFiles = input.SelectMany(i => i.Matches);
         await Parallel.ForEachAsync(inputFiles, async (inputFile, cancellationToken) =>
@@ -129,14 +129,14 @@ internal static class CompileCommand
                         {
                             await using var outputStream = outputFile.OpenWrite();
                             scriptGTAIV.Magic = ScTools.GameFiles.GTA4.Script.MagicEncrypted;
-                            scriptGTAIV.Write(new DataWriter(outputStream), Keys.GTA4.AesKeyPC);
+                            scriptGTAIV.Write(new DataWriter(outputStream), keys.GTA4.AesKeyPC);
 
                             if (unencrypted)
                             {
                                 var outputFileUnencrypted = new FileInfo(Path.ChangeExtension(outputFileName, "unencrypted.sco"));
                                 await using var outputStreamUnencrypted = outputFileUnencrypted.OpenWrite();
                                 scriptGTAIV.Magic = ScTools.GameFiles.GTA4.Script.MagicUnencrypted;
-                                scriptGTAIV.Write(new DataWriter(outputStreamUnencrypted), Keys.GTA4.AesKeyPC);
+                                scriptGTAIV.Write(new DataWriter(outputStreamUnencrypted), keys.GTA4.AesKeyPC);
                             }
                         }
                         break;
