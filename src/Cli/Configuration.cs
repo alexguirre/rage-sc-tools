@@ -27,7 +27,7 @@ public record Configuration(
         nameof(RDR2XexPath),
         nameof(MP3ExePath)
     };
-    
+
     public Configuration Set(string option, string? value)
     {
         var cmp = System.StringComparer.OrdinalIgnoreCase;
@@ -39,7 +39,7 @@ public record Configuration(
 
         throw new System.ArgumentException($"Unknown option '{option}'", nameof(option));
     }
-    
+
     public string? Get(string option)
     {
         var cmp = System.StringComparer.OrdinalIgnoreCase;

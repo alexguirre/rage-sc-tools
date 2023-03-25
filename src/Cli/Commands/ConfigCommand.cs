@@ -15,6 +15,7 @@ internal static class ConfigCommand
         var cmd = new Command("config", "Show or edit the configuration file.");
         cmd.AddCommand(GetCommand.SubCommand);
         cmd.AddCommand(SetCommand.SubCommand);
+        // cmd.AddCommand(SetupCommand.SubCommand);
         cmd.SetHandler(Invoke);
         return cmd;
     }
@@ -26,8 +27,8 @@ internal static class ConfigCommand
         var grid = new Grid();
         grid.AddColumn().AddColumn();
 
-        IRenderable displayPath(string? path) => path != null ? new TextPath(path) : new Text("null", new(foreground: Color.Red));
-        grid.AddRow(new Text("Configuration File"), new TextPath(Program.ConfigurationPath));
+        IRenderable displayPath(string? path) => path != null ? new Text(path) : new Text("null", new(foreground: Color.Red));
+        grid.AddRow(new Text("Configuration File"), new Text(Program.ConfigurationPath));
         grid.AddEmptyRow();
         grid.AddRow(new Text(nameof(Configuration.GTA5ExePath)), displayPath(c.GTA5ExePath));
         grid.AddRow(new Text(nameof(Configuration.GTA4ExePath)), displayPath(c.GTA4ExePath));
@@ -101,6 +102,28 @@ internal static class ConfigCommand
         public static void Invoke(string option)
         {
             Std.Out.WriteLine(Program.Configuration.Get(option) ?? "null");
+        }
+    }
+
+    private static class SetupCommand
+    {
+        public static Command SubCommand { get; } = BuildSubCommand();
+
+        private static Command BuildSubCommand()
+        {
+            var cmd = new Command("setup", "Interactive setup of the configuration file.");
+            cmd.SetHandler(Invoke);
+            return cmd;
+        }
+
+        public static void Invoke()
+        {
+            var gta5ExePath = Std.Out.Ask<string>("Path to GTA V executable");
+            var gta4ExePath = Std.Out.Ask<string>("Path to GTA IV executable");
+
+            Std.Out.WriteLine();
+            Std.Out.WriteLine(gta5ExePath);
+            Std.Out.WriteLine(gta4ExePath);
         }
     }
 }
