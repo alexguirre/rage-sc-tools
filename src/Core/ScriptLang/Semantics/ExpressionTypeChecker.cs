@@ -424,7 +424,7 @@ public sealed class ExpressionTypeChecker : AstVisitor<TypeInfo, SemanticsAnalyz
 
     #region Errors
     private static void Error(SemanticsAnalyzer s, ErrorCode code, string message, SourceRange location)
-        => s.Diagnostics.Add((int)code, DiagnosticTag.Error, message, location);
+        => s.Diagnostics.Add((int)code, DiagnosticSeverity.Error, message, location);
 
     private static TypeInfo UnaryOperatorNotSupportedError(SemanticsAnalyzer s, UnaryExpression node, TypeInfo type)
     {

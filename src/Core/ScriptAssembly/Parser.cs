@@ -291,7 +291,7 @@ public class Parser
         => Missing(Token.Identifier(identifier));
 
     private void Error(ErrorCode code, string message, SourceRange location)
-        => LastError = Diagnostics.Add((int)code, DiagnosticTag.Error, message, location);
+        => LastError = Diagnostics.Add((int)code, DiagnosticSeverity.Error, message, location);
 
     private void UnexpectedTokenError(TokenKind expectedToken)
         => Error(ErrorCode.ParserUnexpectedToken, $"Unexpected token '{Current.Kind}', expected '{expectedToken}'", Current.Location);

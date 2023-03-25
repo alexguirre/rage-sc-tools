@@ -130,7 +130,7 @@ public abstract class LexerBase<TToken, TTokenKind, TErrorCode> : ILexer<TToken,
         }
 
         protected void Error(TErrorCode code, string message, SourceRange location)
-            => Lexer.Diagnostics.Add(code.AsInteger<TErrorCode, int>(), DiagnosticTag.Error, message, location);
+            => Lexer.Diagnostics.Add(code.AsInteger<TErrorCode, int>(), DiagnosticSeverity.Error, message, location);
 
         protected TToken BadToken(TErrorCode code, string message)
         {

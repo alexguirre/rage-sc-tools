@@ -72,7 +72,7 @@ public abstract class PreprocessorBase<TToken, TTokenKind, TErrorCode> : IPrepro
     public bool IsDefined(string symbol) => definitions.Contains(symbol);
 
     protected void Error(TErrorCode code, string message, SourceRange location)
-    => Diagnostics.Add(code.AsInteger<TErrorCode, int>(), DiagnosticTag.Error, message, location);
+    => Diagnostics.Add(code.AsInteger<TErrorCode, int>(), DiagnosticSeverity.Error, message, location);
 
     protected void ExpectedSymbolError(TToken foundToken)
         => Error(errorSet.UnexpectedToken, $"Unexpected token '{foundToken.Kind}', expected preprocessor symbol", foundToken.Location);

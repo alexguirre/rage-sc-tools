@@ -923,7 +923,7 @@ public sealed class SemanticsAnalyzer : AstVisitor
 
     #region Errors
     private void Error(ErrorCode code, string message, SourceRange location)
-        => Diagnostics.Add((int)code, DiagnosticTag.Error, message, location);
+        => Diagnostics.Add((int)code, DiagnosticSeverity.Error, message, location);
     internal void SymbolAlreadyDefinedError(IDeclaration declaration)
         => Error(ErrorCode.SemanticSymbolAlreadyDefined, $"Symbol '{declaration.Name}' is already defined", declaration.NameToken.Location);
     internal void UndefinedSymbolError(string name, SourceRange location)

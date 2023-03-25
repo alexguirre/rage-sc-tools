@@ -203,7 +203,7 @@ public class IntrinsicsTests : SemanticsTestsBase
         );
 
         var errors = s.Diagnostics.Errors;
-        Equal(numExpectedErrors, errors.Length);
+        Equal(numExpectedErrors, errors.Count);
         All(errors, e => Equal((int)ErrorCode.SemanticUndefinedSymbol, e.Code));
     }
 

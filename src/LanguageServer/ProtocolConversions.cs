@@ -31,11 +31,11 @@ internal static class ProtocolConversions
             Range = ToLspRange(diagnostic.Source),
             Message = diagnostic.Message,
             Code = diagnostic.Code,
-            Severity = diagnostic.Tag switch
+            Severity = diagnostic.Severity switch
             {
-                DiagnosticTag.Error => LspDiagnosticSeverity.Error,
-                DiagnosticTag.Warning => LspDiagnosticSeverity.Warning,
-                _ => throw new InvalidOperationException("Unknown diagnostic tag"),
+                DiagnosticSeverity.Error => LspDiagnosticSeverity.Error,
+                DiagnosticSeverity.Warning => LspDiagnosticSeverity.Warning,
+                _ => throw new InvalidOperationException("Unknown diagnostic severity"),
             },
         };
 }

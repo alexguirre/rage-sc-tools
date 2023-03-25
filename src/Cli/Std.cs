@@ -36,7 +36,7 @@ public static class Std
     {
         foreach (var d in diagnostics.GetDiagnosticsSorted())
         {
-            console.MarkupLineInterpolated($"[{(d.Tag is DiagnosticTag.Error ? "red" : "yellow")}]{indent}{d}[/]");
+            console.MarkupLineInterpolated($"[{(d.Severity is DiagnosticSeverity.Error ? "red" : "yellow")}]{indent}{d}[/]");
         }
     }
 }

@@ -23,7 +23,7 @@ public abstract class BaseError : BaseNode, IError
 
     public BaseError(SourceRange source, DiagnosticsReport diagnostics, string message) : base(source)
     {
-        Diagnostic = new Diagnostic(-1, DiagnosticTag.Error, message, source);
+        Diagnostic = new Diagnostic(-1, DiagnosticSeverity.Error, message, source);
         diagnostics.Add(Diagnostic);
     }
 }

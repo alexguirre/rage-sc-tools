@@ -167,7 +167,7 @@
 
             True(diag.HasErrors);
             False(diag.HasWarnings);
-            Equal(2, diag.Errors.Length);
+            Equal(2, diag.Errors.Count);
 
             CheckError(ErrorCode.LexerUnrecognizedEscapeSequence, (1, 2), (1, 3), diag);
             CheckError(ErrorCode.LexerUnrecognizedEscapeSequence, (1, 6), (1, 7), diag);
@@ -446,7 +446,7 @@
 
             True(diag.HasErrors);
             False(diag.HasWarnings);
-            Equal(5, diag.Errors.Length);
+            Equal(5, diag.Errors.Count);
 
             CheckError(ErrorCode.LexerInvalidFloatLiteral, (1, 1), (1, 2), diag);
             CheckError(ErrorCode.LexerInvalidFloatLiteral, (1, 4), (1, 7), diag);

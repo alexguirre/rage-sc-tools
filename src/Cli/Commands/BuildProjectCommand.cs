@@ -164,8 +164,8 @@ internal static class BuildProjectCommand
                 Std.Out.WriteLine();
             }
 
-            warningCount += result.Diagnostics.Warnings.Length;
-            errorCount += result.Diagnostics.Errors.Length;
+            warningCount += result.Diagnostics.Warnings.Count;
+            errorCount += result.Diagnostics.Errors.Count;
         }
 
         await Task.WhenAll(tasks);
