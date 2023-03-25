@@ -20,18 +20,50 @@ internal static class Program
 
     private static readonly Lazy<KeyStore> keys = new(() =>
     {
-        // TODO: make Keys paths user configurable
+        var c = Configuration;
         return GameFiles.KeyStore.LoadAll(
             cacheDirectory: DataDirectory,
-            gta5ExePath: "D:\\programs\\Rockstar Games\\Grand Theft Auto V\\GTA5.exe",
-            gta4ExePath: "D:\\programs\\SteamLibrary\\steamapps\\common\\Grand Theft Auto IV\\GTAIV\\GTAIV.exe",
-            mc4XexPath: "D:\\media\\mcla\\default.unencrypted.xex",
-            rdr2XexPath: "D:\\media\\rdr2\\default.unencrypted.xex",
-            mp3ExePath: "D:\\programs\\SteamLibrary\\steamapps\\common\\Max Payne 3\\Max Payne 3\\MaxPayne3.exe");
+            gta5ExePath: c.GTA5ExePath,
+            gta4ExePath: c.GTA4ExePath,
+            mc4XexPath: c.MC4XexPath,
+            rdr2XexPath: c.RDR2XexPath,
+            mp3ExePath: c.MP3ExePath);
+    });
+
+    private static readonly Lazy<string> configurationPath = new(() => Path.Combine(DataDirectory, "config.json"));
+
+    private static Lazy<Configuration> configuration = new(() =>
+    {
+        var path = ConfigurationPath;
+        if (!File.Exists(path))
+        {
+            return Configuration.Default;
+        }
+
+        using var file = File.OpenRead(path);
+        return Configuration.FromJson(file) ?? throw new InvalidDataException($"Could not read configuration file '{path}'");
     });
 
     public static string DataDirectory => dataDirectory.Value;
     public static KeyStore Keys => keys.Value;
+    public static string ConfigurationPath => configurationPath.Value;
+
+    public static Configuration Configuration
+    {
+        get => configuration.Value;
+        set
+        {
+            if (value == configuration.Value)
+            {
+                return;
+            }
+
+            var path = ConfigurationPath;
+            using var file = File.Open(path, FileMode.Create);
+            value.ToJson(file);
+            configuration = new(() => value);
+        }
+    }
 
     private static async Task<int> Main(string[] args)
     {
@@ -40,6 +72,7 @@ internal static class Program
         var rootCmd = new RootCommand("Tool for working with RAGE scripts.");
         rootCmd.AddCommand(BuildProjectCommand.Command);
         rootCmd.AddCommand(CompileCommand.Command);
+        rootCmd.AddCommand(ConfigCommand.Command);
         rootCmd.AddCommand(DumpCommand.Command);
         rootCmd.AddCommand(InitProjectCommand.Command);
         rootCmd.AddCommand(ListTargetsCommand.Command);
