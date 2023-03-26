@@ -152,6 +152,18 @@ internal static class BuildProjectCommand
                             }));
                         }
                         break;
+
+                        case GameFiles.MP3.Script scriptMP3:
+                        {
+                            tasks.Add(Task.Run(() =>
+                            {
+                                using var outputStream = new FileStream(outputFile, FileMode.Create);
+                                scriptMP3.Magic = GameFiles.MP3.Script.MagicEncryptedCompressedV17;
+                                scriptMP3.Unknown_18h = 0xFFFFFFFF;
+                                scriptMP3.Write(new CodeWalker.GameFiles.DataWriter(outputStream), keys.MP3.AesKeyPC!);
+                            }));
+                        }
+                            break;
                         
                         default:
                             throw new InvalidOperationException("Unsupported script type");

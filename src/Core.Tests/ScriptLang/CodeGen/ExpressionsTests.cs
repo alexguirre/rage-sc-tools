@@ -25,6 +25,14 @@ public class ExpressionsTests : CodeGenTestsBase
             {IntToLocalIV(2)}
             STORE
             LEAVE 0, 0
+        ",
+        expectedAssemblyMP3: $@"
+            ENTER 0, 3
+            PUSH_CONST_1
+            INOT
+            {IntToLocalMP3(2)}
+            STORE
+            LEAVE 0, 0
         ");
     }
 
@@ -47,6 +55,14 @@ public class ExpressionsTests : CodeGenTestsBase
             PUSH_CONST_1
             INOT
             {IntToLocalIV(2)}
+            STORE
+            LEAVE 0, 0
+        ",
+        expectedAssemblyMP3: $@"
+            ENTER 0, 3
+            PUSH_CONST_1
+            INOT
+            {IntToLocalMP3(2)}
             STORE
             LEAVE 0, 0
         ");
@@ -81,6 +97,18 @@ public class ExpressionsTests : CodeGenTestsBase
             {IntToLocalIV(2)}
             STORE
             LEAVE 0, 0
+        ",
+        expectedAssemblyMP3: $@"
+            ENTER 0, 3
+            PUSH_CONST_1
+            DUP
+            JZ assign
+            PUSH_CONST_0
+            IAND
+        assign:
+            {IntToLocalMP3(2)}
+            STORE
+            LEAVE 0, 0
         ");
     }
 
@@ -113,6 +141,19 @@ public class ExpressionsTests : CodeGenTestsBase
             IOR
         assign:
             {IntToLocalIV(2)}
+            STORE
+            LEAVE 0, 0
+        ",
+        expectedAssemblyMP3: $@"
+            ENTER 0, 3
+            PUSH_CONST_1
+            DUP
+            INOT
+            JZ assign
+            PUSH_CONST_0
+            IOR
+        assign:
+            {IntToLocalMP3(2)}
             STORE
             LEAVE 0, 0
         ");
@@ -183,6 +224,38 @@ public class ExpressionsTests : CodeGenTestsBase
             JZ endif
             PUSH_CONST_2
             {IntToLocalIV(2)}
+            STORE
+        endif:
+            LEAVE 0, 0
+        ",
+        expectedAssemblyMP3: $@"
+            ENTER 0, 3
+            PUSH_CONST_1
+            {IntToLocalMP3(2)}
+            STORE
+            {IntToLocalMP3(2)}
+            LOAD
+            PUSH_CONST_0
+            IEQ
+            DUP
+            JZ and
+            {IntToLocalMP3(2)}
+            LOAD
+            PUSH_CONST_3
+            IEQ
+            IAND
+        and:
+            DUP
+            JZ if
+            {IntToLocalMP3(2)}
+            LOAD
+            PUSH_CONST_5
+            IEQ
+            IAND
+        if:
+            JZ endif
+            PUSH_CONST_2
+            {IntToLocalMP3(2)}
             STORE
         endif:
             LEAVE 0, 0
@@ -261,6 +334,40 @@ public class ExpressionsTests : CodeGenTestsBase
             STORE
         endif:
             LEAVE 0, 0
+        ",
+        expectedAssemblyMP3: $@"
+            ENTER 0, 3
+            PUSH_CONST_1
+            {IntToLocalMP3(2)}
+            STORE
+            {IntToLocalMP3(2)}
+            LOAD
+            PUSH_CONST_0
+            IEQ
+            DUP
+            INOT
+            JZ or
+            {IntToLocalMP3(2)}
+            LOAD
+            PUSH_CONST_3
+            IEQ
+            IOR
+        or:
+            DUP
+            INOT
+            JZ if
+            {IntToLocalMP3(2)}
+            LOAD
+            PUSH_CONST_5
+            IEQ
+            IOR
+        if:
+            JZ endif
+            PUSH_CONST_2
+            {IntToLocalMP3(2)}
+            STORE
+        endif:
+            LEAVE 0, 0
         ");
     }
 
@@ -325,6 +432,37 @@ public class ExpressionsTests : CodeGenTestsBase
             LOAD
             INE
             {IntToLocalIV(b)}
+            STORE
+
+            LEAVE 0, 0
+        ",
+        expectedAssemblyMP3: $@"
+            ENTER 0, 5
+            ; b1 = TRUE
+            PUSH_CONST_1
+            {IntToLocalMP3(b1)}
+            STORE
+            ; b2 = FALSE
+            PUSH_CONST_0
+            {IntToLocalMP3(b2)}
+            STORE
+
+            ; b = b1 == b2
+            {IntToLocalMP3(b1)}
+            LOAD
+            {IntToLocalMP3(b2)}
+            LOAD
+            IEQ
+            {IntToLocalMP3(b)}
+            STORE
+
+            ; b = b1 <> b2
+            {IntToLocalMP3(b1)}
+            LOAD
+            {IntToLocalMP3(b2)}
+            LOAD
+            INE
+            {IntToLocalMP3(b)}
             STORE
 
             LEAVE 0, 0
@@ -487,6 +625,89 @@ public class ExpressionsTests : CodeGenTestsBase
             STORE
 
             LEAVE 0, 0
+        ",
+        expectedAssemblyMP3: $@"
+            ENTER 0, 5
+            ; n1 = 1
+            PUSH_CONST_1
+            {IntToLocalMP3(n1)}
+            STORE
+            ; n1 = 2
+            PUSH_CONST_2
+            {IntToLocalMP3(n2)}
+            STORE
+
+            ; n3 = n1 + n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            IADD
+            {IntToLocalMP3(n3)}
+            STORE
+
+            ; n3 = n1 - n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            ISUB
+            {IntToLocalMP3(n3)}
+            STORE
+
+            ; n3 = n1 * n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            IMUL
+            {IntToLocalMP3(n3)}
+            STORE
+
+            ; n3 = n1 / n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            IDIV
+            {IntToLocalMP3(n3)}
+            STORE
+
+            ; n3 = n1 & n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            IAND
+            {IntToLocalMP3(n3)}
+            STORE
+
+            ; n3 = n1 ^ n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            IXOR
+            {IntToLocalMP3(n3)}
+            STORE
+
+            ; n3 = n1 | n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            IOR
+            {IntToLocalMP3(n3)}
+            STORE
+
+            ; n3 = -n1
+            {IntToLocalMP3(n1)}
+            LOAD
+            INEG
+            {IntToLocalMP3(n3)}
+            STORE
+
+            LEAVE 0, 0
         ");
     }
 
@@ -633,6 +854,82 @@ public class ExpressionsTests : CodeGenTestsBase
             STORE
 
             LEAVE 0, 0
+        ",
+        expectedAssemblyMP3: $@"
+            ENTER 0, 4
+            ; n1 = 1
+            PUSH_CONST_1
+            {IntToLocalMP3(n1)}
+            STORE
+            ; n1 = 2
+            PUSH_CONST_2
+            {IntToLocalMP3(n2)}
+            STORE
+
+            ; n1 += n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            IADD
+            {IntToLocalMP3(n1)}
+            STORE
+
+            ; n1 -= n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            ISUB
+            {IntToLocalMP3(n1)}
+            STORE
+
+            ; n1 *= n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            IMUL
+            {IntToLocalMP3(n1)}
+            STORE
+
+            ; n1 /= n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            IDIV
+            {IntToLocalMP3(n1)}
+            STORE
+
+            ; n1 &= n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            IAND
+            {IntToLocalMP3(n1)}
+            STORE
+
+            ; n1 ^= n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            IXOR
+            {IntToLocalMP3(n1)}
+            STORE
+
+            ; n1 |= n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            IOR
+            {IntToLocalMP3(n1)}
+            STORE
+
+            LEAVE 0, 0
         ");
     }
 
@@ -764,6 +1061,73 @@ public class ExpressionsTests : CodeGenTestsBase
             STORE
 
             LEAVE 0, 0
+        ",
+        expectedAssemblyMP3: $@"
+            ENTER 0, 5
+            ; n1 = 1
+            PUSH_CONST_1
+            {IntToLocalMP3(n1)}
+            STORE
+            ; n1 = 2
+            PUSH_CONST_2
+            {IntToLocalMP3(n2)}
+            STORE
+
+            ; b = n1 == n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            IEQ
+            {IntToLocalMP3(b)}
+            STORE
+
+            ; b = n1 <> n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            INE
+            {IntToLocalMP3(b)}
+            STORE
+
+            ; b = n1 > n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            IGT
+            {IntToLocalMP3(b)}
+            STORE
+
+            ; b = n1 >= n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            IGE
+            {IntToLocalMP3(b)}
+            STORE
+
+            ; b = n1 < n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            ILT
+            {IntToLocalMP3(b)}
+            STORE
+
+            ; b = n1 <= n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            ILE
+            {IntToLocalMP3(b)}
+            STORE
+
+            LEAVE 0, 0
         ");
     }
 
@@ -875,6 +1239,62 @@ public class ExpressionsTests : CodeGenTestsBase
             STORE
 
             LEAVE 0, 0
+        ",
+        expectedAssemblyMP3: $@"
+            ENTER 0, 5
+            ; n1 = 1
+            PUSH_CONST_F 1.0
+            {IntToLocalMP3(n1)}
+            STORE
+            ; n1 = 2
+            PUSH_CONST_F 2.0
+            {IntToLocalMP3(n2)}
+            STORE
+
+            ; n3 = n1 + n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            FADD
+            {IntToLocalMP3(n3)}
+            STORE
+
+            ; n3 = n1 - n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            FSUB
+            {IntToLocalMP3(n3)}
+            STORE
+
+            ; n3 = n1 * n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            FMUL
+            {IntToLocalMP3(n3)}
+            STORE
+
+            ; n3 = n1 / n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            FDIV
+            {IntToLocalMP3(n3)}
+            STORE
+
+            ; n3 = -n1
+            {IntToLocalMP3(n1)}
+            LOAD
+            FNEG
+            {IntToLocalMP3(n3)}
+            STORE
+
+            LEAVE 0, 0
         ");
     }
 
@@ -970,6 +1390,55 @@ public class ExpressionsTests : CodeGenTestsBase
             LOAD
             FDIV
             {IntToLocalIV(n1)}
+            STORE
+
+            LEAVE 0, 0
+        ",
+        expectedAssemblyMP3: $@"
+            ENTER 0, 4
+            ; n1 = 1
+            PUSH_CONST_F 1.0
+            {IntToLocalMP3(n1)}
+            STORE
+            ; n2 = 2
+            PUSH_CONST_F 2.0
+            {IntToLocalMP3(n2)}
+            STORE
+
+            ; n1 += n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            FADD
+            {IntToLocalMP3(n1)}
+            STORE
+
+            ; n1 -= n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            FSUB
+            {IntToLocalMP3(n1)}
+            STORE
+
+            ; n1 *= n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            FMUL
+            {IntToLocalMP3(n1)}
+            STORE
+
+            ; n1 /= n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            FDIV
+            {IntToLocalMP3(n1)}
             STORE
 
             LEAVE 0, 0
@@ -1104,6 +1573,73 @@ public class ExpressionsTests : CodeGenTestsBase
             STORE
 
             LEAVE 0, 0
+        ",
+        expectedAssemblyMP3: $@"
+            ENTER 0, 5
+            ; n1 = 1
+            PUSH_CONST_F 1.0
+            {IntToLocalMP3(n1)}
+            STORE
+            ; n2 = 2
+            PUSH_CONST_F 2.0
+            {IntToLocalMP3(n2)}
+            STORE
+
+            ; b = n1 == n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            FEQ
+            {IntToLocalMP3(b)}
+            STORE
+
+            ; b = n1 <> n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            FNE
+            {IntToLocalMP3(b)}
+            STORE
+
+            ; b = n1 > n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            FGT
+            {IntToLocalMP3(b)}
+            STORE
+
+            ; b = n1 >= n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            FGE
+            {IntToLocalMP3(b)}
+            STORE
+
+            ; b = n1 < n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            FLT
+            {IntToLocalMP3(b)}
+            STORE
+
+            ; b = n1 <= n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            FLE
+            {IntToLocalMP3(b)}
+            STORE
+
+            LEAVE 0, 0
         ");
     }
 
@@ -1207,6 +1743,55 @@ public class ExpressionsTests : CodeGenTestsBase
             LOAD
             IOR
             {IntToLocalIV(n3)}
+            STORE
+
+            LEAVE 0, 0
+        ",
+        expectedAssemblyMP3: $@"
+            ENTER 0, 5
+            ; n1 = 0
+            PUSH_CONST_0
+            {IntToLocalMP3(n1)}
+            STORE
+            ; n1 = 1
+            PUSH_CONST_1
+            {IntToLocalMP3(n2)}
+            STORE
+
+            ; n3 = n1 + n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            IADD
+            {IntToLocalMP3(n3)}
+            STORE
+
+            ; n3 = n1 & n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            IAND
+            {IntToLocalMP3(n3)}
+            STORE
+
+            ; n3 = n1 ^ n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            IXOR
+            {IntToLocalMP3(n3)}
+            STORE
+
+            ; n3 = n1 | n2
+            {IntToLocalMP3(n1)}
+            LOAD
+            {IntToLocalMP3(n2)}
+            LOAD
+            IOR
+            {IntToLocalMP3(n3)}
             STORE
 
             LEAVE 0, 0
@@ -1379,6 +1964,83 @@ public class ExpressionsTests : CodeGenTestsBase
             STORE_N
 
             LEAVE 0, 0
+        ",
+        expectedAssemblyMP3: $@"
+            ENTER 0, 11
+            ; v1 = <<1.0, 2.0, 3.0>>
+            PUSH_CONST_F 1.0
+            PUSH_CONST_F 2.0
+            PUSH_CONST_F 3.0
+            PUSH_CONST_3
+            {IntToLocalMP3(v1)}
+            STORE_N
+
+            ; v2 = <<4.0, 5.0, 6.0>>
+            PUSH_CONST_F 4.0
+            PUSH_CONST_F 5.0
+            PUSH_CONST_F 6.0
+            PUSH_CONST_3
+            {IntToLocalMP3(v2)}
+            STORE_N
+
+            ; v3 = v1 + v2
+            PUSH_CONST_3
+            {IntToLocalMP3(v1)}
+            LOAD_N
+            PUSH_CONST_3
+            {IntToLocalMP3(v2)}
+            LOAD_N
+            VADD
+            PUSH_CONST_3
+            {IntToLocalMP3(v3)}
+            STORE_N
+
+            ; v3 = v1 - v2
+            PUSH_CONST_3
+            {IntToLocalMP3(v1)}
+            LOAD_N
+            PUSH_CONST_3
+            {IntToLocalMP3(v2)}
+            LOAD_N
+            VSUB
+            PUSH_CONST_3
+            {IntToLocalMP3(v3)}
+            STORE_N
+
+            ; v3 = v1 * v2
+            PUSH_CONST_3
+            {IntToLocalMP3(v1)}
+            LOAD_N
+            PUSH_CONST_3
+            {IntToLocalMP3(v2)}
+            LOAD_N
+            VMUL
+            PUSH_CONST_3
+            {IntToLocalMP3(v3)}
+            STORE_N
+
+            ; v3 = v1 / v2
+            PUSH_CONST_3
+            {IntToLocalMP3(v1)}
+            LOAD_N
+            PUSH_CONST_3
+            {IntToLocalMP3(v2)}
+            LOAD_N
+            VDIV
+            PUSH_CONST_3
+            {IntToLocalMP3(v3)}
+            STORE_N
+
+            ; v3 = -v1
+            PUSH_CONST_3
+            {IntToLocalMP3(v1)}
+            LOAD_N
+            VNEG
+            PUSH_CONST_3
+            {IntToLocalMP3(v3)}
+            STORE_N
+
+            LEAVE 0, 0
         ");
     }
 
@@ -1526,6 +2188,74 @@ public class ExpressionsTests : CodeGenTestsBase
             VDIV
             PUSH_CONST_3
             {IntToLocalIV(v1)}
+            STORE_N
+
+            LEAVE 0, 0
+        ",
+        expectedAssemblyMP3: $@"
+            ENTER 0, 8
+            ; v1 = <<1.0, 2.0, 3.0>>
+            PUSH_CONST_F 1.0
+            PUSH_CONST_F 2.0
+            PUSH_CONST_F 3.0
+            PUSH_CONST_3
+            {IntToLocalMP3(v1)}
+            STORE_N
+
+            ; v2 = <<4.0, 5.0, 6.0>>
+            PUSH_CONST_F 4.0
+            PUSH_CONST_F 5.0
+            PUSH_CONST_F 6.0
+            PUSH_CONST_3
+            {IntToLocalMP3(v2)}
+            STORE_N
+
+            ; v1 += v2
+            PUSH_CONST_3
+            {IntToLocalMP3(v1)}
+            LOAD_N
+            PUSH_CONST_3
+            {IntToLocalMP3(v2)}
+            LOAD_N
+            VADD
+            PUSH_CONST_3
+            {IntToLocalMP3(v1)}
+            STORE_N
+
+            ; v1 -= v2
+            PUSH_CONST_3
+            {IntToLocalMP3(v1)}
+            LOAD_N
+            PUSH_CONST_3
+            {IntToLocalMP3(v2)}
+            LOAD_N
+            VSUB
+            PUSH_CONST_3
+            {IntToLocalMP3(v1)}
+            STORE_N
+
+            ; v1 *= v2
+            PUSH_CONST_3
+            {IntToLocalMP3(v1)}
+            LOAD_N
+            PUSH_CONST_3
+            {IntToLocalMP3(v2)}
+            LOAD_N
+            VMUL
+            PUSH_CONST_3
+            {IntToLocalMP3(v1)}
+            STORE_N
+
+            ; v1 /= v2
+            PUSH_CONST_3
+            {IntToLocalMP3(v1)}
+            LOAD_N
+            PUSH_CONST_3
+            {IntToLocalMP3(v2)}
+            LOAD_N
+            VDIV
+            PUSH_CONST_3
+            {IntToLocalMP3(v1)}
             STORE_N
 
             LEAVE 0, 0
@@ -1738,6 +2468,110 @@ public class ExpressionsTests : CodeGenTestsBase
             STORE
 
             LEAVE 0, 0
+        ",
+        expectedAssemblyMP3: $@"
+            ENTER 0, 7
+
+            ; b = entity op NULL
+            {IntToLocalMP3(entity)}
+            LOAD
+            NULL
+            LOAD
+            {opcode}
+            {IntToLocalMP3(b)}
+            STORE
+
+            ; b = entity op entity
+            {IntToLocalMP3(entity)}
+            LOAD
+            {IntToLocalMP3(entity)}
+            LOAD
+            {opcode}
+            {IntToLocalMP3(b)}
+            STORE
+
+            ; b = ped op entity
+            {IntToLocalMP3(ped)}
+            LOAD
+            {IntToLocalMP3(entity)}
+            LOAD
+            {opcode}
+            {IntToLocalMP3(b)}
+            STORE
+
+            ; b = ped op NULL
+            {IntToLocalMP3(ped)}
+            LOAD
+            NULL
+            LOAD
+            {opcode}
+            {IntToLocalMP3(b)}
+            STORE
+
+            ; b = ped op ped
+            {IntToLocalMP3(ped)}
+            LOAD
+            {IntToLocalMP3(ped)}
+            LOAD
+            {opcode}
+            {IntToLocalMP3(b)}
+            STORE
+
+            ; b = vehicle op entity
+            {IntToLocalMP3(vehicle)}
+            LOAD
+            {IntToLocalMP3(entity)}
+            LOAD
+            {opcode}
+            {IntToLocalMP3(b)}
+            STORE
+
+            ; b = vehicle op NULL
+            {IntToLocalMP3(vehicle)}
+            LOAD
+            NULL
+            LOAD
+            {opcode}
+            {IntToLocalMP3(b)}
+            STORE
+
+            ; b = vehicle op vehicle
+            {IntToLocalMP3(vehicle)}
+            LOAD
+            {IntToLocalMP3(vehicle)}
+            LOAD
+            {opcode}
+            {IntToLocalMP3(b)}
+            STORE
+
+            ; b = object op entity
+            {IntToLocalMP3(obj)}
+            LOAD
+            {IntToLocalMP3(entity)}
+            LOAD
+            {opcode}
+            {IntToLocalMP3(b)}
+            STORE
+
+            ; b = object op NULL
+            {IntToLocalMP3(obj)}
+            LOAD
+            NULL
+            LOAD
+            {opcode}
+            {IntToLocalMP3(b)}
+            STORE
+
+            ; b = object op object
+            {IntToLocalMP3(obj)}
+            LOAD
+            {IntToLocalMP3(obj)}
+            LOAD
+            {opcode}
+            {IntToLocalMP3(b)}
+            STORE
+
+            LEAVE 0, 0
         ");
     }
 
@@ -1774,6 +2608,21 @@ public class ExpressionsTests : CodeGenTestsBase
                 STORE
 
                 LEAVE 0, 0
+            ",
+            expectedAssemblyMP3: @$"
+                ENTER 0, 4
+
+                {IntToLocalMP3(2)}
+                LOAD
+                DUP
+                PUSH_CONST_1
+                IADD
+                {IntToLocalMP3(2)}
+                STORE
+                {IntToLocalMP3(3)}
+                STORE
+
+                LEAVE 0, 0
             ");
     }
 
@@ -1802,6 +2651,18 @@ public class ExpressionsTests : CodeGenTestsBase
                 PUSH_CONST_1
                 IADD
                 {IntToLocalIV(2)}
+                STORE
+
+                LEAVE 0, 0
+            ",
+            expectedAssemblyMP3: @$"
+                ENTER 0, 3
+
+                {IntToLocalMP3(2)}
+                LOAD
+                PUSH_CONST_1
+                IADD
+                {IntToLocalMP3(2)}
                 STORE
 
                 LEAVE 0, 0
@@ -1841,6 +2702,21 @@ public class ExpressionsTests : CodeGenTestsBase
                 STORE
 
                 LEAVE 0, 0
+            ",
+            expectedAssemblyMP3: @$"
+                ENTER 0, 4
+
+                {IntToLocalMP3(2)}
+                LOAD
+                DUP
+                PUSH_CONST_1
+                ISUB
+                {IntToLocalMP3(2)}
+                STORE
+                {IntToLocalMP3(3)}
+                STORE
+
+                LEAVE 0, 0
             ");
     }
 
@@ -1870,6 +2746,18 @@ public class ExpressionsTests : CodeGenTestsBase
                 PUSH_CONST_1
                 ISUB
                 {IntToLocalIV(2)}
+                STORE
+
+                LEAVE 0, 0
+            ",
+            expectedAssemblyMP3: @$"
+                ENTER 0, 3
+
+                {IntToLocalMP3(2)}
+                LOAD
+                PUSH_CONST_1
+                ISUB
+                {IntToLocalMP3(2)}
                 STORE
 
                 LEAVE 0, 0

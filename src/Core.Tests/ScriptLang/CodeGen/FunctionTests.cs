@@ -38,6 +38,19 @@ public class FunctionTests : CodeGenTestsBase
             foo:
                 ENTER 1, 3
                 LEAVE 1, 0
+            ",
+        expectedAssemblyMP3: $@"
+                ENTER 0, 2
+
+                ; foo()
+                {IntToPushInstMP3(123)}
+                CALL foo
+
+                LEAVE 0, 0
+
+            foo:
+                ENTER 1, 3
+                LEAVE 1, 0
             ");
     }
 
@@ -72,6 +85,20 @@ public class FunctionTests : CodeGenTestsBase
                 ; foo()
                 {IntToPushInstIV(123)}
                 {IntToPushInstIV(456)}
+                CALL foo
+
+                LEAVE 0, 0
+
+            foo:
+                ENTER 2, 4
+                LEAVE 2, 0
+            ",
+        expectedAssemblyMP3: $@"
+                ENTER 0, 2
+
+                ; foo()
+                {IntToPushInstMP3(123)}
+                {IntToPushInstMP3(456)}
                 CALL foo
 
                 LEAVE 0, 0
@@ -120,6 +147,20 @@ public class FunctionTests : CodeGenTestsBase
             foo:
                 ENTER 2, 4
                 LEAVE 2, 0
+            ",
+        expectedAssemblyMP3: $@"
+                ENTER 0, 2
+
+                ; foo(789, 321)
+                {IntToPushInstMP3(789)}
+                {IntToPushInstMP3(321)}
+                CALL foo
+
+                LEAVE 0, 0
+
+            foo:
+                ENTER 2, 4
+                LEAVE 2, 0
             ");
     }
 
@@ -154,6 +195,20 @@ public class FunctionTests : CodeGenTestsBase
                 ; foo(789)
                 {IntToPushInstIV(789)}
                 {IntToPushInstIV(456)}
+                CALL foo
+
+                LEAVE 0, 0
+
+            foo:
+                ENTER 2, 4
+                LEAVE 2, 0
+            ",
+        expectedAssemblyMP3: $@"
+                ENTER 0, 2
+
+                ; foo(789)
+                {IntToPushInstMP3(789)}
+                {IntToPushInstMP3(456)}
                 CALL foo
 
                 LEAVE 0, 0
@@ -202,6 +257,20 @@ public class FunctionTests : CodeGenTestsBase
             foo:
                 ENTER 2, 4
                 LEAVE 2, 0
+            ",
+        expectedAssemblyMP3: $@"
+                ENTER 0, 2
+
+                ; foo(789)
+                {IntToPushInstMP3(789)}
+                {IntToPushInstMP3(456)}
+                CALL foo
+
+                LEAVE 0, 0
+
+            foo:
+                ENTER 2, 4
+                LEAVE 2, 0
             ");
     }
 
@@ -243,6 +312,20 @@ public class FunctionTests : CodeGenTestsBase
             foo:
                 ENTER 2, 4
                 LEAVE 2, 0
+            ",
+        expectedAssemblyMP3: $@"
+                ENTER 0, 2
+
+                ; foo(789, 321)
+                {IntToPushInstMP3(789)}
+                {IntToPushInstMP3(321)}
+                CALL foo
+
+                LEAVE 0, 0
+
+            foo:
+                ENTER 2, 4
+                LEAVE 2, 0
             ");
     }
 
@@ -277,6 +360,16 @@ public class FunctionTests : CodeGenTestsBase
                 ; TEST(123, 456)
                 {IntToPushInstIV(123)}
                 {IntToPushInstIV(456)}
+                NATIVE 2, 0, 0x1234ABCD
+
+                LEAVE 0, 0
+            ",
+        expectedAssemblyMP3: $@"
+                ENTER 0, 2
+
+                ; TEST(123, 456)
+                {IntToPushInstMP3(123)}
+                {IntToPushInstMP3(456)}
                 NATIVE 2, 0, 0x1234ABCD
 
                 LEAVE 0, 0
@@ -327,6 +420,24 @@ public class FunctionTests : CodeGenTestsBase
                 ; TEST(123, 456)
                 {IntToPushInstIV(123)}
                 {IntToPushInstIV(456)}
+                NATIVE 2, 1, 0x1234ABCD
+                DROP
+
+                LEAVE 0, 0
+            ",
+        expectedAssemblyMP3: $@"
+                ENTER 0, 3
+
+                ; INT n = TEST(123, 456)
+                {IntToPushInstMP3(123)}
+                {IntToPushInstMP3(456)}
+                NATIVE 2, 1, 0x1234ABCD
+                LOCAL_2
+                STORE
+
+                ; TEST(123, 456)
+                {IntToPushInstMP3(123)}
+                {IntToPushInstMP3(456)}
                 NATIVE 2, 1, 0x1234ABCD
                 DROP
 

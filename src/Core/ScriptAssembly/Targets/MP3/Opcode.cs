@@ -287,6 +287,8 @@ public static class OpcodeExtensions
     public static int NumberOfOperands(this Opcode opcode)
         => opcode switch
         {
+            Opcode.NATIVE => 3,
+
             Opcode.LEAVE or
             Opcode.ENTER => 2,
 
@@ -297,8 +299,6 @@ public static class OpcodeExtensions
             Opcode.PUSH_CONST_U32 or
             Opcode.PUSH_CONST_F or
             Opcode.CALL or
-            Opcode.NATIVE => 7,
-
             Opcode.TEXT_LABEL_ASSIGN_STRING or
             Opcode.TEXT_LABEL_ASSIGN_INT or
             Opcode.TEXT_LABEL_APPEND_STRING or
@@ -395,14 +395,16 @@ public static class OpcodeExtensions
         if (opcode is Opcode.STRING)
         {
             var strStart = 2;
-            var strLength = bytecode[1];
+            int strLength = bytecode[1];
             if (strLength == 0)
             {
                 // long string, skip the 2 bytes that store the length
+                strLength = bytecode[2] | (bytecode[3] << 8);
                 strStart += 2;
             }
 
-            return Encoding.UTF8.GetString(bytecode[strStart..^1]);
+            strLength -= 1; // skip the null terminator
+            return Encoding.UTF8.GetString(bytecode.Slice(strStart, strLength));
         }
         else
         {

@@ -86,6 +86,40 @@ public class GlobalsTests : CodeGenTestsBase
                 .global
                 .int 0, 0
                 .float 0, 0, 0, 0, 0, 0
+            ",
+        expectedAssemblyMP3: $@"
+                ENTER 0, 2
+                ; globals initialization
+                ; n2 = 5
+                PUSH_CONST_5
+                {IntToGlobalMP3(1)}
+                STORE
+                ; v1 = <<1.0, 2.0, 3.0>>
+                PUSH_CONST_F 1.0
+                PUSH_CONST_F 2.0
+                PUSH_CONST_F 3.0
+                PUSH_CONST_3
+                {IntToGlobalMP3(2)}
+                STORE_N
+
+                ; FOO(n1, n2, v1, v2)
+                {IntToGlobalMP3(0)}
+                LOAD
+                {IntToGlobalMP3(1)}
+                LOAD
+                {IntToGlobalMP3(2)}
+                {IntToGlobalMP3(5)}
+                CALL FOO
+
+                LEAVE 0, 0
+            FOO:
+                ENTER 4, 6
+                LEAVE 4, 0
+
+                .global_block 1
+                .global
+                .int 0, 0
+                .float 0, 0, 0, 0, 0, 0
             ");
     }
 }

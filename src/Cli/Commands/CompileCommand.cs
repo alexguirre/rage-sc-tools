@@ -140,6 +140,15 @@ internal static class CompileCommand
                             }
                         }
                         break;
+
+                        case ScTools.GameFiles.MP3.Script scriptMP3:
+                        {
+                            await using var outputStream = outputFile.OpenWrite();
+                            scriptMP3.Magic = ScTools.GameFiles.MP3.Script.MagicEncryptedCompressedV17;
+                            scriptMP3.Write(new DataWriter(outputStream), keys.MP3.AesKeyPC!);
+                            // no unencrypted script support for MP3
+                        }
+                            break;
                         
                         default:
                             throw new InvalidOperationException("Unsupported script type");

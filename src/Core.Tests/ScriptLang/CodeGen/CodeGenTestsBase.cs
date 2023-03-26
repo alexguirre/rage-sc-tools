@@ -1,20 +1,20 @@
-﻿using ScTools.ScriptAssembly.Targets.GTA5;
-
-namespace ScTools.Tests.ScriptLang.CodeGen;
+﻿namespace ScTools.Tests.ScriptLang.CodeGen;
 
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
 using ScTools.GameFiles;
-using ScTools.ScriptAssembly.Targets.GTA5;
-using ScTools.ScriptAssembly.Targets.GTA4;
 using ScTools.ScriptLang;
 using ScTools.ScriptLang.Ast.Declarations;
 using ScTools.ScriptLang.CodeGen;
 using ScTools.ScriptLang.Semantics;
 using ScTools.ScriptLang.Types;
 using ScTools.ScriptLang.Workspace;
+
+using OpcodeGTA5 = ScTools.ScriptAssembly.Targets.GTA5.OpcodeV10;
+using OpcodeGTA4 = ScTools.ScriptAssembly.Targets.GTA4.Opcode;
+using OpcodeMP3 = ScTools.ScriptAssembly.Targets.MP3.Opcode;
 
 public abstract class CodeGenTestsBase
 {
@@ -24,27 +24,27 @@ public abstract class CodeGenTestsBase
     {
         switch (value)
         {
-            case -1: return OpcodeV10.PUSH_CONST_M1.ToString();
-            case 0: return OpcodeV10.PUSH_CONST_0.ToString();
-            case 1: return OpcodeV10.PUSH_CONST_1.ToString();
-            case 2: return OpcodeV10.PUSH_CONST_2.ToString();
-            case 3: return OpcodeV10.PUSH_CONST_3.ToString();
-            case 4: return OpcodeV10.PUSH_CONST_4.ToString();
-            case 5: return OpcodeV10.PUSH_CONST_5.ToString();
-            case 6: return OpcodeV10.PUSH_CONST_6.ToString();
-            case 7: return OpcodeV10.PUSH_CONST_7.ToString();
+            case -1: return OpcodeGTA5.PUSH_CONST_M1.ToString();
+            case 0: return OpcodeGTA5.PUSH_CONST_0.ToString();
+            case 1: return OpcodeGTA5.PUSH_CONST_1.ToString();
+            case 2: return OpcodeGTA5.PUSH_CONST_2.ToString();
+            case 3: return OpcodeGTA5.PUSH_CONST_3.ToString();
+            case 4: return OpcodeGTA5.PUSH_CONST_4.ToString();
+            case 5: return OpcodeGTA5.PUSH_CONST_5.ToString();
+            case 6: return OpcodeGTA5.PUSH_CONST_6.ToString();
+            case 7: return OpcodeGTA5.PUSH_CONST_7.ToString();
 
             case >= byte.MinValue and <= byte.MaxValue:
-                return $"{OpcodeV10.PUSH_CONST_U8} {(byte)value}";
+                return $"{OpcodeGTA5.PUSH_CONST_U8} {(byte)value}";
 
             case >= short.MinValue and <= short.MaxValue:
-                return $"{OpcodeV10.PUSH_CONST_S16} {(short)value}";
+                return $"{OpcodeGTA5.PUSH_CONST_S16} {(short)value}";
 
             case >= 0 and <= 0x00FFFFFF:
-                return $"{OpcodeV10.PUSH_CONST_U24} {unchecked((uint)value)}";
+                return $"{OpcodeGTA5.PUSH_CONST_U24} {unchecked((uint)value)}";
 
             default:
-                return $"{OpcodeV10.PUSH_CONST_U32} {unchecked((uint)value)}";
+                return $"{OpcodeGTA5.PUSH_CONST_U32} {unchecked((uint)value)}";
         }
     }
 
@@ -52,13 +52,27 @@ public abstract class CodeGenTestsBase
     {
         switch (value)
         {
-            case >= -16 and <= 159: return ((Opcode)((int)Opcode.PUSH_CONST_0 + value)).ToString();
+            case >= -16 and <= 159: return ((OpcodeGTA4)((int)OpcodeGTA4.PUSH_CONST_0 + value)).ToString();
 
             case >= ushort.MinValue and <= ushort.MaxValue:
-                return $"{Opcode.PUSH_CONST_U16} {unchecked((ushort)value)}";
+                return $"{OpcodeGTA4.PUSH_CONST_U16} {unchecked((ushort)value)}";
 
             default:
-                return $"{Opcode.PUSH_CONST_U32} {unchecked((uint)value)}";
+                return $"{OpcodeGTA4.PUSH_CONST_U32} {unchecked((uint)value)}";
+        }
+    }
+
+    protected static string IntToPushInstMP3(int value)
+    {
+        switch (value)
+        {
+            case >= -16 and <= 159: return ((OpcodeMP3)((int)OpcodeMP3.PUSH_CONST_0 + value)).ToString();
+
+            case >= ushort.MinValue and <= ushort.MaxValue:
+                return $"{OpcodeMP3.PUSH_CONST_U16} {unchecked((ushort)value)}";
+
+            default:
+                return $"{OpcodeMP3.PUSH_CONST_U32} {unchecked((uint)value)}";
         }
     }
 
@@ -66,21 +80,41 @@ public abstract class CodeGenTestsBase
     {
         switch (value)
         {
-            case >= 0 and <= 6: return ((Opcode)((int)Opcode.LOCAL_0 + value)).ToString();
+            case >= 0 and <= 6: return ((OpcodeGTA4)((int)OpcodeGTA4.LOCAL_0 + value)).ToString();
 
             default:
                 return $@"{IntToPushInstIV(value)}
-                          {Opcode.LOCAL}";
+                          {OpcodeGTA4.LOCAL}";
+        }
+    }
+
+    protected static string IntToLocalMP3(int value)
+    {
+        switch (value)
+        {
+            case >= 0 and <= 6: return ((OpcodeMP3)((int)OpcodeMP3.LOCAL_0 + value)).ToString();
+
+            default:
+                return $@"{IntToPushInstIV(value)}
+                          {OpcodeMP3.LOCAL}";
         }
     }
 
     protected static string IntToGlobalIV(int value)
     {
         return $@"{IntToPushInstIV(value)}
-                  {Opcode.GLOBAL}";
+                  {OpcodeGTA4.GLOBAL}";
     }
 
-    protected static void CompileScript(string scriptSource, string expectedAssembly, string declarationsSource = "", string? expectedAssemblyIV = null, NativeDB? nativeDB = null)
+    protected static string IntToGlobalMP3(int value)
+    {
+        return $@"{IntToPushInstMP3(value)}
+                  {OpcodeMP3.GLOBAL}";
+    }
+
+    protected static void CompileScript(string scriptSource, string expectedAssembly, string declarationsSource = "",
+                                        string? expectedAssemblyIV = null, string? expectedAssemblyMP3 = null,
+                                        NativeDB? nativeDB = null)
         => CompileRaw(
             source: $@"
                 {declarationsSource}
@@ -98,6 +132,11 @@ public abstract class CodeGenTestsBase
                 .code
                 SCRIPT:
                 {expectedAssemblyIV}",
+
+            expectedAssemblyMP3: expectedAssemblyMP3 is null ? null : $@"
+                .code
+                SCRIPT:
+                {expectedAssemblyMP3}",
             
             nativeDB: nativeDB);
 
@@ -159,14 +198,14 @@ public abstract class CodeGenTestsBase
             NotNull(compiledScript);
             var compiledScriptMP3 = IsType<GameFiles.MP3.Script>(compiledScript);
 
-            // using var expectedAssemblyReader = new StringReader(expectedAssemblyMP3);
-            // var expectedAssembler = ScTools.ScriptAssembly.Targets.MP3.Assembler.Assemble(expectedAssemblyReader, "test_expected_mp3.scasm", nativeDB);
-            // False(expectedAssembler.Diagnostics.HasErrors);
-            //
-            // string sourceDump = compiledScriptMP3.DumpToString();
-            // string expectedDump = expectedAssembler.OutputScript.DumpToString();
-            //
-            // Util.AssertScriptsAreEqual(compiledScriptMP3, expectedAssembler.OutputScript);
+            using var expectedAssemblyReader = new StringReader(expectedAssemblyMP3);
+            var expectedAssembler = ScTools.ScriptAssembly.Targets.MP3.Assembler.Assemble(expectedAssemblyReader, "test_expected_mp3.scasm", nativeDB);
+            False(expectedAssembler.Diagnostics.HasErrors);
+            
+            string sourceDump = compiledScriptMP3.DumpToString();
+            string expectedDump = expectedAssembler.OutputScript.DumpToString();
+
+            Util.AssertScriptsAreEqual(compiledScriptMP3, expectedAssembler.OutputScript);
         }
     }
 }

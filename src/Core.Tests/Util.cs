@@ -138,5 +138,44 @@
                 }
             }
         }
+
+        public static void AssertScriptsAreEqual(GameFiles.MP3.Script sc1, GameFiles.MP3.Script sc2)
+        {
+            static void FailIf(bool condition, string message) => False(condition, message);
+            static string S(string str) => str;
+
+            FailIf(sc1.GlobalsSignature != sc2.GlobalsSignature, S("Globals signature is different"));
+            FailIf(sc1.Unknown_18h != sc2.Unknown_18h, S("Unknown_18h is different"));
+
+            FailIf(sc1.CodeLength != sc2.CodeLength, S("CodeLength is different"));
+            if (sc1.Code != null && sc2.Code != null)
+            {
+                True(sc1.Code.SequenceEqual(sc2.Code));
+            }
+
+            FailIf(sc1.StaticsCount != sc2.StaticsCount, S("StaticsCount is different"));
+            FailIf(sc1.ArgsCount != sc2.ArgsCount, S("ArgsCount is different"));
+            FailIf((sc1.Statics != null) != (sc2.Statics != null), S("Statics null"));
+            if (sc1.Statics != null && sc2.Statics != null)
+            {
+                var staticIdx = 0;
+                foreach (var (static1, static2) in sc1.Statics.Zip(sc2.Statics))
+                {
+                    FailIf(static1.AsUInt32 != static2.AsUInt32, S($"Static #{staticIdx} is different"));
+                    staticIdx++;
+                }
+            }
+
+            FailIf(sc1.GlobalsCount != sc2.GlobalsCount, S("GlobalsCount is different"));
+            if (sc1.Globals != null && sc2.Globals != null)
+            {
+                var globalIdx = 0;
+                foreach (var (global1, global2) in sc1.Globals.Zip(sc2.Globals))
+                {
+                    FailIf(global1.AsUInt32 != global2.AsUInt32, S($"Global #{globalIdx} is different"));
+                    globalIdx++;
+                }
+            }
+        }
     }
 }
