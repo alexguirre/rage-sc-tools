@@ -3,11 +3,16 @@
 using System;
 using System.IO;
 using System.CommandLine;
+using System.CommandLine.Builder;
+using System.CommandLine.Help;
+using System.CommandLine.Parsing;
 using System.Globalization;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ScTools.Cli.Commands;
 using ScTools.GameFiles;
+using Spectre.Console;
 
 internal static class Program
 {
@@ -65,17 +70,65 @@ internal static class Program
         }
     }
 
+    private static RootCommand RootCommand { get; } = new("Tool for working with RAGE scripts.")
+    {
+        BuildProjectCommand.Command,
+        CompileCommand.Command,
+        ConfigCommand.Command,
+        DumpCommand.Command,
+        InitProjectCommand.Command,
+        ListTargetsCommand.Command,
+    };
+
     private static async Task<int> Main(string[] args)
     {
         Thread.CurrentThread.CurrentCulture = CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 
-        var rootCmd = new RootCommand("Tool for working with RAGE scripts.");
-        rootCmd.AddCommand(BuildProjectCommand.Command);
-        rootCmd.AddCommand(CompileCommand.Command);
-        rootCmd.AddCommand(ConfigCommand.Command);
-        rootCmd.AddCommand(DumpCommand.Command);
-        rootCmd.AddCommand(InitProjectCommand.Command);
-        rootCmd.AddCommand(ListTargetsCommand.Command);
-        return await rootCmd.InvokeAsync(args);
+        var parser = new CommandLineBuilder(RootCommand)
+            .UseDefaults()
+            .UseHelp(CustomizeHelp)
+            .Build();
+
+        return await parser.InvokeAsync(args);
+    }
+
+    private static void CustomizeHelp(HelpContext ctx)
+    {
+        ctx.HelpBuilder.CustomizeLayout(
+            _ =>
+                HelpBuilder.Default
+                    .GetLayout()
+                    .Append(_ => PrintGettingStartedSection()));
+    }
+
+    private static void PrintGettingStartedSection()
+    {
+        var gettingStarted = $"""
+            First, start by configuring the paths to the game executables. This is required to extract the encryption keys required to encrypt or decrypt the scripts. You only need to do this for the games you want to compile scripts for.
+
+              [blue]>[/] {RootCommand.Name} {ConfigCommand.Command.Name} set GTA5ExePath "C:\path\to\GTA5.exe"
+              [blue]>[/] {RootCommand.Name} {ConfigCommand.Command.Name} set GTA4ExePath "C:\path\to\GTAIV.exe"
+              [blue]>[/] {RootCommand.Name} {ConfigCommand.Command.Name} set MP3ExePath "C:\path\to\MP3.exe"
+              [blue]>[/] {RootCommand.Name} {ConfigCommand.Command.Name} set MC4XexPath "C:\path\to\default.xex"
+              [blue]>[/] {RootCommand.Name} {ConfigCommand.Command.Name} set RDR2XexPath "C:\path\to\default.xex"
+
+            Then you can create a new project with:
+
+              [blue]>[/] {RootCommand.Name} {InitProjectCommand.Command.Name} my_project gta5-x64 my_project_dir
+
+            And build the project:
+
+              [blue]>[/] {RootCommand.Name} {BuildProjectCommand.Command.Name} my_project_dir/my_project.scproj
+
+            Or from the project directory:
+
+              [blue]>[/] cd my_project_dir
+              [blue]>[/] {RootCommand.Name} {BuildProjectCommand.Command.Name}
+            """;
+        Std.Out.WriteLine();
+        Std.Out.WriteLine("Getting started:");
+        Std.Out.Write(new Padder(
+            new Markup(gettingStarted),
+            new Padding(2, 0)));
     }
 }
