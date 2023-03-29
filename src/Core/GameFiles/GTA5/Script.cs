@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using CodeWalker.GameFiles;
 using System.Text;
 using System.Diagnostics;
 using System.Collections;

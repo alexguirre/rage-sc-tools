@@ -3,7 +3,7 @@
 using System.IO;
 using System;
 using System.Collections.Generic;
-using CodeWalker.GameFiles;
+using ScTools.GameFiles.Crypto;
 
 public class YscFile : GameFile, PackedFile
 {
@@ -45,10 +45,10 @@ public class YscFile : GameFile, PackedFile
         Loaded = true;
     }
 
-    public byte[] Save(string fileName = null) => Build(Script, FileVersion, fileName, encrypt: fileName != null);
+    public byte[] Save(string? fileName = null, NgContext? ngEncrypt = null) => Build(Script, FileVersion, fileName, ngEncrypt: ngEncrypt);
 
     // same as ResourceBuilder.Build but with support NG encrypting after compressing
-    private static byte[] Build(ResourceFileBase fileBase, int version, string name, bool compress = true, bool encrypt = true)
+    private static byte[] Build(ResourceFileBase fileBase, int version, string? name, bool compress = true, NgContext? ngEncrypt = null)
     {
 
         fileBase.FilePagesInfo = new ResourcePagesInfo();
@@ -132,9 +132,8 @@ public class YscFile : GameFile, PackedFile
         Buffer.BlockCopy(sysData, 0, tdata, 0, sysDataSize);
         Buffer.BlockCopy(gfxData, 0, tdata, sysDataSize, gfxDataSize);
 
-
         var cdata = compress ? ResourceBuilder.Compress(tdata) : tdata;
-        cdata = encrypt ? GTACrypto.EncryptNG(cdata, name, (uint)cdata.Length + 0x10) : cdata;
+        cdata = (name is not null && ngEncrypt.HasValue) ? Ng.Encrypt(cdata, name, (uint)cdata.Length + 0x10, ngEncrypt.Value) : cdata;
 
         var dataSize = 16 + cdata.Length;
         var data = new byte[dataSize];

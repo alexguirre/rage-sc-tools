@@ -1,4 +1,4 @@
-﻿namespace ScTools.GameFiles;
+﻿namespace ScTools.GameFiles.Crypto;
 
 using System;
 using System.Diagnostics.CodeAnalysis;

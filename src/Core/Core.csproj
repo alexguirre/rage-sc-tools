@@ -17,16 +17,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="SharpDX.Mathematics" Version="4.2.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="CodeWalker.Core">
-      <HintPath>..\..\dependencies\CodeWalker.Core.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\SourceGenerators\SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>

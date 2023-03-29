@@ -235,4 +235,10 @@ internal static class SpanExtensions
         value = 0;
         return false;
     }
+
+    public static Span<T> AsSpan<T>(this T[,] array2D)
+    {
+        var len = array2D.GetLength(0) * array2D.GetLength(1);
+        return System.Runtime.InteropServices.MemoryMarshal.CreateSpan(ref array2D[0, 0], len);
+    }
 }

@@ -6,8 +6,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using CodeWalker.GameFiles;
 using ScTools.GameFiles;
+using ScTools.GameFiles.GTA5;
 using ScTools.ScriptLang.Workspace;
 using Spectre.Console;
 
@@ -82,22 +82,25 @@ internal static class DumpCommand
                             _ => throw new UnreachableException("Game already restricted by parent switch")
                         };
 
+                        using var r = new BinaryReader(new MemoryStream(source));
                         var sc = new GameFiles.GTA4.Script();
-                        sc.Read(new DataReader(new MemoryStream(source)), aesKey);
+                        sc.Read(r, aesKey);
                         script = sc;
                         break;
                     }
                     case (Game.RDR2, Platform.Xenon):
                     {
+                        using var r = new BigEndianBinaryReader(new MemoryStream(source));
                         var sc = new ScriptRDR2();
-                        sc.Read(new DataReader(new MemoryStream(source), Endianess.BigEndian), keys.RDR2.AesKeyXenon);
+                        sc.Read(r, keys.RDR2.AesKeyXenon);
                         script = sc;
                         break;
                     }
                     case (Game.MP3, Platform.x86):
                     {
+                        using var r = new BinaryReader(new MemoryStream(source));
                         var sc = new GameFiles.MP3.Script();
-                        sc.Read(new DataReader(new MemoryStream(source)), keys.MP3.AesKeyPC!); // AES key checked for null inside Read
+                        sc.Read(r, keys.MP3.AesKeyPC!); // AES key checked for null inside Read
                         script = sc;
                         break;
                     }
@@ -106,8 +109,7 @@ internal static class DumpCommand
                         throw new InvalidOperationException($"Unsupported build target '{target}'");
                 }
 
-                await using var outputStream = outputFile.Open(FileMode.Create);
-                await using var outputWriter = new StreamWriter(outputStream);
+                await using var outputWriter = new StreamWriter(outputFile.Open(FileMode.Create));
                 script.Dump(outputWriter, DumpOptions.Default);
             }
             catch (Exception e)

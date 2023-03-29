@@ -305,23 +305,6 @@
         "resolved": "4.3.0",
         "contentHash": "VB5cn/7OzUfzdnC8tqAIMQciVLiq2epm2NrAm1E9OjNRyG4lVhfR61SMcLizejzQP8R8Uf/0l5qOIbUEi+RdEg=="
       },
-      "SharpDX": {
-        "type": "Transitive",
-        "resolved": "4.2.0",
-        "contentHash": "3pv0LFMvfK/dv1qISJnn8xBeeT6R/FRvr0EV4KI2DGsL84Qlv6P7isWqxGyU0LCwlSVCJN3jgHJ4Bl0KI2PJww==",
-        "dependencies": {
-          "NETStandard.Library": "1.6.1"
-        }
-      },
-      "SharpDX.Mathematics": {
-        "type": "Transitive",
-        "resolved": "4.2.0",
-        "contentHash": "R2pcKLgdsP9p5WyTjHmGOZ0ka0zASAZYc6P4L6rSvjYhf6klGYbent7MiVwbkwkt9dD44p5brjy5IwAnVONWGw==",
-        "dependencies": {
-          "NETStandard.Library": "1.6.1",
-          "SharpDX": "4.2.0"
-        }
-      },
       "System.AppContext": {
         "type": "Transitive",
         "resolved": "4.3.0",
@@ -1124,10 +1107,7 @@
         }
       },
       "ScTools.Core": {
-        "type": "Project",
-        "dependencies": {
-          "SharpDX.Mathematics": "[4.2.0, )"
-        }
+        "type": "Project"
       }
     }
   }

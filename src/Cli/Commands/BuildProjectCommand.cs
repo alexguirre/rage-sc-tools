@@ -136,7 +136,7 @@ internal static class BuildProjectCommand
                             tasks.Add(Task.Run(() =>
                             {
                                 var ysc = new GameFiles.GTA5.YscFile { Script = scriptGTAV };
-                                var data = ysc.Save(Path.GetFileName(outputFile));
+                                var data = ysc.Save(Path.GetFileName(outputFile), keys.GTA5.NgPC);
                                 File.WriteAllBytes(outputFile, data);
                             }));
                         }
@@ -146,9 +146,9 @@ internal static class BuildProjectCommand
                         {
                             tasks.Add(Task.Run(() =>
                             {
-                                using var outputStream = new FileStream(outputFile, FileMode.Create);
+                                using var w = new BinaryWriter( new FileStream(outputFile, FileMode.Create));
                                 scriptGTAIV.Magic = GameFiles.GTA4.Script.MagicEncrypted;
-                                scriptGTAIV.Write(new CodeWalker.GameFiles.DataWriter(outputStream), keys.GTA4.AesKeyPC);
+                                scriptGTAIV.Write(w, keys.GTA4.AesKeyPC);
                             }));
                         }
                         break;
@@ -157,14 +157,14 @@ internal static class BuildProjectCommand
                         {
                             tasks.Add(Task.Run(() =>
                             {
-                                using var outputStream = new FileStream(outputFile, FileMode.Create);
+                                using var w = new BinaryWriter(new FileStream(outputFile, FileMode.Create));
                                 scriptMP3.Magic = GameFiles.MP3.Script.MagicEncryptedCompressedV17;
                                 scriptMP3.Unknown_18h = 0xFFFFFFFF;
-                                scriptMP3.Write(new CodeWalker.GameFiles.DataWriter(outputStream), keys.MP3.AesKeyPC!);
+                                scriptMP3.Write(w, keys.MP3.AesKeyPC!);
                             }));
                         }
-                            break;
-                        
+                        break;
+
                         default:
                             throw new InvalidOperationException("Unsupported script type");
                     }

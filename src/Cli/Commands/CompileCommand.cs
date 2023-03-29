@@ -6,9 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using CodeWalker.GameFiles;
-using GameFiles;
-using GameFiles.GTA5;
+using ScTools.GameFiles.GTA5;
 using ScTools.ScriptLang;
 using ScTools.ScriptLang.CodeGen;
 using ScTools.ScriptLang.Semantics;
@@ -110,7 +108,7 @@ internal static class CompileCommand
                         case ScTools.GameFiles.GTA5.Script scriptGTAV:
                         {
                             var ysc = new YscFile { Script = scriptGTAV };
-                            var data = ysc.Save(Path.GetFileName(outputFileName));
+                            var data = ysc.Save(Path.GetFileName(outputFileName), keys.GTA5.NgPC);
                             var t1 = File.WriteAllBytesAsync(outputFileName, data, cancellationToken);
 
                             Task? t2 = null;
@@ -127,25 +125,26 @@ internal static class CompileCommand
 
                         case ScTools.GameFiles.GTA4.Script scriptGTAIV:
                         {
-                            await using var outputStream = outputFile.OpenWrite();
+                            await using var w = new BinaryWriter(outputFile.Open(FileMode.Create));
                             scriptGTAIV.Magic = ScTools.GameFiles.GTA4.Script.MagicEncrypted;
-                            scriptGTAIV.Write(new DataWriter(outputStream), keys.GTA4.AesKeyPC);
+                            scriptGTAIV.Write(w, keys.GTA4.AesKeyPC);
 
                             if (unencrypted)
                             {
                                 var outputFileUnencrypted = new FileInfo(Path.ChangeExtension(outputFileName, "unencrypted.sco"));
-                                await using var outputStreamUnencrypted = outputFileUnencrypted.OpenWrite();
+                                await using var outputStreamUnencrypted = outputFileUnencrypted.Open(FileMode.Create);
+                                await using var wu = new BinaryWriter(outputStreamUnencrypted);
                                 scriptGTAIV.Magic = ScTools.GameFiles.GTA4.Script.MagicUnencrypted;
-                                scriptGTAIV.Write(new DataWriter(outputStreamUnencrypted), keys.GTA4.AesKeyPC);
+                                scriptGTAIV.Write(wu, keys.GTA4.AesKeyPC);
                             }
                         }
                         break;
 
                         case ScTools.GameFiles.MP3.Script scriptMP3:
                         {
-                            await using var outputStream = outputFile.OpenWrite();
+                            await using var w = new BinaryWriter(outputFile.Open(FileMode.Create));
                             scriptMP3.Magic = ScTools.GameFiles.MP3.Script.MagicEncryptedCompressedV17;
-                            scriptMP3.Write(new DataWriter(outputStream), keys.MP3.AesKeyPC!);
+                            scriptMP3.Write(w, keys.MP3.AesKeyPC!);
                             // no unencrypted script support for MP3
                         }
                             break;

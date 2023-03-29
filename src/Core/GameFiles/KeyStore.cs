@@ -2,11 +2,12 @@
 
 using System;
 using System.IO;
-using System.Security.Cryptography;
+using System.Diagnostics.CodeAnalysis;
+using ScTools.GameFiles.Crypto;
 
-public sealed class KeyStore
+public sealed partial class KeyStore
 {
-    public record struct GTA5Keys;
+    public record struct GTA5Keys(NgContext? NgPC);
     public record struct GTA4Keys(byte[]? AesKeyPC);
     public record struct MC4Keys(byte[]? AesKeyXenon);
     public record struct RDR2Keys(byte[]? AesKeyXenon);
@@ -24,8 +25,7 @@ public sealed class KeyStore
         {
             throw new DirectoryNotFoundException($"Cache directory '{cacheDirectory}' does not exist");
         }
-        
-        //CodeWalker.GameFiles.GTA5Keys.LoadFromPath("D:\\programs\\Rockstar Games\\Grand Theft Auto V"); // a bit slow without cache
+
         return new()
         {
             GTA5 = GTA5Loader.Load(gta5ExePath, cacheDirectory),
@@ -37,17 +37,6 @@ public sealed class KeyStore
     }
 
     private const int SHA1HashLength = 20;
-
-    private static class GTA5Loader
-    {
-        private const string CacheFile = "keys_gta5.dat";
-
-        public static GTA5Keys Load(string? exeFilePath, string cacheDirectory)
-        {
-            // TODO: implement GTA5 key loader once we no longer depend on CodeWalker for writing .ysc files
-            return default;
-        }
-    }
 
     private static class GTA4Loader
     {
@@ -76,7 +65,7 @@ public sealed class KeyStore
     
         private static bool SearchAesKeyPC(ReadOnlySpan<byte> exeFile, out ReadOnlySpan<byte> aesKey)
         {
-            ReadOnlySpan<byte> aesKeyHash = stackalloc byte[SHA1HashLength]
+            ReadOnlySpan<byte> aesKeyHash = new byte[SHA1HashLength]
             {
                 0xDE, 0xA3, 0x75, 0xEF, 0x1E, 0x6E, 0xF2, 0x22, 0x3A, 0x12, 0x21, 0xC2, 0xC5, 0x75, 0xC4, 0x7B, 0xF1, 0x7E, 0xFA, 0x5E
             };
@@ -112,7 +101,7 @@ public sealed class KeyStore
     
         private static bool SearchAesKeyXenon(ReadOnlySpan<byte> xexFile, out ReadOnlySpan<byte> aesKey)
         {
-            ReadOnlySpan<byte> aesKeyHash = stackalloc byte[SHA1HashLength]
+            ReadOnlySpan<byte> aesKeyHash = new byte[SHA1HashLength]
             {
                 0x59, 0x9F, 0xA7, 0x13, 0xE0, 0x50, 0x85, 0xD9, 0xB8, 0x84, 0x94, 0x91, 0x39, 0xBA, 0x1F, 0x95, 0xBA, 0x20, 0x71, 0xA7
             };
@@ -148,7 +137,7 @@ public sealed class KeyStore
     
         private static bool SearchAesKeyXenon(ReadOnlySpan<byte> xexFile, out ReadOnlySpan<byte> aesKey)
         {
-            ReadOnlySpan<byte> aesKeyHash = stackalloc byte[SHA1HashLength]
+            ReadOnlySpan<byte> aesKeyHash = new byte[SHA1HashLength]
             {
                 0x87, 0x86, 0x24, 0x97, 0xEE, 0x46, 0x85, 0x53, 0x72, 0xB5, 0x1C, 0x7A, 0x32, 0x4A, 0x2B, 0xB5, 0xCD, 0x66, 0xF4, 0xAF
             };
@@ -184,7 +173,7 @@ public sealed class KeyStore
     
         private static bool SearchAesKeyPC(ReadOnlySpan<byte> exeFile, out ReadOnlySpan<byte> aesKey)
         {
-            ReadOnlySpan<byte> aesKeyHash = stackalloc byte[SHA1HashLength]
+            ReadOnlySpan<byte> aesKeyHash = new byte[SHA1HashLength]
             {
                 0xDE, 0xA3, 0x75, 0xEF, 0x1E, 0x6E, 0xF2, 0x22, 0x3A, 0x12, 0x21, 0xC2, 0xC5, 0x75, 0xC4, 0x7B, 0xF1, 0x7E, 0xFA, 0x5E
             };
@@ -205,7 +194,7 @@ public sealed class KeyStore
         for (int i = 0; i < data.Length - keyLength; i++)
         {
             key = data.Slice(i, keyLength);
-            SHA1.HashData(key, computedHash);
+            System.Security.Cryptography.SHA1.HashData(key, computedHash);
     
             if (computedHash.SequenceEqual(sha1KeyHash))
             {
@@ -214,6 +203,46 @@ public sealed class KeyStore
         }
     
         key = default;
+        return false;
+    }
+
+    private static bool SearchKeys(ReadOnlySpan<byte> data, byte[][] sha1KeyHashes, int keyLength, [NotNullWhen(true)] out byte[][]? keys)
+    {
+        for (int i = 0; i < sha1KeyHashes.Length; i++)
+        {
+            if (sha1KeyHashes[i].Length != SHA1HashLength)
+            {
+                throw new ArgumentException($"{nameof(sha1KeyHashes)}[{i}] must be {SHA1HashLength} bytes long");
+            }
+        }
+
+        keys = new byte[sha1KeyHashes.Length][];
+        int foundKeys = 0;
+        Span<bool> found = stackalloc bool[sha1KeyHashes.Length];
+        Span<byte> computedHash = stackalloc byte[SHA1HashLength];
+    
+        for (int i = 0; i < data.Length - keyLength; i++)
+        {
+            var key = data.Slice(i, keyLength);
+            System.Security.Cryptography.SHA1.HashData(key, computedHash);
+
+            for (int k = 0; k < sha1KeyHashes.Length; k++)
+            {
+                var sha1KeyHash = sha1KeyHashes[k];
+                if (!found[k] && computedHash.SequenceEqual(sha1KeyHash))
+                {
+                    keys[k] = key.ToArray();
+                    found[k] = true;
+                    foundKeys++;
+                    if (foundKeys == sha1KeyHashes.Length)
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        keys = null;
         return false;
     }
 }

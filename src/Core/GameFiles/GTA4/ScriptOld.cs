@@ -1,8 +1,7 @@
 ﻿namespace ScTools.GameFiles.GTA4;
 
 using System;
-
-using CodeWalker.GameFiles;
+using System.IO;
 
 /// <summary>
 /// Version 13. Only appears in a GTA IV left-over script: `\common\data\cdimages\navgen_script.img\navgen_main.sco`.
@@ -21,7 +20,7 @@ public class ScriptOld : IScript
     public ScriptValue32[] Statics { get; set; } = Array.Empty<ScriptValue32>();
     public ScriptValue32[] Globals { get; set; } = Array.Empty<ScriptValue32>();
 
-    public void Read(DataReader reader)
+    public void Read(BinaryReader reader)
     {
         Magic = reader.ReadUInt32();
         CodeLength = reader.ReadUInt32();
@@ -43,11 +42,10 @@ public class ScriptOld : IScript
             default: throw new InvalidOperationException($"Unknown magic header 0x{Magic:X8}");
         }
 
-        if (reader.Position != reader.Length)
-        { } // TODO: navgen_main.sco gets here
+        Debug.Assert(reader.BaseStream.Position == reader.BaseStream.Length, "Not all data was read"); // TODO: navgen_main.sco gets here
     }
 
-    public void Write(DataWriter writer)
+    public void Write(BinaryWriter writer)
     {
         // update structure data
         CodeLength = (uint)(Code?.Length ?? 0);

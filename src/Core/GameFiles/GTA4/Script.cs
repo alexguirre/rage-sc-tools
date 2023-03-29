@@ -5,8 +5,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Runtime.InteropServices;
-
-using CodeWalker.GameFiles;
+using ScTools.GameFiles.Crypto;
 
 /// <summary>
 /// Version 14. Used in GTA IV and Midnight Club: LA.
@@ -30,7 +29,7 @@ public class Script : IScript
     public ScriptValue32[] Statics { get; set; } = Array.Empty<ScriptValue32>();
     public ScriptValue32[] Globals { get; set; } = Array.Empty<ScriptValue32>();
 
-    public void Read(DataReader reader, byte[]? aesKey)
+    public void Read(BinaryReader reader, byte[]? aesKey)
     {
         Magic = reader.ReadUInt32();
         CodeLength = reader.ReadUInt32();
@@ -89,11 +88,10 @@ public class Script : IScript
             default: throw new InvalidOperationException($"Unknown magic header 0x{Magic:X8}");
         }
 
-        if (reader.Position != reader.Length)
-        { }
+        Debug.Assert(reader.BaseStream.Position == reader.BaseStream.Length, "Not all data was read");
     }
 
-    public void Write(DataWriter writer, byte[]? aesKey)
+    public void Write(BinaryWriter writer, byte[]? aesKey)
     {
         // update structure data
         CodeLength = (uint)(Code?.Length ?? 0);

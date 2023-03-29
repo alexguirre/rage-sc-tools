@@ -5,11 +5,8 @@ using System.Buffers.Binary;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using System.Runtime.InteropServices;
-
-using CodeWalker.GameFiles;
-
+using ScTools.GameFiles.Crypto;
 using ScTools.ScriptAssembly;
 
 /// <summary>
@@ -39,9 +36,9 @@ public class ScriptRDR2 : IScript
     public ScriptValue32[] Statics { get; set; } = Array.Empty<ScriptValue32>();
     public ScriptValue32[] Globals { get; set; } = Array.Empty<ScriptValue32>();
 
-    public void Read(DataReader reader, byte[]? aesKey)
+    public void Read(BinaryReader reader, byte[]? aesKey)
     {
-        Debug.Assert(reader.Endianess is Endianess.BigEndian, "Expected BE reader");
+        Debug.Assert(reader is BigEndianBinaryReader, "Expected BE reader");
 
         Magic = reader.ReadUInt32();
         GlobalsSignature = reader.ReadUInt32();
@@ -105,11 +102,10 @@ public class ScriptRDR2 : IScript
             default: throw new InvalidOperationException($"Unknown magic header 0x{Magic:X8}");
         }
 
-        if (reader.Position != reader.Length)
-        { }
+        Debug.Assert(reader.BaseStream.Position == reader.BaseStream.Length, "Not all data was read");
     }
 
-    public void Write(DataWriter writer, byte[] aesKey)
+    public void Write(BinaryWriter writer, byte[] aesKey)
     {
         // TODO: ScriptRDR2
     }

@@ -2,7 +2,7 @@
 
 using System.CommandLine;
 using Spectre.Console;
-using ScTools.GameFiles;
+using ScTools.GameFiles.Crypto;
 
 internal static class ListTargetsCommand
 {
@@ -21,9 +21,9 @@ internal static class ListTargetsCommand
 
         var targets = new (string Game, string Platform, string Id, bool EncryptionKey, bool Compile, bool Decompile)[]
         {
-            ("Grand Theft Auto V", "x64", "gta5-x64", CodeWalker.GameFiles.GTA5Keys.PC_AES_KEY != null, true, false),
+            ("Grand Theft Auto V", "x64", "gta5-x64", keys.GTA5.NgPC.HasValue, true, false),
             ("Grand Theft Auto IV", "x86", "gta4-x86", Aes.IsValidKey(keys.GTA4.AesKeyPC), true, false),
-            ("Max Payne 3", "x86", "mp3-x86", Aes.IsValidKey(keys.MP3.AesKeyPC), false, false),
+            ("Max Payne 3", "x86", "mp3-x86", Aes.IsValidKey(keys.MP3.AesKeyPC), true, false),
             ("Midnight Club: Los Angeles", "Xenon", "mc4-xenon", Aes.IsValidKey(keys.MC4.AesKeyXenon), false, false),
             ("Red Dead Redemption", "Xenon", "rdr2-xenon", Aes.IsValidKey(keys.RDR2.AesKeyXenon), false, false),
         };

@@ -15,25 +15,6 @@ jobs:
       - uses: microsoft/setup-msbuild@v1
       - uses: nuget/setup-nuget@v1
 
-      - name: Cache Codewalker.Core
-        id: cache-codewalker
-        uses: actions/cache@v3
-        with:
-          path: dependencies/
-          key: dependencies
-
-      - name: Checkout CodeWalker.Core
-        if: steps.cache-codewalker.outputs.cache-hit != 'true'
-        uses: actions/checkout@v3
-        with:
-          repository: dexyfex/CodeWalker
-          path: codewalker
-          
-      - name: Build CodeWalker.Core
-        if: steps.cache-codewalker.outputs.cache-hit != 'true'
-        run: |
-          msbuild CodeWalker/CodeWalker.Core/CodeWalker.Core.csproj -p:Configuration=Release -p:Platform=x64 -p:OutputPath=..\..\dependencies -restore
-
       - name: Cache NuGet Packages
         id: cache-nuget
         uses: actions/cache@v3
