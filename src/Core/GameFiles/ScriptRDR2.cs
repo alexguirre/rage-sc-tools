@@ -69,11 +69,8 @@ public class ScriptRDR2 : IScript
                         default: throw new InvalidOperationException($"Unknown AES key ID {AesKeyId}");
                     }
 
-                    using var zs = new ZLibStream(new MemoryStream(compressed), CompressionMode.Decompress);
-                    using var decompressed = new MemoryStream();
-                    zs.CopyTo(decompressed);
+                    using var decompressed = new ZLibStream(new MemoryStream(compressed), CompressionMode.Decompress);
 
-                    decompressed.Position = 0;
                     uint numberOfCodePages = (CodeLength + (MaxPageLength - 1)) / MaxPageLength;
                     CodePages = new byte[numberOfCodePages][];
                     for (int i = 0; i < numberOfCodePages - 1; i++)

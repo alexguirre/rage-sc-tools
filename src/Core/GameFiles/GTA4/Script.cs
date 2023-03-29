@@ -71,11 +71,8 @@ public class Script : IScript
                     var compressed = reader.ReadBytes((int)compressedSize);
                     Aes.Decrypt(compressed, aesKey);
 
-                    using var zs = new ZLibStream(new MemoryStream(compressed), CompressionMode.Decompress);
-                    using var decompressed = new MemoryStream();
-                    zs.CopyTo(decompressed);
+                    using var decompressed = new ZLibStream(new MemoryStream(compressed), CompressionMode.Decompress);
 
-                    decompressed.Position = 0;
                     Code = new byte[CodeLength];
                     Statics = new ScriptValue32[StaticsCount];
                     Globals = new ScriptValue32[GlobalsCount];
