@@ -86,11 +86,11 @@ public class ScriptRDR2 : IScript
                     Globals = new ScriptValue32[GlobalsCount];
                     foreach (var codePage in CodePages)
                     {
-                        decompressed.Read(codePage, 0, codePage.Length);
+                        decompressed.ReadExactly(codePage);
                     }
-                    decompressed.Read(MemoryMarshal.AsBytes(Natives.AsSpan()));
-                    decompressed.Read(MemoryMarshal.AsBytes(Statics.AsSpan()));
-                    decompressed.Read(MemoryMarshal.AsBytes(Globals.AsSpan()));
+                    decompressed.ReadExactly(MemoryMarshal.AsBytes(Natives.AsSpan()));
+                    decompressed.ReadExactly(MemoryMarshal.AsBytes(Statics.AsSpan()));
+                    decompressed.ReadExactly(MemoryMarshal.AsBytes(Globals.AsSpan()));
 
                     ReverseEndiannessOfBytecode(CodePages);
                     ReverseEndianness(Natives);

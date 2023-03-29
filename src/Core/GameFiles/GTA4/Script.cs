@@ -79,9 +79,9 @@ public class Script : IScript
                     Code = new byte[CodeLength];
                     Statics = new ScriptValue32[StaticsCount];
                     Globals = new ScriptValue32[GlobalsCount];
-                    decompressed.Read(Code, 0, Code.Length);
-                    decompressed.Read(MemoryMarshal.AsBytes(Statics.AsSpan()));
-                    decompressed.Read(MemoryMarshal.AsBytes(Globals.AsSpan()));
+                    decompressed.ReadExactly(Code);
+                    decompressed.ReadExactly(MemoryMarshal.AsBytes(Statics.AsSpan()));
+                    decompressed.ReadExactly(MemoryMarshal.AsBytes(Globals.AsSpan()));
                 }
                 break;
 
