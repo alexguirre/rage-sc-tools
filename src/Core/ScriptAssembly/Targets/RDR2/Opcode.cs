@@ -1,4 +1,4 @@
-﻿namespace ScTools.ScriptAssembly;
+﻿namespace ScTools.ScriptAssembly.Targets.RDR2;
 
 using System;
 using System.Buffers.Binary;
@@ -6,9 +6,9 @@ using System.Collections.Generic;
 using System.Text;
 
 /// <summary>
-/// Instruction set used with <see cref="GameFiles.ScriptRDR2"/>.
+/// Instruction set used with <see cref="GameFiles.RDR2.Script"/>.
 /// </summary>
-public enum OpcodeRDR2 : byte
+public enum Opcode : byte
 {
     NOP = 0x00,
     IADD = 0x01,
@@ -187,79 +187,79 @@ public enum OpcodeRDR2 : byte
     __UNK_AE = 0xAE,
 }
 
-public static class OpcodeRDR2Extensions
+public static class OpcodeExtensions
 {
-    public static bool IsInvalid(this OpcodeRDR2 opcode)
-        => opcode is > OpcodeRDR2.__UNK_AE;
+    public static bool IsInvalid(this Opcode opcode)
+        => opcode > Opcode.__UNK_AE;
 
-    public static string Mnemonic(this OpcodeRDR2 opcode) => opcode.ToString();
+    public static string Mnemonic(this Opcode opcode) => opcode.ToString();
 
     /// <returns>
-    /// The number of operands required by <see cref="opcode"/>; or, <c>-1</c> if it accepts a variable number of operands (i.e. <paramref name="opcode"/> is <see cref="OpcodeRDR2.SWITCH"/>).
+    /// The number of operands required by <see cref="opcode"/>; or, <c>-1</c> if it accepts a variable number of operands (i.e. <paramref name="opcode"/> is <see cref="Opcode.SWITCH"/>).
     /// </returns>
-    public static bool HasOperands(this OpcodeRDR2 opcode) => opcode.ConstantByteSize() != 1;
+    public static bool HasOperands(this Opcode opcode) => opcode.ConstantByteSize() != 1;
 
     /// <returns>
     /// The byte size of a instruction with this <paramref name="opcode"/>; or, <c>0</c> if the size depends on its operands.
     /// </returns>
-    public static int ConstantByteSize(this OpcodeRDR2 opcode)
+    public static int ConstantByteSize(this Opcode opcode)
         => opcode switch
         {
-            OpcodeRDR2.PUSH_CONST_U8 or
-            OpcodeRDR2.ARRAY_U8 or
-            OpcodeRDR2.ARRAY_U8_LOAD or
-            OpcodeRDR2.ARRAY_U8_STORE or
-            OpcodeRDR2.LOCAL_U8 or
-            OpcodeRDR2.LOCAL_U8_LOAD or
-            OpcodeRDR2.LOCAL_U8_STORE or
-            OpcodeRDR2.STATIC_U8 or
-            OpcodeRDR2.STATIC_U8_LOAD or
-            OpcodeRDR2.STATIC_U8_STORE or
-            OpcodeRDR2.IADD_U8 or
-            OpcodeRDR2.IOFFSET_U8_LOAD or
-            OpcodeRDR2.IOFFSET_U8_STORE or
-            OpcodeRDR2.IMUL_U8 or
-            OpcodeRDR2.TEXT_LABEL_ASSIGN_STRING or
-            OpcodeRDR2.TEXT_LABEL_ASSIGN_INT or
-            OpcodeRDR2.TEXT_LABEL_APPEND_STRING or
-            OpcodeRDR2.TEXT_LABEL_APPEND_INT => 2,
+            Opcode.PUSH_CONST_U8 or
+            Opcode.ARRAY_U8 or
+            Opcode.ARRAY_U8_LOAD or
+            Opcode.ARRAY_U8_STORE or
+            Opcode.LOCAL_U8 or
+            Opcode.LOCAL_U8_LOAD or
+            Opcode.LOCAL_U8_STORE or
+            Opcode.STATIC_U8 or
+            Opcode.STATIC_U8_LOAD or
+            Opcode.STATIC_U8_STORE or
+            Opcode.IADD_U8 or
+            Opcode.IOFFSET_U8_LOAD or
+            Opcode.IOFFSET_U8_STORE or
+            Opcode.IMUL_U8 or
+            Opcode.TEXT_LABEL_ASSIGN_STRING or
+            Opcode.TEXT_LABEL_ASSIGN_INT or
+            Opcode.TEXT_LABEL_APPEND_STRING or
+            Opcode.TEXT_LABEL_APPEND_INT => 2,
 
-            OpcodeRDR2.PUSH_CONST_U8_U8 or
-            OpcodeRDR2.NATIVE or
-            OpcodeRDR2.LEAVE or
-            OpcodeRDR2.PUSH_CONST_S16 or
-            OpcodeRDR2.IADD_S16 or
-            OpcodeRDR2.IOFFSET_S16_LOAD or
-            OpcodeRDR2.IOFFSET_S16_STORE or
-            OpcodeRDR2.IMUL_S16 or
-            OpcodeRDR2.ARRAY_U16 or
-            OpcodeRDR2.ARRAY_U16_LOAD or
-            OpcodeRDR2.ARRAY_U16_STORE or
-            OpcodeRDR2.LOCAL_U16 or
-            OpcodeRDR2.LOCAL_U16_LOAD or
-            OpcodeRDR2.LOCAL_U16_STORE or
-            OpcodeRDR2.STATIC_U16 or
-            OpcodeRDR2.STATIC_U16_LOAD or
-            OpcodeRDR2.STATIC_U16_STORE or
-            OpcodeRDR2.GLOBAL_U16 or
-            OpcodeRDR2.GLOBAL_U16_LOAD or
-            OpcodeRDR2.GLOBAL_U16_STORE or
-            (>= OpcodeRDR2.CALL_0 and <= OpcodeRDR2.CALL_F) or
-            (>= OpcodeRDR2.J and <= OpcodeRDR2.ILE_JZ) => 3,
+            Opcode.PUSH_CONST_U8_U8 or
+            Opcode.NATIVE or
+            Opcode.LEAVE or
+            Opcode.PUSH_CONST_S16 or
+            Opcode.IADD_S16 or
+            Opcode.IOFFSET_S16_LOAD or
+            Opcode.IOFFSET_S16_STORE or
+            Opcode.IMUL_S16 or
+            Opcode.ARRAY_U16 or
+            Opcode.ARRAY_U16_LOAD or
+            Opcode.ARRAY_U16_STORE or
+            Opcode.LOCAL_U16 or
+            Opcode.LOCAL_U16_LOAD or
+            Opcode.LOCAL_U16_STORE or
+            Opcode.STATIC_U16 or
+            Opcode.STATIC_U16_LOAD or
+            Opcode.STATIC_U16_STORE or
+            Opcode.GLOBAL_U16 or
+            Opcode.GLOBAL_U16_LOAD or
+            Opcode.GLOBAL_U16_STORE or
+            (>= Opcode.CALL_0 and <= Opcode.CALL_F) or
+            (>= Opcode.J and <= Opcode.ILE_JZ) => 3,
 
-            OpcodeRDR2.PUSH_CONST_U8_U8_U8 or
-            OpcodeRDR2.GLOBAL_U24 or
-            OpcodeRDR2.GLOBAL_U24_LOAD or
-            OpcodeRDR2.GLOBAL_U24_STORE or
-            OpcodeRDR2.PUSH_CONST_U24 => 4,
+            Opcode.PUSH_CONST_U8_U8_U8 or
+            Opcode.GLOBAL_U24 or
+            Opcode.GLOBAL_U24_LOAD or
+            Opcode.GLOBAL_U24_STORE or
+            Opcode.PUSH_CONST_U24 => 4,
 
-            OpcodeRDR2.PUSH_CONST_U32 or
-            OpcodeRDR2.PUSH_CONST_F => 5,
+            Opcode.PUSH_CONST_U32 or
+            Opcode.PUSH_CONST_F => 5,
 
-            OpcodeRDR2.ENTER or
-            OpcodeRDR2.SWITCH or
-            OpcodeRDR2.STRING or
-            OpcodeRDR2.STRING_U32 => 0,
+            Opcode.ENTER or
+            Opcode.SWITCH or
+            Opcode.STRING or
+            Opcode.STRING_U32 => 0,
 
             _ => 1,
         };
@@ -267,7 +267,7 @@ public static class OpcodeRDR2Extensions
     /// <returns>
     /// The length in bytes of an instruction with this <paramref name="opcode"/> and <paramref name="bytecode"/>.
     /// </returns>
-    public static int ByteSize(this OpcodeRDR2 opcode, ReadOnlySpan<byte> bytecode)
+    public static int ByteSize(this Opcode opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
         return ByteSize(bytecode);
@@ -278,13 +278,13 @@ public static class OpcodeRDR2Extensions
     /// </returns>
     public static int ByteSize(ReadOnlySpan<byte> bytecode)
     {
-        var opcode = (OpcodeRDR2)bytecode[0];
+        var opcode = (Opcode)bytecode[0];
         var s = opcode switch
         {
-            OpcodeRDR2.ENTER => bytecode[4] + 5,
-            OpcodeRDR2.SWITCH => 6 * bytecode[1] + 2,
-            OpcodeRDR2.STRING => bytecode[1] + 2,
-            OpcodeRDR2.STRING_U32 => (int)(BinaryPrimitives.ReadUInt32LittleEndian(bytecode[1..]) + 5),
+            Opcode.ENTER => bytecode[4] + 5,
+            Opcode.SWITCH => 6 * bytecode[1] + 2,
+            Opcode.STRING => bytecode[1] + 2,
+            Opcode.STRING_U32 => (int)(BinaryPrimitives.ReadUInt32LittleEndian(bytecode[1..]) + 5),
             _ => opcode.ConstantByteSize(),
         };
 
@@ -293,7 +293,7 @@ public static class OpcodeRDR2Extensions
 
     public static Span<byte> GetInstructionSpan(Span<byte> code, int address)
     {
-        var opcode = (OpcodeRDR2)code[address];
+        var opcode = (Opcode)code[address];
         var inst = code[address..];
         var instLength = opcode.ByteSize(inst);
         return inst[..instLength]; // trim to instruction length
@@ -301,21 +301,21 @@ public static class OpcodeRDR2Extensions
 
     public static ReadOnlySpan<byte> GetInstructionSpan(ReadOnlySpan<byte> code, int address)
     {
-        var opcode = (OpcodeRDR2)code[address];
+        var opcode = (Opcode)code[address];
         var inst = code[address..];
         var instLength = opcode.ByteSize(inst);
         return inst[..instLength]; // trim to instruction length
     }
 
-    public static string GetStringOperand(this OpcodeRDR2 opcode, ReadOnlySpan<byte> bytecode)
+    public static string GetStringOperand(this Opcode opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
 
-        if (opcode is OpcodeRDR2.STRING)
+        if (opcode is Opcode.STRING)
         {
             return Encoding.UTF8.GetString(bytecode[2..^1]);
         }
-        else if (opcode is OpcodeRDR2.STRING_U32)
+        else if (opcode is Opcode.STRING_U32)
         {
             return Encoding.UTF8.GetString(bytecode[5..^1]);
         }
@@ -325,28 +325,28 @@ public static class OpcodeRDR2Extensions
         }
     }
 
-    public static byte GetU8Operand(this OpcodeRDR2 opcode, ReadOnlySpan<byte> bytecode, int operandIndex = 0)
+    public static byte GetU8Operand(this Opcode opcode, ReadOnlySpan<byte> bytecode, int operandIndex = 0)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
 
         return bytecode[1 + operandIndex];
     }
 
-    public static short GetS16Operand(this OpcodeRDR2 opcode, ReadOnlySpan<byte> bytecode)
+    public static short GetS16Operand(this Opcode opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
 
         return BinaryPrimitives.ReadInt16LittleEndian(bytecode[1..]);
     }
 
-    public static ushort GetU16Operand(this OpcodeRDR2 opcode, ReadOnlySpan<byte> bytecode)
+    public static ushort GetU16Operand(this Opcode opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
 
         return BinaryPrimitives.ReadUInt16LittleEndian(bytecode[1..]);
     }
 
-    public static uint GetU24Operand(this OpcodeRDR2 opcode, ReadOnlySpan<byte> bytecode)
+    public static uint GetU24Operand(this Opcode opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
 
@@ -357,17 +357,17 @@ public static class OpcodeRDR2Extensions
         return (uint)((hi << 16) | (mi << 8) | lo);
     }
 
-    public static uint GetU32Operand(this OpcodeRDR2 opcode, ReadOnlySpan<byte> bytecode)
+    public static uint GetU32Operand(this Opcode opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
 
         return BinaryPrimitives.ReadUInt32LittleEndian(bytecode[1..]);
     }
 
-    public static float GetFloatOperand(this OpcodeRDR2 opcode, ReadOnlySpan<byte> bytecode)
+    public static float GetFloatOperand(this Opcode opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
-        if (opcode is not OpcodeRDR2.PUSH_CONST_F)
+        if (opcode is not Opcode.PUSH_CONST_F)
         {
             throw new ArgumentException($"The opcode {opcode} does not have a FLOAT operand.", nameof(opcode));
         }
@@ -375,44 +375,44 @@ public static class OpcodeRDR2Extensions
         return BinaryPrimitives.ReadSingleLittleEndian(bytecode[1..]);
     }
 
-    public static (int Base, ushort Offset, int Address) GetCallTarget(this OpcodeRDR2 opcode, ReadOnlySpan<byte> bytecode)
+    public static (int Base, ushort Offset, int Address) GetCallTarget(this Opcode opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
-        if (opcode is not (>= OpcodeRDR2.CALL_0 and <= OpcodeRDR2.CALL_F))
+        if (opcode is not (>= Opcode.CALL_0 and <= Opcode.CALL_F))
         {
             throw new ArgumentException($"The opcode {opcode} does not have a FLOAT operand.", nameof(opcode));
         }
 
-        var callBase = ((int)opcode - (int)OpcodeRDR2.CALL_0) << 16;
+        var callBase = ((int)opcode - (int)Opcode.CALL_0) << 16;
         var callOffset = BinaryPrimitives.ReadUInt16LittleEndian(bytecode[1..]);
         var callAddress = callBase | callOffset;
         return (callBase, callOffset, callAddress);
     }
 
-    public static int GetSwitchNumberOfCases(this OpcodeRDR2 opcode, ReadOnlySpan<byte> bytecode)
+    public static int GetSwitchNumberOfCases(this Opcode opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
-        ThrowIfNotExpectedOpcode(OpcodeRDR2.SWITCH, bytecode);
+        ThrowIfNotExpectedOpcode(Opcode.SWITCH, bytecode);
         return bytecode[1];
     }
 
-    public static SwitchCasesEnumerator GetSwitchOperands(this OpcodeRDR2 opcode, ReadOnlySpan<byte> bytecode)
+    public static SwitchCasesEnumerator GetSwitchOperands(this Opcode opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
         return new(bytecode);
     }
 
-    public static (byte ParamCount, ushort FrameSize) GetEnterOperands(this OpcodeRDR2 opcode, ReadOnlySpan<byte> bytecode)
+    public static (byte ParamCount, ushort FrameSize) GetEnterOperands(this Opcode opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
-        ThrowIfNotExpectedOpcode(OpcodeRDR2.ENTER, bytecode);
+        ThrowIfNotExpectedOpcode(Opcode.ENTER, bytecode);
         return (bytecode[1], BinaryPrimitives.ReadUInt16LittleEndian(bytecode[2..]));
     }
 
-    public static string? GetEnterFunctionName(this OpcodeRDR2 opcode, ReadOnlySpan<byte> bytecode)
+    public static string? GetEnterFunctionName(this Opcode opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
-        ThrowIfNotExpectedOpcode(OpcodeRDR2.ENTER, bytecode);
+        ThrowIfNotExpectedOpcode(Opcode.ENTER, bytecode);
 
         if (bytecode[4] > 0)
         {
@@ -425,36 +425,36 @@ public static class OpcodeRDR2Extensions
         return null;
     }
 
-    public static (byte ParamCount, byte ReturnCount) GetLeaveOperands(this OpcodeRDR2 opcode, ReadOnlySpan<byte> bytecode)
+    public static (byte ParamCount, byte ReturnCount) GetLeaveOperands(this Opcode opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
         return opcode switch
         {
-            OpcodeRDR2.LEAVE => (bytecode[1], bytecode[2]),
-            OpcodeRDR2.LEAVE_0_0 => (0, 0),
-            OpcodeRDR2.LEAVE_0_1 => (0, 1),
-            OpcodeRDR2.LEAVE_0_2 => (0, 2),
-            OpcodeRDR2.LEAVE_0_3 => (0, 3),
-            OpcodeRDR2.LEAVE_1_0 => (1, 0),
-            OpcodeRDR2.LEAVE_1_1 => (1, 1),
-            OpcodeRDR2.LEAVE_1_2 => (1, 2),
-            OpcodeRDR2.LEAVE_1_3 => (1, 3),
-            OpcodeRDR2.LEAVE_2_0 => (2, 0),
-            OpcodeRDR2.LEAVE_2_1 => (2, 1),
-            OpcodeRDR2.LEAVE_2_2 => (2, 2),
-            OpcodeRDR2.LEAVE_2_3 => (2, 3),
-            OpcodeRDR2.LEAVE_3_0 => (3, 0),
-            OpcodeRDR2.LEAVE_3_1 => (3, 1),
-            OpcodeRDR2.LEAVE_3_2 => (3, 2),
-            OpcodeRDR2.LEAVE_3_3 => (3, 3),
+            Opcode.LEAVE => (bytecode[1], bytecode[2]),
+            Opcode.LEAVE_0_0 => (0, 0),
+            Opcode.LEAVE_0_1 => (0, 1),
+            Opcode.LEAVE_0_2 => (0, 2),
+            Opcode.LEAVE_0_3 => (0, 3),
+            Opcode.LEAVE_1_0 => (1, 0),
+            Opcode.LEAVE_1_1 => (1, 1),
+            Opcode.LEAVE_1_2 => (1, 2),
+            Opcode.LEAVE_1_3 => (1, 3),
+            Opcode.LEAVE_2_0 => (2, 0),
+            Opcode.LEAVE_2_1 => (2, 1),
+            Opcode.LEAVE_2_2 => (2, 2),
+            Opcode.LEAVE_2_3 => (2, 3),
+            Opcode.LEAVE_3_0 => (3, 0),
+            Opcode.LEAVE_3_1 => (3, 1),
+            Opcode.LEAVE_3_2 => (3, 2),
+            Opcode.LEAVE_3_3 => (3, 3),
             _ => throw new ArgumentException($"The instruction opcode is not a LEAVE opcode.", nameof(bytecode))
         };
     }
 
-    public static (byte ParamCount, byte ReturnCount, ushort CommandIndex) GetNativeOperands(this OpcodeRDR2 opcode, ReadOnlySpan<byte> bytecode)
+    public static (byte ParamCount, byte ReturnCount, ushort CommandIndex) GetNativeOperands(this Opcode opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
-        ThrowIfNotExpectedOpcode(OpcodeRDR2.NATIVE, bytecode);
+        ThrowIfNotExpectedOpcode(Opcode.NATIVE, bytecode);
 
         var paramReturnCountsNativeIndexHi = bytecode[1];
         var nativeIndexHi = (paramReturnCountsNativeIndexHi >> 6) & 0x3;
@@ -467,18 +467,18 @@ public static class OpcodeRDR2Extensions
         return ((byte)paramCount, (byte)returnCount, (ushort)nativeIndex);
     }
 
-    public static byte GetTextLabelLength(this OpcodeRDR2 opcode, ReadOnlySpan<byte> bytecode)
+    public static byte GetTextLabelLength(this Opcode opcode, ReadOnlySpan<byte> bytecode)
     {
         ThrowIfOpcodeDoesNotMatch(opcode, bytecode);
-        if ((OpcodeRDR2)bytecode[0] is not (OpcodeRDR2.TEXT_LABEL_ASSIGN_STRING or OpcodeRDR2.TEXT_LABEL_ASSIGN_INT or
-                                            OpcodeRDR2.TEXT_LABEL_APPEND_STRING or OpcodeRDR2.TEXT_LABEL_APPEND_INT))
+        if ((Opcode)bytecode[0] is not (Opcode.TEXT_LABEL_ASSIGN_STRING or Opcode.TEXT_LABEL_ASSIGN_INT or
+                                            Opcode.TEXT_LABEL_APPEND_STRING or Opcode.TEXT_LABEL_APPEND_INT))
         {
             throw new ArgumentException($"The instruction opcode is not a TEXT_LABEL_ASSIGN/APPEND opcode.", nameof(bytecode));
         }
         return bytecode[1];
     }
 
-    internal static void ThrowIfOpcodeDoesNotMatch(OpcodeRDR2 opcode, ReadOnlySpan<byte> bytecode)
+    internal static void ThrowIfOpcodeDoesNotMatch(Opcode opcode, ReadOnlySpan<byte> bytecode)
     {
         if ((byte)opcode != bytecode[0])
         {
@@ -486,7 +486,7 @@ public static class OpcodeRDR2Extensions
         }
     }
 
-    internal static void ThrowIfNotExpectedOpcode(OpcodeRDR2 expectedOpcode, ReadOnlySpan<byte> bytecode)
+    internal static void ThrowIfNotExpectedOpcode(Opcode expectedOpcode, ReadOnlySpan<byte> bytecode)
     {
         if (bytecode[0] != (byte)expectedOpcode)
         {
@@ -508,7 +508,7 @@ public static class OpcodeRDR2Extensions
 
         public SwitchCasesEnumerator(ReadOnlySpan<byte> bytecode)
         {
-            ThrowIfNotExpectedOpcode(OpcodeRDR2.SWITCH, bytecode);
+            ThrowIfNotExpectedOpcode(Opcode.SWITCH, bytecode);
 
             this.bytecode = bytecode;
             current = default;

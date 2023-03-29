@@ -1,14 +1,14 @@
-﻿namespace ScTools.GameFiles;
+﻿namespace ScTools.GameFiles.RDR2;
 
 using System;
 using System.IO;
 using System.Text;
 using System.Buffers.Binary;
-using ScTools.ScriptAssembly;
+using ScTools.ScriptAssembly.Targets.RDR2;
 
-internal static class DumperRDR2
+internal static class Dumper
 {
-    public static void Dump(ScriptRDR2 sc, TextWriter w, DumpOptions options)
+    public static void Dump(Script sc, TextWriter w, DumpOptions options)
     {
         sc = sc ?? throw new ArgumentNullException(nameof(sc));
 
@@ -56,7 +56,7 @@ internal static class DumperRDR2
         }
     }
 
-    private static void Disassemble(ScriptRDR2 sc, TextWriter w, DumpOptions options)
+    private static void Disassemble(Script sc, TextWriter w, DumpOptions options)
     {
         var code = sc.MergeCodePages();
         w.WriteLine("Disassembly:");
@@ -67,7 +67,7 @@ internal static class DumperRDR2
         {
             lineSB.Clear();
 
-            var size = OpcodeRDR2Extensions.ByteSize(code.AsSpan(ip));
+            var size = OpcodeExtensions.ByteSize(code.AsSpan(ip));
 
             // write offset
             if (options.IncludeOffsets)
@@ -105,119 +105,119 @@ internal static class DumperRDR2
         }
     }
 
-    private static void DisassembleInstructionAt(StringBuilder sb, ScriptRDR2 sc, byte[] code, int ip)
+    private static void DisassembleInstructionAt(StringBuilder sb, Script sc, byte[] code, int ip)
     {
-        var opcode = (OpcodeRDR2)code[ip];
+        var opcode = (Opcode)code[ip];
         if (opcode.IsInvalid())
         {
             sb.Append($"<invalid opcode {(byte)opcode:X2}>");
             return;
         }
         
-        var inst = OpcodeRDR2Extensions.GetInstructionSpan(code, ip);
+        var inst = OpcodeExtensions.GetInstructionSpan(code, ip);
 
         sb.Append(opcode.Mnemonic());
 
         switch (opcode)
         {
-            case OpcodeRDR2.TEXT_LABEL_ASSIGN_STRING:
-            case OpcodeRDR2.TEXT_LABEL_ASSIGN_INT:
-            case OpcodeRDR2.TEXT_LABEL_APPEND_STRING:
-            case OpcodeRDR2.TEXT_LABEL_APPEND_INT:
+            case Opcode.TEXT_LABEL_ASSIGN_STRING:
+            case Opcode.TEXT_LABEL_ASSIGN_INT:
+            case Opcode.TEXT_LABEL_APPEND_STRING:
+            case Opcode.TEXT_LABEL_APPEND_INT:
                 sb.Append($" {opcode.GetTextLabelLength(inst)}");
                 break;
                 
-            case OpcodeRDR2.STRING:
-            case OpcodeRDR2.STRING_U32:
+            case Opcode.STRING:
+            case Opcode.STRING_U32:
                 sb.Append($" '{opcode.GetStringOperand(inst).Escape()}'");
                 break;
 
-            case OpcodeRDR2.PUSH_CONST_U8:
-            case OpcodeRDR2.ARRAY_U8:
-            case OpcodeRDR2.ARRAY_U8_LOAD:
-            case OpcodeRDR2.ARRAY_U8_STORE:
-            case OpcodeRDR2.LOCAL_U8:
-            case OpcodeRDR2.LOCAL_U8_LOAD:
-            case OpcodeRDR2.LOCAL_U8_STORE:
-            case OpcodeRDR2.STATIC_U8:
-            case OpcodeRDR2.STATIC_U8_LOAD:
-            case OpcodeRDR2.STATIC_U8_STORE:
-            case OpcodeRDR2.IADD_U8:
-            case OpcodeRDR2.IOFFSET_U8_LOAD:
-            case OpcodeRDR2.IOFFSET_U8_STORE:
-            case OpcodeRDR2.IMUL_U8:
+            case Opcode.PUSH_CONST_U8:
+            case Opcode.ARRAY_U8:
+            case Opcode.ARRAY_U8_LOAD:
+            case Opcode.ARRAY_U8_STORE:
+            case Opcode.LOCAL_U8:
+            case Opcode.LOCAL_U8_LOAD:
+            case Opcode.LOCAL_U8_STORE:
+            case Opcode.STATIC_U8:
+            case Opcode.STATIC_U8_LOAD:
+            case Opcode.STATIC_U8_STORE:
+            case Opcode.IADD_U8:
+            case Opcode.IOFFSET_U8_LOAD:
+            case Opcode.IOFFSET_U8_STORE:
+            case Opcode.IMUL_U8:
                 sb.Append($" {opcode.GetU8Operand(inst)}");
                 break;
 
-            case OpcodeRDR2.PUSH_CONST_U8_U8:
+            case Opcode.PUSH_CONST_U8_U8:
                 sb.Append($" {opcode.GetU8Operand(inst, 0)} {opcode.GetU8Operand(inst, 1)}");
                 break;
 
-            case OpcodeRDR2.PUSH_CONST_U8_U8_U8:
+            case Opcode.PUSH_CONST_U8_U8_U8:
                 sb.Append($" {opcode.GetU8Operand(inst, 0)} {opcode.GetU8Operand(inst, 1)} {opcode.GetU8Operand(inst, 2)}");
                 break;
 
-            case OpcodeRDR2.PUSH_CONST_S16:
-            case OpcodeRDR2.IADD_S16:
-            case OpcodeRDR2.IOFFSET_S16_LOAD:
-            case OpcodeRDR2.IOFFSET_S16_STORE:
-            case OpcodeRDR2.IMUL_S16:
+            case Opcode.PUSH_CONST_S16:
+            case Opcode.IADD_S16:
+            case Opcode.IOFFSET_S16_LOAD:
+            case Opcode.IOFFSET_S16_STORE:
+            case Opcode.IMUL_S16:
                 var s16 = opcode.GetS16Operand(inst);
                 sb.Append($" {s16} (0x{s16:X})");
                 break;
                 
-            case OpcodeRDR2.ARRAY_U16:
-            case OpcodeRDR2.ARRAY_U16_LOAD:
-            case OpcodeRDR2.ARRAY_U16_STORE:
-            case OpcodeRDR2.LOCAL_U16:
-            case OpcodeRDR2.LOCAL_U16_LOAD:
-            case OpcodeRDR2.LOCAL_U16_STORE:
-            case OpcodeRDR2.STATIC_U16:
-            case OpcodeRDR2.STATIC_U16_LOAD:
-            case OpcodeRDR2.STATIC_U16_STORE:
-            case OpcodeRDR2.GLOBAL_U16:
-            case OpcodeRDR2.GLOBAL_U16_LOAD:
-            case OpcodeRDR2.GLOBAL_U16_STORE:
+            case Opcode.ARRAY_U16:
+            case Opcode.ARRAY_U16_LOAD:
+            case Opcode.ARRAY_U16_STORE:
+            case Opcode.LOCAL_U16:
+            case Opcode.LOCAL_U16_LOAD:
+            case Opcode.LOCAL_U16_STORE:
+            case Opcode.STATIC_U16:
+            case Opcode.STATIC_U16_LOAD:
+            case Opcode.STATIC_U16_STORE:
+            case Opcode.GLOBAL_U16:
+            case Opcode.GLOBAL_U16_LOAD:
+            case Opcode.GLOBAL_U16_STORE:
                 var u16 = opcode.GetU16Operand(inst);
                 sb.Append($" {u16} (0x{u16:X})");
                 break;
 
-            case OpcodeRDR2.PUSH_CONST_U24:
-            case OpcodeRDR2.GLOBAL_U24:
-            case OpcodeRDR2.GLOBAL_U24_LOAD:
-            case OpcodeRDR2.GLOBAL_U24_STORE:
+            case Opcode.PUSH_CONST_U24:
+            case Opcode.GLOBAL_U24:
+            case Opcode.GLOBAL_U24_LOAD:
+            case Opcode.GLOBAL_U24_STORE:
                 var u24 = opcode.GetU24Operand(inst);
                 sb.Append($" {unchecked((int)u24)} (0x{u24:X})");
                 break;
 
-            case OpcodeRDR2.PUSH_CONST_U32:
+            case Opcode.PUSH_CONST_U32:
                 var u32 = opcode.GetU32Operand(inst);
                 sb.Append($" {unchecked((int)u32)} (0x{u32:X})");
                 break;
 
-            case OpcodeRDR2.PUSH_CONST_F:
+            case Opcode.PUSH_CONST_F:
                 sb.Append($" {opcode.GetFloatOperand(inst):G9}");
                 break;
 
-            case >= OpcodeRDR2.CALL_0 and <= OpcodeRDR2.CALL_F:
+            case >= Opcode.CALL_0 and <= Opcode.CALL_F:
                 var call = opcode.GetCallTarget(inst);
                 sb.Append($" {call.Offset} [{call.Address:000000}]");
                 break;
 
-            case >= OpcodeRDR2.J and <= OpcodeRDR2.ILE_JZ:
+            case >= Opcode.J and <= Opcode.ILE_JZ:
                 var jumpOffset = (int)opcode.GetS16Operand(inst);
                 var jumpAddress = ip + 3 + jumpOffset;
                 sb.Append($" {jumpAddress:000000}");
                 break;
 
-            case OpcodeRDR2.SWITCH:
+            case Opcode.SWITCH:
                 foreach (var c in opcode.GetSwitchOperands(inst))
                 {
                     sb.Append($" {c.Value}:{c.GetJumpTargetAddress(ip):000000}");
                 }
                 break;
 
-            case OpcodeRDR2.ENTER:
+            case Opcode.ENTER:
                 var enter = opcode.GetEnterOperands(inst);
                 var funcName = opcode.GetEnterFunctionName(inst);
                 sb.Append($" {enter.ParamCount} {enter.FrameSize}");
@@ -227,12 +227,12 @@ internal static class DumperRDR2
                 }
                 break;
                 
-            case OpcodeRDR2.LEAVE:
+            case Opcode.LEAVE:
                 var leave = opcode.GetLeaveOperands(inst);
                 sb.Append($" {leave.ParamCount} {leave.ReturnCount}");
                 break;
 
-            case OpcodeRDR2.NATIVE:
+            case Opcode.NATIVE:
                 var native = opcode.GetNativeOperands(inst);
                 var nativeHashStr = native.CommandIndex < sc.Natives.Length ? $"0x{sc.Natives[native.CommandIndex]:X8}" : $"<out of bounds>";
                 sb.Append($" {native.ParamCount} {native.ReturnCount} {native.CommandIndex} [{nativeHashStr}]");

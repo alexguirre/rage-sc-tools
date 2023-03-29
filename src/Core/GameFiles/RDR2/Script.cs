@@ -1,4 +1,4 @@
-﻿namespace ScTools.GameFiles;
+﻿namespace ScTools.GameFiles.RDR2;
 
 using System;
 using System.Buffers.Binary;
@@ -7,12 +7,12 @@ using System.IO;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
 using ScTools.GameFiles.Crypto;
-using ScTools.ScriptAssembly;
+using ScTools.ScriptAssembly.Targets.RDR2;
 
 /// <summary>
 /// "Resource Era" Version 2. Used in Red Dead Redemption.
 /// </summary>
-public class ScriptRDR2 : IScript
+public class Script : IScript
 {
     public const uint MaxPageLength = 0x4000;
 
@@ -139,8 +139,8 @@ public class ScriptRDR2 : IScript
         {
             for (int i = 0; i < page.Length;)
             {
-                var opcode = (OpcodeRDR2)page[i];
-                if (opcode is OpcodeRDR2.STRING_U32)
+                var opcode = (Opcode)page[i];
+                if (opcode is Opcode.STRING_U32)
                 {
                     // need to reverse the U32 string length to get the correct instruction length in GetInstructionSpan
                     // no other opcode needs correct endiannes for calculating the length
@@ -148,53 +148,53 @@ public class ScriptRDR2 : IScript
                     BinaryPrimitives.WriteUInt32LittleEndian(s[1..], BinaryPrimitives.ReverseEndianness(opcode.GetU32Operand(s)));
                 }
 
-                var inst = OpcodeRDR2Extensions.GetInstructionSpan(page, i);
+                var inst = OpcodeExtensions.GetInstructionSpan(page, i);
                 switch (opcode)
                 {
-                    case OpcodeRDR2.PUSH_CONST_S16:
-                    case OpcodeRDR2.IADD_S16:
-                    case OpcodeRDR2.IOFFSET_S16_LOAD:
-                    case OpcodeRDR2.IOFFSET_S16_STORE:
-                    case OpcodeRDR2.IMUL_S16:
-                    case >= OpcodeRDR2.J and <= OpcodeRDR2.ILE_JZ:
+                    case Opcode.PUSH_CONST_S16:
+                    case Opcode.IADD_S16:
+                    case Opcode.IOFFSET_S16_LOAD:
+                    case Opcode.IOFFSET_S16_STORE:
+                    case Opcode.IMUL_S16:
+                    case >= Opcode.J and <= Opcode.ILE_JZ:
                         var jumpOffset = opcode.GetS16Operand(inst);
                         BinaryPrimitives.WriteInt16LittleEndian(inst[1..], BinaryPrimitives.ReverseEndianness(jumpOffset));
                         break;
 
-                    case OpcodeRDR2.ARRAY_U16:
-                    case OpcodeRDR2.ARRAY_U16_LOAD:
-                    case OpcodeRDR2.ARRAY_U16_STORE:
-                    case OpcodeRDR2.LOCAL_U16:
-                    case OpcodeRDR2.LOCAL_U16_LOAD:
-                    case OpcodeRDR2.LOCAL_U16_STORE:
-                    case OpcodeRDR2.STATIC_U16:
-                    case OpcodeRDR2.STATIC_U16_LOAD:
-                    case OpcodeRDR2.STATIC_U16_STORE:
-                    case OpcodeRDR2.GLOBAL_U16:
-                    case OpcodeRDR2.GLOBAL_U16_LOAD:
-                    case OpcodeRDR2.GLOBAL_U16_STORE:
-                    case >= OpcodeRDR2.CALL_0 and <= OpcodeRDR2.CALL_F:
+                    case Opcode.ARRAY_U16:
+                    case Opcode.ARRAY_U16_LOAD:
+                    case Opcode.ARRAY_U16_STORE:
+                    case Opcode.LOCAL_U16:
+                    case Opcode.LOCAL_U16_LOAD:
+                    case Opcode.LOCAL_U16_STORE:
+                    case Opcode.STATIC_U16:
+                    case Opcode.STATIC_U16_LOAD:
+                    case Opcode.STATIC_U16_STORE:
+                    case Opcode.GLOBAL_U16:
+                    case Opcode.GLOBAL_U16_LOAD:
+                    case Opcode.GLOBAL_U16_STORE:
+                    case >= Opcode.CALL_0 and <= Opcode.CALL_F:
                         var callOffset = opcode.GetU16Operand(inst);
                         BinaryPrimitives.WriteUInt16LittleEndian(inst[1..], BinaryPrimitives.ReverseEndianness(callOffset));
                         break;
 
-                    case OpcodeRDR2.PUSH_CONST_U24:
-                    case OpcodeRDR2.GLOBAL_U24:
-                    case OpcodeRDR2.GLOBAL_U24_LOAD:
-                    case OpcodeRDR2.GLOBAL_U24_STORE:
+                    case Opcode.PUSH_CONST_U24:
+                    case Opcode.GLOBAL_U24:
+                    case Opcode.GLOBAL_U24_LOAD:
+                    case Opcode.GLOBAL_U24_STORE:
                         var hi = inst[1];
                         var lo = inst[3];
                         inst[1] = lo;
                         inst[3] = hi;
                         break;
 
-                    case OpcodeRDR2.PUSH_CONST_U32:
-                    case OpcodeRDR2.PUSH_CONST_F:
+                    case Opcode.PUSH_CONST_U32:
+                    case Opcode.PUSH_CONST_F:
                         BinaryPrimitives.WriteUInt32LittleEndian(inst[1..], BinaryPrimitives.ReverseEndianness(opcode.GetU32Operand(inst)));
                         break;
 
 
-                    case OpcodeRDR2.SWITCH:
+                    case Opcode.SWITCH:
                         foreach (var (caseValue, caseJumpOffset, offsetWithinInstruction) in opcode.GetSwitchOperands(inst))
                         {
                             BinaryPrimitives.WriteUInt32LittleEndian(inst[offsetWithinInstruction..], BinaryPrimitives.ReverseEndianness(caseValue));
@@ -202,7 +202,7 @@ public class ScriptRDR2 : IScript
                         }
                         break;
 
-                    case OpcodeRDR2.ENTER:
+                    case Opcode.ENTER:
                         var enter = opcode.GetEnterOperands(inst);
                         BinaryPrimitives.WriteUInt16LittleEndian(inst[2..], BinaryPrimitives.ReverseEndianness(enter.FrameSize));
                         break;
@@ -213,5 +213,5 @@ public class ScriptRDR2 : IScript
         }
     }
 
-    public void Dump(TextWriter sink, DumpOptions options) => DumperRDR2.Dump(this, sink, options);
+    public void Dump(TextWriter sink, DumpOptions options) => Dumper.Dump(this, sink, options);
 }

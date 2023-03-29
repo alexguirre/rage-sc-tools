@@ -91,7 +91,7 @@ internal static class DumpCommand
                     case (Game.RDR2, Platform.Xenon):
                     {
                         using var r = new BigEndianBinaryReader(new MemoryStream(source));
-                        var sc = new ScriptRDR2();
+                        var sc = new GameFiles.RDR2.Script();
                         sc.Read(r, keys.RDR2.AesKeyXenon);
                         script = sc;
                         break;

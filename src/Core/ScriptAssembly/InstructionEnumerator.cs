@@ -60,8 +60,8 @@ public static class InstructionEnumeratorScriptExtensions
         => new(script.Code, Targets.GTA4.OpcodeExtensions.GetInstructionSpan);
     public static InstructionEnumerator<Targets.MP3.Opcode> EnumerateInstructions(this GameFiles.MP3.Script script)
         => new(script.Code, Targets.MP3.OpcodeExtensions.GetInstructionSpan);
-    public static InstructionEnumerator<OpcodeRDR2> EnumerateInstructions(this ScriptRDR2 script)
-        => new(script.MergeCodePages(), OpcodeRDR2Extensions.GetInstructionSpan);
+    public static InstructionEnumerator<Targets.RDR2.Opcode> EnumerateInstructions(this GameFiles.RDR2.Script script)
+        => new(script.MergeCodePages(), Targets.RDR2.OpcodeExtensions.GetInstructionSpan);
     public static InstructionEnumerator<Targets.GTA5.OpcodeV10> EnumerateInstructions(this GameFiles.GTA5.Script script)
         => new(script.MergeCodePages(), Targets.GTA5.OpcodeExtensions.GetInstructionSpan);
 }

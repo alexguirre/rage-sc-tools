@@ -14,10 +14,4 @@
     <ProjectReference Include="..\Core\Core.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Reference Include="CodeWalker.Core">
-      <HintPath>..\..\dependencies\CodeWalker.Core.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-
 </Project>

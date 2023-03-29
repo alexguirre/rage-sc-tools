@@ -7,8 +7,6 @@
     using System.Linq;
     using System.Threading;
 
-    using CodeWalker.GameFiles;
-
     using ScTools;
     using ScTools.GameFiles;
     using ScTools.ScriptAssembly;
@@ -23,17 +21,6 @@
             Thread.CurrentThread.CurrentCulture = CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
             //LoadGTA5Keys();
             DoTest();
-        }
-
-        private static void LoadGTA5Keys()
-        {
-            string path = ".\\Keys";
-            GTA5Keys.PC_AES_KEY = File.ReadAllBytes(path + "\\gtav_aes_key.dat");
-            GTA5Keys.PC_NG_KEYS = CryptoIO.ReadNgKeys(path + "\\gtav_ng_key.dat");
-            GTA5Keys.PC_NG_DECRYPT_TABLES = CryptoIO.ReadNgTables(path + "\\gtav_ng_decrypt_tables.dat");
-            GTA5Keys.PC_NG_ENCRYPT_TABLES = CryptoIO.ReadNgTables(path + "\\gtav_ng_encrypt_tables.dat");
-            GTA5Keys.PC_NG_ENCRYPT_LUTs = CryptoIO.ReadNgLuts(path + "\\gtav_ng_encrypt_luts.dat");
-            GTA5Keys.PC_LUT = File.ReadAllBytes(path + "\\gtav_hash_lut.dat");
         }
 
         public static void DoTest()
