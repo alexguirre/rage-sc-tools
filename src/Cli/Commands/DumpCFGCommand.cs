@@ -72,8 +72,7 @@ internal static class DumpCFGCommand
             try
             {
                 var extension = "cfg.dot";
-                var outputFile =
-                    new FileInfo(Path.Combine(output.FullName, Path.ChangeExtension(inputFile.Name, extension)));
+                var outputFile = new FileInfo(Path.Combine(output.FullName, Path.ChangeExtension(inputFile.Name, extension)));
 
                 Print($"Dumping '{inputFile}'...");
                 var source = await File.ReadAllBytesAsync(inputFile.FullName, cancellationToken);
@@ -124,6 +123,21 @@ internal static class DumpCFGCommand
                 await using (var outputWriter = new StreamWriter(outputFile.Open(FileMode.Create)))
                 {
                     Decompiler.CFGGraphViz.ToDot(outputWriter, script.EntryFunction.RootBlock);
+                }
+
+                if (image)
+                {
+                    var dotArgs = new[] { "-Tpng", "-o", Path.ChangeExtension(outputFile.FullName,".png"), outputFile.FullName };
+                    var dot = Process.Start("dot.exe", dotArgs);
+                    await dot.WaitForExitAsync(cancellationToken);
+                }
+
+
+                extension = "calls.dot";
+                outputFile = new FileInfo(Path.Combine(output.FullName, Path.ChangeExtension(inputFile.Name, extension)));
+                await using (var outputWriter = new StreamWriter(outputFile.Open(FileMode.Create)))
+                {
+                    Decompiler.CallGraphGraphViz.ToDot(outputWriter, script.BuildCallGraph());
                 }
 
                 if (image)

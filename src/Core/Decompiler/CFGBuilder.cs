@@ -70,7 +70,7 @@ public sealed class CFGBuilder
             block.OutgoingEdges = outgoing.MoveToImmutable();
         }
 
-        return blocks.Values.OrderBy(b => b.Start.Address).First();
+        return blocks[blocksByStartAddress[start.Address]];
 
         CFGBlock ConvertBlock(CFGBlockInProgress block)
             => new(script.FindInstructionAt(block.StartAddress)!,
@@ -127,6 +127,7 @@ public sealed class CFGBuilder
 
     private void EndBlocks()
     {
+        // TODO: this logic may be flawed, it assumes that the blocks are contiguous, which doesn't seem to always be the case. Investigate MP3 scripts
         var blocksOrderedByAddress = blocksByStartAddress.Values.OrderBy(b => b.StartAddress).ToArray();
         if (blocksOrderedByAddress.Length == 0)
         {
@@ -224,12 +225,11 @@ public sealed class CFGBuilder
 
         var reachableBlocks = new HashSet<CFGBlockInProgress>(capacity: blocksByStartAddress.Count);
         var blocksToVisit = new Stack<CFGBlockInProgress>(capacity: blocksByStartAddress.Count);
-        var firstBlock = blocksByStartAddress.Values.OrderBy(b => b.StartAddress).First();
+        var firstBlock = blocksByStartAddress[start.Address];
 
         blocksToVisit.Push(firstBlock);
-        while (blocksToVisit.Count > 0)
+        while (blocksToVisit.TryPop(out var block))
         {
-            var block = blocksToVisit.Pop();
             reachableBlocks.Add(block);
 
             foreach (var succ in block.Successors)
