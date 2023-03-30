@@ -76,6 +76,7 @@ internal static class Program
         CompileCommand.Command,
         ConfigCommand.Command,
         DumpCommand.Command,
+        DumpCFGCommand.Command,
         InitProjectCommand.Command,
         ListTargetsCommand.Command,
     };
@@ -86,7 +87,7 @@ internal static class Program
 
         var parser = new CommandLineBuilder(RootCommand)
             .UseDefaults()
-            .UseHelp(CustomizeHelp)
+            //.UseHelp(CustomizeHelp)
             .Build();
 
         return await parser.InvokeAsync(args);

@@ -5,13 +5,14 @@ using System.CommandLine;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading.Tasks;
 using ScTools.GameFiles;
-using ScTools.GameFiles.GTA5;
 using ScTools.ScriptLang.Workspace;
 using Spectre.Console;
 
-internal static class DumpCommand
+internal static class DumpCFGCommand
 {
     public static readonly Argument<FileGlob[]> Input = new Argument<FileGlob[]>(
             "input",
@@ -28,24 +29,24 @@ internal static class DumpCommand
             parseArgument: Parsers.ParseBuildTarget,
             description: "The target game.");
 
-    public static readonly Option<bool> IR = new("--ir", "Include an intermediate representation of the disassembly.");
+    public static readonly Option<bool> Image = new(new[] { "--image", "-i" }, "Use Graphviz to generate an image from the dot file. Requires Graphviz to be installed.");
 
     public static Command Command { get; } = BuildCommand();
 
     private static Command BuildCommand()
     {
-        var cmd = new Command("dump", "Basic disassembly of script files.")
+        var cmd = new Command("dump-cfg", "Dumps the control flow graph of the scripts as a DOT graph file.")
         {
             Input,
             Output,
             Target,
-            IR,
+            Image,
         };
-        cmd.SetHandler(InvokeAsync, Input, Output, Target, IR);
+        cmd.SetHandler(InvokeAsync, Input, Output, Target, Image);
         return cmd;
     }
 
-    public static async Task InvokeAsync(FileGlob[] input, DirectoryInfo output, BuildTarget target, bool ir)
+    public static async Task<int> InvokeAsync(FileGlob[] input, DirectoryInfo output, BuildTarget target, bool image)
     {
         static void Print(string str)
         {
@@ -55,6 +56,12 @@ internal static class DumpCommand
             }
         }
 
+        // var sb = new StringBuilder(260);
+        if (image && SearchPath(null, "dot.exe", null, 0, null, IntPtr.Zero) == 0)
+        {
+            return Exit.Error("dot.exe not found in PATH. Please install Graphviz from [link]https://graphviz.org/download/[/].");
+        }
+        
         var totalTime = Stopwatch.StartNew();
 
         var keys = Program.Keys;
@@ -64,14 +71,14 @@ internal static class DumpCommand
         {
             try
             {
-                var extension = "dump.txt";
+                var extension = "cfg.dot";
                 var outputFile =
                     new FileInfo(Path.Combine(output.FullName, Path.ChangeExtension(inputFile.Name, extension)));
 
                 Print($"Dumping '{inputFile}'...");
                 var source = await File.ReadAllBytesAsync(inputFile.FullName, cancellationToken);
 
-                IScript script;
+                Decompiler.Script script;
                 switch (target)
                 {
                     case (Game.GTA5, Platform.x64):
@@ -90,7 +97,7 @@ internal static class DumpCommand
                         using var r = new BinaryReader(new MemoryStream(source));
                         var sc = new GameFiles.GTA4.Script();
                         sc.Read(r, aesKey);
-                        script = sc;
+                        script = Decompiler.Script.FromGTA4(sc);
                         break;
                     }
                     case (Game.RDR2, Platform.Xenon):
@@ -98,7 +105,7 @@ internal static class DumpCommand
                         using var r = new BigEndianBinaryReader(new MemoryStream(source));
                         var sc = new GameFiles.RDR2.Script();
                         sc.Read(r, keys.RDR2.AesKeyXenon);
-                        script = sc;
+                        script = Decompiler.Script.FromRDR2(sc);
                         break;
                     }
                     case (Game.MP3, Platform.x86):
@@ -106,7 +113,7 @@ internal static class DumpCommand
                         using var r = new BinaryReader(new MemoryStream(source));
                         var sc = new GameFiles.MP3.Script();
                         sc.Read(r, keys.MP3.AesKeyPC!); // AES key checked for null inside Read
-                        script = sc;
+                        script = Decompiler.Script.FromMP3(sc);
                         break;
                     }
 
@@ -114,8 +121,17 @@ internal static class DumpCommand
                         throw new InvalidOperationException($"Unsupported build target '{target}'");
                 }
 
-                await using var outputWriter = new StreamWriter(outputFile.Open(FileMode.Create));
-                script.Dump(outputWriter, DumpOptions.Default with { IncludeIR = ir });
+                await using (var outputWriter = new StreamWriter(outputFile.Open(FileMode.Create)))
+                {
+                    Decompiler.CFGGraphViz.ToDot(outputWriter, script.EntryFunction.RootBlock);
+                }
+
+                if (image)
+                {
+                    var dotArgs = new[] { "-Tpng", "-o", Path.ChangeExtension(outputFile.FullName,".png"), outputFile.FullName };
+                    var dot = Process.Start("dot.exe", dotArgs);
+                    await dot.WaitForExitAsync(cancellationToken);
+                }
             }
             catch (Exception e)
             {
@@ -129,5 +145,10 @@ internal static class DumpCommand
 
         totalTime.Stop();
         Print($"Total time: {totalTime.Elapsed}");
+        return Exit.Success;
     }
+
+    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+    private static extern uint SearchPath(string? lpPath, string lpFileName, string? lpExtension, int nBufferLength,
+                                          [MarshalAs(UnmanagedType.LPTStr)] StringBuilder lpBuffer, IntPtr lpFilePart);
 }

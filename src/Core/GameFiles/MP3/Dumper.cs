@@ -43,6 +43,13 @@ internal static class Dumper
         {
             Disassemble(sc, w, options);
         }
+
+        if (options.IncludeIR)
+        {
+            w.WriteLine("IR Disassembly:");
+            var ir = ScTools.Decompiler.Script.FromMP3(sc);
+            ScTools.Decompiler.IR.IRPrinter.PrintAll(ir.IR.Head, w, options.IncludeOffsets);
+        }
     }
 
     private static void Disassemble(Script sc, TextWriter w, DumpOptions options)

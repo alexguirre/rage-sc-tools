@@ -11,12 +11,14 @@ using System.IO;
 /// <param name="IncludeOffsets">Include instruction offsets in the disassembly?</param>
 /// <param name="IncludeBytes">Include instruction bytes in the disassembly?</param>
 /// <param name="IncludeInstructions">Include text representation of instructions in the disassembly?</param>
+/// <param name="IncludeIR">Include an intermediate representation of the disassembly?</param> 
 public readonly record struct DumpOptions(
     bool IncludeMetadata,
     bool IncludeDisassembly,
     bool IncludeOffsets,
     bool IncludeBytes,
-    bool IncludeInstructions)
+    bool IncludeInstructions,
+    bool IncludeIR)
 {
-    public static DumpOptions Default => new(true, true, true, true, true);
+    public static DumpOptions Default => new(true, true, true, true, true, false);
 }

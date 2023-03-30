@@ -6,7 +6,7 @@ internal static class Exit
 {
     public static int Error(string message, int errorCode = DefaultError)
     {
-        Std.Err.MarkupLineInterpolated($"[red]{message}[/]");
+        Std.Err.MarkupLine($"[red]{message}[/]");
         return errorCode;
     }
 
