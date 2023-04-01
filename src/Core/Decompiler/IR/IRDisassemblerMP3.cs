@@ -1,15 +1,10 @@
 ﻿namespace ScTools.Decompiler.IR;
 
 using System;
-using System.Linq;
-using System.Globalization;
-using System.IO;
-using System.Collections.Generic;
-
-using ScTools.GameFiles.MP3;
-using ScTools.ScriptAssembly;
-using ScTools.ScriptAssembly.Targets.MP3;
 using System.Collections.Immutable;
+using ScTools.GameFiles.MP3;
+using ScTools.ScriptAssembly.Targets;
+using ScTools.ScriptAssembly.Targets.MP3;
 
 public sealed class IRDisassemblerMP3
 {

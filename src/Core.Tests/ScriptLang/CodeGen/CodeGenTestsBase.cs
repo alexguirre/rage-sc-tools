@@ -12,7 +12,7 @@ using ScTools.ScriptLang.Semantics;
 using ScTools.ScriptLang.Types;
 using ScTools.ScriptLang.Workspace;
 
-using OpcodeGTA5 = ScTools.ScriptAssembly.Targets.GTA5.OpcodeV10;
+using OpcodeGTA5 = ScTools.ScriptAssembly.Targets.GTA5.OpcodeV12;
 using OpcodeGTA4 = ScTools.ScriptAssembly.Targets.GTA4.Opcode;
 using OpcodeMP3 = ScTools.ScriptAssembly.Targets.MP3.Opcode;
 

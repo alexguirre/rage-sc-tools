@@ -288,7 +288,7 @@ public class Script : ResourceFileBase, IScript
 
     public void Dump(System.IO.TextWriter sink, DumpOptions options)
     {
-        var d = new DumperV10(); // TODO: update to V12 once InstructionEmitter starts using V12
+        var d = new DumperV12();
         d.Dump(this, sink, options);
     }
 }

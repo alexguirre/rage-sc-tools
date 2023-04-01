@@ -74,7 +74,7 @@ internal static class Dumper
         {
             lineSB.Clear();
 
-            var size = OpcodeExtensions.ByteSize(code.AsSpan(ip));
+            var size = OpcodeTraits.ByteSize(code.AsSpan(ip));
 
             // write offset
             if (options.IncludeOffsets)
@@ -121,7 +121,7 @@ internal static class Dumper
             return;
         }
         
-        var inst = OpcodeExtensions.GetInstructionSpan(code, ip);
+        var inst = OpcodeTraits.GetInstructionSpan(code, ip);
 
         sb.Append(opcode.Mnemonic());
 

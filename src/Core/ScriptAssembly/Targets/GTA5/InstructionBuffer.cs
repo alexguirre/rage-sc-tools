@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using GameFiles.GTA5;
 using ScTools.ScriptAssembly;
 
-internal class InstructionBuffer : InstructionBuffer<OpcodeV10, LabelInfo, ScriptPageTable<byte>>
+internal class InstructionBuffer : InstructionBuffer<OpcodeV12, LabelInfo, ScriptPageTable<byte>>
 {
     public override ScriptPageTable<byte> Finish(IEnumerable<LabelInfo> labels)
     {
@@ -24,13 +24,13 @@ internal class InstructionBuffer : InstructionBuffer<OpcodeV10, LabelInfo, Scrip
             int offset = (int)(segment.Length & (Script.MaxPageLength - 1));
 
             var instructionBuffer = codeBuffer.Slice(instOffset, instLength);
-            OpcodeV10 opcode = (OpcodeV10)instructionBuffer[0];
+            OpcodeV12 opcode = (OpcodeV12)instructionBuffer[0];
 
             // At page boundary a NOP may be required for the interpreter to switch to the next page,
             // the interpreter only does this with control flow instructions and NOP
             // If the NOP is needed, skip 1 byte at the end of the page
             bool needsNopAtBoundary = !opcode.IsControlFlow() &&
-                                        opcode != OpcodeV10.NOP;
+                                        opcode != OpcodeV12.NOP;
 
             if (offset + instructionBuffer.Length > (Script.MaxPageLength - (needsNopAtBoundary ? 1u : 0))) // the instruction doesn't fit in the current page
             {
@@ -42,7 +42,7 @@ internal class InstructionBuffer : InstructionBuffer<OpcodeV10, LabelInfo, Scrip
                 {
                     // if there is enough space for a J instruction, add it to jump to the next page
                     short relIP = (short)(Script.MaxPageLength - (offset + JumpInstructionSize)); // get how many bytes until the next page
-                    segment.Byte((byte)OpcodeV10.J);
+                    segment.Byte((byte)OpcodeV12.J);
                     segment.Byte((byte)(relIP & 0xFF));
                     segment.Byte((byte)(relIP >> 8));
                     requiredNops -= JumpInstructionSize;

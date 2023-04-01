@@ -622,6 +622,10 @@ public sealed partial class CodeEmitter : ICodeEmitter
                 instEmitter.EmitStaticU16((ushort)address);
                 break;
 
+            case >= 0 and <= 0x00FFFFFF:
+                instEmitter.EmitStaticU24((uint)address);
+                break;
+
             default: Debug.Assert(false, "Static var address too big"); break;
         }
     }

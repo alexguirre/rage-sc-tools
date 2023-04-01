@@ -200,7 +200,6 @@ public sealed class CFGBuilder
                 // a conditional jump has two successors, the jump target and the next instruction
                 if (jz.Next is not null)
                 {
-                    Console.WriteLine($"IfFalse: {jz.JumpAddress:000000} ; IfTrue: {jz.Next.Address:000000}");
                     block.Successors = new[] { CreateIfFalseEdge(block, GetBlock(jz.JumpAddress)), CreateIfTrueEdge(block, GetBlock(jz.Next.Address)) };
                 }
                 else

@@ -119,7 +119,6 @@ internal static class DumpCommand
                 }
 
                 await using var outputWriter = new StreamWriter(outputFile.Open(FileMode.Create));
-                Print($"[{System.Threading.Thread.CurrentThread.ManagedThreadId}] dump '{inputFile}'...");
                 script.Dump(outputWriter, DumpOptions.Default with { IncludeIR = ir });
             }
             catch (Exception e)

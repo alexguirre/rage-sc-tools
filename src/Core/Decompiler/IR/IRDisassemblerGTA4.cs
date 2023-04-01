@@ -1,15 +1,10 @@
 ﻿namespace ScTools.Decompiler.IR;
 
 using System;
-using System.Linq;
-using System.Globalization;
-using System.IO;
-using System.Collections.Generic;
-
-using ScTools.GameFiles.GTA4;
-using ScTools.ScriptAssembly;
 using System.Collections.Immutable;
-using ScriptAssembly.Targets.GTA4;
+using ScTools.GameFiles.GTA4;
+using ScTools.ScriptAssembly.Targets;
+using ScTools.ScriptAssembly.Targets.GTA4;
 
 public sealed class IRDisassemblerGTA4
 {

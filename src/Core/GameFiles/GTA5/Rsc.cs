@@ -1797,7 +1797,6 @@ public abstract class ResourceGraphicsBlock : IResourceGraphicsBlock
                 }
             }
 
-            Console.WriteLine($"[{Thread.CurrentThread.ManagedThreadId}] IsEncrypted: {resentry.IsEncrypted}");
             data = ResourceBuilder.Decompress(data);
 
             file.Load(data, resentry);
@@ -1811,7 +1810,6 @@ public abstract class ResourceGraphicsBlock : IResourceGraphicsBlock
             uint rsc7 = BitConverter.ToUInt32(data, 0);
             if (rsc7 == 0x37435352) //RSC7 header present!
             {
-                Console.WriteLine($"[{Thread.CurrentThread.ManagedThreadId}] RSC7 header present");
                 int version = BitConverter.ToInt32(data, 4);//use this instead of what was given...
                 resentry.SystemFlags = BitConverter.ToUInt32(data, 8);
                 resentry.GraphicsFlags = BitConverter.ToUInt32(data, 12);
@@ -1829,7 +1827,6 @@ public abstract class ResourceGraphicsBlock : IResourceGraphicsBlock
             }
             else
             {
-                Console.WriteLine($"[{Thread.CurrentThread.ManagedThreadId}] Direct load");
                 //direct load from file without the rpf header..
                 //assume it's in resource meta format
                 resentry.SystemFlags = RpfResourceFileEntry.GetFlagsFromSize(data.Length, 0);

@@ -56,7 +56,6 @@ internal static class DumpCFGCommand
             }
         }
 
-        // var sb = new StringBuilder(260);
         if (image && SearchPath(null, "dot.exe", null, 0, null, IntPtr.Zero) == 0)
         {
             return Exit.Error("dot.exe not found in PATH. Please install Graphviz from [link]https://graphviz.org/download/[/].");
@@ -168,5 +167,5 @@ internal static class DumpCFGCommand
 
     [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
     private static extern uint SearchPath(string? lpPath, string lpFileName, string? lpExtension, int nBufferLength,
-                                          [MarshalAs(UnmanagedType.LPTStr)] StringBuilder lpBuffer, IntPtr lpFilePart);
+                                          [MarshalAs(UnmanagedType.LPTStr)] StringBuilder? lpBuffer, IntPtr lpFilePart);
 }

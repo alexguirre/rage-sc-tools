@@ -148,7 +148,7 @@ public class Script : IScript
                     BinaryPrimitives.WriteUInt32LittleEndian(s[1..], BinaryPrimitives.ReverseEndianness(opcode.GetU32Operand(s)));
                 }
 
-                var inst = OpcodeExtensions.GetInstructionSpan(page, i);
+                var inst = OpcodeTraits.GetInstructionSpan(page, i);
                 switch (opcode)
                 {
                     case Opcode.PUSH_CONST_S16:

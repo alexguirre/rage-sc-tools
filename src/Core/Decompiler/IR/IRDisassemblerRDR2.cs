@@ -3,7 +3,7 @@
 using System;
 using System.Collections.Immutable;
 using ScTools.GameFiles.RDR2;
-using ScTools.ScriptAssembly;
+using ScTools.ScriptAssembly.Targets;
 using ScTools.ScriptAssembly.Targets.RDR2;
 
 public sealed class IRDisassemblerRDR2
