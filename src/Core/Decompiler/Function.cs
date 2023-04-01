@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 public class Function
 {
-    public IRScript Script { get; }
+    public IRCode Code { get; }
     public CFGBlock RootBlock { get; }
     public IRInstruction Start => RootBlock.Start;
     public int StartAddress => Start.Address;
@@ -15,10 +15,10 @@ public class Function
     public UnresolvedType ReturnType { get; }
     public UnresolvedTypeTuple Locals { get; }
 
-    public Function(IRScript script, IRInstruction start)
+    public Function(IRCode code, IRInstruction start)
     {
-        Script = script;
-        RootBlock = CFGBuilder.BuildFrom(script, start);
+        Code = code;
+        RootBlock = CFGBuilder.BuildFrom(code, start);
         var enter = FindEnterInstruction();
         var leave = FindLeaveInstruction();
         ReturnType = new(leave.ReturnCount);

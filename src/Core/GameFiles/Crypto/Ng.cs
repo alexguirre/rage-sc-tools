@@ -23,6 +23,8 @@
 
 namespace ScTools.GameFiles.Crypto;
 
+using System.Runtime.InteropServices;
+
 public record struct NgLut(byte[,] LUT0, byte[,] LUT1, byte[] Indices)
 {
     public byte LookUp(uint value)
@@ -36,7 +38,7 @@ public record struct NgLut(byte[,] LUT0, byte[,] LUT1, byte[] Indices)
 
 public record struct NgContext(byte[][] KeySet, uint[][,] DecryptTables, uint[][,] EncryptTables, NgLut[][] EncryptLuts)
 {
-    public byte[] SelectKey(string name, uint length)
+    public ReadOnlySpan<byte> SelectKey(string name, uint length)
     {
         uint hash =  JenkHash.LowercaseHash(name);
         uint keyIdx = (hash + length + (101 - 40)) % 0x65;
@@ -47,58 +49,42 @@ public record struct NgContext(byte[][] KeySet, uint[][,] DecryptTables, uint[][
 public static class Ng
 {
 #region Decryption
-    public static byte[] Decrypt(byte[] data, string name, uint length, NgContext ctx) => Decrypt(data, ctx.SelectKey(name, length), ctx);
+    public static byte[] Decrypt(ReadOnlySpan<byte> data, string name, uint length, NgContext ctx) => Decrypt(data, ctx.SelectKey(name, length), ctx);
 
-    public static byte[] Decrypt(byte[] data, byte[] key, NgContext ctx)
+    public static byte[] Decrypt(ReadOnlySpan<byte> data, ReadOnlySpan<byte> key, NgContext ctx)
     {
         var decryptedData = new byte[data.Length];
 
-        var keyuints = new uint[key.Length / 4];
-        Buffer.BlockCopy(key, 0, keyuints, 0, key.Length);
+        var keyuints = MemoryMarshal.Cast<byte, uint>(key);
 
+        Span<byte> blockBuffer = stackalloc byte[16];
         for (int blockIndex = 0; blockIndex < data.Length / 16; blockIndex++)
         {
-            var encryptedBlock = new byte[16];
-            Array.Copy(data, 16 * blockIndex, encryptedBlock, 0, 16);
-            var decryptedBlock = DecryptBlock(encryptedBlock, keyuints, ctx);
-            Array.Copy(decryptedBlock, 0, decryptedData, 16 * blockIndex, 16);
+            data.Slice(16 * blockIndex, 16).CopyTo(blockBuffer);
+            DecryptBlock(blockBuffer, keyuints, ctx);
+            blockBuffer.CopyTo(decryptedData.AsSpan(16 * blockIndex, 16));
         }
 
         if (data.Length % 16 != 0)
         {
             var left = data.Length % 16;
-            Buffer.BlockCopy(data, data.Length - left, decryptedData, data.Length - left, left);
+            data[^left..].CopyTo(decryptedData.AsSpan(^left..));
         }
 
         return decryptedData;
     }
 
-    private static byte[] DecryptBlock(byte[] data, uint[] key, NgContext ctx)
+    private static void DecryptBlock(Span<byte> data, ReadOnlySpan<uint> key, NgContext ctx)
     {
-        var buffer = data;
-
-        // prepare key...
-        var subKeys = new uint[17][];
-        for (int i = 0; i < 17; i++)
-        {
-            subKeys[i] = new uint[4];
-            subKeys[i][0] = key[4 * i + 0];
-            subKeys[i][1] = key[4 * i + 1];
-            subKeys[i][2] = key[4 * i + 2];
-            subKeys[i][3] = key[4 * i + 3];
-        }
-
-        buffer = DecryptRoundA(buffer, subKeys[0], ctx.DecryptTables[0]);
-        buffer = DecryptRoundA(buffer, subKeys[1], ctx.DecryptTables[1]);
+        DecryptRoundA(data, SubKey(key, 0), ctx.DecryptTables[0]);
+        DecryptRoundA(data, SubKey(key, 1), ctx.DecryptTables[1]);
         for (int k = 2; k <= 15; k++)
-            buffer = DecryptRoundB(buffer, subKeys[k], ctx.DecryptTables[k]);
-        buffer = DecryptRoundA(buffer, subKeys[16], ctx.DecryptTables[16]);
-
-        return buffer;
+            DecryptRoundB(data, SubKey(key, k), ctx.DecryptTables[k]);
+        DecryptRoundA(data, SubKey(key, 16), ctx.DecryptTables[16]);
     }
 
     // round 1,2,16
-    internal static byte[] DecryptRoundA(byte[] data, uint[] key, uint[,] table)
+    internal static void DecryptRoundA(Span<byte> data, ReadOnlySpan<uint> key, uint[,] table)
     {
         var x1 =
             table[0, data[0]] ^
@@ -125,16 +111,14 @@ public static class Ng
             table[15, data[15]] ^
             key[3];
 
-        var result = new byte[16];
-        Array.Copy(BitConverter.GetBytes(x1), 0, result, 0, 4);
-        Array.Copy(BitConverter.GetBytes(x2), 0, result, 4, 4);
-        Array.Copy(BitConverter.GetBytes(x3), 0, result, 8, 4);
-        Array.Copy(BitConverter.GetBytes(x4), 0, result, 12, 4);
-        return result;
+        MemoryMarshal.Write(data, ref x1);
+        MemoryMarshal.Write(data[4..], ref x2);
+        MemoryMarshal.Write(data[8..], ref x3);
+        MemoryMarshal.Write(data[12..], ref x4);
     }
 
     // round 3-15
-    private static byte[] DecryptRoundB(byte[] data, uint[] key, uint[,] table)
+    private static void DecryptRoundB(Span<byte> data, ReadOnlySpan<uint> key, uint[,] table)
     {
         var x1 =
             table[0, data[0]] ^
@@ -168,83 +152,69 @@ public static class Ng
         //Array.Copy(BitConverter.GetBytes(x4), 0, result, 12, 4);
         //return result;
 
-        var result = new byte[16];
-        result[0] = (byte)((x1 >> 0) & 0xFF);
-        result[1] = (byte)((x1 >> 8) & 0xFF);
-        result[2] = (byte)((x1 >> 16) & 0xFF);
-        result[3] = (byte)((x1 >> 24) & 0xFF);
-        result[4] = (byte)((x2 >> 0) & 0xFF);
-        result[5] = (byte)((x2 >> 8) & 0xFF);
-        result[6] = (byte)((x2 >> 16) & 0xFF);
-        result[7] = (byte)((x2 >> 24) & 0xFF);
-        result[8] = (byte)((x3 >> 0) & 0xFF);
-        result[9] = (byte)((x3 >> 8) & 0xFF);
-        result[10] = (byte)((x3 >> 16) & 0xFF);
-        result[11] = (byte)((x3 >> 24) & 0xFF);
-        result[12] = (byte)((x4 >> 0) & 0xFF);
-        result[13] = (byte)((x4 >> 8) & 0xFF);
-        result[14] = (byte)((x4 >> 16) & 0xFF);
-        result[15] = (byte)((x4 >> 24) & 0xFF);
-        return result;
+        MemoryMarshal.Write(data, ref x1);
+        MemoryMarshal.Write(data[4..], ref x2);
+        MemoryMarshal.Write(data[8..], ref x3);
+        MemoryMarshal.Write(data[12..], ref x4);
+
+        /*data[0] = (byte)((x1 >> 0) & 0xFF);
+        data[1] = (byte)((x1 >> 8) & 0xFF);
+        data[2] = (byte)((x1 >> 16) & 0xFF);
+        data[3] = (byte)((x1 >> 24) & 0xFF);
+        data[4] = (byte)((x2 >> 0) & 0xFF);
+        data[5] = (byte)((x2 >> 8) & 0xFF);
+        data[6] = (byte)((x2 >> 16) & 0xFF);
+        data[7] = (byte)((x2 >> 24) & 0xFF);
+        data[8] = (byte)((x3 >> 0) & 0xFF);
+        data[9] = (byte)((x3 >> 8) & 0xFF);
+        data[10] = (byte)((x3 >> 16) & 0xFF);
+        data[11] = (byte)((x3 >> 24) & 0xFF);
+        data[12] = (byte)((x4 >> 0) & 0xFF);
+        data[13] = (byte)((x4 >> 8) & 0xFF);
+        data[14] = (byte)((x4 >> 16) & 0xFF);
+        data[15] = (byte)((x4 >> 24) & 0xFF);*/
     }
 #endregion // Decryption
 
 #region Encryption
-    public static byte[] Encrypt(byte[] data, string name, uint length, NgContext ctx) => Encrypt(data, ctx.SelectKey(name, length), ctx);
+    public static byte[] Encrypt(ReadOnlySpan<byte> data, string name, uint length, NgContext ctx) => Encrypt(data, ctx.SelectKey(name, length), ctx);
 
-    public static byte[] Encrypt(byte[] data, byte[] key, NgContext ctx)
+    public static byte[] Encrypt(ReadOnlySpan<byte> data, ReadOnlySpan<byte> key, NgContext ctx)
     {
         var encryptedData = new byte[data.Length];
 
-        var keyuints = new uint[key.Length / 4];
-        Buffer.BlockCopy(key, 0, keyuints, 0, key.Length);
+        var keyuints = MemoryMarshal.Cast<byte, uint>(key);
 
+        Span<byte> blockBuffer = stackalloc byte[16];
         for (int blockIndex = 0; blockIndex < data.Length / 16; blockIndex++)
         {
-            byte[] decryptedBlock = new byte[16];
-            Array.Copy(data, 16 * blockIndex, decryptedBlock, 0, 16);
-            byte[] encryptedBlock = EncryptBlock(decryptedBlock, keyuints, ctx);
-            Array.Copy(encryptedBlock, 0, encryptedData, 16 * blockIndex, 16);
+            data.Slice(16 * blockIndex, 16).CopyTo(blockBuffer);
+            EncryptBlock(blockBuffer, keyuints, ctx);
+            blockBuffer.CopyTo(encryptedData.AsSpan(16 * blockIndex, 16));
         }
 
         if (data.Length % 16 != 0)
         {
             var left = data.Length % 16;
-            Buffer.BlockCopy(data, data.Length - left, encryptedData, data.Length - left, left);
+            data[^left..].CopyTo(encryptedData.AsSpan(^left..));
         }
 
         return encryptedData;
     }
 
-    private static byte[] EncryptBlock(byte[] data, uint[] key, NgContext ctx)
+    private static void EncryptBlock(Span<byte> data, ReadOnlySpan<uint> key, NgContext ctx)
     {
-        var buffer = data;
-
-        // prepare key...
-        var subKeys = new uint[17][];
-        for (int i = 0; i < 17; i++)
-        {
-            subKeys[i] = new uint[4];
-            subKeys[i][0] = key[4 * i + 0];
-            subKeys[i][1] = key[4 * i + 1];
-            subKeys[i][2] = key[4 * i + 2];
-            subKeys[i][3] = key[4 * i + 3];
-        }
-
-        buffer = EncryptRoundA(buffer, subKeys[16], ctx.EncryptTables[16]);
+        EncryptRoundA(data, SubKey(key, 16), ctx.EncryptTables[16]);
         for (int k = 15; k >= 2; k--)
-            buffer = EncryptRoundB_LUT(buffer, subKeys[k], ctx.EncryptLuts[k]);
-        buffer = EncryptRoundA(buffer, subKeys[1], ctx.EncryptTables[1]);
-        buffer = EncryptRoundA(buffer, subKeys[0], ctx.EncryptTables[0]);
-
-        return buffer;
+            EncryptRoundB_LUT(data, SubKey(key, k), ctx.EncryptLuts[k]);
+        EncryptRoundA(data, SubKey(key, 1), ctx.EncryptTables[1]);
+        EncryptRoundA(data, SubKey(key, 0), ctx.EncryptTables[0]);
     }
 
-    private static byte[] EncryptRoundA(byte[] data, uint[] key, uint[,] table)
+    private static void EncryptRoundA(Span<byte> data, ReadOnlySpan<uint> key, uint[,] table)
     {
         // apply xor to data first...
-        var xorbuf = new byte[16];
-        Buffer.BlockCopy(key, 0, xorbuf, 0, 16);
+        var xorbuf = MemoryMarshal.Cast<uint, byte>(key);
 
         var x1 =
             table[0, data[0] ^ xorbuf[0]] ^
@@ -267,45 +237,43 @@ public static class Ng
             table[14, data[14] ^ xorbuf[14]] ^
             table[15, data[15] ^ xorbuf[15]];
 
-        var buf = new byte[16];
-        Array.Copy(BitConverter.GetBytes(x1), 0, buf, 0, 4);
-        Array.Copy(BitConverter.GetBytes(x2), 0, buf, 4, 4);
-        Array.Copy(BitConverter.GetBytes(x3), 0, buf, 8, 4);
-        Array.Copy(BitConverter.GetBytes(x4), 0, buf, 12, 4);
-        return buf;
+        MemoryMarshal.Write(data, ref x1);
+        MemoryMarshal.Write(data[4..], ref x2);
+        MemoryMarshal.Write(data[8..], ref x3);
+        MemoryMarshal.Write(data[12..], ref x4);
     }
 
-    private static byte[] EncryptRoundB_LUT(byte[] dataOld, uint[] key, NgLut[] lut)
+    private static void EncryptRoundB_LUT(Span<byte> data, ReadOnlySpan<uint> key, NgLut[] lut)
     {
-        var data = (byte[])dataOld.Clone();
-
         // apply xor to data first...
-        var xorbuf = new byte[16];
-        Buffer.BlockCopy(key, 0, xorbuf, 0, 16);
+        var xorbuf = MemoryMarshal.Cast<uint, byte>(key);
         for (int y = 0; y < 16; y++)
         {
             data[y] ^= xorbuf[y];
         }
 
-        return new byte[]
-        {
-            lut[0].LookUp(BitConverter.ToUInt32(new byte[] { data[0], data[1], data[2], data[3] }, 0)),
-            lut[1].LookUp(BitConverter.ToUInt32(new byte[] { data[4], data[5], data[6], data[7] }, 0)),
-            lut[2].LookUp(BitConverter.ToUInt32(new byte[] { data[8], data[9], data[10], data[11] }, 0)),
-            lut[3].LookUp(BitConverter.ToUInt32(new byte[] { data[12], data[13], data[14], data[15] }, 0)),
-            lut[4].LookUp(BitConverter.ToUInt32(new byte[] { data[4], data[5], data[6], data[7] }, 0)),
-            lut[5].LookUp(BitConverter.ToUInt32(new byte[] { data[8], data[9], data[10], data[11] }, 0)),
-            lut[6].LookUp(BitConverter.ToUInt32(new byte[] { data[12], data[13], data[14], data[15] }, 0)),
-            lut[7].LookUp(BitConverter.ToUInt32(new byte[] { data[0], data[1], data[2], data[3] }, 0)),
-            lut[8].LookUp(BitConverter.ToUInt32(new byte[] { data[8], data[9], data[10], data[11] }, 0)),
-            lut[9].LookUp(BitConverter.ToUInt32(new byte[] { data[12], data[13], data[14], data[15] }, 0)),
-            lut[10].LookUp(BitConverter.ToUInt32(new byte[] { data[0], data[1], data[2], data[3] }, 0)),
-            lut[11].LookUp(BitConverter.ToUInt32(new byte[] { data[4], data[5], data[6], data[7] }, 0)),
-            lut[12].LookUp(BitConverter.ToUInt32(new byte[] { data[12], data[13], data[14], data[15] }, 0)),
-            lut[13].LookUp(BitConverter.ToUInt32(new byte[] { data[0], data[1], data[2], data[3] }, 0)),
-            lut[14].LookUp(BitConverter.ToUInt32(new byte[] { data[4], data[5], data[6], data[7] }, 0)),
-            lut[15].LookUp(BitConverter.ToUInt32(new byte[] { data[8], data[9], data[10], data[11] }, 0))
-        };
+        var x1 = MemoryMarshal.Read<uint>(data);
+        var x2 = MemoryMarshal.Read<uint>(data[4..]);
+        var x3 = MemoryMarshal.Read<uint>(data[8..]);
+        var x4 = MemoryMarshal.Read<uint>(data[12..]);
+        data[0] = lut[0].LookUp(x1);
+        data[1] = lut[1].LookUp(x2);
+        data[2] = lut[2].LookUp(x3);
+        data[3] = lut[3].LookUp(x4);
+        data[4] = lut[4].LookUp(x2);
+        data[5] = lut[5].LookUp(x3);
+        data[6] = lut[6].LookUp(x4);
+        data[7] = lut[7].LookUp(x1);
+        data[8] = lut[8].LookUp(x3);
+        data[9] = lut[9].LookUp(x4);
+        data[10] = lut[10].LookUp(x1);
+        data[11] = lut[11].LookUp(x2);
+        data[12] = lut[12].LookUp(x4);
+        data[13] = lut[13].LookUp(x1);
+        data[14] = lut[14].LookUp(x2);
+        data[15] = lut[15].LookUp(x3);
     }    
 #endregion
+
+    private static ReadOnlySpan<uint> SubKey(ReadOnlySpan<uint> key, int i) => key.Slice(4 * i, 4);
 }

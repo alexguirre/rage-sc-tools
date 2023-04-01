@@ -10,13 +10,14 @@ using System.Linq;
 
 public sealed class CFGBuilder
 {
-    public static CFGBlock BuildFrom(IRScript script, IRInstruction startInstruction)
-        => new CFGBuilder(script, startInstruction).BuildGraph();
+    public static CFGBlock BuildFrom(IRCode code, IRInstruction startInstruction)
+        => new CFGBuilder(code, startInstruction).BuildGraph();
 
     private class CFGBlockInProgress
     {
         public int StartAddress { get; set; }
         public int EndAddress { get; set; }
+        public IRInstruction? FirstInstruction { get; set; }
         public IRInstruction? LastInstruction { get; set; }
         public CFGEdgeInProgress[] Successors { get; set; } = Array.Empty<CFGEdgeInProgress>();
 
@@ -41,13 +42,13 @@ public sealed class CFGBuilder
         public int? SwitchCaseValue { get; init; }
     }
 
-    private readonly IRScript script;
+    private readonly IRCode code;
     private readonly IRInstruction start;
     private readonly Dictionary<int, CFGBlockInProgress> blocksByStartAddress = new();
 
-    private CFGBuilder(IRScript script, IRInstruction startInstruction)
+    private CFGBuilder(IRCode code, IRInstruction startInstruction)
     {
-        this.script = script;
+        this.code = code;
         start = startInstruction;
     }
 
@@ -73,8 +74,7 @@ public sealed class CFGBuilder
         return blocks[blocksByStartAddress[start.Address]];
 
         CFGBlock ConvertBlock(CFGBlockInProgress block)
-            => new(script.FindInstructionAt(block.StartAddress)!,
-                   script.FindInstructionAt(block.EndAddress)!);
+            => new(block.FirstInstruction!, block.LastInstruction!);
     }
 
     private void StartBlocks()
@@ -87,12 +87,8 @@ public sealed class CFGBuilder
             switch (inst)
             {
                 case IRJump j:
-                    // start a new block at the target and at the next instruction
+                    // start a new block at the target
                     StartBlock(j.JumpAddress);
-                    if (j.Next is not null)
-                    {
-                        StartBlock(j.Next.Address);
-                    }
                     break;
                 case IRJumpIfZero jz:
                     // start a new block at the target and at the next instruction
@@ -115,11 +111,7 @@ public sealed class CFGBuilder
                     }
                     break;
                 case IRLeave l:
-                    // start a new block after a return
-                    if (l.Next is not null)
-                    {
-                        StartBlock(l.Next.Address);
-                    }
+                    //
                     break;
             }
         }
@@ -127,8 +119,42 @@ public sealed class CFGBuilder
 
     private void EndBlocks()
     {
+        if (blocksByStartAddress.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var (startAddress, block) in blocksByStartAddress)
+        {
+            var inst = block.FirstInstruction;
+            var lastInst = inst;
+            while (inst is not null)
+            {
+                if (inst is IRJump or IRJumpIfZero or IRSwitch or IRLeave)
+                {
+                    lastInst = inst;
+                    break;
+                }
+
+                if (inst is IREndOfScript || blocksByStartAddress.ContainsKey(inst.Address))
+                {
+                    lastInst = inst.Previous;
+                    break;
+                }
+
+                inst = inst.Next;
+            }
+
+            if (lastInst is not null)
+            {
+                block.EndAddress = lastInst!.Next!.Address;
+                block.LastInstruction = lastInst;
+            }
+        }
+
+        // TODO: D:\sources\gtav-sc-tools\src\Cli\bin\x64\Debug\net7.0\sc-tools.exe dump --ir -o ".\mydecompiled_scripts\" -t mp3-x86 ".\_scripts\busdepot_gar_paint.sco"
         // TODO: this logic may be flawed, it assumes that the blocks are contiguous, which doesn't seem to always be the case. Investigate MP3 scripts
-        var blocksOrderedByAddress = blocksByStartAddress.Values.OrderBy(b => b.StartAddress).ToArray();
+       /* var blocksOrderedByAddress = blocksByStartAddress.Values.OrderBy(b => b.StartAddress).ToArray();
         if (blocksOrderedByAddress.Length == 0)
         {
             return;
@@ -145,7 +171,7 @@ public sealed class CFGBuilder
         Debug.Assert(lastInstruction is not null);
         while (lastInstruction.Next is not null and not IREndOfScript) { lastInstruction = lastInstruction.Next; }
         lastBlock.EndAddress = lastInstruction.Address;
-        lastBlock.LastInstruction = lastInstruction.Previous;
+        lastBlock.LastInstruction = lastInstruction.Previous;*/
     }
 
     private void ConnectBlocks()
@@ -166,11 +192,16 @@ public sealed class CFGBuilder
             }
             else if (lastInstruction is IRJumpIfZero jz)
             {
+                // StartBlock(jz.JumpAddress);
+                // if (jz.Next is not null)
+                // {
+                //     StartBlock(jz.Next.Address);
+                // }
                 // a conditional jump has two successors, the jump target and the next instruction
-                var nextInstruction = lastInstruction.Next;
-                if (nextInstruction is not null)
+                if (jz.Next is not null)
                 {
-                    block.Successors = new[] { CreateIfFalseEdge(block, GetBlock(jz.JumpAddress)), CreateIfTrueEdge(block, GetBlock(nextInstruction.Address)) };
+                    Console.WriteLine($"IfFalse: {jz.JumpAddress:000000} ; IfTrue: {jz.Next.Address:000000}");
+                    block.Successors = new[] { CreateIfFalseEdge(block, GetBlock(jz.JumpAddress)), CreateIfTrueEdge(block, GetBlock(jz.Next.Address)) };
                 }
                 else
                 {
@@ -256,7 +287,12 @@ public sealed class CFGBuilder
     {
         if (!blocksByStartAddress.ContainsKey(startAddress))
         {
-            blocksByStartAddress.Add(startAddress, new CFGBlockInProgress { StartAddress = startAddress });
+            var newBlock = new CFGBlockInProgress
+            {
+                StartAddress = startAddress,
+                FirstInstruction = code.FindInstructionAt(startAddress)
+            };
+            blocksByStartAddress.Add(startAddress, newBlock);
         }
     }
 

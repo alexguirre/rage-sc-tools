@@ -13,7 +13,7 @@ using System.Collections.Immutable;
 
 public sealed class IRDisassemblerMP3
 {
-    public static IRScript Disassemble(Script script) => new IRDisassemblerMP3(script).Disassemble();
+    public static IRCode Disassemble(Script script) => new IRDisassemblerMP3(script).Disassemble();
 
     private Script Script { get; }
 
@@ -22,9 +22,9 @@ public sealed class IRDisassemblerMP3
         Script = sc ?? throw new ArgumentNullException(nameof(sc));
     }
 
-    private IRScript Disassemble()
+    private IRCode Disassemble()
     {
-        var sc = new IRScript();
+        var sc = new IRCode();
         if (Script.CodeLength == 0)
         {
             return sc;
@@ -38,7 +38,7 @@ public sealed class IRDisassemblerMP3
         return sc;
     }
 
-    private void DisassembleInstruction(IRScript script, int ip, ReadOnlySpan<byte> inst)
+    private void DisassembleInstruction(IRCode script, int ip, ReadOnlySpan<byte> inst)
     {
         var opcode = (Opcode)inst[0];
 

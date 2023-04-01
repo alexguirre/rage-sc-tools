@@ -75,8 +75,12 @@ internal static class DumpCommand
                 switch (target)
                 {
                     case (Game.GTA5, Platform.x64):
-                        throw new NotImplementedException("GTAV x64 not supported");
-
+                    {
+                        var ysc = new GameFiles.GTA5.YscFile();
+                        ysc.Load(source/*, inputFile.Name, keys.GTA5.NgPC*/);
+                        script = ysc.Script;
+                        break;
+                    }
                     case (Game.MC4, Platform.Xenon):
                     case (Game.GTA4, Platform.x86):
                     {
@@ -115,6 +119,7 @@ internal static class DumpCommand
                 }
 
                 await using var outputWriter = new StreamWriter(outputFile.Open(FileMode.Create));
+                Print($"[{System.Threading.Thread.CurrentThread.ManagedThreadId}] dump '{inputFile}'...");
                 script.Dump(outputWriter, DumpOptions.Default with { IncludeIR = ir });
             }
             catch (Exception e)

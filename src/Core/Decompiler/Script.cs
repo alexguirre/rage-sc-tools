@@ -8,18 +8,18 @@ using System.Collections.Generic;
 public class Script
 {
     private readonly List<Function> functions = new();
-    public IRScript IR { get; }
+    public IRCode Code { get; }
     public Function EntryFunction { get; }
 
-    private Script(IRScript ir)
+    public Script(IRCode code)
     {
-        if (ir.Head is null || ir.Tail is null)
+        if (code.Head is null || code.Tail is null)
         {
-            throw new ArgumentException("IR script is missing instructions.", nameof(ir));
+            throw new ArgumentException("IR code is missing instructions.", nameof(code));
         }
 
-        IR = ir;
-        EntryFunction = new Function(ir, ir.Head!);
+        Code = code;
+        EntryFunction = new Function(code, code.Head!);
         functions.Add(EntryFunction);
     }
 
@@ -33,13 +33,13 @@ public class Script
             }
         }
 
-        var inst = IR.FindInstructionAt(address);
+        var inst = Code.FindInstructionAt(address);
         if (inst is null)
         {
             throw new ArgumentException($"Instruction at address {address:000000} not found.", nameof(address));
         }
 
-        var func = new Function(IR, inst);
+        var func = new Function(Code, inst);
         functions.Add(func);
         return func;
     }

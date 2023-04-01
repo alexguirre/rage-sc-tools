@@ -26,7 +26,7 @@ public class YscFile : GameFile, PackedFile
     }
 
     // TODO: support for loading NG encrypted data
-    public void Load(byte[] data) => RpfFile.LoadResourceFile(this, data, FileVersion);
+    public void Load(byte[] data)=> RpfFile.LoadResourceFile(this, data, FileVersion);
 
     public void Load(byte[] data, RpfFileEntry entry)
     {

@@ -85,7 +85,7 @@ internal class Dumper<TOpcode, TOpcodeTraits> : IDumper
         {
             w.WriteLine("IR Disassembly:");
             var ir = ScTools.Decompiler.Script.FromGTA5(sc);
-            ScTools.Decompiler.IR.IRPrinter.PrintAll(ir.IR.Head, w, options.IncludeOffsets);
+            ScTools.Decompiler.IR.IRPrinter.PrintAll(ir.Code.Head, w, options.IncludeOffsets);
         }
     }
 

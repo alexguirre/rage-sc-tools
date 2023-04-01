@@ -14,7 +14,7 @@ using ScriptAssembly.Targets.GTA5;
 
 public sealed class IRDisassemblerGTA5
 {
-    public static IRScript Disassemble(ScTools.GameFiles.GTA5.Script script) => new IRDisassemblerGTA5(script).Disassemble();
+    public static IRCode Disassemble(ScTools.GameFiles.GTA5.Script script) => new IRDisassemblerGTA5(script).Disassemble();
 
     private ScTools.GameFiles.GTA5.Script Script { get; }
 
@@ -23,9 +23,9 @@ public sealed class IRDisassemblerGTA5
         Script = sc ?? throw new ArgumentNullException(nameof(sc));
     }
 
-    private IRScript Disassemble()
+    private IRCode Disassemble()
     {
-        var sc = new IRScript();
+        var sc = new IRCode();
         if (Script.CodeLength == 0)
         {
             return sc;
@@ -39,7 +39,7 @@ public sealed class IRDisassemblerGTA5
         return sc;
     }
 
-    private void DisassembleInstruction(IRScript script, int ip, ReadOnlySpan<byte> inst)
+    private void DisassembleInstruction(IRCode script, int ip, ReadOnlySpan<byte> inst)
     {
         var opcode = (OpcodeV10)inst[0];
 

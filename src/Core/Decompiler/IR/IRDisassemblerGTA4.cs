@@ -13,7 +13,7 @@ using ScriptAssembly.Targets.GTA4;
 
 public sealed class IRDisassemblerGTA4
 {
-    public static IRScript Disassemble(Script script) => new IRDisassemblerGTA4(script).Disassemble();
+    public static IRCode Disassemble(Script script) => new IRDisassemblerGTA4(script).Disassemble();
 
     private Script Script { get; }
 
@@ -22,9 +22,9 @@ public sealed class IRDisassemblerGTA4
         Script = sc ?? throw new ArgumentNullException(nameof(sc));
     }
 
-    private IRScript Disassemble()
+    private IRCode Disassemble()
     {
-        var sc = new IRScript();
+        var sc = new IRCode();
         if (Script.CodeLength == 0)
         {
             return sc;
@@ -38,7 +38,7 @@ public sealed class IRDisassemblerGTA4
         return sc;
     }
 
-    private void DisassembleInstruction(IRScript script, int ip, ReadOnlySpan<byte> inst)
+    private void DisassembleInstruction(IRCode script, int ip, ReadOnlySpan<byte> inst)
     {
         var opcode = (Opcode)inst[0];
 

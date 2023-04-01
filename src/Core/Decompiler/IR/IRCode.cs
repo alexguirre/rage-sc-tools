@@ -3,7 +3,7 @@
 using System;
 using System.Collections.Generic;
 
-public class IRScript
+public class IRCode
 {
     public IRInstruction? Head { get; protected set; }
     public IRInstruction? Tail { get; protected set; }

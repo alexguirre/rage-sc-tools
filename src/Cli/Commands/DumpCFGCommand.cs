@@ -81,8 +81,12 @@ internal static class DumpCFGCommand
                 switch (target)
                 {
                     case (Game.GTA5, Platform.x64):
-                        throw new NotImplementedException("GTAV x64 not supported");
-
+                    {
+                        var ysc = new GameFiles.GTA5.YscFile();
+                        ysc.Load(source/*, inputFile.Name, keys.GTA5.NgPC*/);
+                        script = Decompiler.Script.FromGTA5(ysc.Script);
+                        break;
+                    }
                     case (Game.MC4, Platform.Xenon):
                     case (Game.GTA4, Platform.x86):
                     {

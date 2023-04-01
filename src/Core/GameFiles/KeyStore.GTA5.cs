@@ -159,7 +159,7 @@ public sealed partial class KeyStore
                 int inByte0, int inByte1, int inByte2, int inByte3,
                 int outByte, int outBit)
             {
-                var noKey = new uint[] { 0, 0, 0, 0 };
+                ReadOnlySpan<uint> noKey = stackalloc uint[] { 0, 0, 0, 0 };
                 var random = new Random();
 
                 var pivots = new List<RandomGaussRow>();
@@ -169,18 +169,17 @@ public sealed partial class KeyStore
                 firstPivot.SetB();
                 pivots.Add(firstPivot);
 
-                var buf_encrypted = new byte[16];
+                Span<byte> buf_encrypted = stackalloc byte[16];
+                Span<byte> buf_decrypted = stackalloc byte[16];
                 for (int pivotIdx = 1; pivotIdx < 1024; pivotIdx++)
                 {
                     while (true)
                     {
                         random.NextBytes(buf_encrypted);
 
-                        // decrypt                   
-                        var buf_decrypted = Ng.DecryptRoundA(
-                            buf_encrypted,
-                            noKey,
-                            tables);
+                        // decrypt
+                        buf_encrypted.CopyTo(buf_decrypted);
+                        Ng.DecryptRoundA(buf_decrypted, noKey, tables);
 
                         // make row
                         var row = new RandomGaussRow();
