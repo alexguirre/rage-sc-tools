@@ -126,7 +126,8 @@ internal static class BuildProjectCommand
                 Std.Out.WriteDiagnostics(result.Diagnostics); // in case of warnings
                 if (result.Script is not null)
                 {
-                    var outputFile = Path.Combine(outputDir.FullName, $"{Path.GetFileNameWithoutExtension(sourcePath)}.sco");
+                    var extension = p.BuildConfiguration.Target.GetCompiledScriptFileExtension();
+                    var outputFile = Path.Combine(outputDir.FullName, $"{Path.GetFileNameWithoutExtension(sourcePath)}.{extension}");
                     Std.Out.WriteLine($"  Writing '{Path.GetRelativePath(p.RootDirectory, outputFile)}'.");
                     scriptCount++;
                     switch (result.Script)

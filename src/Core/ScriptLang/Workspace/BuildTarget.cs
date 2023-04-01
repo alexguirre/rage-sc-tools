@@ -26,6 +26,17 @@ public readonly record struct BuildTarget(Game Game, Platform Platform)
 
         return false;
     }
+
+    /// <summary>
+    /// Gets the extension used for compiled script files for this target.
+    /// </summary>
+    /// <returns>The file extension, without the leading period.</returns>
+    public string GetCompiledScriptFileExtension()
+        => this switch
+        {
+            (Game.GTA5, Platform.x64) or (Game.RDR3, Platform.x64) => "ysc",
+            _ => "sco",
+        };
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter))]

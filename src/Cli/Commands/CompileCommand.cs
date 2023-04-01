@@ -70,12 +70,7 @@ internal static class CompileCommand
         var inputFiles = input.SelectMany(i => i.Matches);
         await Parallel.ForEachAsync(inputFiles, async (inputFile, cancellationToken) =>
         {
-            var extension = target switch
-            {
-                (Game.GTA4, Platform.x86) => "sco",
-                (Game.GTA5, Platform.x64) => "ysc",
-                _ => throw new NotImplementedException($"Unsupported build target '{target}'"),
-            };
+            var extension = target.GetCompiledScriptFileExtension();
 
             try
             {
