@@ -77,7 +77,7 @@ internal static class DumpCommand
                     case (Game.GTA5, Platform.x64):
                     {
                         var ysc = new GameFiles.GTA5.YscFile();
-                        ysc.Load(source/*, inputFile.Name, keys.GTA5.NgPC*/);
+                        ysc.Load(source, inputFile.Name, keys.GTA5.NgPC);
                         script = ysc.Script;
                         break;
                     }

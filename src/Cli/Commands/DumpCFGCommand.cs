@@ -82,7 +82,7 @@ internal static class DumpCFGCommand
                     case (Game.GTA5, Platform.x64):
                     {
                         var ysc = new GameFiles.GTA5.YscFile();
-                        ysc.Load(source/*, inputFile.Name, keys.GTA5.NgPC*/);
+                        ysc.Load(source, inputFile.Name, keys.GTA5.NgPC);
                         script = Decompiler.Script.FromGTA5(ysc.Script);
                         break;
                     }

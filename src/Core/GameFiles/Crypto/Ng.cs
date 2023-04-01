@@ -49,29 +49,22 @@ public record struct NgContext(byte[][] KeySet, uint[][,] DecryptTables, uint[][
 public static class Ng
 {
 #region Decryption
-    public static byte[] Decrypt(ReadOnlySpan<byte> data, string name, uint length, NgContext ctx) => Decrypt(data, ctx.SelectKey(name, length), ctx);
+    public static void Decrypt(Span<byte> data, string name, uint length, NgContext ctx) => Decrypt(data, ctx.SelectKey(name, length), ctx);
 
-    public static byte[] Decrypt(ReadOnlySpan<byte> data, ReadOnlySpan<byte> key, NgContext ctx)
+    public static void Decrypt(Span<byte> data, ReadOnlySpan<byte> key, NgContext ctx)
     {
-        var decryptedData = new byte[data.Length];
-
         var keyuints = MemoryMarshal.Cast<byte, uint>(key);
 
-        Span<byte> blockBuffer = stackalloc byte[16];
         for (int blockIndex = 0; blockIndex < data.Length / 16; blockIndex++)
         {
-            data.Slice(16 * blockIndex, 16).CopyTo(blockBuffer);
-            DecryptBlock(blockBuffer, keyuints, ctx);
-            blockBuffer.CopyTo(decryptedData.AsSpan(16 * blockIndex, 16));
+            DecryptBlock(data.Slice(16 * blockIndex, 16), keyuints, ctx);
         }
 
-        if (data.Length % 16 != 0)
-        {
-            var left = data.Length % 16;
-            data[^left..].CopyTo(decryptedData.AsSpan(^left..));
-        }
-
-        return decryptedData;
+        // decrypted in-place, no need to do anything with the remaining bytes
+        // if (data.Length % 16 != 0)
+        // {
+        //     var left = data.Length % 16;
+        // }
     }
 
     private static void DecryptBlock(Span<byte> data, ReadOnlySpan<uint> key, NgContext ctx)
@@ -177,29 +170,22 @@ public static class Ng
 #endregion // Decryption
 
 #region Encryption
-    public static byte[] Encrypt(ReadOnlySpan<byte> data, string name, uint length, NgContext ctx) => Encrypt(data, ctx.SelectKey(name, length), ctx);
+    public static void Encrypt(Span<byte> data, string name, uint length, NgContext ctx) => Encrypt(data, ctx.SelectKey(name, length), ctx);
 
-    public static byte[] Encrypt(ReadOnlySpan<byte> data, ReadOnlySpan<byte> key, NgContext ctx)
+    public static void Encrypt(Span<byte> data, ReadOnlySpan<byte> key, NgContext ctx)
     {
-        var encryptedData = new byte[data.Length];
-
         var keyuints = MemoryMarshal.Cast<byte, uint>(key);
 
-        Span<byte> blockBuffer = stackalloc byte[16];
         for (int blockIndex = 0; blockIndex < data.Length / 16; blockIndex++)
         {
-            data.Slice(16 * blockIndex, 16).CopyTo(blockBuffer);
-            EncryptBlock(blockBuffer, keyuints, ctx);
-            blockBuffer.CopyTo(encryptedData.AsSpan(16 * blockIndex, 16));
+            EncryptBlock(data.Slice(16 * blockIndex, 16), keyuints, ctx);
         }
 
-        if (data.Length % 16 != 0)
-        {
-            var left = data.Length % 16;
-            data[^left..].CopyTo(encryptedData.AsSpan(^left..));
-        }
-
-        return encryptedData;
+        // encrypted in-place, no need to do anything with the remaining bytes
+        // if (data.Length % 16 != 0)
+        // {
+        //     var left = data.Length % 16;
+        // }
     }
 
     private static void EncryptBlock(Span<byte> data, ReadOnlySpan<uint> key, NgContext ctx)

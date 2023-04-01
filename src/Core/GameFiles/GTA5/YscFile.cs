@@ -3,6 +3,7 @@
 using System.IO;
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using ScTools.GameFiles.Crypto;
 
 public class YscFile : GameFile, PackedFile
@@ -25,8 +26,31 @@ public class YscFile : GameFile, PackedFile
     {
     }
 
-    // TODO: support for loading NG encrypted data
-    public void Load(byte[] data)=> RpfFile.LoadResourceFile(this, data, FileVersion);
+    public void Load(byte[] data, string? name, NgContext? ng)
+    {
+        try
+        {
+            RpfFile.LoadResourceFile(this, data, FileVersion);
+        }
+        catch (InvalidDataException)
+        {
+            // possibly encrypted and a 'unsupported compression method' exception was thrown
+            // while decompressing, try decrypting first
+
+            if (name is null || !ng.HasValue)
+            {
+                throw;
+            }
+            
+            if (MemoryMarshal.Read<uint>(data) == 0x37435352)
+            {
+                data = data[..]; // copy data
+                Ng.Decrypt(data.AsSpan(0x10..), name, (uint)data.Length, ng.Value);
+            }
+
+            RpfFile.LoadResourceFile(this, data, FileVersion);
+        }
+    }
 
     public void Load(byte[] data, RpfFileEntry entry)
     {
@@ -133,7 +157,10 @@ public class YscFile : GameFile, PackedFile
         Buffer.BlockCopy(gfxData, 0, tdata, sysDataSize, gfxDataSize);
 
         var cdata = compress ? ResourceBuilder.Compress(tdata) : tdata;
-        cdata = (name is not null && ngEncrypt.HasValue) ? Ng.Encrypt(cdata, name, (uint)cdata.Length + 0x10, ngEncrypt.Value) : cdata;
+        if (name is not null && ngEncrypt.HasValue)
+        {
+            Ng.Encrypt(cdata, name, (uint)cdata.Length + 0x10, ngEncrypt.Value);
+        }
 
         var dataSize = 16 + cdata.Length;
         var data = new byte[dataSize];
