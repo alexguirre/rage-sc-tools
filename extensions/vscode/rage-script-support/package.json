@@ -42,6 +42,12 @@
                     ".sch"
                 ],
                 "configuration": "./rage-script-language-configuration.json"
+            },
+            {
+                "id": "json",
+                "extensions": [
+                    ".scproj"
+                ]
             }
         ],
         "grammars": [
